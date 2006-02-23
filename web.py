@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.116"
+__version__ = "0.117"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -212,7 +212,9 @@ def aparam():
 
 class UnknownDB(Exception): pass
 def connect(db, user, password, database): #@@ should take hostname?
-    if db == "postgres": import psycopg2 as db
+    if db == "postgres": 
+        try: import psycopg2 as db
+        except ImportError: import psycopg as db
     else: raise UnknownDB, db
     ctx.db_module = db
     ctx.db_transaction = False

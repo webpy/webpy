@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.111"
+__version__ = "0.112"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -806,7 +806,7 @@ def run(inp, *middleware):
         if reloader in middleware:
             # black magic to make autoreload work:
             caller = upvars()
-            mod = __import__(caller['__file__'].split('.')[0].split('/').pop())
+            mod = __import__(caller['__file__'].split('/').pop().split('.')[0])
             #@@probably should replace this with some inspect magic
             name = dictfind(caller, inp)
             func = lambda: handle(getattr(mod, name), mod)

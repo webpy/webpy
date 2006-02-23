@@ -1,5 +1,5 @@
 """form.py: A simple Python form library."""
-__version__ = '0.1' # first draft
+__version__ = '0.11' # first draft
 __author__ = 'Aaron Swartz <me@aaronsw.com>'
 
 import copy

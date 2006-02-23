@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.131"
+__version__ = "0.132"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -14,7 +14,6 @@ from __future__ import generators
 # todo:
 #   - get rid of upvars
 #   - move documentation into docstrings
-#   - fix that silly nonce stuff in web.update
 #   - provide an option to use .write()
 #   - add ip:port support
 #   - allow people to do $self.id from inside a reparam
@@ -30,7 +29,10 @@ import os, os.path, sys, time, types, traceback
 import cgi, re, urllib, urlparse, Cookie, pprint
 from threading import currentThread
 from tokenize import tokenprog
-try: import datetime
+iters = (list, tuple)
+try: from sets import Set; iters += (Set,)
+except ImportError: pass
+try: import datetime, itertools
 except ImportError: pass
 try:
     from Cheetah.Compiler import Compiler
@@ -76,18 +78,12 @@ def autoassign():
         if k == 'self': continue
         setattr(self, k, v)
 
-class Storage:
-    def __init__(self, initial=None):
-        if initial:
-            for k in initial.keys(): setattr(self, k, initial[k])
-    
+class Storage(dict):
     def __getattr__(self, k): 
-        if hasattr(self.__dict__, k) or (
-          k.startswith('__') and k.endswith('__')): # special keyword
-            return getattr(self.__dict__, k)
+        if self.has_key(k): return self[k]
         raise AttributeError, repr(k)
-    
-    def __repr__(self): return '<Storage '+repr(self.__dict__)+'>'
+    def __setattr__(self, k, v): self[k] = v
+    def __repr__(self): return '<Storage '+dict.__repr__(self)+'>'
 
 storage = Storage
 
@@ -96,7 +92,7 @@ def storify(f, *requireds, **defaults):
 
     for k in requireds + tuple(f.keys()):
         v = f[k]
-        if isinstance(k, list): v = v[-1]
+        if isinstance(v, list): v = v[-1]
         if hasattr(v, 'value'): v = v.value
         setattr(stor, k, v)
 
@@ -145,6 +141,9 @@ class iterbetter:
             # now self.c == i
             self.c += 1; return self.i.next()
         except StopIteration: raise KeyError, repr(i)
+
+def dictreverse(d):
+    return dict([(v,k) for k,v in d.iteritems()])
 
 def dictfind(d, elt):
     for (k,v) in d.iteritems():
@@ -204,11 +203,12 @@ class profile:
         x += capturestdout(stats.print_callers)()
         return result, x
 
-def tryall(context):
+def tryall(context, prefix=None):
     context = context.copy() # vars() would update
     results = {}
     for (k, v) in context.iteritems():
         if not hasattr(v, '__call__'): continue
+        if prefix and not k.startswith(prefix): continue
         print k+':',
         try:
             r = v()
@@ -317,6 +317,15 @@ def _interpolate(format):
     if pos < len(format): chunks.append((0, format[pos:]))
     return chunks
 
+def sqlors(left, lst):
+    "contributed by Steven Huffman <http://spez.name>"
+    if isinstance(lst, iters) and len(lst) == 1: lst = lst[0]
+    if isinstance(lst, iters):
+        return '(' + left + (' OR ' + left).join([aparam() for x in lst]) + ")", lst
+    elif not list: return "", []
+    else:
+        return left + aparam(), [lst,]
+
 class UnknownParamstyle(Exception): pass
 def aparam():
     p = ctx.db_module.paramstyle
@@ -364,7 +373,7 @@ def connect(dbn, **kw):
     if globals().get('db_printing'):
         def db_execute(cur, q, d=None):
             ctx.dbq_count += 1
-            try: outq = q % d
+            try: outq = q % tuple(d)
             except: outq = q
             print>>debug, str(ctx.dbq_count)+':', outq
             a = time.time()
@@ -405,10 +414,9 @@ def query(q, vars=None, processed=False):
                 yield Storage(dict(zip(names, x)))
                 x = d.fetchone()
         out = iterbetter(iterwrapper())
-        out.__len__ = lambda: d.rowcount
+        out.__len__ = lambda: int(d.rowcount)
         out.list = lambda: [Storage(dict(zip(names, x))) for x in d.fetchall()]
     else:
-        out = None
         out = d.rowcount
     
     if not ctx.db_transaction: ctx.db.commit()    
@@ -426,52 +434,60 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
 
     for (sql, val) in (
       ('WHERE', where), 
-      ('ORDER BY', order), 
       ('GROUP BY', group), 
+      ('ORDER BY', order), 
       ('LIMIT', limit), 
       ('OFFSET', offset)):
-        if val:
+        if isinstance(val, (int, long)):
+            if sql == 'WHERE':
+                nquery, nvalue = 'id = '+aparam(), [val]
+            else:
+                nquery, nvalue = str(val), ()
+        elif isinstance(val, (list, tuple)) and len(val) == 2:
+            nquery, nvalue = val
+        elif val:
             nquery, nvalue = reparam(val, vars)
-            qout += " "+sql+" " + nquery
-            values.extend(nvalue)
+        else: continue
+        qout += " "+sql+" " + nquery
+        values.extend(nvalue)
     return query(qout, values, processed=True)
 
 def insert(tablename, seqname=None, **values):
     d = ctx.db.cursor()
 
     if values:
-        ctx.db_execute(d, "INSERT INTO %s (%s) VALUES (%s)" % (
+        q, v = "INSERT INTO %s (%s) VALUES (%s)" % (
             tablename,
             ", ".join(values.keys()),
-            ', '.join([aparam() for x in values]) #@@ use nonce
-        ), values.values())
+            ', '.join([aparam() for x in values])
+        ), values.values()
     else:
-        ctx.db_execute(d, "INSERT INTO %s DEFAULT VALUES" % tablename)
+        q, v = "INSERT INTO %s DEFAULT VALUES" % tablename, None
 
-    if seqname == False:
-        out = None
+    if seqname is False: pass
     elif ctx.db_name == "postgres": 
         if seqname is None: seqname = tablename + "_id_seq"
-        ctx.db_execute(d, "SELECT currval('%s')" % seqname)
-        out = d.fetchone()[0]
+        q += "; SELECT currval('%s')" % seqname
     elif ctx.db_name == "mysql":
-        ctx.db_execute(d, "SELECT last_insert_id()")
-        out = d.fetchone()[0]
+        q += "; SELECT last_insert_id()"
     elif ctx.db_name == "sqlite":
         # not really the same...
-        ctx.db_execute(d, "SELECT last_insert_rowid()")
-        out = d.fetchone()[0]
-    else:
-        out = None
+        q += "; SELECT last_insert_rowid()"
+
+    ctx.db_execute(d, q, v)
+    try: out = d.fetchone()[0]
+    except: out = None
     
     if not ctx.db_transaction: ctx.db.commit()
     return out
 
 def update(tables, where, vars=None, **values):
     if vars is None: vars = {}
-    if isinstance(where, int):
+    if isinstance(where, (int, long)):
         vars = [where]
         where = "id = "+aparam()
+    elif isinstance(where, (list, tuple)) and len(where) == 2:
+        where, vars = where
     else:
         where, vars = reparam(where, vars)
     
@@ -489,7 +505,13 @@ def delete(table, where, using=None, vars=None):
     if vars is None: vars = {}
     d = ctx.db.cursor()
 
-    where, vars = reparam(where, vars)
+    if isinstance(where, (int, long)):
+        vars = [where]
+        where = "id = "+aparam()
+    elif isinstance(where, (list, tuple)) and len(where) == 2:
+        where, vars = val
+    else:
+        where, vars = reparam(where, vars)
     q = 'DELETE FROM %s WHERE %s' % (table, where)
     if using: q += ' USING '+sqllist(using)
     ctx.db_execute(d, q, vars)
@@ -579,7 +601,7 @@ def gone():
 
 def expires(delta):
     try: datetime
-    except NameError: raise Exception, "this function requires at least python2.3"
+    except NameError: raise Exception, "requires Python 2.3 or later"
     if isinstance(delta, (int, long)):
         delta = datetime.timedelta(seconds=delta)
     o = datetime.datetime.utcnow() + delta
@@ -1089,7 +1111,7 @@ def wsgifunc(func, *middleware):
         if is_generator:
             # we need to give wsgi back the headers first,
             # so we need to do at iteration
-            try: firstchunk = handler_result.next()
+            try: firstchunk = result.next()
             except StopIteration: firstchunk = ''
         status, headers, output = ctx.status, ctx.headers, ctx.output
         _unload()

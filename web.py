@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__revision__ = "0.136"
-__version__ = "0.136"
+__revision__ = "0.137s"
+__version__ = "0.137s"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -371,6 +371,30 @@ class ThreadedDict(object):
         return hash(self.__d[currentThread()])
 threadeddict = ThreadedDict
 
+## ip utils
+
+def validipaddr(address):
+    """returns True if 'addres' is a valid IPv4 address"""
+    return 4 == (1 + address.count(".")) == \
+        len([n for n in address.split(".") 
+        if (n.isdigit() and -1 < int(n) < 256)])
+
+def validipport(port):
+    """returns True if 'port' is a valid IPv4 port"""
+    return port.isdigit() and -1 < int(port) < 65536
+
+def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
+    """returns a valid IP address/port tuple from string 'ip_addr_port'"""
+    address = ip.split(":", 1)
+    (addr_index, port_index) = (len(address) == 2) and (0, 1) or (0, 0)
+    ip_addr = validipaddr(address[addr_index]) and \
+        (address[addr_index]) or \
+        defaultaddr
+    ip_port = validipport(address[port_index]) and \
+        (int(address[port_index])) or \
+            defaultport
+    return (ip_addr, ip_port)
+    
 ## url utils
 
 def prefixurl(base=''):
@@ -823,7 +847,7 @@ def handle(mapping, fvars=None):
                 if context.method == "GET":
                     x = context.environ.get('QUERY_STRING', '')
                     if x: 
-                        url += '?'+x
+                        url += '?' + x
                 return redirect(url)
             elif '.' in fn: 
                 x = fn.split('.')
@@ -850,7 +874,7 @@ def handle(mapping, fvars=None):
             args = list(result.groups())
             for d in re.findall(r'\\(\d+)', ofn):
                 args.pop(int(d) - 1)
-            return tocall(*([urllib.unquote(x) for x in args]+fna))
+            return tocall(*([urllib.unquote(x) for x in args] + fna))
 
     return notfound()
 
@@ -1605,9 +1629,9 @@ def runwsgi(func):
         return runscgi(func)
 
     # command line:
-    return runsimple(func, listget(sys.argv, 1, 8080))
+    return runsimple(func, validip(listget(sys.argv, 1, '')))
     
-def runsimple(func, port=8080):
+def runsimple(func, server_address=("0.0.0.0", 8080)):
     """
     Runs a simple HTTP server hosting WSGI app `func`. The directory `static/` 
     is hosted statically.
@@ -1624,10 +1648,10 @@ def runsimple(func, port=8080):
     import socket, errno
     import traceback
 
-    class WSGIHandler (SimpleHTTPServer.SimpleHTTPRequestHandler):
+    class WSGIHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         def run_wsgi_app(self):
             protocol, host, path, parameters, query, fragment = \
-                urlparse.urlparse ('http://dummyhost%s' % self.path)
+                urlparse.urlparse('http://dummyhost%s' % self.path)
             # we only use path, query
             env = {'wsgi.version': (1, 0)
                    ,'wsgi.url_scheme': 'http'
@@ -1640,16 +1664,16 @@ def runsimple(func, port=8080):
                    ,'REQUEST_URI': self.path
                    ,'PATH_INFO': path
                    ,'QUERY_STRING': query
-                   ,'CONTENT_TYPE': self.headers.get ('Content-Type', '')
-                   ,'CONTENT_LENGTH': self.headers.get ('Content-Length', '')
+                   ,'CONTENT_TYPE': self.headers.get('Content-Type', '')
+                   ,'CONTENT_LENGTH': self.headers.get('Content-Length', '')
                    ,'REMOTE_ADDR': self.client_address[0]
-                   ,'SERVER_NAME': self.server.server_address [0]
-                   ,'SERVER_PORT': str (self.server.server_address [1])
+                   ,'SERVER_NAME': self.server.server_address[0]
+                   ,'SERVER_PORT': str(self.server.server_address[1])
                    ,'SERVER_PROTOCOL': self.request_version
                    }
 
             for http_header, http_value in self.headers.items():
-                env ['HTTP_%s' % http_header.replace ('-', '_').upper()] = \
+                env ['HTTP_%s' % http_header.replace('-', '_').upper()] = \
                     http_value
 
             # Setup the state
@@ -1663,7 +1687,7 @@ def runsimple(func, port=8080):
                     try:
                         for data in result:
                             if data: 
-                                self.wsgi_write_data (data)
+                                self.wsgi_write_data(data)
                     finally:
                         if hasattr(result, 'close'): 
                             result.close()
@@ -1703,30 +1727,30 @@ def runsimple(func, port=8080):
             self.wsgi_headers = (response_status, response_headers)
             return self.wsgi_write_data
 
-        def wsgi_write_data (self, data):
+        def wsgi_write_data(self, data):
             if (not self.wsgi_sent_headers):
                 status, headers = self.wsgi_headers
                 # Need to send header prior to data
-                status_code = status [:status.find (' ')]
-                status_msg = status [status.find (' ') + 1:]
-                self.send_response (int (status_code), status_msg)
+                status_code = status [:status.find(' ')]
+                status_msg = status [status.find(' ') + 1:]
+                self.send_response(int(status_code), status_msg)
                 for header, value in headers:
-                    self.send_header (header, value)
+                    self.send_header(header, value)
                 self.end_headers()
                 self.wsgi_sent_headers = 1
             # Send the data
-            self.wfile.write (data)
+            self.wfile.write(data)
 
-    class WSGIServer (SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
-        def __init__(self, func):
+    class WSGIServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+        def __init__(self, func, server_address):
             BaseHTTPServer.HTTPServer.__init__(self, 
-                                               ("0.0.0.0", int(port)), 
+                                               server_address, 
                                                WSGIHandler)
             self.app = func
             self.serverShuttingDown = 0
 
-    print "Launching server: http://0.0.0.0:"+str(port)+"/"
-    WSGIServer(func).serve_forever()
+    print "Launching server: http://%s:%d/" % server_address
+    WSGIServer(func, server_address).serve_forever()
 
 def makeserver(wsgi_server):
     """Updates a flup-style WSGIServer with web.py-style error support."""
@@ -1753,12 +1777,7 @@ def runscgi(func):
     if len(sys.argv) > 2: # progname, scgi
         args = sys.argv[:]
         args.remove('scgi')
-        hostport = args[1]
-        hostport = hostport.split(':', 1)
-        if len(hostport) == 2: 
-            hostport = (hostport[0], int(hostport[1]))
-        else: 
-            hostport = ('localhost', int(hostport[0]))
+        hostport = validip(args[1])
     else: 
         hostport = ('localhost', 4000)
     return my_server(func, bindAddress=hostport).run()

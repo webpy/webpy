@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.121"
+__version__ = "0.122"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -285,8 +285,11 @@ def query(q, v=None):
     if v is None: v = upvars()
 
     d.execute(reparam(q), v)
-    names = [x[0] for x in d.description]
-    out = [Storage(dict(zip(names, x))) for x in d.fetchall()]
+    if d.description:
+        names = [x[0] for x in d.description]
+        out = [Storage(dict(zip(names, x))) for x in d.fetchall()]
+    else:
+        out = None
     
     if not ctx.db_transaction: ctx.db.commit()    
     return out

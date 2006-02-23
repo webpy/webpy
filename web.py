@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.122"
+__version__ = "0.123"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -1081,6 +1081,8 @@ class _outputter:
     def write(self, x): 
         if hasattr(ctx, 'output'): output(x)
         else: _oldstdout.write(x)
+    def flush(self): return _oldstdout.flush()
+    def close(self): return _oldstdout.close()
 
 _context = {currentThread():Storage()}
 ctx = context = threadeddict(_context)

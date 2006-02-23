@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.114"
+__version__ = "0.115"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -58,8 +58,10 @@ def storify(f, *requireds, **defaults):
     stor = Storage()
 
     for k in requireds + tuple(f.keys()):
-        if type(f[k]) is list: setattr(stor, k, f[k][-1].value) 
-        else: setattr(stor, k, f[k].value)
+        v = f[k]
+        if isinstance(k, list): v = v[-1]
+        if hasattr(v, 'value'): v = v.value
+        setattr(stor, k, v)
 
     for (k,v) in defaults.iteritems():
         result = v
@@ -227,7 +229,7 @@ def query(q, v=None):
     d = ctx.dbc
     if v is None: v = upvars()
 
-    d.execute(q, v)
+    d.execute(reparam(q), v)
     names = [x[0] for x in d.description]
     out = [Storage(dict(zip(names, x))) for x in d.fetchall()]
     
@@ -260,7 +262,9 @@ def update(tablename, where, vars=(), **values):
     vars = list(vars)
     if isinstance(where, int):
         vars.append(where)
-        where = "id = %s"
+        where = "id = "+aparam()
+    else:
+        where = where #@@ need to figure out positional params
     
     d = ctx.dbc
     d.execute("UPDATE %s SET %s WHERE %s" % (
@@ -303,7 +307,6 @@ def handle(mapping, fvars=None):
             tocall = getattr(cls(), meth)
             args = list(result.groups())
             for d in re.findall(r'\\(\d+)', ofn):
-                print>>debug, d
                 args.pop(int(d)-1)
             return tocall(*[urllib.unquote(x) for x in args])
 
@@ -801,17 +804,16 @@ def write(t):
 
     output(body)
 
-def webpyfunc(inp, autoreload=False):
+def webpyfunc(inp, fvars=None, autoreload=False):
+    if not fvars: fvars = upvars()
     if not hasattr(inp, '__call__'):
         if autoreload:
             # black magic to make autoreload work:
-            caller = upvars(3)
-            mod = __import__(caller['__file__'].split(os.path.sep).pop().split('.')[0])
+            mod = __import__(fvars['__file__'].split(os.path.sep).pop().split('.')[0])
             #@@probably should replace this with some inspect magic
-            name = dictfind(caller, inp)
+            name = dictfind(fvars, inp)
             func = lambda: handle(getattr(mod, name), mod)
         else:
-            fvars = upvars()
             func = lambda: handle(inp, fvars)
     else:
         func = inp
@@ -832,7 +834,8 @@ def wsgifunc(func, *middleware):
 
 def run(inp, *middleware):
     autoreload = reloader in middleware
-    return runwsgi(wsgifunc(webpyfunc(inp, autoreload), *middleware))
+    fvars = upvars()
+    return runwsgi(wsgifunc(webpyfunc(inp, fvars, autoreload), *middleware))
 
 def runwsgi(func):
     #@@ improve detection

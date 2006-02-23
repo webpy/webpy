@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.128"
+__version__ = "0.129"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
+
+from __future__ import generators
 
 # long term todo:
 #   - new form system
@@ -924,7 +926,7 @@ def runsimple(func, port=8080):
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
     import SimpleHTTPServer, SocketServer, BaseHTTPServer, urlparse
-    import sys, logging, socket, errno
+    import sys, socket, errno
     import traceback
 
     class WSGIHandler (SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -1119,5 +1121,5 @@ if __name__ == "__main__":
     class source:
         def GET(self):
             header('Content-Type', 'text/python')
-            print open(__file__).read()
+            print open(sys.argv[0]).read()
     run(urls)

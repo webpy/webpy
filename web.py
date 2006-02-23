@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.129"
+__version__ = "0.13"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -12,17 +12,36 @@ from __future__ import generators
 #   - unit tests?
 
 # todo:
-#   - add sqlite support
+#   - add db select, delete function
+#   - fix that silly nonce stuff in web.update
 #   - provide an option to use .write()
+#   - add ip:port support
+#   - allow people to do $self.id from inside a reparam
+#   - add sqlite support
+#   - make storage a subclass of dictionary
+#   - convert datetimes, floats in WebSafe
+#   - locks around memoize
+#   - fix memoize to use cacheify style techniques
+#   - merge curval query with the insert
+#   - figure out how to handle squid, etc. for web.ctx.ip
 
-import cgi, re, os, os.path, sys, time, urllib, urlparse, pprint, traceback, types, Cookie
+import os, os.path, sys, time, types, traceback
+import cgi, re, urllib, urlparse, Cookie, pprint
 from threading import currentThread
+try: import datetime
+except ImportError: pass
 try:
     from Cheetah.Compiler import Compiler
     from Cheetah.Filters import Filter
     _hasTemplating = True
 except ImportError:
     _hasTemplating = False
+
+try:
+    from DBUtils.PooledDB import PooledDB
+    _hasPooling = True
+except ImportError:
+    _hasPooling = False
 
 # hack for compatibility with Python 2.3:
 if not hasattr(traceback, 'format_exc'):
@@ -49,7 +68,7 @@ def lstrips(a, b): return _strips('l', a, b)
 def strips(a, b): return rstrips(lstrips(a,b),b)
 
 def autoassign():
-    locals = sys._getframe(2).f_locals
+    locals = sys._getframe(1).f_locals
     self = locals['self']
     for (k, v) in locals.iteritems():
         if k == 'self': continue
@@ -111,6 +130,19 @@ def group(seq, size):
     """Breaks 'seq' into a generator of lists with length 'size'."""
     if not hasattr(seq, 'next'):  seq = iter(seq)
     while True: yield [seq.next() for i in xrange(size)]
+
+class iterbetter:
+    def __init__(self, iterator): self.i, self.c = iterator, 0
+    def __iter__(self): 
+        while 1: yield self.i.next(); self.c += 1
+    def __getitem__(self, i):
+        #todo: slices
+        if i > self.c: raise KeyError, "already passed "+str(i)
+        try:
+            while i < self.c: self.i.next(); self.c += 1
+            # now self.c == i
+            self.c += 1; return self.i.next()
+        except StopIteration: raise KeyError, repr(i)
 
 def dictfind(d, elt):
     for (k,v) in d.iteritems():
@@ -196,6 +228,7 @@ class threadeddict:
     def __getitem__(self, i): return self.__d[currentThread()][i]
     def __setattr__(self, a, v): return setattr(self.__d[currentThread()], a, v)
     def __setitem__(self, i, v): self.__d[currentThread()][i] = v
+    def __hash__(self): return hash(self.__d[currentThread()])
 
 ## url utils
 
@@ -264,8 +297,26 @@ def connect(dbn, **kw):
     ctx.db_name = dbn
     ctx.db_module = db
     ctx.db_transaction = False
-    ctx.db = db.connect(**kw)
-    ctx.dbc = ctx.db.cursor()
+    if _hasPooling:
+        if 'db' not in globals(): globals()['db'] = PooledDB(dbapi=db, **kw)
+        ctx.db = globals()['db'].connection()
+    else:
+        ctx.db = db.connect(**kw)
+    ctx.dbq_count = 0
+    if globals().get('db_printing'):
+        def db_execute(cur, q, d=None):
+            ctx.dbq_count += 1
+            try: outq = q % d
+            except: outq = q
+            print>>debug, str(ctx.dbq_count)+':', outq
+            a = time.time()
+            out = cur.execute(q, d)
+            b = time.time()
+            print>>debug, '(%s)' % round(b-a, 2)
+            return out
+        ctx.db_execute = db_execute
+    else:
+        ctx.db_execute = lambda cur, q, d=None: cur.execute(q, d)
     return ctx.db
 
 def transact():
@@ -283,43 +334,57 @@ def rollback():
     ctx.db_transaction = False
 
 def query(q, v=None):
-    d = ctx.dbc
+    d = ctx.db.cursor()
     if v is None: v = upvars()
 
-    d.execute(reparam(q), v)
+    ctx.db_execute(d, reparam(q), v)
     if d.description:
         names = [x[0] for x in d.description]
-        out = [Storage(dict(zip(names, x))) for x in d.fetchall()]
+        def iterwrapper():
+            x = d.fetchone()
+            while x:
+                yield Storage(dict(zip(names, x)))
+                x = d.fetchone()
+        out = iterbetter(iterwrapper())
+        out.__len__ = lambda: d.rowcount
     else:
         out = None
+        out = d.rowcount
     
     if not ctx.db_transaction: ctx.db.commit()    
     return out
 
-select = query
+def select(tablename, what='*', where=None, vars=None, **wheres):
+    if vars is None: vars = upvars()
+    
+    q = "SELECT "+what+" FROM "+tablename+" WHERE "
+    if where: q += where
+    for (k, v) in wheres.iteritems():
+        where += k + '=' + nonce(v, vars)
+    return query(q, vvars)
 
 def insert(tablename, seqname=None, **values):
-    d = ctx.dbc
+    d = ctx.db.cursor()
 
     if values:
-        d.execute("INSERT INTO %s (%s) VALUES (%s)" % (
+        ctx.db_execute(d, "INSERT INTO %s (%s) VALUES (%s)" % (
             tablename,
             ", ".join(values.keys()),
-            ', '.join([aparam() for x in values])
+            ', '.join([aparam() for x in values]) #@@ use nonce
         ), values.values())
     else:
-        d.execute("INSERT INTO %s DEFAULT VALUES" % tablename)
+        ctx.db_execute(d, "INSERT INTO %s DEFAULT VALUES" % tablename)
 
     if ctx.db_name == "postgres" and seqname != False: 
         if seqname is None: seqname = tablename + "_id_seq"
-        d.execute("SELECT currval('%s')" % seqname)
+        ctx.db_execute(d, "SELECT currval('%s')" % seqname)
         out = d.fetchone()[0]
     elif ctx.db_name == "mysql":
-        d.execute("SELECT last_insert_id()")
+        ctx.db_execute(d, "SELECT last_insert_id()")
         out = d.fetchone()[0]
     elif ctx.db_name == "sqlite":
         # not really the same...
-        d.execute("SELECT last_insert_rowid()")
+        ctx.db_execute(d, "SELECT last_insert_rowid()")
         out = d.fetchone()[0]
     else:
         out = None
@@ -335,8 +400,8 @@ def update(tablename, where, pvars=(), **values):
     else:
         where = where #@@ need to figure out positional params
     
-    d = ctx.dbc
-    d.execute("UPDATE %s SET %s WHERE %s" % (
+    d = ctx.db.cursor()
+    ctx.db_execute(d, "UPDATE %s SET %s WHERE %s" % (
         tablename,
         ', '.join([k+'='+aparam() for k in values.keys()]),
         where),
@@ -348,7 +413,9 @@ def update(tablename, where, pvars=(), **values):
 ## request handlers
 
 def handle(mapping, fvars=None):
-    for url, ofn in group(mapping, 2):
+    for url, ofno in group(mapping, 2):
+        if isinstance(ofno, tuple): ofn, fna = ofno[0], list(ofno[1:])
+        else: ofn, fna = ofno, []
         fn, result = re_subm('^'+url+'$', ofn, context.path)
         if result: # it's a match
             if fn.split(' ', 1)[0] == "redirect":
@@ -377,7 +444,7 @@ def handle(mapping, fvars=None):
             args = list(result.groups())
             for d in re.findall(r'\\(\d+)', ofn):
                 args.pop(int(d)-1)
-            return tocall(*[urllib.unquote(x) for x in args])
+            return tocall(*([urllib.unquote(x) for x in args]+fna))
 
     return notfound()
 
@@ -389,6 +456,18 @@ def autodelegate(prefix=''):
     return internal
 
 ## http defaults
+    
+def redirect(url, status='301 Moved Permanently'):
+    newloc = urlparse.urljoin(context.home + context.path, url)
+    context.status = status
+    header('Content-Type', 'text/html')
+    header('Location', newloc)
+    # seems to add a three-second delay for some reason:
+    # output('<a href="'+ newloc + '">moved permanently</a>')
+
+def found(url): return redirect(url, '302 Found')
+def seeother(url): return redirect(url, '303 See Other')
+def tempredirect(url): return redirect(url, '307 Temporary Redirect')
 
 def badrequest():
     context.status = '400 Bad Request'
@@ -405,14 +484,22 @@ def nomethod(cls):
     header('Content-Type', 'text/html')
     header("Allow", ', '.join([x for x in ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'] if hasattr(cls, x)]))
     return output('method not allowed')
-    
-def redirect(url):
-    newloc = urlparse.urljoin(context.home + context.path, url)
-    context.status = '301 Moved Permanently'
+
+def gone():
+    context.status = '410 Gone'
     header('Content-Type', 'text/html')
-    header('Location', newloc)
-    # seems to add a three-second delay for some reason:
-    # output('<a href="'+ newloc + '">moved permanently</a>')
+    return output("gone")
+
+def expires(delta):
+    try: datetime
+    except NameError: raise Exception, "this function requires at least python2.3"
+    if isinstance(delta, (int, long)):
+        delta = datetime.timedelta(seconds=delta)
+    o = datetime.datetime.utcnow() + delta
+    header('Expires', o.strftime("%a, %d %b %Y %T GMT"))
+
+def lastmodified(d):
+    header('Last-Modified', d.strftime("%a, %d %b %Y %T GMT"))
 
 # adapted from Django <djangoproject.com> 
 # Copyright (c) 2005, the Lawrence Journal-World
@@ -531,7 +618,7 @@ DJANGO_500_PAGE = """#import inspect
   </tr></table>
 </div>
 <div id="traceback">
-  <h2>Traceback <span>(innermost last)</span></h2>
+  <h2>Traceback <span>(innermost first)</span></h2>
   <ul class="traceback">
     #for frame in $frames
       <li class="frame">
@@ -551,7 +638,7 @@ DJANGO_500_PAGE = """#import inspect
 
         #if $frame.vars
           <div class="commands">
-              <a href='#' onclick="return varToggle(this, '$frame.id')"><span>&#x25b6;</span> Local vars</a><!--: $inspect.formatargvalues(*inspect.getargvalues(frame['tb'].tb_frame))-->
+              <a href='#' onclick="return varToggle(this, '$frame.id')"><span>&#x25b6;</span> Local vars</a>## $inspect.formatargvalues(*inspect.getargvalues(frame['tb'].tb_frame))
           </div>
           <table class="vars" id="v$frame.id">
             <thead>
@@ -657,7 +744,7 @@ DJANGO_500_PAGE = """#import inspect
       #set myitems = $context_.items()
       #silent myitems.sort(lambda x,y: cmp(x[0], y[0]))
       #for (key, val) in $myitems
-      #if not $key.startswith('_') and $key not in ['env', 'output', 'headers', 'environ', 'status']
+      #if not $key.startswith('_') and $key not in ['env', 'output', 'headers', 'environ', 'status', 'db_execute']
         <tr>
           <td>$key</td>
           <td class="code"><div>$prettify($val)</div></td>
@@ -739,11 +826,15 @@ def djangoerror():
         })
         tb = tb.tb_next
     lastframe = frames[-1]
+    frames.reverse()
     urljoin = urlparse.urljoin
     input_ = input()
     cookies_ = cookies()
     context_ = context
-    prettify = pprint.pformat
+    def prettify(x):
+        try: out = pprint.pformat(x)
+        except Exception, e: out = '[could not display: <'+e.__class__.__name__+': '+str(e)+'>]'
+        return out
     return render(DJANGO_500_PAGE, asTemplate=True, isString=True)
 
 def internalerror():
@@ -777,7 +868,7 @@ installed Cheetah. See above.)</p>
 
 ## rendering
 
-r_include = re_compile(r'^\s*#include \"(.*?)\"$', re.M)
+r_include = re_compile(r'(?!\\)#include \"(.*?)\"($|#)', re.M)
 def __compiletemplate(template, base=None, isString=False):
     if isString: text = template
     else: text = open('templates/'+template).read()
@@ -805,6 +896,8 @@ def htmlquote(s):
     s = s.replace("'", "&#39;")
     s = s.replace('"', "&quot;")
     return s
+
+urlquote = urllib.quote
 
 if _hasTemplating:
     class WebSafe(Filter):
@@ -841,9 +934,10 @@ def input(*requireds, **defaults):
 
 ## cookies
 
-def setcookie(name, value, expires=""):
+def setcookie(name, value, expires="", domain=None):
     if expires < 0: expires = -1000000000 
     kargs = {'expires': expires, 'path':'/'}
+    if domain: kargs['domain'] = domain
     # @@ should we limit cookies to a different path?
     c = Cookie.SimpleCookie()
     c[name] = value
@@ -891,17 +985,38 @@ def webpyfunc(inp, fvars=None, autoreload=False):
     return func
 
 def wsgifunc(func, *middleware):
+    middleware = list(middleware)
+    if reloader in middleware:
+        relr = reloader(None)
+        relrcheck = relr.check
+        middleware.remove(reloader)
+    else:
+        relr = None
+        relrcheck = lambda: None
+    
     def wsgifunc(e, r):
         _load(e)
-        func()
+        relrcheck()
+        result = func()
+        is_generator = result and hasattr(result, 'next')
+        if is_generator:
+            # we need to give wsgi back the headers first,
+            # so we need to do at iteration
+            try: firstchunk = handler_result.next()
+            except StopIteration: firstchunk = ''
         status, headers, output = ctx.status, ctx.headers, ctx.output
         _unload()
         r(status, headers)
-        if isinstance(output, str): output = [output]
-        return output
+        if is_generator: return itertools.chain([firstchunk], result)
+        elif isinstance(output, str): return [output] #@@ other stringlikes?
+        elif hasattr(output, 'next'): return output
+        else: raise Exception, "Invalid web.context.output"
     
     for x in middleware: wsgifunc = x(wsgifunc)
     
+    if relr:
+        relr.func = wsgifunc
+        return wsgifunc
     return wsgifunc
 
 def run(inp, *middleware):
@@ -911,10 +1026,17 @@ def run(inp, *middleware):
 
 def runwsgi(func):
     #@@ improve detection
+    if os.environ.has_key('SERVER_SOFTWARE'): # cgi
+        os.environ['FCGI_FORCE_CGI'] = 'Y'
+
     if (os.environ.has_key('PHP_FCGI_CHILDREN') #lighttpd fastcgi
-      or os.environ.has_key('SERVER_SOFTWARE')): #cgi
+      or os.environ.has_key('SERVER_SOFTWARE')):
         import flup.server.fcgi
         return runfcgi(func)
+
+    if 'scgi' in sys.argv:
+        import flup.server.scgi
+        return runscgi(func)
 
     # command line:
     return runsimple(func, listget(sys.argv, 1, 8080))
@@ -1023,8 +1145,7 @@ def runsimple(func, port=8080):
     WSGIServer(func).serve_forever()
     
 
-def runfcgi(func):
-    from flup.server.fcgi import WSGIServer
+def makeserver(WSGIServer):
     class MyServer(WSGIServer):            
         def error(self, req):
             w = req.stdout.write
@@ -1034,25 +1155,48 @@ def runfcgi(func):
                 w(h+': '+v+'\r\n')
             w('\r\n'+context.output)
                 
-    return MyServer(func, multiplexed=True).run()
+    return MyServer
+    
+def runfcgi(func):
+    from flup.server.fcgi import WSGIServer
+    return makeserver(WSGIServer)(func, multiplexed=True).run()
+
+def runscgi(func):
+    from flup.server.scgi import WSGIServer
+    MyServer = makeserver(WSGIServer)
+    if len(sys.argv) > 2: # progname, scgi
+        args = sys.argv[:]
+        args.remove('scgi')
+        hostport = args[1]
+        hostport = hostport.split(':',1)
+        if len(hostport) == 2: hostport = (hostport[0], int(hostport[1]))
+        else: hostport = ('localhost',int(hostport[0]))
+    else: hostport = ('localhost',4000)
+    return MyServer(func, bindAddress=hostport).run()
 
 ## debug
 
 def debug(*args):
+    try: out = context.environ['wsgi.errors']
+    except: out = sys.stderr
     for x in args:
-        print >> context.environ['wsgi.errors'], pprint.pformat(x)
+        print >> out, pprint.pformat(x)
     return ''
 
-# has to be a lambda so the context is evaluated at runtime
-debug.write = lambda x: context.environ['wsgi.errors'].write(x)
+def debugwrite(x):
+    try: out = context.environ['wsgi.errors']
+    except: out = sys.stderr
+    out.write(x)
+debug.write = debugwrite
 
 class reloader:
     def __init__(self, func, tocheck=None): 
         self.func = func
         self.mtimes = {}
         global _compiletemplate
+        b = _compiletemplate.bases
         _compiletemplate = globals()['__compiletemplate']
-        _compiletemplate.bases = {}
+        _compiletemplate.bases = b
     
     def check(self):
         for mod in sys.modules.values():
@@ -1081,7 +1225,7 @@ def profiler(app):
 
 class _outputter:
     def write(self, x): 
-        if hasattr(ctx, 'output'): output(x)
+        if hasattr(ctx, 'output'): return output(x)
         else: _oldstdout.write(x)
     def flush(self): return _oldstdout.flush()
     def close(self): return _oldstdout.close()
@@ -1096,8 +1240,9 @@ if not '_oldstdout' in globals():
 def _load(env):
     _context[currentThread()] = Storage()
     ctx.environ = ctx.env = env
-    ctx.home = 'http://'+env.get('HTTP_HOST') + env.get('SCRIPT_NAME', '')
-    ctx.ip = env.get('HTTP_X_FORWARDED_FOR') or env.get('REMOTE_ADDR')
+    ctx.host = env.get('HTTP_HOST')
+    ctx.home = 'http://' + env.get('HTTP_HOST', '[unknown]') + env.get('SCRIPT_NAME', '')
+    ctx.ip = env.get('REMOTE_ADDR')
     ctx.method = env.get('REQUEST_METHOD')
     ctx.path = env.get('PATH_INFO')
     # http://trac.lighttpd.net/trac/ticket/406 requires:

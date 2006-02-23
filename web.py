@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.112"
+__version__ = "0.113"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -801,11 +801,11 @@ def write(t):
 
     output(body)
 
-def run(inp, *middleware):
+def webpyfunc(inp, autoreload=False):
     if not hasattr(inp, '__call__'):
-        if reloader in middleware:
+        if autoreload:
             # black magic to make autoreload work:
-            caller = upvars()
+            caller = upvars(3)
             mod = __import__(caller['__file__'].split('/').pop().split('.')[0])
             #@@probably should replace this with some inspect magic
             name = dictfind(caller, inp)
@@ -815,10 +815,9 @@ def run(inp, *middleware):
             func = lambda: handle(inp, fvars)
     else:
         func = inp
-        
-    return wsgirun(func, *middleware)
+    return func
 
-def wsgirun(func, *middleware):
+def wsgifunc(func, *middleware):
     def wsgifunc(e, r):
         _load(e)
         func()
@@ -828,15 +827,22 @@ def wsgirun(func, *middleware):
         return [output]
     
     for x in middleware: wsgifunc = x(wsgifunc)
+    
+    return wsgifunc
 
+def run(inp, *middleware):
+    autoreload = reloader in middleware
+    return runwsgi(wsgifunc(webpyfunc(inp, autoreload), *middleware))
+
+def runwsgi(func):
     #@@ improve detection
     if (os.environ.has_key('PHP_FCGI_CHILDREN') #lighttpd fastcgi
       or os.environ.has_key('SERVER_SOFTWARE')): #cgi
         import flup.server.fcgi
-        return runfcgi(wsgifunc)
+        return runfcgi(func)
 
     # command line:
-    return runsimple(wsgifunc, listget(sys.argv, 1, 8080))
+    return runsimple(func, listget(sys.argv, 1, 8080))
     
 def runsimple(func, port=8080):
     # Copyright (c) 2004 Colin Stewart (http://www.owlfish.com/)

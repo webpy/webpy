@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.133"
+__version__ = "0.134"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -13,7 +13,6 @@ from __future__ import generators
 
 # todo:
 #   - get rid of upvars
-#   - move documentation into docstrings
 #   - provide an option to use .write()
 #   - add ip:port support
 #   - allow people to do $self.id from inside a reparam
@@ -106,7 +105,7 @@ storage = Storage
 
 def storify(f, *requireds, **defaults):
     """
-    Creates a `storage` object from dictionary d, raising `IndexError` if
+    Creates a `storage` object from dictionary d, raising `KeyError` if
     d doesn't have all of the keys in `requireds` and using the default 
     values for keys found in `defaults`.
 
@@ -615,7 +614,8 @@ def insert(tablename, seqname=None, **values):
         if seqname is None: seqname = tablename + "_id_seq"
         q += "; SELECT currval('%s')" % seqname
     elif ctx.db_name == "mysql":
-        q += "; SELECT last_insert_id()"
+        ctx.db_execute(d, q, v)
+        q = "SELECT last_insert_id()"
     elif ctx.db_name == "sqlite":
         # not really the same...
         q += "; SELECT last_insert_rowid()"
@@ -1355,7 +1355,8 @@ def wsgifunc(func, *middleware):
     def wsgifunc(e, r):
         _load(e)
         relrcheck()
-        result = func()
+        try: result = func()
+        except StopIteration: result = None
         is_generator = result and hasattr(result, 'next')
         if is_generator:
             # we need to give wsgi back the headers first,

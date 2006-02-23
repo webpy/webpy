@@ -1,5 +1,5 @@
 """form.py: A simple Python form library."""
-__version__ = '0.2'
+__version__ = '0.21'
 __author__ = ['Aaron Swartz <me@aaronsw.com>', 'Steve Huffman <http://spez.name/>']
 
 import copy
@@ -68,6 +68,7 @@ class Input(object):
             if not v.valid(value):
                 self.note = v.msg
                 return False
+        return True
 
     def render(self): raise NotImplementedError
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.135"
+__revision__ = "0.136"
+__version__ = "0.136"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -29,11 +30,17 @@ import cgi, re, urllib, urlparse, Cookie, pprint
 from threading import currentThread
 from tokenize import tokenprog
 iters = (list, tuple)
-if hasattr(__builtins__, 'set'): iters += (set,)
-try: from sets import Set; iters += (Set,)
-except ImportError: pass
-try: import datetime, itertools
-except ImportError: pass
+if hasattr(__builtins__, 'set'): 
+    iters += (set,)
+try: 
+    from sets import Set
+    iters += (Set,)
+except ImportError: 
+    pass
+try: 
+    import datetime, itertools
+except ImportError: 
+    pass
 try:
     from Cheetah.Compiler import Compiler
     from Cheetah.Filters import Filter
@@ -51,20 +58,28 @@ except ImportError:
 if not hasattr(traceback, 'format_exc'):
     from cStringIO import StringIO
     def format_exc(limit=None):
-        s = StringIO()
-        traceback.print_exc(limit, s)
-        return s.getvalue()
+        strbuf = StringIO()
+        traceback.print_exc(limit, strbuf)
+        return strbuf.getvalue()
     traceback.format_exc = format_exc
 
 ## general utils
+class WrongDirection(Exception):
+    """raised for unsupported direction
 
+    Currently supported: r, l
+    """
+    pass
 def _strips(direction, text, remove):
+    """strips 'remove' from 'text' at 'direction' end"""
     if direction == 'l': 
-        if text.startswith(remove): return text[len(remove):]
+        if text.startswith(remove): 
+            return text[len(remove):]
     elif direction == 'r':
-        if text.endswith(remove): return text[:-len(remove)]
+        if text.endswith(remove):   
+            return text[:-len(remove)]
     else: 
-        raise "WrongDirection", "Needs to be r or l."
+        raise WrongDirection, "Needs to be r or l."
     return text
 
 def rstrips(text, remove):
@@ -73,9 +88,9 @@ def rstrips(text, remove):
 def lstrips(text, remove):
     """removes the string `remove` from the right of `text`"""
     return _strips('l', text, remove)
-def strips(a, b):
+def strips(text, remove):
     """removes the string `remove` from the both sides of `text`"""
-    return rstrips(lstrips(a,b),b)
+    return rstrips(lstrips(text, remove), remove)
 
 def autoassign(self, locals):
     """
@@ -86,26 +101,30 @@ def autoassign(self, locals):
     """
     #locals = sys._getframe(1).f_locals
     #self = locals['self']
-    for (k, v) in locals.iteritems():
-        if k == 'self': continue
-        setattr(self, k, v)
+    for (key, value) in locals.iteritems():
+        if key == 'self': 
+            continue
+        setattr(self, key, value)
 
 class Storage(dict):
     """
     A Storage object is like a dictionary except `obj.foo` can be used
     instead of `obj['foo']`. Create one by doing `storage({'a':1})`.
     """
-    def __getattr__(self, k): 
-        if self.has_key(k): return self[k]
-        raise AttributeError, repr(k)
-    def __setattr__(self, k, v): self[k] = v
-    def __repr__(self): return '<Storage '+dict.__repr__(self)+'>'
+    def __getattr__(self, key): 
+        if self.has_key(key): 
+            return self[key]
+        raise AttributeError, repr(key)
+    def __setattr__(self, key, value): 
+        self[key] = value
+    def __repr__(self):     
+        return '<Storage ' + dict.__repr__(self) + '>'
 
 storage = Storage
 
-def storify(f, *requireds, **defaults):
+def storify(mapping, *requireds, **defaults):
     """
-    Creates a `storage` object from dictionary d, raising `KeyError` if
+    Creates a `storage` object from dictionary `mapping`, raising `KeyError` if
     d doesn't have all of the keys in `requireds` and using the default 
     values for keys found in `defaults`.
 
@@ -114,45 +133,56 @@ def storify(f, *requireds, **defaults):
     """
     stor = Storage()
 
-    for k in requireds + tuple(f.keys()):
-        v = f[k]
-        if isinstance(v, list): v = v[-1]
-        if hasattr(v, 'value'): v = v.value
-        setattr(stor, k, v)
+    for key in requireds + tuple(mapping.keys()):
+        value = mapping[key]
+        if isinstance(value, list): 
+            value = value[-1]
+        if hasattr(value, 'value'): 
+            value = value.value
+        setattr(stor, key, value)
 
-    for (k,v) in defaults.iteritems():
-        result = v
-        if hasattr(stor, k): result = stor[k]
-        if v == () and not isinstance(result, tuple): result = (result,)
-        setattr(stor, k, result)
+    for (key, value) in defaults.iteritems():
+        result = value
+        if hasattr(stor, key): 
+            result = stor[key]
+        if value == () and not isinstance(result, tuple): 
+            result = (result,)
+        setattr(stor, key, result)
     
     return stor
 
-class memoize:
+class Memoize(object):
     """
     "Memoizes" a function, caching its return values for each input.
     """
-    def __init__(self, func): self.func = func; self.cache = {}
-    def __call__(self, *a, **k):
-        key = (a, tuple(k.items()))
-        if key not in self.cache: self.cache[key] = self.func(*a, **k)
+    def __init__(self, func): 
+        self.func = func
+        self.cache = {}
+    def __call__(self, *args, **keywords):
+        key = (args, tuple(keywords.items()))
+        if key not in self.cache: 
+            self.cache[key] = self.func(*args, **keywords)
         return self.cache[key]
+memoize = Memoize
 
 re_compile = memoize(re.compile) #@@ threadsafe?
 re_compile.__doc__ = """
 A memoized version of re.compile.
 """
 
-class _re_subm_proxy:       
-    def __init__(self): self.match = None
-    def __call__(self, match): self.match = match; return ''
+class _re_subm_proxy(object):
+    def __init__(self): 
+        self.match = None
+    def __call__(self, match): 
+        self.match = match
+        return ''
 
 def re_subm(pat, repl, string):
     """Like re.sub, but returns the replacement _and_ the match object."""
-    r = re_compile(pat)
+    compiled_pat = re_compile(pat)
     proxy = _re_subm_proxy()
-    r.sub(proxy.__call__, string)
-    return r.sub(repl, string), proxy.match
+    compiled_pat.sub(proxy.__call__, string)
+    return compiled_pat.sub(repl, string), proxy.match
 
 def group(seq, size): 
     """
@@ -160,39 +190,51 @@ def group(seq, size):
 
     For example, `list(group([1,2,3,4], 2))` returns `[[1,2],[3,4]]`.
     """
-    if not hasattr(seq, 'next'):  seq = iter(seq)
-    while True: yield [seq.next() for i in xrange(size)]
+    if not hasattr(seq, 'next'):  
+        seq = iter(seq)
+    while True: 
+        yield [seq.next() for i in xrange(size)]
 
-class iterbetter:
+class IterBetter(object):
     """
     Returns an object that can be used as an iterator 
     but can also be used via __getitem__ (although it 
     cannot go backwards -- that is, you cannot request 
     `iterbetter[0]` after requesting `iterbetter[1]`).
     """
-    def __init__(self, iterator): self.i, self.c = iterator, 0
+    def __init__(self, iterator): 
+        self.i, self.c = iterator, 0
     def __iter__(self): 
-        while 1: yield self.i.next(); self.c += 1
+        while 1:    
+            yield self.i.next()
+            self.c += 1
     def __getitem__(self, i):
         #todo: slices
-        if i > self.c: raise KeyError, "already passed "+str(i)
+        if i > self.c: 
+            raise KeyError, "already passed "+str(i)
         try:
-            while i < self.c: self.i.next(); self.c += 1
+            while i < self.c: 
+                self.i.next()
+                self.c += 1
             # now self.c == i
-            self.c += 1; return self.i.next()
-        except StopIteration: raise KeyError, repr(i)
+            self.c += 1
+            return self.i.next()
+        except StopIteration: 
+            raise KeyError, repr(i)
+iterbetter = IterBetter
 
-def dictreverse(d):
+def dictreverse(mapping):
     """Takes a dictionary like `{1:2, 3:4}` and returns `{2:1, 4:3}`."""
-    return dict([(v,k) for k,v in d.iteritems()])
+    return dict([(value, key) for (key, value) in mapping.iteritems()])
 
 def dictfind(dictionary, element):
     """
     Returns a key whose value in `dictionary` is `element` 
     or, if none exists, None.
     """
-    for (k,v) in dictionary.iteritems():
-        if element is v: return k
+    for (key, value) in dictionary.iteritems():
+        if element is value: 
+            return key
 
 def dictincr(dictionary, element):
     """
@@ -203,51 +245,57 @@ def dictincr(dictionary, element):
     dictionary[element] += 1
     return dictionary[element]
 
-def dictadd(a, b):
+def dictadd(dict_a, dict_b):
     """Returns a dictionary consisting of the keys in `a` and `b`."""
     result = {}
-    result.update(a)
-    result.update(b)
+    result.update(dict_a)
+    result.update(dict_b)
     return result
 
 sumdicts = dictadd # deprecated
 
-def listget(l, n, default=None):
-    """Returns `l[n]` if it exists, `default` otherwise."""
-    if len(l)-1 < n: return default
-    return l[n]
+def listget(lst, ind, default=None):
+    """Returns `lst[ind]` if it exists, `default` otherwise."""
+    if len(lst)-1 < ind: 
+        return default
+    return lst[ind]
 
-def upvars(n=2):
+def upvars(level=2):
     """Guido van Rossum doesn't want you to use this function."""
     return dictadd(
-      sys._getframe(n).f_globals,
-      sys._getframe(n).f_locals)
+      sys._getframe(level).f_globals,
+      sys._getframe(level).f_locals)
 
-class capturestdout:
+class CaptureStdout(object):
     """
     Captures everything func prints to stdout and returns it instead.
 
     **WARNING:** Not threadsafe!
     """
-    def __init__(self, func): self.func = func
-    def __call__(self, *args, **kw):
+    def __init__(self, func): 
+        self.func = func
+    def __call__(self, *args, **keywords):
         from cStringIO import StringIO
         # Not threadsafe!
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        try: self.func(*args, **kw)
-        finally: sys.stdout = oldstdout
+        try: 
+            self.func(*args, **keywords)
+        finally: 
+            sys.stdout = oldstdout
         return out.getvalue()
+capturestdout = CaptureStdout
 
-class profile:
+class Profile(object):
     """
     Profiles `func` and returns a tuple containing its output
     and a string with human-readable profiling information.
     """
-    def __init__(self, func): self.func = func
-    def __call__(self, *args, **kw):
-        import hotshot, hotshot.stats, tempfile, time
+    def __init__(self, func): 
+        self.func = func
+    def __call__(self, *args): ##, **kw):   kw unused
+        import hotshot, hotshot.stats, tempfile ##, time already imported
         temp = tempfile.NamedTemporaryFile()
         prof = hotshot.Profile(temp.name)
 
@@ -263,6 +311,7 @@ class profile:
         x += capturestdout(stats.print_stats)(40)
         x += capturestdout(stats.print_callers)()
         return result, x
+profile = Profile
 
 def tryall(context, prefix=None):
     """
@@ -281,37 +330,46 @@ def tryall(context, prefix=None):
     """
     context = context.copy() # vars() would update
     results = {}
-    for (k, v) in context.iteritems():
-        if not hasattr(v, '__call__'): continue
-        if prefix and not k.startswith(prefix): continue
-        print k+':',
+    for (key, value) in context.iteritems():
+        if not hasattr(value, '__call__'): 
+            continue
+        if prefix and not key.startswith(prefix): 
+            continue
+        print key + ':',
         try:
-            r = v()
+            r = value()
             dictincr(results, r)
             print r
         except:
             print 'ERROR'
             dictincr(results, 'ERROR')
-            print '   '+'\n   '.join(traceback.format_exc().split('\n'))
+            print '   ' + '\n   '.join(traceback.format_exc().split('\n'))
         
     print '-'*40
     print 'results:'
-    for (k, v) in results.iteritems():
-        print ' '*2, str(k)+':', v
+    for (key, value) in results.iteritems():
+        print ' '*2, str(key)+':', value
 
-class threadeddict:
+class ThreadedDict(object):
     """
     Takes a dictionary that maps threads to objects. 
     When a thread tries to get or set an attribute or item 
     of the threadeddict, it passes it on to the object 
     for that thread in dictionary.
     """
-    def __init__(self, d): self.__dict__['_threadeddict__d'] = d
-    def __getattr__(self, a): return getattr(self.__d[currentThread()], a)
-    def __getitem__(self, i): return self.__d[currentThread()][i]
-    def __setattr__(self, a, v): return setattr(self.__d[currentThread()], a, v)
-    def __setitem__(self, i, v): self.__d[currentThread()][i] = v
-    def __hash__(self): return hash(self.__d[currentThread()])
+    def __init__(self, dictionary): 
+        self.__dict__['_ThreadedDict__d'] = dictionary
+    def __getattr__(self, attr): 
+        return getattr(self.__d[currentThread()], attr)
+    def __getitem__(self, item): 
+        return self.__d[currentThread()][item]
+    def __setattr__(self, attr, value): 
+        return setattr(self.__d[currentThread()], attr, value)
+    def __setitem__(self, item, value): 
+        self.__d[currentThread()][item] = value
+    def __hash__(self): 
+        return hash(self.__d[currentThread()])
+threadeddict = ThreadedDict
 
 ## url utils
 
@@ -321,8 +379,10 @@ def prefixurl(base=''):
     Maybe some other time.
     """
     url = context.path.lstrip('/')
-    for i in xrange(url.count('/')): base += '../'
-    if not base: base = './'
+    for i in xrange(url.count('/')): 
+        base += '../'
+    if not base: 
+        base = './'
     return base
 
 urlquote = urllib.quote
@@ -331,7 +391,8 @@ urlquote = urllib.quote
 
 try:
     from markdown import markdown # http://webpy.org/markdown.py
-except ImportError: pass
+except ImportError: 
+    pass
 
 r_url = re_compile('(?<!\()(http://(\S+))')
 def safemarkdown(text):
@@ -350,7 +411,18 @@ def safemarkdown(text):
         return text
 
 ## db api
-
+class ItplError(ValueError):
+    """String Interpolation Error
+    from http://lfw.org/python/Itpl.py 
+    (cf. below for license)
+    """
+    def __init__(self, text, pos):
+        ValueError.__init__(self)
+        self.text = text
+        self.pos = pos
+    def __str__(self):
+        return "unfinished expression in %s at char %d" % (
+            repr(self.text), self.pos)
 def _interpolate(format):
     """
     Takes a format string and returns a list of 2-tuples of the form
@@ -372,43 +444,50 @@ def _interpolate(format):
 
     while 1:
         dollar = format.find("$", pos)
-        if dollar < 0: break
-        nextchar = format[dollar+1]
+        if dollar < 0: 
+            break
+        nextchar = format[dollar + 1]
 
         if nextchar == "{":
             chunks.append((0, format[pos:dollar]))
-            pos, level = dollar+2, 1
+            pos, level = dollar + 2, 1
             while level:
                 match, pos = matchorfail(format, pos)
                 tstart, tend = match.regs[3]
                 token = format[tstart:tend]
-                if token == "{": level = level+1
-                elif token == "}": level = level-1
-            chunks.append((1, format[dollar+2:pos-1]))
+                if token == "{": 
+                    level = level + 1
+                elif token == "}":  
+                    level = level - 1
+            chunks.append((1, format[dollar + 2:pos - 1]))
 
         elif nextchar in namechars:
             chunks.append((0, format[pos:dollar]))
-            match, pos = matchorfail(format, dollar+1)
+            match, pos = matchorfail(format, dollar + 1)
             while pos < len(format):
                 if format[pos] == "." and \
-                    pos+1 < len(format) and format[pos+1] in namechars:
-                    match, pos = matchorfail(format, pos+1)
+                    pos + 1 < len(format) and format[pos + 1] in namechars:
+                    match, pos = matchorfail(format, pos + 1)
                 elif format[pos] in "([":
-                    pos, level = pos+1, 1
+                    pos, level = pos + 1, 1
                     while level:
                         match, pos = matchorfail(format, pos)
                         tstart, tend = match.regs[3]
                         token = format[tstart:tend]
-                        if token[0] in "([": level = level+1
-                        elif token[0] in ")]": level = level-1
-                else: break
-            chunks.append((1, format[dollar+1:pos]))
+                        if token[0] in "([": 
+                            level = level + 1
+                        elif token[0] in ")]":  
+                            level = level - 1
+                else: 
+                    break
+            chunks.append((1, format[dollar + 1:pos]))
 
         else:
-            chunks.append((0, format[pos:dollar+1]))
+            chunks.append((0, format[pos:dollar + 1]))
             pos = dollar + 1 + (nextchar == "$")
 
-    if pos < len(format): chunks.append((0, format[pos:]))
+    if pos < len(format): 
+        chunks.append((0, format[pos:]))
     return chunks
 
 def sqlors(left, lst):
@@ -428,23 +507,34 @@ def sqlors(left, lst):
     
     contributed by Steven Huffman <http://spez.name>
     """
-    if isinstance(lst, iters) and len(lst) == 1: lst = lst[0]
+    if isinstance(lst, iters) and len(lst) == 1: 
+        lst = lst[0]
     if isinstance(lst, iters):
-        return '(' + left + (' OR ' + left).join([aparam() for x in lst]) + ")", lst
-    elif not list: return "", []
+        return '(' + left + \
+               (' OR ' + left).join([aparam() for param in lst]) + ")", lst
+    elif not list: 
+        return "", []
     else:
-        return left + aparam(), [lst,]
+        return left + aparam(), [lst]
 
-class UnknownParamstyle(Exception): pass
+class UnknownParamstyle(Exception):
+    """raised for unsupported db paramstyles
+    
+    Currently supported: qmark,numeric, format, pyformat
+    """
+    pass
 def aparam():
     """Use in a SQL string to make a spot for a db value."""
-    p = ctx.db_module.paramstyle
-    if p == 'qmark': return '?'
-    elif p == 'numeric': return ':1'
-    elif p in ['format', 'pyformat']: return '%s'
-    raise UnknownParamstyle, p
+    style = ctx.db_module.paramstyle
+    if style == 'qmark': 
+        return '?'
+    elif style == 'numeric': 
+        return ':1'
+    elif style in ['format', 'pyformat']: 
+        return '%s'
+    raise UnknownParamstyle, style
 
-def reparam(s, d):
+def reparam(string_, dictionary):
     """
     Takes a string and a dictionary and interpolates the string
     using values from the dictionary. Returns a 2-tuple containing
@@ -456,58 +546,77 @@ def reparam(s, d):
     """
     vals = []
     result = []
-    for live, chunk in _interpolate(s):
+    for live, chunk in _interpolate(string_):
         if live:
             result.append(aparam())
-            vals.append(eval(chunk, d))
+            vals.append(eval(chunk, dictionary))
         else: result.append(chunk)
     return ''.join(result), vals
 
-class UnknownDB(Exception): pass
-def connect(dbn, **kw):
+class UnknownDB(Exception):
+    """raised for unsupported dbms"""
+    pass
+def connect(dbn, **keywords):
     """
     Connects to the specified database. 
     db currently must be "postgres" or "mysql". 
     If DBUtils is installed, connection pooling will be used.
     """
     if dbn == "postgres": 
-        try: import psycopg2 as db
+        try: 
+            import psycopg2 as db
         except ImportError: 
-            try: import psycopg as db
-            except ImportError: import pgdb as db
-        kw['password'] = kw['pw']
-        del kw['pw']
-        kw['database'] = kw['db']
-        del kw['db']
+            try: 
+                import psycopg as db
+            except ImportError: 
+                import pgdb as db
+        keywords['password'] = keywords['pw']
+        del keywords['pw']
+        keywords['database'] = keywords['db']
+        del keywords['db']
     elif dbn == "mysql":
         import MySQLdb as db
-        kw['passwd'] = kw['pw']
-        del kw['pw']
+        keywords['passwd'] = keywords['pw']
+        del keywords['pw']
         db.paramstyle = 'pyformat' # it's both, like psycopg
-    else: raise UnknownDB, dbn
+    elif dbn == "sqlite":
+        try: ## try first sqlite3 version
+            from pysqlite2 import dbapi2 as db
+            db.paramstyle = 'pyformat'
+        except ImportError: ## else try sqlite2
+            import sqlite as db
+        keywords['database'] = keywords['db']
+        del keywords['db']
+    else: 
+        raise UnknownDB, dbn
     ctx.db_name = dbn
     ctx.db_module = db
     ctx.db_transaction = False
     if _hasPooling:
-        if 'db' not in globals(): globals()['db'] = PooledDB(dbapi=db, **kw)
+        if 'db' not in globals(): 
+            globals()['db'] = PooledDB(dbapi=db, **keywords)
         ctx.db = globals()['db'].connection()
     else:
-        ctx.db = db.connect(**kw)
+        ctx.db = db.connect(**keywords)
     ctx.dbq_count = 0
     if globals().get('db_printing'):
-        def db_execute(cur, q, d=None):
+        def db_execute(cur, sql_query, d=None):
+            """executes an sql query"""
             ctx.dbq_count += 1
-            try: outq = q % tuple(d)
-            except: outq = q
-            print>>debug, str(ctx.dbq_count)+':', outq
+            try: 
+                outq = sql_query % tuple(d)
+            except TypeError:
+                outq = sql_query
+            print >> debug, str(ctx.dbq_count)+':', outq
             a = time.time()
-            out = cur.execute(q, d)
+            out = cur.execute(sql_query, d)
             b = time.time()
-            print>>debug, '(%s)' % round(b-a, 2)
+            print >> debug, '(%s)' % round(b - a, 2)
             return out
         ctx.db_execute = db_execute
     else:
-        ctx.db_execute = lambda cur, q, d=None: cur.execute(q, d)
+        ctx.db_execute = lambda cur, sql_query, d=None: \
+                                cur.execute(sql_query, d)
     return ctx.db
 
 def transact():
@@ -526,40 +635,45 @@ def rollback():
     ctx.db.rollback()
     ctx.db_transaction = False    
 
-def query(q, vars=None, processed=False):
+def query(sql_query, vars=None, processed=False):
     """
-    Execute SQL query `q` using dictionary `vars` to interpolate it.
+    Execute SQL query `sql_query` using dictionary `vars` to interpolate it.
     If `processed=True`, `vars` is a `reparam`-style list to use 
     instead of interpolating.
     """
-    if vars is None: vars = {}
-    d = ctx.db.cursor()
+    if vars is None: 
+        vars = {}
+    db_cursor = ctx.db.cursor()
 
-    if not processed: q, vars = reparam(q, vars)
-    ctx.db_execute(d, q, vars)
-    if d.description:
-        names = [x[0] for x in d.description]
+    if not processed: 
+        sql_query, vars = reparam(sql_query, vars)
+    ctx.db_execute(db_cursor, sql_query, vars)
+    if db_cursor.description:
+        names = [x[0] for x in db_cursor.description]
         def iterwrapper():
-            x = d.fetchone()
-            while x:
-                yield Storage(dict(zip(names, x)))
-                x = d.fetchone()
+            row = db_cursor.fetchone()
+            while row:
+                yield Storage(dict(zip(names, row)))
+                row = db_cursor.fetchone()
         out = iterbetter(iterwrapper())
-        out.__len__ = lambda: int(d.rowcount)
-        out.list = lambda: [Storage(dict(zip(names, x))) for x in d.fetchall()]
+        out.__len__ = lambda: int(db_cursor.rowcount)
+        out.list = lambda: [Storage(dict(zip(names, x))) \
+                           for x in db_cursor.fetchall()]
     else:
-        out = d.rowcount
+        out = db_cursor.rowcount
     
-    if not ctx.db_transaction: ctx.db.commit()    
+    if not ctx.db_transaction: 
+        ctx.db.commit()    
     return out
 
-def sqllist(l):
+def sqllist(lst):
     """
     If a list, converts it to a comma-separated string. 
     Otherwise, returns the string.
     """
-    if isinstance(l, str): return l
-    else: return ', '.join(l)
+    if isinstance(lst, str): 
+        return lst
+    else: return ', '.join(lst)
 
 def select(tables, vars=None, what='*', where=None, order=None, group=None, 
            limit=None, offset=None):
@@ -568,9 +682,10 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
     `group`, `limit`, and `offset. Uses vars to interpolate. 
     Otherwise, each clause can take a reparam-style list.
     """
-    if vars is None: vars = {}
+    if vars is None: 
+        vars = {}
     values = []
-    qout = "SELECT "+what+" FROM "+sqllist(tables)
+    qout = "SELECT " + what + " FROM "+sqllist(tables)
 
     for (sql, val) in (
       ('WHERE', where), 
@@ -587,8 +702,9 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
             nquery, nvalue = val
         elif val:
             nquery, nvalue = reparam(val, vars)
-        else: continue
-        qout += " "+sql+" " + nquery
+        else: 
+            continue
+        qout += " " + sql + " " + nquery
         values.extend(nvalue)
     return query(qout, values, processed=True)
 
@@ -598,34 +714,40 @@ def insert(tablename, seqname=None, **values):
     Set `seqname` to the ID if it's not the default, or to `False`
     if there isn't one.
     """
-    d = ctx.db.cursor()
+    db_cursor = ctx.db.cursor()
 
     if values:
-        q, v = "INSERT INTO %s (%s) VALUES (%s)" % (
+        sql_query, v = "INSERT INTO %s (%s) VALUES (%s)" % (
             tablename,
             ", ".join(values.keys()),
             ', '.join([aparam() for x in values])
         ), values.values()
     else:
-        q, v = "INSERT INTO %s DEFAULT VALUES" % tablename, None
+        sql_query, v = "INSERT INTO %s DEFAULT VALUES" % tablename, None
 
-    if seqname is False: pass
+    if seqname is False: 
+        pass
     elif ctx.db_name == "postgres": 
-        if seqname is None: seqname = tablename + "_id_seq"
-        q += "; SELECT currval('%s')" % seqname
+        if seqname is None: 
+            seqname = tablename + "_id_seq"
+        sql_query += "; SELECT currval('%s')" % seqname
     elif ctx.db_name == "mysql":
-        ctx.db_execute(d, q, v)
-        q = "SELECT last_insert_id()"
+        ctx.db_execute(db_cursor, sql_query, v)
+        sql_query = "SELECT last_insert_id()"
         v = ()
     elif ctx.db_name == "sqlite":
         # not really the same...
-        q += "; SELECT last_insert_rowid()"
+        sql_query += "; SELECT last_insert_rowid()"
 
-    ctx.db_execute(d, q, v)
-    try: out = d.fetchone()[0]
-    except: out = None
+    ctx.db_execute(db_cursor, sql_query, v)
+    try: 
+        out = db_cursor.fetchone()[0]
+    except Exception: 
+        out = None
     
-    if not ctx.db_transaction: ctx.db.commit()
+    if not ctx.db_transaction: 
+        ctx.db.commit()
+
     return out
 
 def update(tables, where, vars=None, **values):
@@ -633,45 +755,50 @@ def update(tables, where, vars=None, **values):
     Update `tables` with clause `where` (interpolated using `vars`)
     and setting `values`.
     """
-    if vars is None: vars = {}
+    if vars is None: 
+        vars = {}
     if isinstance(where, (int, long)):
         vars = [where]
-        where = "id = "+aparam()
+        where = "id = " + aparam()
     elif isinstance(where, (list, tuple)) and len(where) == 2:
         where, vars = where
     else:
         where, vars = reparam(where, vars)
     
-    d = ctx.db.cursor()
-    ctx.db_execute(d, "UPDATE %s SET %s WHERE %s" % (
+    db_cursor = ctx.db.cursor()
+    ctx.db_execute(db_cursor, "UPDATE %s SET %s WHERE %s" % (
         sqllist(tables),
-        ', '.join([k+'='+aparam() for k in values.keys()]),
+        ', '.join([k + '=' + aparam() for k in values.keys()]),
         where),
-    values.values()+vars)
+    values.values() + vars)
     
-    if not ctx.db_transaction: ctx.db.commit()        
-    return d.rowcount
+    if not ctx.db_transaction: 
+        ctx.db.commit()        
+    return db_cursor.rowcount
 
 def delete(table, where, using=None, vars=None):
     """
     Deletes from `table` with clauses `where` and `using`.
     """
-    if vars is None: vars = {}
-    d = ctx.db.cursor()
+    if vars is None: 
+        vars = {}
+    db_cursor = ctx.db.cursor()
 
     if isinstance(where, (int, long)):
         vars = [where]
-        where = "id = "+aparam()
+        where = "id = " + aparam()
     elif isinstance(where, (list, tuple)) and len(where) == 2:
-        where, vars = val
+        where, vars = where
     else:
         where, vars = reparam(where, vars)
     q = 'DELETE FROM %s WHERE %s' % (table, where)
-    if using: q += ' USING '+sqllist(using)
-    ctx.db_execute(d, q, vars)
+    if using: 
+        q += ' USING ' + sqllist(using)
+    ctx.db_execute(db_cursor, q, vars)
 
-    if not ctx.db_transaction: ctx.db.commit()        
-    return d.rowcount
+    if not ctx.db_transaction: 
+        ctx.db.commit()
+    return db_cursor.rowcount
 
 ## request handlers
 
@@ -685,15 +812,18 @@ def handle(mapping, fvars=None):
     substitutions. `handle` will import modules as necessary.
     """
     for url, ofno in group(mapping, 2):
-        if isinstance(ofno, tuple): ofn, fna = ofno[0], list(ofno[1:])
-        else: ofn, fna = ofno, []
-        fn, result = re_subm('^'+url+'$', ofn, context.path)
+        if isinstance(ofno, tuple): 
+            ofn, fna = ofno[0], list(ofno[1:])
+        else: 
+            ofn, fna = ofno, []
+        fn, result = re_subm('^' + url + '$', ofn, context.path)
         if result: # it's a match
             if fn.split(' ', 1)[0] == "redirect":
                 url = fn.split(' ', 1)[1]
                 if context.method == "GET":
                     x = context.environ.get('QUERY_STRING', '')
-                    if x: url += '?'+x
+                    if x: 
+                        url += '?'+x
                 return redirect(url)
             elif '.' in fn: 
                 x = fn.split('.')
@@ -703,18 +833,23 @@ def handle(mapping, fvars=None):
             else:
                 cls = fn
                 mod = fvars or upvars()
-                if isinstance(mod, types.ModuleType): mod = vars(mod)
-                try: cls = mod[cls]
-                except KeyError: return notfound()
+                if isinstance(mod, types.ModuleType): 
+                    mod = vars(mod)
+                try: 
+                    cls = mod[cls]
+                except KeyError: 
+                    return notfound()
             
             meth = context.method
             if meth == "HEAD":
-                if not hasattr(cls, meth): meth = "GET"
-            if not hasattr(cls, meth): return nomethod(cls)
+                if not hasattr(cls, meth): 
+                    meth = "GET"
+            if not hasattr(cls, meth): 
+                return nomethod(cls)
             tocall = getattr(cls(), meth)
             args = list(result.groups())
             for d in re.findall(r'\\(\d+)', ofn):
-                args.pop(int(d)-1)
+                args.pop(int(d) - 1)
             return tocall(*([urllib.unquote(x) for x in args]+fna))
 
     return notfound()
@@ -735,9 +870,11 @@ def autodelegate(prefix=''):
     `GET_privacy` gets called for `/prefs/privacy`.
     """
     def internal(self, arg):
-        func = prefix+arg
-        if hasattr(self, func): return getattr(self, func)()
-        else: return notfound()
+        func = prefix + arg
+        if hasattr(self, func): 
+            return getattr(self, func)()
+        else: 
+            return notfound()
     return internal
 
 ## http defaults
@@ -747,16 +884,18 @@ def expires(delta):
     Outputs an `Expires` header for `delta` from now. 
     `delta` is a `timedelta` object or a number of seconds.
     """
-    try: datetime
-    except NameError: raise Exception, "requires Python 2.3 or later"
+    try:    
+        datetime
+    except NameError: 
+        raise Exception, "requires Python 2.3 or later"
     if isinstance(delta, (int, long)):
         delta = datetime.timedelta(seconds=delta)
-    o = datetime.datetime.utcnow() + delta
-    header('Expires', o.strftime("%a, %d %b %Y %T GMT"))
+    date_obj = datetime.datetime.utcnow() + delta
+    header('Expires', date_obj.strftime("%a, %d %b %Y %T GMT"))
 
-def lastmodified(d):
+def lastmodified(date_obj):
     """Outputs a `Last-Modified` header for `datetime`."""
-    header('Last-Modified', d.strftime("%a, %d %b %Y %T GMT"))
+    header('Last-Modified', date_obj.strftime("%a, %d %b %Y %T GMT"))
 
 """
 By default, these all return simple error messages that send very short messages 
@@ -805,7 +944,10 @@ def nomethod(cls):
     """Returns a `405 Method Not Allowed` error for `cls`."""
     context.status = '405 Method Not Allowed'
     header('Content-Type', 'text/html')
-    header("Allow", ', '.join([x for x in ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'] if hasattr(cls, x)]))
+    header('Allow', \
+           ', '.join([method for method in \
+                     ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'] \
+                        if hasattr(cls, method)]))
     return output('method not allowed')
 
 def gone():
@@ -844,21 +986,27 @@ DJANGO_500_PAGE = """#import inspect
     h2 span { font-size:80%; color:#666; font-weight:normal; }
     h3 { margin:1em 0 .5em 0; }
     h4 { margin:0 0 .5em 0; font-weight: normal; }
-    table { border:1px solid #ccc; border-collapse: collapse; background:white; }
+    table { 
+        border:1px solid #ccc; border-collapse: collapse; background:white; }
     tbody td, tbody th { vertical-align:top; padding:2px 3px; }
-    thead th { padding:1px 6px 1px 3px; background:#fefefe; text-align:left; font-weight:normal; font-size:11px; border:1px solid #ddd; }
+    thead th { 
+        padding:1px 6px 1px 3px; background:#fefefe; text-align:left; 
+        font-weight:normal; font-size:11px; border:1px solid #ddd; }
     tbody th { text-align:right; color:#666; padding-right:.5em; }
     table.vars { margin:5px 0 2px 40px; }
     table.vars td, table.req td { font-family:monospace; }
     table td.code { width:100%;}
     table td.code div { overflow:hidden; }
     table.source th { color:#666; }
-    table.source td { font-family:monospace; white-space:pre; border-bottom:1px solid #eee; }
+    table.source td { 
+        font-family:monospace; white-space:pre; border-bottom:1px solid #eee; }
     ul.traceback { list-style-type:none; }
     ul.traceback li.frame { margin-bottom:1em; }
     div.context { margin: 10px 0; }
-    div.context ol { padding-left:30px; margin:0 10px; list-style-position: inside; }
-    div.context ol li { font-family:monospace; white-space:pre; color:#666; cursor:pointer; }
+    div.context ol { 
+        padding-left:30px; margin:0 10px; list-style-position: inside; }
+    div.context ol li { 
+        font-family:monospace; white-space:pre; color:#666; cursor:pointer; }
     div.context ol.context-line li { color:black; background-color:#ccc; }
     div.context ol.context-line li span { float: right; }
     div.commands { margin-left: 40px; }
@@ -879,7 +1027,8 @@ DJANGO_500_PAGE = """#import inspect
   <script type="text/javascript">
   //<!--
     function getElementsByClassName(oElm, strTagName, strClassName){
-        // Written by Jonathan Snook, http://www.snook.ca/jon; Add-ons by Robert Nyman, http://www.robertnyman.com
+        // Written by Jonathan Snook, http://www.snook.ca/jon; 
+        // Add-ons by Robert Nyman, http://www.robertnyman.com
         var arrElements = (strTagName == "*" && document.all)? document.all :
         oElm.getElementsByTagName(strTagName);
         var arrReturnElements = new Array();
@@ -1117,34 +1266,37 @@ def djangoerror():
             lower_bound = max(0, lineno - context_lines)
             upper_bound = lineno + context_lines
 
-            pre_context = [line.strip('\n') for line in source[lower_bound:lineno]]
+            pre_context = \
+                [line.strip('\n') for line in source[lower_bound:lineno]]
             context_line = source[lineno].strip('\n')
-            post_context = [line.strip('\n') for line in source[lineno+1:upper_bound]]
+            post_context = \
+                [line.strip('\n') for line in source[lineno + 1:upper_bound]]
 
             return lower_bound, pre_context, context_line, post_context
         except (OSError, IOError):
             return None, [], None, []    
     
-    exception_type, exception_value, tb = sys.exc_info()
+    exception_type, exception_value, tback = sys.exc_info()
     frames = []
-    while tb is not None:
-        filename = tb.tb_frame.f_code.co_filename
-        function = tb.tb_frame.f_code.co_name
-        lineno = tb.tb_lineno - 1
-        pre_context_lineno, pre_context, context_line, post_context = _get_lines_from_file(filename, lineno, 7)
+    while tback is not None:
+        filename = tback.tb_frame.f_code.co_filename
+        function = tback.tb_frame.f_code.co_name
+        lineno = tback.tb_lineno - 1
+        pre_context_lineno, pre_context, context_line, post_context = \
+            _get_lines_from_file(filename, lineno, 7)
         frames.append({
-            'tb': tb,
+            'tback': tback,
             'filename': filename,
             'function': function,
             'lineno': lineno,
-            'vars': tb.tb_frame.f_locals.items(),
-            'id': id(tb),
+            'vars': tback.tb_frame.f_locals.items(),
+            'id': id(tback),
             'pre_context': pre_context,
             'context_line': context_line,
             'post_context': post_context,
             'pre_context_lineno': pre_context_lineno,
         })
-        tb = tb.tb_next
+        tback = tback.tb_next
     lastframe = frames[-1]
     frames.reverse()
     urljoin = urlparse.urljoin
@@ -1152,10 +1304,13 @@ def djangoerror():
     cookies_ = cookies()
     context_ = context
     def prettify(x):
-        try: out = pprint.pformat(x)
-        except Exception, e: out = '[could not display: <'+e.__class__.__name__+': '+str(e)+'>]'
+        try: 
+            out = pprint.pformat(x)
+        except Exception, e: 
+            out = '[could not display: <' + e.__class__.__name__ + \
+                  ': '+str(e)+'>]'
         return out
-    return render(DJANGO_500_PAGE, asTemplate=True, isString=True)
+    return render(DJANGO_500_PAGE, as_template=True, is_string=True)
 
 def debugerror():
     """
@@ -1172,8 +1327,8 @@ def debugerror():
         out = str(djangoerror())
     else:
         # Cheetah isn't installed
-        out = """<p>You've set web.py to use the fancier debugerror error messages,
-but these messages require you install the Cheetah template 
+        out = """<p>You've set web.py to use the fancier debugerror error 
+messages, but these messages require you install the Cheetah template 
 system. For more information, see 
 <a href="http://webpy.org/">the web.py website</a>.</p>
 
@@ -1193,54 +1348,60 @@ installed Cheetah. See above.)</p>
 ## rendering
 
 r_include = re_compile(r'(?!\\)#include \"(.*?)\"($|#)', re.M)
-def __compiletemplate(template, base=None, isString=False):
-    if isString: text = template
-    else: text = open('templates/'+template).read()
+def __compiletemplate(template, base=None, is_string=False):
+    if is_string: 
+        text = template
+    else: 
+        text = open('templates/'+template).read()
     # implement #include at compile-time
     def do_include(match):
         text = open('templates/'+match.groups()[0]).read()
         return text
-    while r_include.findall(text): text = r_include.sub(do_include, text)
+    while r_include.findall(text): 
+        text = r_include.sub(do_include, text)
 
     execspace = _compiletemplate.bases.copy()
-    c = Compiler(source=text, mainClassName='GenTemplate')
-    c.addImportedVarNames(execspace.keys())
-    exec str(c) in execspace
-    if base: _compiletemplate.bases[base] = execspace['GenTemplate']
+    tmpl_compiler = Compiler(source=text, mainClassName='GenTemplate')
+    tmpl_compiler.addImportedVarNames(execspace.keys())
+    exec str(tmpl_compiler) in execspace
+    if base: 
+        _compiletemplate.bases[base] = execspace['GenTemplate']
 
     return execspace['GenTemplate']
 
 _compiletemplate = memoize(__compiletemplate)
 _compiletemplate.bases = {}
 
-def htmlquote(s):
-    """Encodes `s` for raw use in HTML."""
-    s = s.replace("&", "&amp;") # Must be done first!
-    s = s.replace("<", "&lt;")
-    s = s.replace(">", "&gt;")
-    s = s.replace("'", "&#39;")
-    s = s.replace('"', "&quot;")
-    return s
+def htmlquote(text):
+    """Encodes `text` for raw use in HTML."""
+    text = text.replace("&", "&amp;") # Must be done first!
+    text = text.replace("<", "&lt;")
+    text = text.replace(">", "&gt;")
+    text = text.replace("'", "&#39;")
+    text = text.replace('"', "&quot;")
+    return text
 
 if _hasTemplating:
     class WebSafe(Filter):
-        def filter(selv, val, **kw): 
-            if val is None: return ''
+        def filter(self, val, **keywords): 
+            if val is None: 
+                return ''
             return htmlquote(str(val))
 
-def render(template, terms=None, asTemplate=False, base=None, isString=False): 
+def render(template, terms=None, as_template=False, base=None, 
+           is_string=False):
     """
     Renders a template, caching where it can.
     
     `template` is the name of a file containing the a template in
-    the `templates/` folder, unless `isString`, in which case it's the template
-    itself.
+    the `templates/` folder, unless `is_string`, in which case it's the 
+    template itself.
 
     `terms` is a dictionary used to fill the template. If it's None, then
-    the caller's local variables are used instead, plus context, if it's not already 
-    set, is set to `context`.
+    the caller's local variables are used instead, plus context, if it's not 
+    already set, is set to `context`.
 
-    If asTemplate is False, it `output`s the template directly. Otherwise,
+    If as_template is False, it `output`s the template directly. Otherwise,
     it returns the template object.
 
     If the template is a potential base template (that is, something other templates)
@@ -1251,8 +1412,10 @@ def render(template, terms=None, asTemplate=False, base=None, isString=False):
     """
     # terms=['var1', 'var2'] means grab those variables
     if isinstance(terms, list):
-        new = {}; old = upvars()
-        for k in terms: new[k] = old[k]
+        new = {}
+        old = upvars()
+        for k in terms: 
+            new[k] = old[k]
         terms = new
     # default: grab all locals
     elif terms is None:
@@ -1262,12 +1425,15 @@ def render(template, terms=None, asTemplate=False, base=None, isString=False):
     if not isinstance(terms, tuple): 
         terms = (terms,)
     
-    if not isString and template.endswith('.html'): header('Content-Type','text/html; charset=utf-8')
+    if not is_string and template.endswith('.html'): 
+        header('Content-Type','text/html; charset=utf-8')
         
-    t = _compiletemplate(template, base=base, isString=isString)
-    t = t(searchList=terms, filter=WebSafe)
-    if asTemplate: return t
-    else: return output(str(t))
+    compiled_tmpl = _compiletemplate(template, base=base, is_string=is_string)
+    compiled_tmpl = compiled_tmpl(searchList=terms, filter=WebSafe)
+    if as_template: 
+        return compiled_tmpl
+    else: 
+        return output(str(compiled_tmpl))
 
 ## input forms
 
@@ -1276,63 +1442,77 @@ def input(*requireds, **defaults):
     Returns a `storage` object with the GET and POST arguments. 
     See `storify` for how `requireds` and `defaults` work.
     """
-    if not hasattr(context, '_inputfs'): context._inputfs = cgi.FieldStorage(fp = context.environ['wsgi.input'],environ=context.environ, keep_blank_values=1)
+    if not hasattr(context, '_inputfs'): 
+        context._inputfs = cgi.FieldStorage(fp = context.environ['wsgi.input'],
+                                            environ=context.environ, 
+                                            keep_blank_values=1)
     return storify(context._inputfs, *requireds, **defaults)
 
 ## cookies
 
 def setcookie(name, value, expires="", domain=None):
     """Sets a cookie."""
-    if expires < 0: expires = -1000000000 
+    if expires < 0: 
+        expires = -1000000000 
     kargs = {'expires': expires, 'path':'/'}
-    if domain: kargs['domain'] = domain
+    if domain: 
+        kargs['domain'] = domain
     # @@ should we limit cookies to a different path?
-    c = Cookie.SimpleCookie()
-    c[name] = value
-    for key, val in kargs.iteritems(): c[name][key] = val
-    header('Set-Cookie', c.items()[0][1].OutputString())
+    cookie = Cookie.SimpleCookie()
+    cookie[name] = value
+    for key, val in kargs.iteritems(): 
+        cookie[name][key] = val
+    header('Set-Cookie', cookie.items()[0][1].OutputString())
 
 def cookies(*requireds, **defaults):
     """
     Returns a `storage` object with all the cookies in it.
     See `storify` for how `requireds` and `defaults` work.
     """
-    c = Cookie.SimpleCookie()
-    c.load(context.environ.get('HTTP_COOKIE', ''))
-    return storify(c, *requireds, **defaults)
+    cookie = Cookie.SimpleCookie()
+    cookie.load(context.environ.get('HTTP_COOKIE', ''))
+    return storify(cookie, *requireds, **defaults)
 
 ## WSGI Sugar
 
-def header(h, v):
-    """Adds the header `h: v` with the response."""
-    context.headers.append((h, v))
-def output(s):
-    """Appends `s` to the response."""
-    context.output += str(s)
+def header(hdr, value):
+    """Adds the header `hdr: value` with the response."""
+    context.headers.append((hdr, value))
+def output(string_):
+    """Appends `string_` to the response."""
+    context.output += str(string_)
 
-def write(t):
-    """Converts a standard CGI-style string response into `header` and `output` calls."""
-    t = str(t)
-    t.replace('\r\n', '\n')
-    head, body = t.split('\n\n', 1)
+def write(cgi_response):
+    """Converts a standard CGI-style string response into `header` and 
+       `output` calls.
+    """
+    cgi_response = str(cgi_response)
+    cgi_response.replace('\r\n', '\n')
+    head, body = cgi_response.split('\n\n', 1)
     lines = head.split('\n')
     
     for line in lines:
-        if line.isspace(): continue
-        h, v = line.split(":", 1)
-        v = v.strip()
-        if h.lower() == "status": context.status = v
-        else: header(h, v)
+        if line.isspace(): 
+            continue
+        hdr, value = line.split(":", 1)
+        value = value.strip()
+        if hdr.lower() == "status": 
+            context.status = value
+        else: 
+            header(hdr, value)
 
     output(body)
 
 def webpyfunc(inp, fvars=None, autoreload=False):
     """If `inp` is a url mapping, returns a function that calls handle."""
-    if not fvars: fvars = upvars()
+    if not fvars: 
+        fvars = upvars()
     if not hasattr(inp, '__call__'):
         if autoreload:
             # black magic to make autoreload work:
-            mod = __import__(fvars['__file__'].split(os.path.sep).pop().split('.')[0])
+            mod = \
+                __import__(
+                    fvars['__file__'].split(os.path.sep).pop().split('.')[0])
             #@@probably should replace this with some inspect magic
             name = dictfind(fvars, inp)
             func = lambda: handle(getattr(mod, name), mod)
@@ -1353,26 +1533,35 @@ def wsgifunc(func, *middleware):
         relr = None
         relrcheck = lambda: None
     
-    def wsgifunc(e, r):
-        _load(e)
+    def wsgifunc(env, start_resp):
+        _load(env)
         relrcheck()
-        try: result = func()
-        except StopIteration: result = None
+        try: 
+            result = func()
+        except StopIteration: 
+            result = None
         is_generator = result and hasattr(result, 'next')
         if is_generator:
             # we need to give wsgi back the headers first,
             # so we need to do at iteration
-            try: firstchunk = result.next()
-            except StopIteration: firstchunk = ''
+            try: 
+                firstchunk = result.next()
+            except StopIteration: 
+                firstchunk = ''
         status, headers, output = ctx.status, ctx.headers, ctx.output
         _unload()
-        r(status, headers)
-        if is_generator: return itertools.chain([firstchunk], result)
-        elif isinstance(output, str): return [output] #@@ other stringlikes?
-        elif hasattr(output, 'next'): return output
-        else: raise Exception, "Invalid web.context.output"
+        start_resp(status, headers)
+        if is_generator: 
+            return itertools.chain([firstchunk], result)
+        elif isinstance(output, str): 
+            return [output] #@@ other stringlikes?
+        elif hasattr(output, 'next'): 
+            return output
+        else: 
+            raise Exception, "Invalid web.context.output"
     
-    for x in middleware: wsgifunc = x(wsgifunc)
+    for mw_func in middleware: 
+        wsgifunc = mw_func(wsgifunc)
     
     if relr:
         relr.func = wsgifunc
@@ -1410,11 +1599,9 @@ def runwsgi(func):
 
     if (os.environ.has_key('PHP_FCGI_CHILDREN') #lighttpd fastcgi
       or os.environ.has_key('SERVER_SOFTWARE')):
-        import flup.server.fcgi
         return runfcgi(func)
 
     if 'scgi' in sys.argv:
-        import flup.server.scgi
         return runscgi(func)
 
     # command line:
@@ -1422,8 +1609,8 @@ def runwsgi(func):
     
 def runsimple(func, port=8080):
     """
-    Runs a simple HTTP server hosting WSGI app `func`. The directory `static/` is
-    hosted statically.
+    Runs a simple HTTP server hosting WSGI app `func`. The directory `static/` 
+    is hosted statically.
 
     Based on [WsgiServer](http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html) 
     from [Colin Stewart](http://www.owlfish.com/).
@@ -1434,14 +1621,15 @@ def runsimple(func, port=8080):
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
     import SimpleHTTPServer, SocketServer, BaseHTTPServer, urlparse
-    import sys, socket, errno
+    import socket, errno
     import traceback
 
     class WSGIHandler (SimpleHTTPServer.SimpleHTTPRequestHandler):
-        def runWSGIApp(self):
-            protocol, host, path, parameters, query, fragment = urlparse.urlparse ('http://dummyhost%s' % self.path)
+        def run_wsgi_app(self):
+            protocol, host, path, parameters, query, fragment = \
+                urlparse.urlparse ('http://dummyhost%s' % self.path)
             # we only use path, query
-            env = {'wsgi.version': (1,0)
+            env = {'wsgi.version': (1, 0)
                    ,'wsgi.url_scheme': 'http'
                    ,'wsgi.input': self.rfile
                    ,'wsgi.errors': sys.stderr
@@ -1460,86 +1648,96 @@ def runsimple(func, port=8080):
                    ,'SERVER_PROTOCOL': self.request_version
                    }
 
-            for httpHeader, httpValue in self.headers.items():
-                env ['HTTP_%s' % httpHeader.replace ('-', '_').upper()] = httpValue
+            for http_header, http_value in self.headers.items():
+                env ['HTTP_%s' % http_header.replace ('-', '_').upper()] = \
+                    http_value
 
             # Setup the state
-            self.wsgiSentHeaders = 0
-            self.wsgiHeaders = []
+            self.wsgi_sent_headers = 0
+            self.wsgi_headers = []
 
             try:
                 # We have there environment, now invoke the application
-                result = self.server.app(env, self.wsgiStartResponse)
+                result = self.server.app(env, self.wsgi_start_response)
                 try:
                     try:
                         for data in result:
-                            if data: self.wsgiWriteData (data)
+                            if data: 
+                                self.wsgi_write_data (data)
                     finally:
-                        if hasattr(result, 'close'): result.close()
-                except socket.error, socketErr:
+                        if hasattr(result, 'close'): 
+                            result.close()
+                except socket.error, socket_err:
                     # Catch common network errors and suppress them
-                    if (socketErr.args[0] in (errno.ECONNABORTED, errno.EPIPE)): return
-                except socket.timeout, socketTimeout: return
+                    if (socket_err.args[0] in \
+                       (errno.ECONNABORTED, errno.EPIPE)): 
+                        return
+                except socket.timeout, socket_timeout: 
+                    return
             except:
                 print >> debug, traceback.format_exc(),
                 internalerror()
-                if not self.wsgiSentHeaders:
-                    self.wsgiStartResponse(ctx.status, ctx.headers)
-                self.wsgiWriteData(ctx.output)
+                if not self.wsgi_sent_headers:
+                    self.wsgi_start_response(ctx.status, ctx.headers)
+                self.wsgi_write_data(ctx.output)
 
-            if (not self.wsgiSentHeaders):
+            if (not self.wsgi_sent_headers):
                 # We must write out something!
-                self.wsgiWriteData(" ")
+                self.wsgi_write_data(" ")
             return
 
-        do_POST = runWSGIApp
+        do_POST = run_wsgi_app
 
         def do_GET(self):
             if self.path.startswith('/static/'):
                 SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
             else:
-                self.runWSGIApp()
+                self.run_wsgi_app()
 
-        def wsgiStartResponse (self, response_status, response_headers, exc_info=None):
-            if (self.wsgiSentHeaders):
-                raise Exception ("Headers already sent and start_response called again!")
+        def wsgi_start_response(self, response_status, response_headers, 
+                              exc_info=None):
+            if (self.wsgi_sent_headers):
+                raise Exception \
+                      ("Headers already sent and start_response called again!")
             # Should really take a copy to avoid changes in the application....
-            self.wsgiHeaders = (response_status, response_headers)
-            return self.wsgiWriteData
+            self.wsgi_headers = (response_status, response_headers)
+            return self.wsgi_write_data
 
-        def wsgiWriteData (self, data):
-            if (not self.wsgiSentHeaders):
-                status, headers = self.wsgiHeaders
+        def wsgi_write_data (self, data):
+            if (not self.wsgi_sent_headers):
+                status, headers = self.wsgi_headers
                 # Need to send header prior to data
-                statusCode = status [:status.find (' ')]
-                statusMsg = status [status.find (' ') + 1:]
-                self.send_response (int (statusCode), statusMsg)
+                status_code = status [:status.find (' ')]
+                status_msg = status [status.find (' ') + 1:]
+                self.send_response (int (status_code), status_msg)
                 for header, value in headers:
                     self.send_header (header, value)
                 self.end_headers()
-                self.wsgiSentHeaders = 1
+                self.wsgi_sent_headers = 1
             # Send the data
             self.wfile.write (data)
 
     class WSGIServer (SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
         def __init__(self, func):
-            BaseHTTPServer.HTTPServer.__init__(self, ("0.0.0.0", int(port)), WSGIHandler)
+            BaseHTTPServer.HTTPServer.__init__(self, 
+                                               ("0.0.0.0", int(port)), 
+                                               WSGIHandler)
             self.app = func
             self.serverShuttingDown = 0
 
     print "Launching server: http://0.0.0.0:"+str(port)+"/"
     WSGIServer(func).serve_forever()
 
-def makeserver(WSGIServer):
+def makeserver(wsgi_server):
     """Updates a flup-style WSGIServer with web.py-style error support."""
-    class MyServer(WSGIServer):            
+    class MyServer(wsgi_server):
         def error(self, req):
             w = req.stdout.write
             internalerror()
-            w('Status: '+context.status+'\r\n')
+            w('Status: ' + context.status + '\r\n')
             for (h, v) in context.headers:
-                w(h+': '+v+'\r\n')
-            w('\r\n'+context.output)
+                w(h + ': ' + v + '\r\n')
+            w('\r\n' + context.output)
                 
     return MyServer
     
@@ -1551,16 +1749,19 @@ def runfcgi(func):
 def runscgi(func):
     """Runs a WSGI-function with an SCGI server."""
     from flup.server.scgi import WSGIServer
-    MyServer = makeserver(WSGIServer)
+    my_server = makeserver(WSGIServer)
     if len(sys.argv) > 2: # progname, scgi
         args = sys.argv[:]
         args.remove('scgi')
         hostport = args[1]
-        hostport = hostport.split(':',1)
-        if len(hostport) == 2: hostport = (hostport[0], int(hostport[1]))
-        else: hostport = ('localhost',int(hostport[0]))
-    else: hostport = ('localhost',4000)
-    return MyServer(func, bindAddress=hostport).run()
+        hostport = hostport.split(':', 1)
+        if len(hostport) == 2: 
+            hostport = (hostport[0], int(hostport[1]))
+        else: 
+            hostport = ('localhost', int(hostport[0]))
+    else: 
+        hostport = ('localhost', 4000)
+    return my_server(func, bindAddress=hostport).run()
 
 ## debug
 
@@ -1568,24 +1769,29 @@ def debug(*args):
     """
     Prints a prettyprinted version of `args` to stderr.
     """
-    try: out = context.environ['wsgi.errors']
-    except: out = sys.stderr
-    for x in args:
-        print >> out, pprint.pformat(x)
+    try: 
+        out = context.environ['wsgi.errors']
+    except: 
+        out = sys.stderr
+    for arg in args:
+        print >> out, pprint.pformat(arg)
     return ''
 
 def debugwrite(x):
-    try: out = context.environ['wsgi.errors']
-    except: out = sys.stderr
+    """writes debug data to error stream"""
+    try: 
+        out = context.environ['wsgi.errors']
+    except: 
+        out = sys.stderr
     out.write(x)
 debug.write = debugwrite
 
-class reloader:
+class Reloader(object):
     """
-    Before every request, checks to see if any loaded modules have changed on disk
-    and, if so, reloads them.
+    Before every request, checks to see if any loaded modules have changed on 
+    disk and, if so, reloads them.
     """
-    def __init__(self, func, tocheck=None): 
+    def __init__(self, func):
         self.func = func
         self.mtimes = {}
         global _compiletemplate
@@ -1595,37 +1801,47 @@ class reloader:
     
     def check(self):
         for mod in sys.modules.values():
-            try: mtime = os.stat(mod.__file__).st_mtime
-            except (AttributeError, OSError, IOError): continue
-            if mod.__file__.endswith('.pyc') and os.path.exists(mod.__file__[:-1]):
+            try: 
+                mtime = os.stat(mod.__file__).st_mtime
+            except (AttributeError, OSError, IOError): 
+                continue
+            if mod.__file__.endswith('.pyc') and \
+               os.path.exists(mod.__file__[:-1]):
                 mtime = max(os.stat(mod.__file__[:-1]).st_mtime, mtime)
             if mod not in self.mtimes:
                 self.mtimes[mod] = mtime
             elif self.mtimes[mod] < mtime:
-                try: reload(mod)
-                except ImportError: pass
+                try: 
+                    reload(mod)
+                except ImportError: 
+                    pass
         return True
     
     def __call__(self, e, o): 
         self.check()
         return self.func(e, o)
+reloader = Reloader
 
 def profiler(app):
     """Outputs basic profiling information at the bottom of each response."""
     def profile_internal(e, o):
         out, result = profile(app)(e, o)
-        return out + ['<pre>'+result+'</pre>'] #@@encode
+        return out + ['<pre>' + result + '</pre>'] #@@encode
     return profile_internal
 
 ## setting up the context
 
-class _outputter:
+class _outputter(object):
     """Wraps `sys.stdout` so that print statements go into the response."""
-    def write(self, x): 
-        if hasattr(ctx, 'output'): return output(x)
-        else: _oldstdout.write(x)
-    def flush(self): return _oldstdout.flush()
-    def close(self): return _oldstdout.close()
+    def write(self, string_): 
+        if hasattr(ctx, 'output'): 
+            return output(string_)
+        else: 
+            _oldstdout.write(string_)
+    def flush(self): 
+        return _oldstdout.flush()
+    def close(self): 
+        return _oldstdout.close()
 
 _context = {currentThread():Storage()}
 ctx = context = threadeddict(_context)
@@ -1674,16 +1890,19 @@ def _load(env):
     _context[currentThread()] = Storage()
     ctx.environ = ctx.env = env
     ctx.host = env.get('HTTP_HOST')
-    ctx.home = 'http://' + env.get('HTTP_HOST', '[unknown]') + env.get('SCRIPT_NAME', '')
+    ctx.home = 'http://' + env.get('HTTP_HOST', '[unknown]') + \
+                env.get('SCRIPT_NAME', '')
     ctx.ip = env.get('REMOTE_ADDR')
     ctx.method = env.get('REQUEST_METHOD')
     ctx.path = env.get('PATH_INFO')
     # http://trac.lighttpd.net/trac/ticket/406 requires:
     if env.get('SERVER_SOFTWARE', '').startswith('lighttpd/'):
-        ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], env.get('SCRIPT_NAME'))
+        ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], 
+                           env.get('SCRIPT_NAME'))
 
     ctx.fullpath = ctx.path
-    if dict(input()): ctx.fullpath+='?'+urllib.urlencode(dict(input()))
+    if dict(input()): 
+        ctx.fullpath += '?' + urllib.urlencode(dict(input()))
     ctx.status = '200 OK'
     ctx.headers = []
     ctx.output = ''

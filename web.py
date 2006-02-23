@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.127"
+__version__ = "0.128"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -156,7 +156,7 @@ class profile:
         prof = hotshot.Profile(temp.name)
 
         stime = time.time()
-        result = prof.runcall(app, *args)
+        result = prof.runcall(self.func, *args)
         stime = time.time() - stime
 
         prof.close()

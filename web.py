@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.12"
+__version__ = "0.121"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -335,7 +335,7 @@ def update(tablename, where, pvars=(), **values):
         tablename,
         ', '.join([k+'='+aparam() for k in values.keys()]),
         where),
-    values.values()+vars)
+    values.values()+pvars)
     
     if not ctx.db_transaction: ctx.db.commit()        
     return d.rowcount
@@ -355,7 +355,7 @@ def handle(mapping, fvars=None):
             elif '.' in fn: 
                 x = fn.split('.')
                 mod, cls = '.'.join(x[:-1]), x[-1]
-                mod = __import__(mod)
+                mod = __import__(mod, globals(), locals(), [""])
                 cls = getattr(mod, cls)
             else:
                 cls = fn

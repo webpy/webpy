@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.134"
+__version__ = "0.135"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -616,6 +616,7 @@ def insert(tablename, seqname=None, **values):
     elif ctx.db_name == "mysql":
         ctx.db_execute(d, q, v)
         q = "SELECT last_insert_id()"
+        v = ()
     elif ctx.db_name == "sqlite":
         # not really the same...
         q += "; SELECT last_insert_rowid()"

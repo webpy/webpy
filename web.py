@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.113"
+__version__ = "0.114"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -9,7 +9,7 @@ __author__ = "Aaron Swartz <me@aaronsw.com>"
 #   - new templating system
 #   - unit tests?
 
-import cgi, re, os, sys, time, urllib, urlparse, pprint, traceback, types, Cookie
+import cgi, re, os, os.path, sys, time, urllib, urlparse, pprint, traceback, types, Cookie
 from threading import currentThread
 try:
     from Cheetah.Compiler import Compiler
@@ -210,7 +210,7 @@ def connect(db, user, password, database): #@@ should take hostname?
     return ctx.db
 
 def transact():
-    """"Start a transaction."""
+    """Start a transaction."""
     # commit everything up to now, so we don't rollback it later
     ctx.db.commit()
     ctx.db_transaction = True
@@ -479,7 +479,7 @@ DJANGO_500_PAGE = """#import inspect
 
         #if $frame.vars
           <div class="commands">
-              <a href="#" onclick="return varToggle(this, '$frame.id')"><span>&#x25b6;</span> Local vars</a><!--: $inspect.formatargvalues(*inspect.getargvalues(frame['tb'].tb_frame))-->
+              <a href='#' onclick="return varToggle(this, '$frame.id')"><span>&#x25b6;</span> Local vars</a><!--: $inspect.formatargvalues(*inspect.getargvalues(frame['tb'].tb_frame))-->
           </div>
           <table class="vars" id="v$frame.id">
             <thead>
@@ -806,7 +806,7 @@ def webpyfunc(inp, autoreload=False):
         if autoreload:
             # black magic to make autoreload work:
             caller = upvars(3)
-            mod = __import__(caller['__file__'].split('/').pop().split('.')[0])
+            mod = __import__(caller['__file__'].split(os.path.sep).pop().split('.')[0])
             #@@probably should replace this with some inspect magic
             name = dictfind(caller, inp)
             func = lambda: handle(getattr(mod, name), mod)

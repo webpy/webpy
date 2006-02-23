@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.117"
+__version__ = "0.12"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -9,15 +9,20 @@ __author__ = "Aaron Swartz <me@aaronsw.com>"
 #   - new templating system
 #   - unit tests?
 
+# todo:
+#   - add sqlite support
+#   - provide an option to use .write()
+
 import cgi, re, os, os.path, sys, time, urllib, urlparse, pprint, traceback, types, Cookie
 from threading import currentThread
 try:
     from Cheetah.Compiler import Compiler
     from Cheetah.Filters import Filter
     _hasTemplating = True
-except ImportError: _hasTemplating = False # not required
+except ImportError:
+    _hasTemplating = False
 
-# hack for compatibility with Python 2.3
+# hack for compatibility with Python 2.3:
 if not hasattr(traceback, 'format_exc'):
        from cStringIO import StringIO
        def format_exc(limit=None):
@@ -109,18 +114,25 @@ def dictfind(d, elt):
     for (k,v) in d.iteritems():
         if elt is v: return k
 
-def listget(l, n, v=None):
-    if len(l)-1 < n: return v
-    return l[n]
+def dictincr(d, e):
+    d.setdefault(e, 0)
+    d[e] += 1
+    return d[e]
 
-def sumdicts(a, b):
+def dictadd(a, b):
     result = {}
     result.update(a)
     result.update(b)
     return result
 
+sumdicts = dictadd # deprecated
+
+def listget(l, n, v=None):
+    if len(l)-1 < n: return v
+    return l[n]
+
 def upvars(n=2):
-    return sumdicts(
+    return dictadd(
       sys._getframe(n).f_globals,
       sys._getframe(n).f_locals)
 
@@ -155,6 +167,26 @@ class profile:
         x += capturestdout(stats.print_stats)(40)
         x += capturestdout(stats.print_callers)()
         return result, x
+
+def tryall(context):
+    context = context.copy() # vars() would update
+    results = {}
+    for (k, v) in context.iteritems():
+        if not hasattr(v, '__call__'): continue
+        print k+':',
+        try:
+            r = v()
+            dictincr(results, r)
+            print r
+        except:
+            print 'ERROR'
+            dictincr(results, 'ERROR')
+            print '   '+'\n   '.join(traceback.format_exc().split('\n'))
+        
+    print '-'*40
+    print 'results:'
+    for (k, v) in results.iteritems():
+        print ' '*2, str(k)+':', v
 
 class threadeddict:
     def __init__(self, d): self.__dict__['_threadeddict__d'] = d
@@ -211,14 +243,26 @@ def aparam():
     raise UnknownParamstyle, p
 
 class UnknownDB(Exception): pass
-def connect(db, user, password, database): #@@ should take hostname?
-    if db == "postgres": 
+def connect(dbn, **kw):
+    if dbn == "postgres": 
         try: import psycopg2 as db
-        except ImportError: import psycopg as db
+        except ImportError: 
+            try: import psycopg as db
+            except ImportError: import pgdb as db
+        kw['password'] = kw['pw']
+        del kw['pw']
+        kw['database'] = kw['db']
+        del kw['db']
+    elif dbn == "mysql":
+        import MySQLdb as db
+        kw['passwd'] = kw['pw']
+        del kw['pw']
+        db.paramstyle = 'pyformat' # it's both, like psycopg
     else: raise UnknownDB, db
+    ctx.db_name = dbn
     ctx.db_module = db
     ctx.db_transaction = False
-    ctx.db = db.connect(user=user, password=password, database=database)
+    ctx.db = db.connect(**kw)
     ctx.dbc = ctx.db.cursor()
     return ctx.db
 
@@ -250,8 +294,8 @@ def query(q, v=None):
 select = query
 
 def insert(tablename, seqname=None, **values):
-    if seqname is None: seqname = tablename + "_id_seq"
     d = ctx.dbc
+
     if values:
         d.execute("INSERT INTO %s (%s) VALUES (%s)" % (
             tablename,
@@ -260,19 +304,28 @@ def insert(tablename, seqname=None, **values):
         ), values.values())
     else:
         d.execute("INSERT INTO %s DEFAULT VALUES" % tablename)
-    if seqname != False: 
+
+    if ctx.db_name == "postgres" and seqname != False: 
+        if seqname is None: seqname = tablename + "_id_seq"
         d.execute("SELECT currval('%s')" % seqname)
         out = d.fetchone()[0]
+    elif ctx.db_name == "mysql":
+        d.execute("SELECT last_insert_id()")
+        out = d.fetchone()[0]
+    elif ctx.db_name == "sqlite":
+        # not really the same...
+        d.execute("SELECT last_insert_rowid()")
+        out = d.fetchone()[0]
     else:
-        out = False
+        out = None
     
     if not ctx.db_transaction: ctx.db.commit()
     return out
 
-def update(tablename, where, vars=(), **values):
-    vars = list(vars)
+def update(tablename, where, pvars=(), **values):
+    pvars = list(pvars)
     if isinstance(where, int):
-        vars.append(where)
+        pvars.append(where)
         where = "id = "+aparam()
     else:
         where = where #@@ need to figure out positional params
@@ -699,19 +752,19 @@ def debugerror():
         out = str(djangoerror())
     else:
         # Cheetah isn't installed
-        out = """You've set web.py to use the fancier debugerror error messages,
+        out = """<p>You've set web.py to use the fancier debugerror error messages,
 but these messages require you install the Cheetah template 
-system. For more information, see:
+system. For more information, see 
+<a href="http://webpy.org/">the web.py website</a>.</p>
 
-http://webpy.org/
+<p>In the meantime, here's a plain old error message:</p>
 
-In the meantime, here's a plain old error message:
+<pre>%s</pre>
 
-%s
-(If it says something about 'Compiler', then it's probably
+<p>(If it says something about 'Compiler', then it's probably
 because you're trying to use templates and you haven't
-installed Cheetah. See above.)
-""" % traceback.format_exc()
+installed Cheetah. See above.)</p>
+""" % htmlquote(traceback.format_exc())
     context.status = "500 Internal Server Error"
     context.headers = [('Context-Type', 'text/html')]
     context.output = out
@@ -740,17 +793,19 @@ def __compiletemplate(template, base=None, isString=False):
 _compiletemplate = memoize(__compiletemplate)
 _compiletemplate.bases = {}
 
+def htmlquote(s):
+    s = s.replace("&", "&amp;") # Must be done first!
+    s = s.replace("<", "&lt;")
+    s = s.replace(">", "&gt;")
+    s = s.replace("'", "&#39;")
+    s = s.replace('"', "&quot;")
+    return s
+
 if _hasTemplating:
     class WebSafe(Filter):
         def filter(selv, val, **kw): 
             if val is None: return ''
-            s = str(val)
-            s = s.replace("&", "&amp;") # Must be done first!
-            s = s.replace("<", "&lt;")
-            s = s.replace(">", "&gt;")
-            s = s.replace("'", "&#39;")
-            s = s.replace('"', "&quot;")
-            return s
+            return htmlquote(str(val))
 
 def render(template, terms=None, asTemplate=False, base=None, isString=False): 
     # terms=['var1', 'var2'] means grab those variables
@@ -837,7 +892,8 @@ def wsgifunc(func, *middleware):
         status, headers, output = ctx.status, ctx.headers, ctx.output
         _unload()
         r(status, headers)
-        return [output]
+        if isinstance(output, str): output = [output]
+        return output
     
     for x in middleware: wsgifunc = x(wsgifunc)
     
@@ -1047,7 +1103,7 @@ def _load(env):
     ctx.headers = []
     ctx.output = ''
     if 'db_parameters' in globals():
-        connect(*db_parameters)
+        connect(**db_parameters)
 
 def _unload(): 
     # ensures db cursors and such are GCed promptly

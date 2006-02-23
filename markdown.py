@@ -11,13 +11,22 @@ Calling:
   somehtml = markdown.markdown(sometext)
 """
 
-__version__ = '1.0.1' # port of 1.0.1
+__version__ = '1.0.1-2' # port of 1.0.1
 __license__ = "GNU GPL 2"
 __author__ = [
   'John Gruber <http://daringfireball.net/>',
   'Tollef Fog Heen <tfheen@err.no>', 
   'Aaron Swartz <me@aaronsw.com>'
 ]
+
+def htmlquote(text):
+    """Encodes `text` for raw use in HTML."""
+    text = text.replace("&", "&amp;") # Must be done first!
+    text = text.replace("<", "&lt;")
+    text = text.replace(">", "&gt;")
+    text = text.replace("'", "&#39;")
+    text = text.replace('"', "&quot;")
+    return text
 
 def semirandom(seed):
     x = 0
@@ -245,13 +254,13 @@ class _Markdown:
                 url = self.urls[link_id]
                 url = url.replace("*", self.escapetable["*"])
                 url = url.replace("_", self.escapetable["_"])
-                res = '<a href="%s"' % (url)
+                res = '<a href="%s"' % htmlquote(url)
 
                 if title:
                     title = title.replace("*", self.escapetable["*"])
                     title = title.replace("_", self.escapetable["_"])
-                    res += ' title="%s"' % title
-                res += ">%s</a>" % link_text
+                    res += ' title="%s"' % htmlquote(title)
+                res += ">%s</a>" % htmlquote(link_text)
             else:
                 res = whole_match
             return res
@@ -264,14 +273,14 @@ class _Markdown:
 
             url = url.replace("*", self.escapetable["*"])
             url = url.replace("_", self.escapetable["_"])
-            res = '''<a href="%s"''' % url
+            res = '''<a href="%s"''' % htmlquote(url)
             
             if title:
                 title = title.replace('"', '&quot;')
                 title = title.replace("*", self.escapetable["*"])
                 title = title.replace("_", self.escapetable["_"])
-                res += ' title="%s"' % title
-            res += ">%s</a>" % link_text
+                res += ' title="%s"' % htmlquote(title)
+            res += ">%s</a>" % htmlquote(link_text)
             return res
 
         text = self.r_DoAnchors1.sub(handler1, text)
@@ -327,12 +336,12 @@ class _Markdown:
                 url = self.urls[link_id]
                 url = url.replace("*", self.escapetable["*"])
                 url = url.replace("_", self.escapetable["_"])
-                res = '''<img src="%s" alt="%s"''' % (url, alt_text)
+                res = '''<img src="%s" alt="%s"''' % (htmlquote(url), htmlquote(alt_text))
                 if self.titles.has_key(link_id):
                     title = self.titles[link_id]
                     title = title.replace("*", self.escapetable["*"])
                     title = title.replace("_", self.escapetable["_"])
-                    res += ' title="%s"' % title
+                    res += ' title="%s"' % htmlquot(title)
                 res += self.emptyelt
             else:
                 res = whole_match
@@ -348,11 +357,11 @@ class _Markdown:
             title = title.replace('"', "&quot;")
             url = url.replace("*", self.escapetable["*"])
             url = url.replace("_", self.escapetable["_"])
-            res = '<img src="%s" alt="%s"' % (url, alt_text)
+            res = '<img src="%s" alt="%s"' % (htmlquote(url), htmlquote(alt_text))
             if title is not None:
                 title = title.replace("*", self.escapetable["*"])
                 title = title.replace("_", self.escapetable["_"])
-                res += ' title="%s"' % title
+                res += ' title="%s"' % htmlquote(title)
             res += self.emptyelt
             return res
 

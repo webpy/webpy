@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.132"
+__version__ = "0.133"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -30,6 +30,7 @@ import cgi, re, urllib, urlparse, Cookie, pprint
 from threading import currentThread
 from tokenize import tokenprog
 iters = (list, tuple)
+if hasattr(__builtins__, 'set'): iters += (set,)
 try: from sets import Set; iters += (Set,)
 except ImportError: pass
 try: import datetime, itertools
@@ -67,18 +68,34 @@ def _strips(direction, text, remove):
         raise "WrongDirection", "Needs to be r or l."
     return text
 
-def rstrips(a, b): return _strips('r', a, b)
-def lstrips(a, b): return _strips('l', a, b)
-def strips(a, b): return rstrips(lstrips(a,b),b)
+def rstrips(text, remove):
+    """removes the string `remove` from the right of `text`"""
+    return _strips('r', text, remove)
+def lstrips(text, remove):
+    """removes the string `remove` from the right of `text`"""
+    return _strips('l', text, remove)
+def strips(a, b):
+    """removes the string `remove` from the both sides of `text`"""
+    return rstrips(lstrips(a,b),b)
 
-def autoassign():
-    locals = sys._getframe(1).f_locals
-    self = locals['self']
+def autoassign(self, locals):
+    """
+    Automatically assigns local variables to `self`.
+    Generally used in `__init__` methods, as in:
+
+        def __init__(self, foo, bar, baz=1): autoassign(self, locals())
+    """
+    #locals = sys._getframe(1).f_locals
+    #self = locals['self']
     for (k, v) in locals.iteritems():
         if k == 'self': continue
         setattr(self, k, v)
 
 class Storage(dict):
+    """
+    A Storage object is like a dictionary except `obj.foo` can be used
+    instead of `obj['foo']`. Create one by doing `storage({'a':1})`.
+    """
     def __getattr__(self, k): 
         if self.has_key(k): return self[k]
         raise AttributeError, repr(k)
@@ -88,6 +105,14 @@ class Storage(dict):
 storage = Storage
 
 def storify(f, *requireds, **defaults):
+    """
+    Creates a `storage` object from dictionary d, raising `IndexError` if
+    d doesn't have all of the keys in `requireds` and using the default 
+    values for keys found in `defaults`.
+
+    For example, `storify({'a':1, 'c':3}, b=2, c=0)` will return the equivalent of
+    `storage({'a':1, 'b':2, 'c':3})`.
+    """
     stor = Storage()
 
     for k in requireds + tuple(f.keys()):
@@ -105,6 +130,9 @@ def storify(f, *requireds, **defaults):
     return stor
 
 class memoize:
+    """
+    "Memoizes" a function, caching its return values for each input.
+    """
     def __init__(self, func): self.func = func; self.cache = {}
     def __call__(self, *a, **k):
         key = (a, tuple(k.items()))
@@ -112,24 +140,37 @@ class memoize:
         return self.cache[key]
 
 re_compile = memoize(re.compile) #@@ threadsafe?
+re_compile.__doc__ = """
+A memoized version of re.compile.
+"""
 
 class _re_subm_proxy:       
     def __init__(self): self.match = None
     def __call__(self, match): self.match = match; return ''
 
 def re_subm(pat, repl, string):
-    """like re.sub, but returns the replacement and the match object"""
+    """Like re.sub, but returns the replacement _and_ the match object."""
     r = re_compile(pat)
     proxy = _re_subm_proxy()
     r.sub(proxy.__call__, string)
     return r.sub(repl, string), proxy.match
 
 def group(seq, size): 
-    """Breaks 'seq' into a generator of lists with length 'size'."""
+    """
+    Returns an iterator over a series of lists of length size from iterable.
+
+    For example, `list(group([1,2,3,4], 2))` returns `[[1,2],[3,4]]`.
+    """
     if not hasattr(seq, 'next'):  seq = iter(seq)
     while True: yield [seq.next() for i in xrange(size)]
 
 class iterbetter:
+    """
+    Returns an object that can be used as an iterator 
+    but can also be used via __getitem__ (although it 
+    cannot go backwards -- that is, you cannot request 
+    `iterbetter[0]` after requesting `iterbetter[1]`).
+    """
     def __init__(self, iterator): self.i, self.c = iterator, 0
     def __iter__(self): 
         while 1: yield self.i.next(); self.c += 1
@@ -143,18 +184,28 @@ class iterbetter:
         except StopIteration: raise KeyError, repr(i)
 
 def dictreverse(d):
+    """Takes a dictionary like `{1:2, 3:4}` and returns `{2:1, 4:3}`."""
     return dict([(v,k) for k,v in d.iteritems()])
 
-def dictfind(d, elt):
-    for (k,v) in d.iteritems():
-        if elt is v: return k
+def dictfind(dictionary, element):
+    """
+    Returns a key whose value in `dictionary` is `element` 
+    or, if none exists, None.
+    """
+    for (k,v) in dictionary.iteritems():
+        if element is v: return k
 
-def dictincr(d, e):
-    d.setdefault(e, 0)
-    d[e] += 1
-    return d[e]
+def dictincr(dictionary, element):
+    """
+    Increments `element` in `dictionary`, 
+    setting it to one if it doesn't exist.
+    """
+    dictionary.setdefault(element, 0)
+    dictionary[element] += 1
+    return dictionary[element]
 
 def dictadd(a, b):
+    """Returns a dictionary consisting of the keys in `a` and `b`."""
     result = {}
     result.update(a)
     result.update(b)
@@ -162,16 +213,23 @@ def dictadd(a, b):
 
 sumdicts = dictadd # deprecated
 
-def listget(l, n, v=None):
-    if len(l)-1 < n: return v
+def listget(l, n, default=None):
+    """Returns `l[n]` if it exists, `default` otherwise."""
+    if len(l)-1 < n: return default
     return l[n]
 
 def upvars(n=2):
+    """Guido van Rossum doesn't want you to use this function."""
     return dictadd(
       sys._getframe(n).f_globals,
       sys._getframe(n).f_locals)
 
 class capturestdout:
+    """
+    Captures everything func prints to stdout and returns it instead.
+
+    **WARNING:** Not threadsafe!
+    """
     def __init__(self, func): self.func = func
     def __call__(self, *args, **kw):
         from cStringIO import StringIO
@@ -184,6 +242,10 @@ class capturestdout:
         return out.getvalue()
 
 class profile:
+    """
+    Profiles `func` and returns a tuple containing its output
+    and a string with human-readable profiling information.
+    """
     def __init__(self, func): self.func = func
     def __call__(self, *args, **kw):
         import hotshot, hotshot.stats, tempfile, time
@@ -204,6 +266,20 @@ class profile:
         return result, x
 
 def tryall(context, prefix=None):
+    """
+    Tries a series of functions and prints their results. 
+    `context` is a dictionary mapping names to values; 
+    the value will only be tried if it's callable.
+
+    For example, you might have a file `test/stuff.py` 
+    with a series of functions testing various things in it. 
+    At the bottom, have a line:
+
+        if __name__ == "__main__": tryall(globals())
+
+    Then you can run `python test/stuff.py` and get the results of 
+    all the tests.
+    """
     context = context.copy() # vars() would update
     results = {}
     for (k, v) in context.iteritems():
@@ -225,6 +301,12 @@ def tryall(context, prefix=None):
         print ' '*2, str(k)+':', v
 
 class threadeddict:
+    """
+    Takes a dictionary that maps threads to objects. 
+    When a thread tries to get or set an attribute or item 
+    of the threadeddict, it passes it on to the object 
+    for that thread in dictionary.
+    """
     def __init__(self, d): self.__dict__['_threadeddict__d'] = d
     def __getattr__(self, a): return getattr(self.__d[currentThread()], a)
     def __getitem__(self, i): return self.__d[currentThread()][i]
@@ -234,11 +316,17 @@ class threadeddict:
 
 ## url utils
 
-def base(base=''): #when would you use a default base?
+def prefixurl(base=''):
+    """
+    Sorry, this function is really difficult to explain.
+    Maybe some other time.
+    """
     url = context.path.lstrip('/')
     for i in xrange(url.count('/')): base += '../'
     if not base: base = './'
     return base
+
+urlquote = urllib.quote
 
 ## formatting
 
@@ -248,6 +336,13 @@ except ImportError: pass
 
 r_url = re_compile('(?<!\()(http://(\S+))')
 def safemarkdown(text):
+    """
+    Converts text to HTML following the rules of Markdown, but blocking any
+    outside HTML input, so that only the things supported by Markdown
+    can be used. Also converts raw URLs to links.
+
+    (requires [markdown.py](http://webpy.org/markdown.py))
+    """
     if text:
         text = text.replace('<', '&lt;')
         # TODO: automatically get page title?
@@ -259,9 +354,9 @@ def safemarkdown(text):
 
 def _interpolate(format):
     """
-    takes a format string and returns a list of 2-tuples of the form
+    Takes a format string and returns a list of 2-tuples of the form
     (boolean, string) where boolean says whether string should be evaled
-    or not
+    or not.
     
     from http://lfw.org/python/Itpl.py (public domain, Ka-Ping Yee)
     """
@@ -318,7 +413,22 @@ def _interpolate(format):
     return chunks
 
 def sqlors(left, lst):
-    "contributed by Steven Huffman <http://spez.name>"
+    """
+    `left is a SQL clause like `tablename.arg = ` 
+    and `lst` is a list of values. Returns a reparam-style
+    pair featuring the SQL that ORs together the clause
+    for each item in the lst.
+    
+    For example:
+    
+        web.sqlors('foo =', [1,2,3])
+    
+    would result in:
+    
+        foo = 1 OR foo = 2 OR foo = 3
+    
+    contributed by Steven Huffman <http://spez.name>
+    """
     if isinstance(lst, iters) and len(lst) == 1: lst = lst[0]
     if isinstance(lst, iters):
         return '(' + left + (' OR ' + left).join([aparam() for x in lst]) + ")", lst
@@ -328,6 +438,7 @@ def sqlors(left, lst):
 
 class UnknownParamstyle(Exception): pass
 def aparam():
+    """Use in a SQL string to make a spot for a db value."""
     p = ctx.db_module.paramstyle
     if p == 'qmark': return '?'
     elif p == 'numeric': return ':1'
@@ -335,6 +446,15 @@ def aparam():
     raise UnknownParamstyle, p
 
 def reparam(s, d):
+    """
+    Takes a string and a dictionary and interpolates the string
+    using values from the dictionary. Returns a 2-tuple containing
+    the a string with `aparam()`s in it and a list of the matching values.
+    
+    You can pass this sort of thing as a clause in any db function.
+    Otherwise, you can pass a dictionary to the keyword argument `vars`
+    and the function will call reparam for you.
+    """
     vals = []
     result = []
     for live, chunk in _interpolate(s):
@@ -346,6 +466,11 @@ def reparam(s, d):
 
 class UnknownDB(Exception): pass
 def connect(dbn, **kw):
+    """
+    Connects to the specified database. 
+    db currently must be "postgres" or "mysql". 
+    If DBUtils is installed, connection pooling will be used.
+    """
     if dbn == "postgres": 
         try: import psycopg2 as db
         except ImportError: 
@@ -393,14 +518,21 @@ def transact():
     ctx.db_transaction = True
 
 def commit():
+    """Commits a transaction."""
     ctx.db.commit()
     ctx.db_transaction = False
 
 def rollback():
+    """Rolls back a transaction."""
     ctx.db.rollback()
     ctx.db_transaction = False    
 
 def query(q, vars=None, processed=False):
+    """
+    Execute SQL query `q` using dictionary `vars` to interpolate it.
+    If `processed=True`, `vars` is a `reparam`-style list to use 
+    instead of interpolating.
+    """
     if vars is None: vars = {}
     d = ctx.db.cursor()
 
@@ -423,11 +555,20 @@ def query(q, vars=None, processed=False):
     return out
 
 def sqllist(l):
+    """
+    If a list, converts it to a comma-separated string. 
+    Otherwise, returns the string.
+    """
     if isinstance(l, str): return l
     else: return ', '.join(l)
 
 def select(tables, vars=None, what='*', where=None, order=None, group=None, 
            limit=None, offset=None):
+    """
+    Selects `what` from `tables` with clauses `where`, `order`, 
+    `group`, `limit`, and `offset. Uses vars to interpolate. 
+    Otherwise, each clause can take a reparam-style list.
+    """
     if vars is None: vars = {}
     values = []
     qout = "SELECT "+what+" FROM "+sqllist(tables)
@@ -453,6 +594,11 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
     return query(qout, values, processed=True)
 
 def insert(tablename, seqname=None, **values):
+    """
+    Inserts `values` into `tablename`. Returns current sequence ID.
+    Set `seqname` to the ID if it's not the default, or to `False`
+    if there isn't one.
+    """
     d = ctx.db.cursor()
 
     if values:
@@ -482,6 +628,10 @@ def insert(tablename, seqname=None, **values):
     return out
 
 def update(tables, where, vars=None, **values):
+    """
+    Update `tables` with clause `where` (interpolated using `vars`)
+    and setting `values`.
+    """
     if vars is None: vars = {}
     if isinstance(where, (int, long)):
         vars = [where]
@@ -502,6 +652,9 @@ def update(tables, where, vars=None, **values):
     return d.rowcount
 
 def delete(table, where, using=None, vars=None):
+    """
+    Deletes from `table` with clauses `where` and `using`.
+    """
     if vars is None: vars = {}
     d = ctx.db.cursor()
 
@@ -522,6 +675,14 @@ def delete(table, where, using=None, vars=None):
 ## request handlers
 
 def handle(mapping, fvars=None):
+    """
+    Call the appropriate function based on the url to function mapping in `mapping`.
+    If no module for the function is specified, look up the function in `fvars`. If
+    `fvars` is empty, using the caller's context.
+
+    `mapping` should be a tuple of paired regular expressions with function name
+    substitutions. `handle` will import modules as necessary.
+    """
     for url, ofno in group(mapping, 2):
         if isinstance(ofno, tuple): ofn, fna = ofno[0], list(ofno[1:])
         else: ofn, fna = ofno, []
@@ -558,6 +719,20 @@ def handle(mapping, fvars=None):
     return notfound()
 
 def autodelegate(prefix=''):
+    """
+    Returns a method that takes one argument and calls the method named prefix+arg,
+    calling `notfound()` if there isn't one. Example:
+
+        urls = ('/prefs/(.*)', 'prefs')
+
+        class prefs:
+            GET = autodelegate('GET_')
+            def GET_password(self): pass
+            def GET_privacy(self): pass
+
+    `GET_password` would get called for `/prefs/password` while `GET_privacy` for 
+    `GET_privacy` gets called for `/prefs/privacy`.
+    """
     def internal(self, arg):
         func = prefix+arg
         if hasattr(self, func): return getattr(self, func)()
@@ -565,41 +740,12 @@ def autodelegate(prefix=''):
     return internal
 
 ## http defaults
-    
-def redirect(url, status='301 Moved Permanently'):
-    newloc = urlparse.urljoin(context.home + context.path, url)
-    context.status = status
-    header('Content-Type', 'text/html')
-    header('Location', newloc)
-    # seems to add a three-second delay for some reason:
-    # output('<a href="'+ newloc + '">moved permanently</a>')
-
-def found(url): return redirect(url, '302 Found')
-def seeother(url): return redirect(url, '303 See Other')
-def tempredirect(url): return redirect(url, '307 Temporary Redirect')
-
-def badrequest():
-    context.status = '400 Bad Request'
-    header('Content-Type', 'text/html')
-    return output('bad request')
-
-def notfound():
-    context.status = '404 Not Found'
-    header('Content-Type', 'text/html')
-    return output('not found')
-
-def nomethod(cls):
-    context.status = '405 Method Not Allowed'
-    header('Content-Type', 'text/html')
-    header("Allow", ', '.join([x for x in ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'] if hasattr(cls, x)]))
-    return output('method not allowed')
-
-def gone():
-    context.status = '410 Gone'
-    header('Content-Type', 'text/html')
-    return output("gone")
 
 def expires(delta):
+    """
+    Outputs an `Expires` header for `delta` from now. 
+    `delta` is a `timedelta` object or a number of seconds.
+    """
     try: datetime
     except NameError: raise Exception, "requires Python 2.3 or later"
     if isinstance(delta, (int, long)):
@@ -608,7 +754,71 @@ def expires(delta):
     header('Expires', o.strftime("%a, %d %b %Y %T GMT"))
 
 def lastmodified(d):
+    """Outputs a `Last-Modified` header for `datetime`."""
     header('Last-Modified', d.strftime("%a, %d %b %Y %T GMT"))
+
+"""
+By default, these all return simple error messages that send very short messages 
+(like "bad request") to the user. They can and should be overridden 
+to return nicer ones.
+"""
+    
+def redirect(url, status='301 Moved Permanently'):
+    """
+    Returns a `status` redirect to the new URL. 
+    `url` is joined with the base URL so that things like 
+    `redirect("about") will work properly.
+    """
+    newloc = urlparse.urljoin(context.home + context.path, url)
+    context.status = status
+    header('Content-Type', 'text/html')
+    header('Location', newloc)
+    # seems to add a three-second delay for some reason:
+    # output('<a href="'+ newloc + '">moved permanently</a>')
+
+def found(url):
+    """A `302 Found` redirect."""
+    return redirect(url, '302 Found')
+
+def seeother(url):
+    """A `303 See Other` redirect."""
+    return redirect(url, '303 See Other')
+
+def tempredirect(url):
+    """A `307 Temporary Redirect` redirect."""
+    return redirect(url, '307 Temporary Redirect')
+
+def badrequest():
+    """Return a `400 Bad Request` error."""
+    context.status = '400 Bad Request'
+    header('Content-Type', 'text/html')
+    return output('bad request')
+
+def notfound():
+    """Returns a `404 Not Found` error."""
+    context.status = '404 Not Found'
+    header('Content-Type', 'text/html')
+    return output('not found')
+
+def nomethod(cls):
+    """Returns a `405 Method Not Allowed` error for `cls`."""
+    context.status = '405 Method Not Allowed'
+    header('Content-Type', 'text/html')
+    header("Allow", ', '.join([x for x in ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'] if hasattr(cls, x)]))
+    return output('method not allowed')
+
+def gone():
+    """Returns a `410 Gone` error."""
+    context.status = '410 Gone'
+    header('Content-Type', 'text/html')
+    return output("gone")
+
+def internalerror():
+    """Returns a `500 Internal Server` error."""
+    context.status = "500 Internal Server Error"
+    context.headers = [('Content-Type', 'text/html')]
+    context.output = "internal server error"
+
 
 # adapted from Django <djangoproject.com> 
 # Copyright (c) 2005, the Lawrence Journal-World
@@ -946,12 +1156,16 @@ def djangoerror():
         return out
     return render(DJANGO_500_PAGE, asTemplate=True, isString=True)
 
-def internalerror():
-    context.status = "500 Internal Server Error"
-    context.headers = [('Content-Type', 'text/html')]
-    context.output = "internal server error"
-
 def debugerror():
+    """
+    A replacement for `internalerror` that presents a nice page with lots
+    of debug information for the programmer.
+
+    (Based on the beautiful 500 page from [Django](http://djangoproject.com/), 
+    designed by [Wilson Miner](http://wilsonminer.com/).)
+
+    Requires [Cheetah](http://cheetahtemplate.org/).
+    """
     # need to do django first, so it can get the old stuff
     if _hasTemplating:
         out = str(djangoerror())
@@ -999,14 +1213,13 @@ _compiletemplate = memoize(__compiletemplate)
 _compiletemplate.bases = {}
 
 def htmlquote(s):
+    """Encodes `s` for raw use in HTML."""
     s = s.replace("&", "&amp;") # Must be done first!
     s = s.replace("<", "&lt;")
     s = s.replace(">", "&gt;")
     s = s.replace("'", "&#39;")
     s = s.replace('"', "&quot;")
     return s
-
-urlquote = urllib.quote
 
 if _hasTemplating:
     class WebSafe(Filter):
@@ -1015,6 +1228,26 @@ if _hasTemplating:
             return htmlquote(str(val))
 
 def render(template, terms=None, asTemplate=False, base=None, isString=False): 
+    """
+    Renders a template, caching where it can.
+    
+    `template` is the name of a file containing the a template in
+    the `templates/` folder, unless `isString`, in which case it's the template
+    itself.
+
+    `terms` is a dictionary used to fill the template. If it's None, then
+    the caller's local variables are used instead, plus context, if it's not already 
+    set, is set to `context`.
+
+    If asTemplate is False, it `output`s the template directly. Otherwise,
+    it returns the template object.
+
+    If the template is a potential base template (that is, something other templates)
+    can extend, then base should be a string with the name of the template. The
+    template will be cached and made available for future calls to `render`.
+
+    Requires [Cheetah](http://cheetahtemplate.org/).
+    """
     # terms=['var1', 'var2'] means grab those variables
     if isinstance(terms, list):
         new = {}; old = upvars()
@@ -1038,12 +1271,17 @@ def render(template, terms=None, asTemplate=False, base=None, isString=False):
 ## input forms
 
 def input(*requireds, **defaults):
+    """
+    Returns a `storage` object with the GET and POST arguments. 
+    See `storify` for how `requireds` and `defaults` work.
+    """
     if not hasattr(context, '_inputfs'): context._inputfs = cgi.FieldStorage(fp = context.environ['wsgi.input'],environ=context.environ, keep_blank_values=1)
     return storify(context._inputfs, *requireds, **defaults)
 
 ## cookies
 
 def setcookie(name, value, expires="", domain=None):
+    """Sets a cookie."""
     if expires < 0: expires = -1000000000 
     kargs = {'expires': expires, 'path':'/'}
     if domain: kargs['domain'] = domain
@@ -1054,16 +1292,25 @@ def setcookie(name, value, expires="", domain=None):
     header('Set-Cookie', c.items()[0][1].OutputString())
 
 def cookies(*requireds, **defaults):
+    """
+    Returns a `storage` object with all the cookies in it.
+    See `storify` for how `requireds` and `defaults` work.
+    """
     c = Cookie.SimpleCookie()
     c.load(context.environ.get('HTTP_COOKIE', ''))
     return storify(c, *requireds, **defaults)
 
 ## WSGI Sugar
 
-def header(h, v): context.headers.append((h, v))
-def output(t): context.output += str(t)
+def header(h, v):
+    """Adds the header `h: v` with the response."""
+    context.headers.append((h, v))
+def output(s):
+    """Appends `s` to the response."""
+    context.output += str(s)
 
 def write(t):
+    """Converts a standard CGI-style string response into `header` and `output` calls."""
     t = str(t)
     t.replace('\r\n', '\n')
     head, body = t.split('\n\n', 1)
@@ -1079,6 +1326,7 @@ def write(t):
     output(body)
 
 def webpyfunc(inp, fvars=None, autoreload=False):
+    """If `inp` is a url mapping, returns a function that calls handle."""
     if not fvars: fvars = upvars()
     if not hasattr(inp, '__call__'):
         if autoreload:
@@ -1094,6 +1342,7 @@ def webpyfunc(inp, fvars=None, autoreload=False):
     return func
 
 def wsgifunc(func, *middleware):
+    """Returns a WSGI-compatible function from a webpy-function."""
     middleware = list(middleware)
     if reloader in middleware:
         relr = reloader(None)
@@ -1129,11 +1378,30 @@ def wsgifunc(func, *middleware):
     return wsgifunc
 
 def run(inp, *middleware):
+    """
+    Starts handling requests. If called in a CGI or FastCGI context, it will follow
+    that protocol. If called from the command line, it will start an HTTP
+    server on the port named in the first command line argument, or, if there
+    is no argument, on port 8080.
+
+    `input` is a callable, then it's called with no arguments.
+    Otherwise, it's a `mapping` object to be passed to `handle(...)`.
+
+    **Caveat:** So that `reloader` will work correctly, input has to be a variable,
+    it can't be a tuple passed in directly.
+
+    `middleware` is a list of WSGI middleware which is applied to the resulting WSGI
+    function.
+    """
     autoreload = reloader in middleware
     fvars = upvars()
     return runwsgi(wsgifunc(webpyfunc(inp, fvars, autoreload), *middleware))
 
 def runwsgi(func):
+    """
+    Runs a WSGI-compatible function using FCGI, SCGI, or a simple web server,
+    as appropriate.
+    """
     #@@ improve detection
     if os.environ.has_key('SERVER_SOFTWARE'): # cgi
         os.environ['FCGI_FORCE_CGI'] = 'Y'
@@ -1151,6 +1419,13 @@ def runwsgi(func):
     return runsimple(func, listget(sys.argv, 1, 8080))
     
 def runsimple(func, port=8080):
+    """
+    Runs a simple HTTP server hosting WSGI app `func`. The directory `static/` is
+    hosted statically.
+
+    Based on [WsgiServer](http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html) 
+    from [Colin Stewart](http://www.owlfish.com/).
+    """
     # Copyright (c) 2004 Colin Stewart (http://www.owlfish.com/)
     # Modified somewhat for simplicity
     # Used under the modified BSD license:
@@ -1252,9 +1527,9 @@ def runsimple(func, port=8080):
 
     print "Launching server: http://0.0.0.0:"+str(port)+"/"
     WSGIServer(func).serve_forever()
-    
 
 def makeserver(WSGIServer):
+    """Updates a flup-style WSGIServer with web.py-style error support."""
     class MyServer(WSGIServer):            
         def error(self, req):
             w = req.stdout.write
@@ -1267,10 +1542,12 @@ def makeserver(WSGIServer):
     return MyServer
     
 def runfcgi(func):
+    """Runs a WSGI-function with a FastCGI server."""
     from flup.server.fcgi import WSGIServer
     return makeserver(WSGIServer)(func, multiplexed=True).run()
 
 def runscgi(func):
+    """Runs a WSGI-function with an SCGI server."""
     from flup.server.scgi import WSGIServer
     MyServer = makeserver(WSGIServer)
     if len(sys.argv) > 2: # progname, scgi
@@ -1286,6 +1563,9 @@ def runscgi(func):
 ## debug
 
 def debug(*args):
+    """
+    Prints a prettyprinted version of `args` to stderr.
+    """
     try: out = context.environ['wsgi.errors']
     except: out = sys.stderr
     for x in args:
@@ -1299,6 +1579,10 @@ def debugwrite(x):
 debug.write = debugwrite
 
 class reloader:
+    """
+    Before every request, checks to see if any loaded modules have changed on disk
+    and, if so, reloads them.
+    """
     def __init__(self, func, tocheck=None): 
         self.func = func
         self.mtimes = {}
@@ -1325,6 +1609,7 @@ class reloader:
         return self.func(e, o)
 
 def profiler(app):
+    """Outputs basic profiling information at the bottom of each response."""
     def profile_internal(e, o):
         out, result = profile(app)(e, o)
         return out + ['<pre>'+result+'</pre>'] #@@encode
@@ -1333,6 +1618,7 @@ def profiler(app):
 ## setting up the context
 
 class _outputter:
+    """Wraps `sys.stdout` so that print statements go into the response."""
     def write(self, x): 
         if hasattr(ctx, 'output'): return output(x)
         else: _oldstdout.write(x)
@@ -1341,6 +1627,42 @@ class _outputter:
 
 _context = {currentThread():Storage()}
 ctx = context = threadeddict(_context)
+
+ctx.__doc__ = """
+A `storage` object containing various information about the request:
+  
+   `environ` (aka `env`)
+     : A dictionary containing the standard WSGI environment variables.
+
+   `host`
+     : The domain (`Host` header) requested by the user.
+  
+   `home`
+     : The base path for the application.
+  
+   `ip`
+     : The IP address of the requester.
+  
+   `method`
+     : The HTTP method used.
+  
+   `path`
+     : The path request.
+  
+   `fullpath`
+     : The full path requested, including query arguments.
+  
+   ### Response Data
+  
+   `status` (default: "200 OK")
+     : The status code to be used in the response.
+  
+   `headers`
+     : A list of 2-tuples to be used in the response.
+  
+   `output`
+     : A string to be used as the response.
+"""
 
 if not '_oldstdout' in globals(): 
     _oldstdout = sys.stdout

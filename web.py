@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.123"
+__version__ = "0.124"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -24,12 +24,12 @@ except ImportError:
 
 # hack for compatibility with Python 2.3:
 if not hasattr(traceback, 'format_exc'):
-       from cStringIO import StringIO
-       def format_exc(limit=None):
-           s = StringIO()
-           traceback.print_exc(limit, s)
-           return s.getvalue()
-       traceback.format_exc = format_exc
+    from cStringIO import StringIO
+    def format_exc(limit=None):
+        s = StringIO()
+        traceback.print_exc(limit, s)
+        return s.getvalue()
+    traceback.format_exc = format_exc
 
 ## general utils
 

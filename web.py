@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.125"
+__version__ = "0.126"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -746,7 +746,7 @@ def djangoerror():
 
 def internalerror():
     context.status = "500 Internal Server Error"
-    context.headers = [('Context-Type', 'text/html')]
+    context.headers = [('Content-Type', 'text/html')]
     context.output = "internal server error"
 
 def debugerror():
@@ -769,7 +769,7 @@ because you're trying to use templates and you haven't
 installed Cheetah. See above.)</p>
 """ % htmlquote(traceback.format_exc())
     context.status = "500 Internal Server Error"
-    context.headers = [('Context-Type', 'text/html')]
+    context.headers = [('Content-Type', 'text/html')]
     context.output = out
 
 

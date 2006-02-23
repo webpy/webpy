@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.124"
+__version__ = "0.125"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -786,7 +786,7 @@ def __compiletemplate(template, base=None, isString=False):
     while r_include.findall(text): text = r_include.sub(do_include, text)
 
     execspace = _compiletemplate.bases.copy()
-    c = Compiler(source=text)
+    c = Compiler(source=text, mainClassName='GenTemplate')
     c.addImportedVarNames(execspace.keys())
     exec str(c) in execspace
     if base: _compiletemplate.bases[base] = execspace['GenTemplate']

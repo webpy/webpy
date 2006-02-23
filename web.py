@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.126"
+__version__ = "0.127"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -258,7 +258,7 @@ def connect(dbn, **kw):
         kw['passwd'] = kw['pw']
         del kw['pw']
         db.paramstyle = 'pyformat' # it's both, like psycopg
-    else: raise UnknownDB, db
+    else: raise UnknownDB, dbn
     ctx.db_name = dbn
     ctx.db_module = db
     ctx.db_transaction = False

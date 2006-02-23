@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.115"
+__version__ = "0.116"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -16,6 +16,15 @@ try:
     from Cheetah.Filters import Filter
     _hasTemplating = True
 except ImportError: _hasTemplating = False # not required
+
+# hack for compatibility with Python 2.3
+if not hasattr(traceback, 'format_exc'):
+       from cStringIO import StringIO
+       def format_exc(limit=None):
+           s = StringIO()
+           traceback.print_exc(limit, s)
+           return s.getvalue()
+       traceback.format_exc = format_exc
 
 ## general utils
 

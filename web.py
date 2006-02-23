@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.13"
+__version__ = "0.131"
 __license__ = "Affero General Public License, Version 1"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
@@ -12,7 +12,8 @@ from __future__ import generators
 #   - unit tests?
 
 # todo:
-#   - add db select, delete function
+#   - get rid of upvars
+#   - move documentation into docstrings
 #   - fix that silly nonce stuff in web.update
 #   - provide an option to use .write()
 #   - add ip:port support
@@ -28,6 +29,7 @@ from __future__ import generators
 import os, os.path, sys, time, types, traceback
 import cgi, re, urllib, urlparse, Cookie, pprint
 from threading import currentThread
+from tokenize import tokenprog
 try: import datetime
 except ImportError: pass
 try:
@@ -255,27 +257,83 @@ def safemarkdown(text):
 
 ## db api
 
-class UnknownParamstyle(Exception): pass
-r_dbvar = re_compile(r'\B\$(\w+)')
-def reparam(q):
-    p = ctx.db_module.paramstyle
-    if p == "pyformat":
-        return r_dbvar.sub(r'%(\1)s', q)
-    elif p == "named":
-        return r_dbvar.sub(r':\1', q)
-    raise UnknownParamstyle, p
+def _interpolate(format):
+    """
+    takes a format string and returns a list of 2-tuples of the form
+    (boolean, string) where boolean says whether string should be evaled
+    or not
     
+    from http://lfw.org/python/Itpl.py (public domain, Ka-Ping Yee)
+    """
+    def matchorfail(text, pos):
+        match = tokenprog.match(text, pos)
+        if match is None:
+            raise ItplError(text, pos)
+        return match, match.end()
+    
+    namechars = "abcdefghijklmnopqrstuvwxyz" \
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
+    chunks = []
+    pos = 0
+
+    while 1:
+        dollar = format.find("$", pos)
+        if dollar < 0: break
+        nextchar = format[dollar+1]
+
+        if nextchar == "{":
+            chunks.append((0, format[pos:dollar]))
+            pos, level = dollar+2, 1
+            while level:
+                match, pos = matchorfail(format, pos)
+                tstart, tend = match.regs[3]
+                token = format[tstart:tend]
+                if token == "{": level = level+1
+                elif token == "}": level = level-1
+            chunks.append((1, format[dollar+2:pos-1]))
+
+        elif nextchar in namechars:
+            chunks.append((0, format[pos:dollar]))
+            match, pos = matchorfail(format, dollar+1)
+            while pos < len(format):
+                if format[pos] == "." and \
+                    pos+1 < len(format) and format[pos+1] in namechars:
+                    match, pos = matchorfail(format, pos+1)
+                elif format[pos] in "([":
+                    pos, level = pos+1, 1
+                    while level:
+                        match, pos = matchorfail(format, pos)
+                        tstart, tend = match.regs[3]
+                        token = format[tstart:tend]
+                        if token[0] in "([": level = level+1
+                        elif token[0] in ")]": level = level-1
+                else: break
+            chunks.append((1, format[dollar+1:pos]))
+
+        else:
+            chunks.append((0, format[pos:dollar+1]))
+            pos = dollar + 1 + (nextchar == "$")
+
+    if pos < len(format): chunks.append((0, format[pos:]))
+    return chunks
+
+class UnknownParamstyle(Exception): pass
 def aparam():
     p = ctx.db_module.paramstyle
-    if p == 'qmark':
-        return '?'
-    elif p == 'numeric':
-        return ':1'
-    elif p == 'format':
-        return '%s'
-    elif p == 'pyformat':
-        return '%s'
+    if p == 'qmark': return '?'
+    elif p == 'numeric': return ':1'
+    elif p in ['format', 'pyformat']: return '%s'
     raise UnknownParamstyle, p
+
+def reparam(s, d):
+    vals = []
+    result = []
+    for live, chunk in _interpolate(s):
+        if live:
+            result.append(aparam())
+            vals.append(eval(chunk, d))
+        else: result.append(chunk)
+    return ''.join(result), vals
 
 class UnknownDB(Exception): pass
 def connect(dbn, **kw):
@@ -331,13 +389,14 @@ def commit():
 
 def rollback():
     ctx.db.rollback()
-    ctx.db_transaction = False
+    ctx.db_transaction = False    
 
-def query(q, v=None):
+def query(q, vars=None, processed=False):
+    if vars is None: vars = {}
     d = ctx.db.cursor()
-    if v is None: v = upvars()
 
-    ctx.db_execute(d, reparam(q), v)
+    if not processed: q, vars = reparam(q, vars)
+    ctx.db_execute(d, q, vars)
     if d.description:
         names = [x[0] for x in d.description]
         def iterwrapper():
@@ -347,6 +406,7 @@ def query(q, v=None):
                 x = d.fetchone()
         out = iterbetter(iterwrapper())
         out.__len__ = lambda: d.rowcount
+        out.list = lambda: [Storage(dict(zip(names, x))) for x in d.fetchall()]
     else:
         out = None
         out = d.rowcount
@@ -354,14 +414,27 @@ def query(q, v=None):
     if not ctx.db_transaction: ctx.db.commit()    
     return out
 
-def select(tablename, what='*', where=None, vars=None, **wheres):
-    if vars is None: vars = upvars()
-    
-    q = "SELECT "+what+" FROM "+tablename+" WHERE "
-    if where: q += where
-    for (k, v) in wheres.iteritems():
-        where += k + '=' + nonce(v, vars)
-    return query(q, vvars)
+def sqllist(l):
+    if isinstance(l, str): return l
+    else: return ', '.join(l)
+
+def select(tables, vars=None, what='*', where=None, order=None, group=None, 
+           limit=None, offset=None):
+    if vars is None: vars = {}
+    values = []
+    qout = "SELECT "+what+" FROM "+sqllist(tables)
+
+    for (sql, val) in (
+      ('WHERE', where), 
+      ('ORDER BY', order), 
+      ('GROUP BY', group), 
+      ('LIMIT', limit), 
+      ('OFFSET', offset)):
+        if val:
+            nquery, nvalue = reparam(val, vars)
+            qout += " "+sql+" " + nquery
+            values.extend(nvalue)
+    return query(qout, values, processed=True)
 
 def insert(tablename, seqname=None, **values):
     d = ctx.db.cursor()
@@ -375,7 +448,9 @@ def insert(tablename, seqname=None, **values):
     else:
         ctx.db_execute(d, "INSERT INTO %s DEFAULT VALUES" % tablename)
 
-    if ctx.db_name == "postgres" and seqname != False: 
+    if seqname == False:
+        out = None
+    elif ctx.db_name == "postgres": 
         if seqname is None: seqname = tablename + "_id_seq"
         ctx.db_execute(d, "SELECT currval('%s')" % seqname)
         out = d.fetchone()[0]
@@ -392,21 +467,33 @@ def insert(tablename, seqname=None, **values):
     if not ctx.db_transaction: ctx.db.commit()
     return out
 
-def update(tablename, where, pvars=(), **values):
-    pvars = list(pvars)
+def update(tables, where, vars=None, **values):
+    if vars is None: vars = {}
     if isinstance(where, int):
-        pvars.append(where)
+        vars = [where]
         where = "id = "+aparam()
     else:
-        where = where #@@ need to figure out positional params
+        where, vars = reparam(where, vars)
     
     d = ctx.db.cursor()
     ctx.db_execute(d, "UPDATE %s SET %s WHERE %s" % (
-        tablename,
+        sqllist(tables),
         ', '.join([k+'='+aparam() for k in values.keys()]),
         where),
-    values.values()+pvars)
+    values.values()+vars)
     
+    if not ctx.db_transaction: ctx.db.commit()        
+    return d.rowcount
+
+def delete(table, where, using=None, vars=None):
+    if vars is None: vars = {}
+    d = ctx.db.cursor()
+
+    where, vars = reparam(where, vars)
+    q = 'DELETE FROM %s WHERE %s' % (table, where)
+    if using: q += ' USING '+sqllist(using)
+    ctx.db_execute(d, q, vars)
+
     if not ctx.db_transaction: ctx.db.commit()        
     return d.rowcount
 

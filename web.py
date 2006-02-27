@@ -151,7 +151,7 @@ def storify(mapping, *requireds, **defaults):
     
     return stor
 
-class Memoize(object):
+class Memoize:
     """
     "Memoizes" a function, caching its return values for each input.
     """
@@ -170,7 +170,7 @@ re_compile.__doc__ = """
 A memoized version of re.compile.
 """
 
-class _re_subm_proxy(object):
+class _re_subm_proxy:
     def __init__(self): 
         self.match = None
     def __call__(self, match): 
@@ -195,7 +195,7 @@ def group(seq, size):
     while True: 
         yield [seq.next() for i in xrange(size)]
 
-class IterBetter(object):
+class IterBetter:
     """
     Returns an object that can be used as an iterator 
     but can also be used via __getitem__ (although it 
@@ -266,7 +266,7 @@ def upvars(level=2):
       sys._getframe(level).f_globals,
       sys._getframe(level).f_locals)
 
-class CaptureStdout(object):
+class CaptureStdout:
     """
     Captures everything func prints to stdout and returns it instead.
 
@@ -287,7 +287,7 @@ class CaptureStdout(object):
         return out.getvalue()
 capturestdout = CaptureStdout
 
-class Profile(object):
+class Profile:
     """
     Profiles `func` and returns a tuple containing its output
     and a string with human-readable profiling information.
@@ -350,7 +350,7 @@ def tryall(context, prefix=None):
     for (key, value) in results.iteritems():
         print ' '*2, str(key)+':', value
 
-class ThreadedDict(object):
+class ThreadedDict:
     """
     Takes a dictionary that maps threads to objects. 
     When a thread tries to get or set an attribute or item 
@@ -903,6 +903,15 @@ def autodelegate(prefix=''):
 
 ## http defaults
 
+def httpdate(date_obj):
+    """Formats a datetime object for use in HTTP headers."""
+    return date_obj.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+def parsehttpdate(string_):
+    """Parses an HTTP date into a datetime object."""
+    t = time.strptime(string_, "%a, %d %b %Y %H:%M:%S %Z")
+    return datetime.datetime(*t[:6])
+
 def expires(delta):
     """
     Outputs an `Expires` header for `delta` from now. 
@@ -915,11 +924,11 @@ def expires(delta):
     if isinstance(delta, (int, long)):
         delta = datetime.timedelta(seconds=delta)
     date_obj = datetime.datetime.utcnow() + delta
-    header('Expires', date_obj.strftime("%a, %d %b %Y %T GMT"))
+    header('Expires', httpdate(date_obj))
 
 def lastmodified(date_obj):
     """Outputs a `Last-Modified` header for `datetime`."""
-    header('Last-Modified', date_obj.strftime("%a, %d %b %Y %T GMT"))
+    header('Last-Modified', httpdate(date_obj))
 
 def modified(date=None, etag=None):
     n = ctx.env.get('HTTP_IF_NONE_MATCH')
@@ -1830,7 +1839,7 @@ def debugwrite(x):
     out.write(x)
 debug.write = debugwrite
 
-class Reloader(object):
+class Reloader:
     """
     Before every request, checks to see if any loaded modules have changed on 
     disk and, if so, reloads them.
@@ -1875,7 +1884,7 @@ def profiler(app):
 
 ## setting up the context
 
-class _outputter(object):
+class _outputter:
     """Wraps `sys.stdout` so that print statements go into the response."""
     def write(self, string_): 
         if hasattr(ctx, 'output'): 

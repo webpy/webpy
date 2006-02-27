@@ -1349,7 +1349,7 @@ def djangoerror():
             out = '[could not display: <' + e.__class__.__name__ + \
                   ': '+str(e)+'>]'
         return out
-    return render(DJANGO_500_PAGE, as_template=True, is_string=True)
+    return render(DJANGO_500_PAGE, asTemplate=True, isString=True)
 
 def debugerror():
     """
@@ -1387,8 +1387,8 @@ installed Cheetah. See above.)</p>
 ## rendering
 
 r_include = re_compile(r'(?!\\)#include \"(.*?)\"($|#)', re.M)
-def __compiletemplate(template, base=None, is_string=False):
-    if is_string: 
+def __compiletemplate(template, base=None, isString=False):
+    if isString: 
         text = template
     else: 
         text = open('templates/'+template).read()
@@ -1427,20 +1427,20 @@ if _hasTemplating:
                 return ''
             return htmlquote(str(val))
 
-def render(template, terms=None, as_template=False, base=None, 
-           is_string=False):
+def render(template, terms=None, asTemplate=False, base=None, 
+           isString=False):
     """
     Renders a template, caching where it can.
     
     `template` is the name of a file containing the a template in
-    the `templates/` folder, unless `is_string`, in which case it's the 
+    the `templates/` folder, unless `isString`, in which case it's the 
     template itself.
 
     `terms` is a dictionary used to fill the template. If it's None, then
     the caller's local variables are used instead, plus context, if it's not 
     already set, is set to `context`.
 
-    If as_template is False, it `output`s the template directly. Otherwise,
+    If asTemplate is False, it `output`s the template directly. Otherwise,
     it returns the template object.
 
     If the template is a potential base template (that is, something other templates)
@@ -1464,12 +1464,12 @@ def render(template, terms=None, as_template=False, base=None,
     if not isinstance(terms, tuple): 
         terms = (terms,)
     
-    if not is_string and template.endswith('.html'): 
+    if not isString and template.endswith('.html'): 
         header('Content-Type','text/html; charset=utf-8')
         
-    compiled_tmpl = _compiletemplate(template, base=base, is_string=is_string)
+    compiled_tmpl = _compiletemplate(template, base=base, isString=isString)
     compiled_tmpl = compiled_tmpl(searchList=terms, filter=WebSafe)
-    if as_template: 
+    if asTemplate: 
         return compiled_tmpl
     else: 
         return output(str(compiled_tmpl))

@@ -921,12 +921,27 @@ def lastmodified(date_obj):
     """Outputs a `Last-Modified` header for `datetime`."""
     header('Last-Modified', date_obj.strftime("%a, %d %b %Y %T GMT"))
 
+def modified(date=None, etag=None):
+    n = ctx.env.get('HTTP_IF_NONE_MATCH')
+    m = ctx.env.get('HTTP_IF_MODIFIED_SINCE')
+    validate = False
+    if etag:
+        raise NotImplementedError, "no etag support yet"
+        # should really be a warning
+    if date and m:
+        # we subtract a second because 
+        # HTTP dates don't have sub-second precision
+        if date-datetime.timedelta(seconds=1) <= parsehttpdate(m):
+            validate = True
+    
+    if validate: ctx.status = '304 Not Modified'
+    return not validate
+    
 """
 By default, these all return simple error messages that send very short messages 
 (like "bad request") to the user. They can and should be overridden 
 to return nicer ones.
 """
-    
 def redirect(url, status='301 Moved Permanently'):
     """
     Returns a `status` redirect to the new URL. 
@@ -1622,7 +1637,8 @@ def runwsgi(func):
         os.environ['FCGI_FORCE_CGI'] = 'Y'
 
     if (os.environ.has_key('PHP_FCGI_CHILDREN') #lighttpd fastcgi
-      or os.environ.has_key('SERVER_SOFTWARE')):
+      or os.environ.has_key('SERVER_SOFTWARE')
+      or 'fcgi' in sys.argv or 'fastcgi' in sys.argv):
         return runfcgi(func)
 
     if 'scgi' in sys.argv:
@@ -1768,7 +1784,16 @@ def makeserver(wsgi_server):
 def runfcgi(func):
     """Runs a WSGI-function with a FastCGI server."""
     from flup.server.fcgi import WSGIServer
-    return makeserver(WSGIServer)(func, multiplexed=True).run()
+    if len(sys.argv) > 2: # progname, scgi
+        args = sys.argv[:]
+        if 'fastcgi' in args: args.remove('fastcgi')
+        elif 'fcgi' in args: args.remove('fcgi')
+        hostport = validip(args[1])
+    elif len(sys.argv) > 1: 
+        hostport = ('localhost', 8000)
+    else:
+        hostport = None
+    return makeserver(WSGIServer)(func, multiplexed=True, bindAddress=hostport).run()
 
 def runscgi(func):
     """Runs a WSGI-function with an SCGI server."""

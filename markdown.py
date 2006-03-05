@@ -341,7 +341,7 @@ class _Markdown:
                     title = self.titles[link_id]
                     title = title.replace("*", self.escapetable["*"])
                     title = title.replace("_", self.escapetable["_"])
-                    res += ' title="%s"' % htmlquot(title)
+                    res += ' title="%s"' % htmlquote(title)
                 res += self.emptyelt
             else:
                 res = whole_match

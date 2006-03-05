@@ -1,9 +1,10 @@
 """template.py: simple, elegant templating"""
 __author__ = "Aaron Swartz <me@aaronsw.com>"
-__version__ = 0.003
+__version__ = 0.01
 
-from web import storage, group, htmlquote
 import re
+from types import FunctionType as function
+from web import storage, group, htmlquote
 # differences from python:
 #  - you can use the expression inside if, while blocks
 #  - special for loop attributes, like django?
@@ -20,6 +21,7 @@ import re
 #  code blocks
 #  tracebacks
 
+global_globals = {'None':None, 'False':False, 'True': True}
 MAX_ITERS = 100000
 
 # http://docs.python.org/ref/identifiers.html
@@ -241,6 +243,10 @@ class TemplateParser(Parser):
                     x = _.tokq(', ') and _.exprq()
                 _.tokr(')')
                 n = ('call', n, 'args', args, 'kw', kw)
+            elif _.tokq('['):
+                v = _.exprr()
+                _.tokr(']')
+                n = ('getitem', n, v)
             else:
                 break
         
@@ -350,6 +356,9 @@ class Stowage(storage):
     def __str__(self): return self.get('_str')
 
 class WTF(AssertionError): pass
+class SecurityError(Exception):
+    """The template seems to be trying to do something naughty."""
+    pass
 
 class Handle:
     def __init__(self, parsetree, **kw):
@@ -360,7 +369,7 @@ class Handle:
         return getattr(self, 'h_'+item[0])(itemize(item))
             
 class Fill(Handle):
-    builtins = {'None':None, 'False':False, 'True': True}
+    builtins = global_globals
     def filter(self, text):
         if text is None: return ''
         else: return str(text)
@@ -428,13 +437,26 @@ class Fill(Handle):
         elif i[0] == 'getattr':
             what, attr = i[1:]
             assert attr[0] == 'var'
-            out = getattr(self.h_getable(what), attr[1])
+            what, attr = self.h_getable(what), attr[1]
+            if attr.startswith('_') or attr.startswith('func_') or attr.startswith('im_'):
+                raise SecurityError, 'tried to get ' + attr
+            try:
+                if what in self.builtins:
+                    raise SecurityError, 'tried to getattr on ' + repr(what)
+            except TypeError:
+                pass # raised when testing an unhashable object
+            out = getattr(what, attr)
         elif i[0] == 'call':
             i = itemize(i)
             call = self.h_getable(i.call)
             args = [self.h_getable(x) for x in i.args]
             kw = dict([(x, self.h_getable(y)) for (x, y) in i.kw])
             out = call(*args, **kw)
+        elif i[0] == 'getitem':
+            what, key = i[1:]
+            what = self.h_getable(what)
+            key = self.h_expr(key)
+            out = what[key]
         else:
             raise WTF, i
         return out
@@ -521,6 +543,8 @@ class Fill(Handle):
         self.output._str = ''
         for item in self.parsetree:
             self.output._str += self.h(item) or ''
+        if self.output.keys() == ['_str']:
+            self.output = self.output['_str']
         return self.output
 
 Required = object()

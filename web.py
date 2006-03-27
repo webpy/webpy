@@ -2,7 +2,7 @@
 """web.py: makes web apps (http://webpy.org)"""
 __revision__ = "0.137s"
 __version__ = "0.137s"
-__license__ = "Affero General Public License, Version 1"
+__license__ = "Public domain"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 
 from __future__ import generators

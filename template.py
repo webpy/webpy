@@ -2,7 +2,7 @@
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 __version__ = 0.01
 
-import re
+import re, glob
 from types import FunctionType as function
 from web import storage, group, htmlquote
 # differences from python:
@@ -312,7 +312,7 @@ class TemplateParser(Parser):
                         g = _.getableq()
                         if g: 
                             out.append(o)
-                            out.append(_.o('var', _.o('expr', g), 'filter', filter))
+                            out.append(_.o('var', _.o('expr', g, 'negate', None), 'filter', filter))
                             o = ''
                         else:
                             o += c
@@ -325,7 +325,19 @@ class TemplateParser(Parser):
             o = o[:-1]
         out.append(o)
         return _.o('line', out)
-    
+
+    def listr(_):
+        _.tokr('[')
+        _.lock()
+        x = []
+        while True:
+            t = _.exprq()
+            if not t: break
+            x.append(t)
+            if not _.tokq(', '): break
+        _.tokr(']')
+        return ('list', x)
+
     def onethingr(_):
         if _.tokq('('):
             o = _.exprr()
@@ -333,6 +345,7 @@ class TemplateParser(Parser):
         else:
             o = (
               _.getableq() or 
+              _.listq() or
               _.req('[0-9]+') or 
               _.req('"[^"]*"') or #@@ no support for escapes
               _.req("'[^']*'"))
@@ -340,21 +353,35 @@ class TemplateParser(Parser):
         else: _.Error('expression')
 
     def exprr(_):
+        negate = _.tokq('not ')
         x = _.onethingr()
         if _.tokq(' '):
-            clause = _.ltokr('is not', 'is', '==', '!=', '<', '>', 'and', 'or')
+            clause = _.ltokr('is not', 'is', '==', '!=', '>=', '<=', '<', '>', 'and', 'or', '*', '+', '-', '/')
             _.tokr(' ')
             y = _.onethingr()
             x = ('test', x, clause, y)
             
-        return _.o('expr', x)
+        return _.o('expr', x, 'negate', negate)
 
 def itemize(item):
     return storage(dict(group(item, 2)))
 
 class Stowage(storage):
     def __str__(self): return self.get('_str')
-
+    #@@ edits in place
+    def __add__(self, other):
+        if isinstance(other, str):
+            self._str += other
+            return self
+        else:
+            raise TypeError, 'cannot add'
+    def __radd__(self, other):
+        if isinstance(other, str):
+            self._str = other + self._str
+            return self
+        else:
+            raise TypeError, 'cannot add'
+    
 class WTF(AssertionError): pass
 class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
@@ -375,24 +402,35 @@ class Fill(Handle):
         else: return str(text)
         # later: can do stuff like WebSafe
     
-    def h_expr(self, item):
-        assert item[0] == 'expr'
-        item = item[1]
+    def h_expr(self, i):
+        assert i[0] == 'expr'
+        i = itemize(i)
+        item = i.expr
         if isinstance(item, str) and item.isdigit():
             item = int(item)
         elif isinstance(item, str) and item[0] in ['"', "'"]:
             item = item[1:-1]
+        elif item[0] == 'list':
+            item = self.h_list(itemize(item))
         elif item[0] == 'getable':
             item = self.h_getable(item[1])
         elif item[0] == 'test':
             item = self.h_test(*item[1:])
         else:
             raise WTF, item
+        if i.negate:
+            item = not item
         return item
-    
+
+    def h_list(self, x):
+        out = []
+        for item in x.list:
+            out.append(self.h_expr(item))
+        return out
+
     def h_onething(self, x):
         if x[0] != 'expr':
-            x = ('expr', x)
+            x = ('expr', x, 'negate', None)
         return self.h_expr(x)
         
     def h_test(self, ox, clause, oy):
@@ -410,10 +448,22 @@ class Fill(Handle):
             return x() > y()
         elif clause == '<':
             return x() < y()
+        elif clause == '<=':
+            return x() <= y()
+        elif clause == '>=':
+            return x() >= y()
         elif clause == 'and':
             return x() and y()
         elif clause == 'or':
             return x() or y()
+        elif clause == '+':
+            return x() + y()
+        elif clause == '-':
+            return x() - y()
+        elif clause == '*':
+            return x() * y()
+        elif clause == '/':
+            return x() / y()
         else:
             raise WTF, 'clause ' + clause
     
@@ -445,7 +495,13 @@ class Fill(Handle):
                     raise SecurityError, 'tried to getattr on ' + repr(what)
             except TypeError:
                 pass # raised when testing an unhashable object
-            out = getattr(what, attr)
+            try:
+                out = getattr(what, attr)
+            except AttributeError:
+                if isinstance(what, list) and attr == 'join':
+                    out = lambda s: s.join(what)
+                else:
+                    raise
         elif i[0] == 'call':
             i = itemize(i)
             call = self.h_getable(i.call)
@@ -552,6 +608,8 @@ class Template:
     globals = {}
     def __init__(self, text, filter=None):
         self.filter = filter
+        # universal newlines:
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
         if not text.endswith('\n'): text += '\n'
         header, tree = TemplateParser(text).go()
         self.tree = tree
@@ -602,4 +660,27 @@ class Template:
 
 def websafe(val):
     if val is None: return ''
+    if isinstance(val, unicode): val = val.encode('utf8')
     return htmlquote(str(val))
+
+class render:
+    def __init__(self, loc='templates/'):
+        self.loc = loc
+        self.cache = {}
+    
+    def _do(self, p, filter=None):
+        if p in self.cache: return self.cache[p]
+        
+        p = glob.glob(self.loc+p+'.*')[0]
+        if p.endswith('.html'):
+            import web
+            web.header('Content-Type', 'text/html; charset=utf-8')
+            if not filter: filter = websafe
+        elif p.endswith('.xml'):
+            if not filter: filter = websafe
+
+        self.cache[p] = Template(open(p).read(), filter=filter)
+        return self.cache[p]
+    
+    def __getattr__(self, p):
+        return self._do(p)

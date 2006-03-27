@@ -668,19 +668,25 @@ class render:
         self.loc = loc
         self.cache = {}
     
-    def _do(self, p, filter=None):
-        if p in self.cache: return self.cache[p]
+    def _do(self, name, filter=None):
+        if name not in self.cache:
+            p = glob.glob(self.loc + name + '.*')
+            if not p:
+                raise AttributeError, 'no template named ' + name
+            p = p[0]
+            c = Template(open(p).read())
+            self.cache[name] = (p, c)
         
-        p = glob.glob(self.loc+p+'.*')[0]
+        p, c = self.cache[name]
+
         if p.endswith('.html'):
             import web
             web.header('Content-Type', 'text/html; charset=utf-8')
-            if not filter: filter = websafe
+            if not filter: c.filter = websafe
         elif p.endswith('.xml'):
-            if not filter: filter = websafe
+            if not filter: c.filter = websafe
+        
+        return c
 
-        self.cache[p] = Template(open(p).read(), filter=filter)
-        return self.cache[p]
-    
     def __getattr__(self, p):
         return self._do(p)

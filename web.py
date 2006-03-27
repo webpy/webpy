@@ -1490,11 +1490,20 @@ def input(*requireds, **defaults):
     Returns a `storage` object with the GET and POST arguments. 
     See `storify` for how `requireds` and `defaults` work.
     """
-    if not hasattr(context, '_inputfs'): 
-        context._inputfs = cgi.FieldStorage(fp = context.environ['wsgi.input'],
-                                            environ=context.environ, 
-                                            keep_blank_values=1)
-    return storify(context._inputfs, *requireds, **defaults)
+    from cStringIO import StringIO
+    
+    if not '_inputfs' in ctx:
+        e = ctx.env.copy()
+        a = {}
+        if e['REQUEST_METHOD'] == 'POST':
+            a = cgi.FieldStorage(fp = StringIO(ctx.data), environ=e, 
+              keep_blank_values=1)
+            a = storify(a)
+        e['REQUEST_METHOD'] = 'GET'
+        b = storify(cgi.FieldStorage(environ=e, keep_blank_values=1))
+        
+        ctx._inputfs = dictadd(a, b)
+    return storify(ctx._inputfs, *requireds, **defaults)
 
 ## cookies
 
@@ -1584,7 +1593,7 @@ def wsgifunc(func, *middleware):
     def wsgifunc(env, start_resp):
         _load(env)
         relrcheck()
-        try: 
+        try:
             result = func()
         except StopIteration: 
             result = None
@@ -1955,12 +1964,16 @@ def _load(env):
     # http://trac.lighttpd.net/trac/ticket/406 requires:
     if env.get('SERVER_SOFTWARE', '').startswith('lighttpd/'):
         ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], 
-                           env.get('SCRIPT_NAME'))
+                           os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', '')))
 
-    ctx.data = env['wsgi.input'].read(int(env['CONTENT_LENGTH']))
-    #ctx.fullpath = ctx.path
-    #if dict(input()): 
-    #    ctx.fullpath += '?' + urllib.urlencode(dict(input()))
+    try:
+        cl = int(env['CONTENT_LENGTH'])
+    except:
+        cl = 0
+    ctx.data = env['wsgi.input'].read(cl)
+    ctx.fullpath = ctx.path
+    if dict(input()): 
+        ctx.fullpath += '?' + urllib.urlencode(dict(input()))
     ctx.status = '200 OK'
     ctx.headers = []
     ctx.output = ''

@@ -1,6 +1,6 @@
 """template.py: simple, elegant templating"""
 __author__ = "Aaron Swartz <me@aaronsw.com>"
-__version__ = 0.01
+__version__ = 0.1
 
 import re, glob
 from types import FunctionType as function

@@ -1661,8 +1661,10 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     Runs a simple HTTP server hosting WSGI app `func`. The directory `static/` 
     is hosted statically.
 
-    Based on [WsgiServer](http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html) 
-    from [Colin Stewart](http://www.owlfish.com/).
+    Based on [WsgiServer] from [Colin Stewart].
+    
+      [WsgiServer]: http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html
+      [Colin Stewart]: http://www.owlfish.com/
     """
     # Copyright (c) 2004 Colin Stewart (http://www.owlfish.com/)
     # Modified somewhat for simplicity
@@ -1736,6 +1738,8 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
             return
 
         do_POST = run_wsgi_app
+        do_PUT = run_wsgi_app
+        do_DELETE = run_wsgi_app
 
         def do_GET(self):
             if self.path.startswith('/static/'):
@@ -1953,9 +1957,10 @@ def _load(env):
         ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], 
                            env.get('SCRIPT_NAME'))
 
-    ctx.fullpath = ctx.path
-    if dict(input()): 
-        ctx.fullpath += '?' + urllib.urlencode(dict(input()))
+    ctx.data = env['wsgi.input'].read(int(env['CONTENT_LENGTH']))
+    #ctx.fullpath = ctx.path
+    #if dict(input()): 
+    #    ctx.fullpath += '?' + urllib.urlencode(dict(input()))
     ctx.status = '200 OK'
     ctx.headers = []
     ctx.output = ''

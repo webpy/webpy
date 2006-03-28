@@ -13,12 +13,8 @@ from web import storage, group, htmlquote
 # all these are probably good ideas for python...
 
 # todo:
-#  protect against accessing __vars__ (e.g. None)
 #  continue, break, etc.
-#  nested blocks (for within if, etc.)
-#  better getable, expr support
-#    inline arrays, tuples, dictionaries
-#  code blocks
+#  inline dictionary
 #  tracebacks
 
 global_globals = {'None':None, 'False':False, 'True': True}

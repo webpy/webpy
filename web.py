@@ -389,26 +389,44 @@ threadeddict = ThreadedDict
 ## ip utils
 
 def validipaddr(address):
-    """returns True if 'addres' is a valid IPv4 address"""
-    return 4 == (1 + address.count(".")) == \
-        len([n for n in address.split(".") 
-        if (n.isdigit() and -1 < int(n) < 256)])
+    """returns True if `address` is a valid IPv4 address"""
+    try:
+        octets = address.split('.')
+        assert len(octets) == 4
+        for x in octets:
+            assert 0 <= int(x) <= 255
+    except (AssertionError, ValueError):
+        return False
+    return True
 
 def validipport(port):
-    """returns True if 'port' is a valid IPv4 port"""
-    return port.isdigit() and -1 < int(port) < 65536
+    """returns True if `port` is a valid IPv4 port"""
+    try:
+        assert 0 <= int(port) <= 65535
+    except (AssertionError, ValueError):
+        return False
+    return True
 
 def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
-    """returns a valid IP address/port tuple from string 'ip_addr_port'"""
-    address = ip.split(":", 1)
-    (addr_index, port_index) = (len(address) == 2) and (0, 1) or (0, 0)
-    ip_addr = validipaddr(address[addr_index]) and \
-        (address[addr_index]) or \
-        defaultaddr
-    ip_port = validipport(address[port_index]) and \
-        (int(address[port_index])) or \
-            defaultport
-    return (ip_addr, ip_port)
+    """returns (ip_address, port) from string `ip_addr_port`"""
+    addr = defaultaddr
+    port = defaultport
+    
+    ip = ip.split(":", 1)
+    if len(ip) == 1:
+        if validipaddr(ip[0]):
+            addr = ip[0]
+        elif validipport(ip[0]):
+            port = ip[0]
+        else:
+            raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
+    elif len(ip) == 2:
+        addr, port = ip
+        if not validipaddr(addr) and validipport(port):
+            raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
+    else:
+        raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
+    return (addr, port)
     
 ## url utils
 

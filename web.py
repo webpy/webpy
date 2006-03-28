@@ -414,16 +414,19 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
     
     ip = ip.split(":", 1)
     if len(ip) == 1:
-        if validipaddr(ip[0]):
+        if not ip[0]:
+            pass
+        elif validipaddr(ip[0]):
             addr = ip[0]
         elif validipport(ip[0]):
-            port = ip[0]
+            port = int(ip[0])
         else:
             raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
     elif len(ip) == 2:
         addr, port = ip
         if not validipaddr(addr) and validipport(port):
             raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
+        port = int(port)
     else:
         raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
     return (addr, port)

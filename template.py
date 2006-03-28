@@ -224,6 +224,7 @@ class TemplateParser(Parser):
                 v = _.varq()
                 if not v:
                     _.p -= 1 # get rid of the '.'
+                    break
                 else:
                     n = ('getattr', n, v)
             elif _.tokq('('):
@@ -352,7 +353,7 @@ class TemplateParser(Parser):
         negate = _.tokq('not ')
         x = _.onethingr()
         if _.tokq(' '):
-            clause = _.ltokr('is not', 'is', '==', '!=', '>=', '<=', '<', '>', 'and', 'or', '*', '+', '-', '/')
+            clause = _.ltokr('not in', 'in', 'is not', 'is', '==', '!=', '>=', '<=', '<', '>', 'and', 'or', '*', '+', '-', '/')
             _.tokr(' ')
             y = _.onethingr()
             x = ('test', x, clause, y)
@@ -436,6 +437,10 @@ class Fill(Handle):
             return x() is y()
         elif clause == 'is not':
             return x() is not y()
+        elif clause == 'in':
+            return x() in y()
+        elif clause == 'not in':
+            return x() not in y()
         elif clause == '==':
             return x() == y()
         elif clause == '!=':
@@ -686,3 +691,6 @@ class render:
 
     def __getattr__(self, p):
         return self._do(p)
+
+def frender(fn, *a, **kw):
+    return Template(open(fn).read(), *a, **kw)

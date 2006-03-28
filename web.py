@@ -440,7 +440,7 @@ def prefixurl(base=''):
     Sorry, this function is really difficult to explain.
     Maybe some other time.
     """
-    url = context.path.lstrip('/')
+    url = ctx.path.lstrip('/')
     for i in xrange(url.count('/')): 
         base += '../'
     if not base: 
@@ -587,6 +587,7 @@ class UnknownParamstyle(Exception):
     Currently supported: qmark,numeric, format, pyformat
     """
     pass
+
 def aparam():
     """Use in a SQL string to make a spot for a db value."""
     style = ctx.db_module.paramstyle
@@ -646,7 +647,7 @@ def connect(dbn, **keywords):
     elif dbn == "sqlite":
         try: ## try first sqlite3 version
             from pysqlite2 import dbapi2 as db
-            db.paramstyle = 'pyformat'
+            db.paramstyle = 'qmark'
         except ImportError: ## else try sqlite2
             import sqlite as db
         keywords['database'] = keywords['db']
@@ -800,8 +801,10 @@ def insert(tablename, seqname=None, **values):
         sql_query = "SELECT last_insert_id()"
         v = ()
     elif ctx.db_name == "sqlite":
+        ctx.db_execute(db_cursor, sql_query, v)
         # not really the same...
-        sql_query += "; SELECT last_insert_rowid()"
+        sql_query = "SELECT last_insert_rowid()"
+        v = ()
 
     ctx.db_execute(db_cursor, sql_query, v)
     try: 
@@ -880,12 +883,12 @@ def handle(mapping, fvars=None):
             ofn, fna = ofno[0], list(ofno[1:])
         else: 
             ofn, fna = ofno, []
-        fn, result = re_subm('^' + url + '$', ofn, context.path)
+        fn, result = re_subm('^' + url + '$', ofn, ctx.path)
         if result: # it's a match
             if fn.split(' ', 1)[0] == "redirect":
                 url = fn.split(' ', 1)[1]
-                if context.method == "GET":
-                    x = context.environ.get('QUERY_STRING', '')
+                if ctx.method == "GET":
+                    x = ctx.env.get('QUERY_STRING', '')
                     if x: 
                         url += '?' + x
                 return redirect(url)
@@ -904,7 +907,7 @@ def handle(mapping, fvars=None):
                 except KeyError: 
                     return notfound()
             
-            meth = context.method
+            meth = ctx.method
             if meth == "HEAD":
                 if not hasattr(cls, meth): 
                     meth = "GET"
@@ -1013,8 +1016,8 @@ def redirect(url, status='301 Moved Permanently'):
     `url` is joined with the base URL so that things like 
     `redirect("about") will work properly.
     """
-    newloc = urlparse.urljoin(context.home + context.path, url)
-    context.status = status
+    newloc = urlparse.urljoin(ctx.home + ctx.path, url)
+    ctx.status = status
     header('Content-Type', 'text/html')
     header('Location', newloc)
     # seems to add a three-second delay for some reason:
@@ -1034,19 +1037,19 @@ def tempredirect(url):
 
 def badrequest():
     """Return a `400 Bad Request` error."""
-    context.status = '400 Bad Request'
+    ctx.status = '400 Bad Request'
     header('Content-Type', 'text/html')
     return output('bad request')
 
 def notfound():
     """Returns a `404 Not Found` error."""
-    context.status = '404 Not Found'
+    ctx.status = '404 Not Found'
     header('Content-Type', 'text/html')
     return output('not found')
 
 def nomethod(cls):
     """Returns a `405 Method Not Allowed` error for `cls`."""
-    context.status = '405 Method Not Allowed'
+    ctx.status = '405 Method Not Allowed'
     header('Content-Type', 'text/html')
     header('Allow', \
            ', '.join([method for method in \
@@ -1056,15 +1059,15 @@ def nomethod(cls):
 
 def gone():
     """Returns a `410 Gone` error."""
-    context.status = '410 Gone'
+    ctx.status = '410 Gone'
     header('Content-Type', 'text/html')
     return output("gone")
 
 def internalerror():
     """Returns a `500 Internal Server` error."""
-    context.status = "500 Internal Server Error"
-    context.headers = [('Content-Type', 'text/html')]
-    context.output = "internal server error"
+    ctx.status = "500 Internal Server Error"
+    ctx.headers = [('Content-Type', 'text/html')]
+    ctx.output = "internal server error"
 
 
 # adapted from Django <djangoproject.com> 
@@ -1078,7 +1081,7 @@ DJANGO_500_PAGE = """#import inspect
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <meta name="robots" content="NONE,NOARCHIVE" />
-  <title>$exception_type at $context.path</title>
+  <title>$exception_type at $ctx.path</title>
   <style type="text/css">
     html * { padding:0; margin:0; }
     body * { padding:10px 20px; }
@@ -1180,14 +1183,14 @@ DJANGO_500_PAGE = """#import inspect
 <body>
 
 <div id="summary">
-  <h1>$exception_type at $context.path</h1>
+  <h1>$exception_type at $ctx.path</h1>
   <h2>$exception_value</h2>
   <table><tr>
     <th>Python</th>
     <td>$lastframe.filename in $lastframe.function, line $lastframe.lineno</td>
   </tr><tr>
     <th>Web</th>
-    <td>$context.method $context.home$context.path</td>
+    <td>$ctx.method $ctx.home$ctx.path</td>
   </tr></table>
 </div>
 <div id="traceback">
@@ -1241,7 +1244,7 @@ DJANGO_500_PAGE = """#import inspect
   #if $context_.output or $context_.headers
     <h2>Response so far</h2>
     <h3>HEADERS</h3>
-    #if $context.headers
+    #if $ctx.headers
       <p class="req"><code>
       #for (k, v) in $context_.headers
         $k: $v<br />
@@ -1336,7 +1339,7 @@ DJANGO_500_PAGE = """#import inspect
       </tr>
     </thead>
     <tbody>
-      #set myitems = $context_.environ.items()
+      #set myitems = $context_.env.items()
       #silent myitems.sort(lambda x,y: cmp(x[0], y[0]))  
       #for (key, val) in $myitems
         <tr>
@@ -1406,7 +1409,7 @@ def djangoerror():
     urljoin = urlparse.urljoin
     input_ = input()
     cookies_ = cookies()
-    context_ = context
+    context_ = ctx
     def prettify(x):
         try: 
             out = pprint.pformat(x)
@@ -1444,9 +1447,9 @@ system. For more information, see
 because you're trying to use templates and you haven't
 installed Cheetah. See above.)</p>
 """ % htmlquote(traceback.format_exc())
-    context.status = "500 Internal Server Error"
-    context.headers = [('Content-Type', 'text/html')]
-    context.output = out
+    ctx.status = "500 Internal Server Error"
+    ctx.headers = [('Content-Type', 'text/html')]
+    ctx.output = out
 
 
 ## rendering
@@ -1552,7 +1555,7 @@ def input(*requireds, **defaults):
         e = ctx.env.copy()
         a = {}
         if e['REQUEST_METHOD'] == 'POST':
-            a = cgi.FieldStorage(fp = StringIO(ctx.data), environ=e, 
+            a = cgi.FieldStorage(fp = StringIO(data()), environ=e, 
               keep_blank_values=1)
             a = storify(a)
         e['REQUEST_METHOD'] = 'GET'
@@ -1560,6 +1563,12 @@ def input(*requireds, **defaults):
         
         ctx._inputfs = dictadd(a, b)
     return storify(ctx._inputfs, *requireds, **defaults)
+
+def data():
+    if 'data' not in ctx:
+        cl = int(ctx.env['CONTENT_LENGTH'])
+        ctx.data = ctx.env['wsgi.input'].read(cl)
+    return ctx.data
 
 ## cookies
 
@@ -1583,17 +1592,17 @@ def cookies(*requireds, **defaults):
     See `storify` for how `requireds` and `defaults` work.
     """
     cookie = Cookie.SimpleCookie()
-    cookie.load(context.environ.get('HTTP_COOKIE', ''))
+    cookie.load(ctx.env.get('HTTP_COOKIE', ''))
     return storify(cookie, *requireds, **defaults)
 
 ## WSGI Sugar
 
 def header(hdr, value):
     """Adds the header `hdr: value` with the response."""
-    context.headers.append((hdr, value))
+    ctx.headers.append((hdr, value))
 def output(string_):
     """Appends `string_` to the response."""
-    context.output += str(string_)
+    ctx.output += str(string_)
 
 def write(cgi_response):
     """Converts a standard CGI-style string response into `header` and 
@@ -1610,7 +1619,7 @@ def write(cgi_response):
         hdr, value = line.split(":", 1)
         value = value.strip()
         if hdr.lower() == "status": 
-            context.status = value
+            ctx.status = value
         else: 
             header(hdr, value)
 
@@ -1671,7 +1680,7 @@ def wsgifunc(func, *middleware):
         elif hasattr(output, 'next'): 
             return output
         else: 
-            raise Exception, "Invalid web.context.output"
+            raise Exception, "Invalid web.ctx.output"
     
     for mw_func in middleware: 
         wsgifunc = mw_func(wsgifunc)
@@ -1852,10 +1861,10 @@ def makeserver(wsgi_server):
         def error(self, req):
             w = req.stdout.write
             internalerror()
-            w('Status: ' + context.status + '\r\n')
-            for (h, v) in context.headers:
+            w('Status: ' + ctx.status + '\r\n')
+            for (h, v) in ctx.headers:
                 w(h + ': ' + v + '\r\n')
-            w('\r\n' + context.output)
+            w('\r\n' + ctx.output)
                 
     return MyServer
     
@@ -1892,7 +1901,7 @@ def debug(*args):
     Prints a prettyprinted version of `args` to stderr.
     """
     try: 
-        out = context.environ['wsgi.errors']
+        out = ctx.environ['wsgi.errors']
     except: 
         out = sys.stderr
     for arg in args:
@@ -1902,7 +1911,7 @@ def debug(*args):
 def debugwrite(x):
     """writes debug data to error stream"""
     try: 
-        out = context.environ['wsgi.errors']
+        out = ctx.environ['wsgi.errors']
     except: 
         out = sys.stderr
     out.write(x)
@@ -2022,14 +2031,9 @@ def _load(env):
         ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], 
                            os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', '')))
 
-    try:
-        cl = int(env['CONTENT_LENGTH'])
-    except:
-        cl = 0
-    ctx.data = env['wsgi.input'].read(cl)
     ctx.fullpath = ctx.path
-    if dict(input()): 
-        ctx.fullpath += '?' + urllib.urlencode(dict(input()))
+    if env.get('QUERY_STRING'):
+        ctx.fullpath += '?' + env.get('QUERY_STRING', '')
     ctx.status = '200 OK'
     ctx.headers = []
     ctx.output = ''

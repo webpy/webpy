@@ -15,11 +15,10 @@ from __future__ import generators
 
 # todo:
 #   - get rid of upvars
+#   - break up into separate files
 #   - provide an option to use .write()
-#   - add ip:port support
 #   - allow people to do $self.id from inside a reparam
 #   - add sqlite support
-#   - make storage a subclass of dictionary
 #   - convert datetimes, floats in WebSafe
 #   - locks around memoize
 #   - fix memoize to use cacheify style techniques
@@ -71,6 +70,7 @@ class WrongDirection(Exception):
     Currently supported: r, l
     """
     pass
+
 def _strips(direction, text, remove):
     """strips 'remove' from 'text' at 'direction' end"""
     if direction == 'l': 
@@ -86,9 +86,11 @@ def _strips(direction, text, remove):
 def rstrips(text, remove):
     """removes the string `remove` from the right of `text`"""
     return _strips('r', text, remove)
+
 def lstrips(text, remove):
-    """removes the string `remove` from the right of `text`"""
+    """removes the string `remove` from the left of `text`"""
     return _strips('l', text, remove)
+
 def strips(text, remove):
     """removes the string `remove` from the both sides of `text`"""
     return rstrips(lstrips(text, remove), remove)

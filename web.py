@@ -4,6 +4,7 @@ __revision__ = "0.137s"
 __version__ = "0.137s"
 __license__ = "Public domain"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
+__contributors__ = "see http://webpy.org/changes"
 
 from __future__ import generators
 
@@ -30,7 +31,7 @@ import cgi, re, urllib, urlparse, Cookie, pprint
 from threading import currentThread
 from tokenize import tokenprog
 iters = (list, tuple)
-if hasattr(__builtins__, 'set'): 
+if hasattr(__builtins__, 'set') or __builtins__.has_key('set'):
     iters += (set,)
 try: 
     from sets import Set
@@ -236,6 +237,17 @@ def dictfind(dictionary, element):
         if element is value: 
             return key
 
+def dictfindall(dictionary, element):
+    """
+    Returns the keys whose values in `dictionary` are `element`
+    or, if none exists, [].
+    """
+    res = []
+    for (key, value) in dictionary.iteritems():
+        if element is value:
+            res.append(key)
+    return res
+
 def dictincr(dictionary, element):
     """
     Increments `element` in `dictionary`, 
@@ -246,7 +258,10 @@ def dictincr(dictionary, element):
     return dictionary[element]
 
 def dictadd(dict_a, dict_b):
-    """Returns a dictionary consisting of the keys in `a` and `b`."""
+    """
+    Returns a dictionary consisting of the keys in `a` and `b`.
+    If they share a key, the value from b is used.
+    """
     result = {}
     result.update(dict_a)
     result.update(dict_b)
@@ -528,16 +543,18 @@ def sqlors(left, lst):
     would result in:
     
         foo = 1 OR foo = 2 OR foo = 3
-    
-    contributed by Steven Huffman <http://spez.name>
     """
-    if isinstance(lst, iters) and len(lst) == 1: 
-        lst = lst[0]
+    if isinstance(lst, iters):
+        lst = list(lst)
+        ln = len(lst)
+        if ln == 0:
+            return ("2+2=5", [])
+        if ln == 1: 
+            lst = lst[0]
+
     if isinstance(lst, iters):
         return '(' + left + \
                (' OR ' + left).join([aparam() for param in lst]) + ")", lst
-    elif not list: 
-        return "", []
     else:
         return left + aparam(), [lst]
 
@@ -892,12 +909,25 @@ def autodelegate(prefix=''):
 
     `GET_password` would get called for `/prefs/password` while `GET_privacy` for 
     `GET_privacy` gets called for `/prefs/privacy`.
+    
+    If a user visits `/prefs/password/change` then `GET_password(self, '/change')`
+    is called.
     """
     def internal(self, arg):
-        func = prefix + arg
-        if hasattr(self, func): 
-            return getattr(self, func)()
-        else: 
+        if '/' in arg:
+            first, rest = arg.split('/', 1)
+            func = prefix + first
+            args = ['/' + rest]
+        else:
+            func = prefix + arg
+            args = []
+        
+        if hasattr(self, func):
+            try:
+                return getattr(self, func)(*args)
+            except TypeError:
+                return notfound()
+        else:
             return notfound()
     return internal
 
@@ -909,7 +939,10 @@ def httpdate(date_obj):
 
 def parsehttpdate(string_):
     """Parses an HTTP date into a datetime object."""
-    t = time.strptime(string_, "%a, %d %b %Y %H:%M:%S %Z")
+    try:
+        t = time.strptime(string_, "%a, %d %b %Y %H:%M:%S %Z")
+    except ValueError:
+        return None
     return datetime.datetime(*t[:6])
 
 def expires(delta):
@@ -932,7 +965,7 @@ def lastmodified(date_obj):
 
 def modified(date=None, etag=None):
     n = ctx.env.get('HTTP_IF_NONE_MATCH')
-    m = ctx.env.get('HTTP_IF_MODIFIED_SINCE')
+    m = parsehttpdate(ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
     validate = False
     if etag:
         raise NotImplementedError, "no etag support yet"
@@ -940,7 +973,7 @@ def modified(date=None, etag=None):
     if date and m:
         # we subtract a second because 
         # HTTP dates don't have sub-second precision
-        if date-datetime.timedelta(seconds=1) <= parsehttpdate(m):
+        if date-datetime.timedelta(seconds=1) <= m:
             validate = True
     
     if validate: ctx.status = '304 Not Modified'

@@ -1488,12 +1488,15 @@ def htmlquote(text):
     text = text.replace('"', "&quot;")
     return text
 
+def websafe(val):
+    if val is None: return ''
+    if isinstance(val, unicode): val = val.encode('utf8')
+    return htmlquote(str(val))
+
 if _hasTemplating:
     class WebSafe(Filter):
         def filter(self, val, **keywords): 
-            if val is None: 
-                return ''
-            return htmlquote(str(val))
+            return websafe(val)
 
 def render(template, terms=None, asTemplate=False, base=None, 
            isString=False):

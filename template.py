@@ -4,7 +4,7 @@ __version__ = 0.1
 
 import re, glob
 from types import FunctionType as function
-from web import storage, group, htmlquote
+from web import storage, group, htmlquote, websafe
 # differences from python:
 #  - you can use the expression inside if, while blocks
 #  - special for loop attributes, like django?
@@ -658,11 +658,6 @@ class Template:
             raise TypeError, 'values for %s are required' % unset 
 
         return d
-
-def websafe(val):
-    if val is None: return ''
-    if isinstance(val, unicode): val = val.encode('utf8')
-    return htmlquote(str(val))
 
 class render:
     def __init__(self, loc='templates/'):

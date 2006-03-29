@@ -2,12 +2,10 @@
 __version__ = '0.21'
 __author__ = ['Aaron Swartz <me@aaronsw.com>', 'Steve Huffman <http://spez.name/>']
 
-import copy
+import copy, re
 import web
 
-Nil = type('Nil', (), {'__repr__': lambda x: 'Nil'})() #@@@
-
-def attrget(obj, attr, value=Nil):
+def attrget(obj, attr, value=None):
     if hasattr(obj, 'has_key') and obj.has_key(attr): return obj[attr]
     if hasattr(obj, attr): return getattr(obj, attr)
     return value
@@ -26,7 +24,7 @@ class Form:
         out = ''
         out += '<table>\n'
         for i in self.inputs:
-            out += "\t<tr><th><label for='%s'>%s</th>" % (i.name, i.description)
+            out += "\t<tr><th><label for='%s'>%s</label></th>" % (i.name, i.description)
             out += "<td>"+i.pre+i.render()+i.post+"</td>"
             out += '<td id="note_%s">%s</td></tr>\n' % (i.name, self.rendernote(i.note))
         out += "</table>"
@@ -41,7 +39,7 @@ class Form:
         out = True
         for i in self.inputs:
             v = attrget(source, i.name)
-            if v is not Nil: out = i.validate(v) and out
+            out = i.validate(v) and out
         self.valid = out
         return out
 
@@ -60,6 +58,9 @@ class Input(object):
         self.value = attrs.pop('value', None)
         self.pre = attrs.pop('pre', "")
         self.post = attrs.pop('post', "")
+        if 'class_' in attrs:
+            attrs['class'] = attrs['class_']
+            del attrs['class_']
         self.name, self.validators, self.attrs, self.note = name, validators, attrs, None
 
     def validate(self, value):
@@ -75,33 +76,33 @@ class Input(object):
     def addatts(self):
         str = ""
         for (n, v) in self.attrs.items():
-            str += ' %s="%s"' % (n, web.htmlquote(v))
+            str += ' %s="%s"' % (n, web.websafe(v))
         return str
     
 #@@ quoting
 
 class Textbox(Input):
     def render(self):
-        x = '<input type="text" name="%s"' % web.htmlquote(self.name)
-        if self.value: x += ' value="%s"' % web.htmlquote(self.value)
+        x = '<input type="text" name="%s"' % web.websafe(self.name)
+        if self.value: x += ' value="%s"' % web.websafe(self.value)
         x += self.addatts()
         x += ' />'
         return x
 
 class Password(Input):
     def render(self):
-        x = '<input type="password" name="%s"' % web.htmlquote(self.name)
-        if self.value: x += ' value="%s"' % web.htmlquote(self.value)
+        x = '<input type="password" name="%s"' % web.websafe(self.name)
+        if self.value: x += ' value="%s"' % web.websafe(self.value)
         x += self.addatts()
         x += ' />'
         return x
 
 class Textarea(Input):
     def render(self):
-        x = '<textarea name="%s"' % web.htmlquote(self.name)
+        x = '<textarea name="%s"' % web.websafe(self.name)
         x += self.addatts()
         x += '>'
-        if self.value is not None: x += web.htmlquote(self.value)
+        if self.value is not None: x += web.websafe(self.value)
         x += '</textarea>'
         return x
 
@@ -111,11 +112,11 @@ class Dropdown(Input):
         super(Dropdown, self).__init__(name, *validators, **attrs)
 
     def render(self):
-        x = '<select name="%s"%s>\n' % (web.htmlquote(self.name), self.addatts())
+        x = '<select name="%s"%s>\n' % (web.websafe(self.name), self.addatts())
         for arg in self.args:
             if self.value == arg: select_p = ' selected="selected"'
             else: select_p = ''
-            x += "  <option"+select_p+">%s</option>\n" % web.htmlquote(arg)
+            x += "  <option"+select_p+">%s</option>\n" % web.websafe(arg)
         x += '</select>\n'
         return x
 
@@ -129,12 +130,12 @@ class Radio(Input):
         for arg in self.args:
             if self.value == arg: select_p = ' checked="checked"'
             else: select_p = ''
-            x += '<input type="radio" name="%s" value="%s"%s%s /> %s ' % (web.htmlquote(self.name), web.htmlquote(arg), select_p, self.addatts(), web.htmlquote(arg))
+            x += '<input type="radio" name="%s" value="%s"%s%s /> %s ' % (web.websafe(self.name), web.websafe(arg), select_p, self.addatts(), web.websafe(arg))
         return x+'</span>'
 
 class Checkbox(Input):
     def render(self):
-        x = '<input name="%s" type="checkbox"' % web.htmlquote(self.name)
+        x = '<input name="%s" type="checkbox"' % web.websafe(self.name)
         if self.value: x += ' checked="checked"'
         x += self.addatts()
         x += ' />'
@@ -142,7 +143,7 @@ class Checkbox(Input):
 
 class Button(Input):
     def render(self):
-        safename = web.htmlquote(self.name)
+        safename = web.websafe(self.name)
         x = '<button name="%s"%s>%s</button>' % (safename, self.addatts(), safename)
         return x
 
@@ -154,3 +155,11 @@ class Validator:
         except: return False
 
 notnull = Validator("Required", bool)
+
+class regexp(Validator):
+    def __init__(self, rexp, msg):
+        self.rexp = re.compile(rexp)
+        self.msg = msg
+    
+    def valid(self, value):
+        return bool(self.rexp.match(value))

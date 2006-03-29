@@ -1,5 +1,5 @@
 """form.py: A simple Python form library."""
-__version__ = '0.21'
+__version__ = '0.22'
 __author__ = ['Aaron Swartz <me@aaronsw.com>', 'Steve Huffman <http://spez.name/>']
 
 import copy, re

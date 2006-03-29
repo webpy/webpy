@@ -1526,7 +1526,7 @@ def render(template, terms=None, asTemplate=False, base=None,
         terms = new
     # default: grab all locals
     elif terms is None:
-        terms = {'context': context}
+        terms = {'context': context, 'ctx':ctx}
         terms.update(sys._getframe(1).f_locals)
     # terms=d means use d as the searchList
     if not isinstance(terms, tuple): 

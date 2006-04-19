@@ -1737,7 +1737,14 @@ def header(hdr, value, unique=False):
 def output(string_):
     """Appends `string_` to the response."""
     if isinstance(string_, unicode): string_ = string_.encode('utf8')
-    ctx.output += str(string_)
+    if ctx.get('flush'):
+        ctx._write(string_)
+    else:
+        ctx.output += str(string_)
+
+def flush():
+    ctx.flush = True
+    return flush
 
 def write(cgi_response):
     """
@@ -1796,26 +1803,62 @@ def wsgifunc(func, *middleware):
         relrcheck()
         try:
             result = func()
-        except StopIteration: 
+        except StopIteration:
             result = None
+        
         is_generator = result and hasattr(result, 'next')
         if is_generator:
-            # we need to give wsgi back the headers first,
-            # so we need to do at iteration
-            try: 
+            # wsgi requires the headers first
+            # so we need to do an iteration
+            # and save the result for later
+            try:
                 firstchunk = result.next()
-            except StopIteration: 
+            except StopIteration:
                 firstchunk = ''
+
         status, headers, output = ctx.status, ctx.headers, ctx.output
-        _unload()
-        start_resp(status, headers)
-        if is_generator: 
-            return itertools.chain([firstchunk], result)
-        elif isinstance(output, str): 
-            return [output] #@@ other stringlikes?
-        elif hasattr(output, 'next'): 
-            return output
-        else: 
+        ctx._write = start_resp(status, headers)
+
+        # and now, the fun:
+        
+        def cleanup():
+            # we insert this little generator
+            # at the end of our itertools.chain
+            # so that it unloads the request
+            # when everything else is done
+            
+            yield '' # force it to be a generator
+            _unload()
+
+        # result is the output of calling the webpy function
+        #   it could be a generator...
+        
+        if is_generator:
+            if firstchunk is flush:
+                # oh, it's just our special flush mode
+                # ctx._write is set up, so just continue execution
+                try:
+                    result.next()
+                except StopIteration:
+                    pass
+
+                _unload()
+                return []
+            else:
+                return itertools.chain([firstchunk], result, cleanup())
+        
+        #   ... but it's usually just None
+        # 
+        # output is the stuff in ctx.output
+        #   it's usually a string...
+        if isinstance(output, str): #@@ other stringlikes?
+            _unload()
+            return [output] 
+        #   it could be a generator...
+        elif hasattr(output, 'next'):
+            return itertools.chain(output, cleanup())
+        else:
+            _unload()
             raise Exception, "Invalid web.ctx.output"
     
     for mw_func in middleware: 

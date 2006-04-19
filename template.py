@@ -17,6 +17,7 @@ from web import storage, group, htmlquote, websafe
 
 # todo:
 #  inline tuple
+#  relax constraints on spacing
 #  continue, break, etc.
 #  inline dictionary
 #  tracebacks
@@ -741,7 +742,8 @@ class render:
 
         if p.endswith('.html'):
             import web
-            web.header('Content-Type', 'text/html; charset=utf-8')
+            if 'headers' in web.ctx:
+                web.header('Content-Type', 'text/html; charset=utf-8')
             if not filter: c.filter = websafe
         elif p.endswith('.xml'):
             if not filter: c.filter = websafe

@@ -277,6 +277,50 @@ def intget(integer, default=None):
     except (TypeError, ValueError):
         return default
 
+def datestr(then, now=None):
+    """Converts a (UTC) datetime object to a nice string representation."""
+    def agohence(n, what, divisor=None):
+        if divisor: n = n // divisor
+
+        out = str(abs(n)) + ' ' + what       # '2 day'
+        if abs(n) != 1: out += 's'           # '2 days'
+        out += ' '                           # '2 days '
+        if n < 0:
+            out += 'from now'
+        else:
+            out += 'ago'
+        return out                           # '2 days ago'
+
+    oneday = 24 * 60 * 60
+
+    if not now: now = datetime.datetime.utcnow()
+    delta = now - then
+    deltaseconds = int(delta.days * oneday + delta.seconds + delta.microseconds * 1e-06)
+    deltadays = abs(deltaseconds) // oneday
+    if deltaseconds < 0: deltadays *= -1 # fix for oddity of floor
+
+    if deltadays:
+        if abs(deltadays) < 4:
+            return agohence(deltadays, 'day')
+
+        out = then.strftime('%B %e') # e.g. 'June 13'
+        if then.year != now.year or deltadays < 0:
+            out += ', %s' % then.year
+        return out
+
+    if int(deltaseconds):
+        if abs(deltaseconds) > (60 * 60):
+            return agohence(deltaseconds, 'hour', 60 * 60)
+        else:
+            return agohence(deltaseconds, 'minute', 60)
+
+    deltamicroseconds = delta.microseconds
+    if delta.days: deltamicroseconds = int(delta.microseconds - 1e6) # datetime oddity
+    if abs(deltamicroseconds) > 1000:
+        return agohence(deltamicroseconds, 'millisecond', 1000)
+
+    return agohence(deltamicroseconds, 'microsecond')
+
 def upvars(level=2):
     """Guido van Rossum doesn't want you to use this function."""
     return dictadd(
@@ -435,7 +479,14 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
     else:
         raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
     return (addr, port)
-    
+
+def validaddr(string_):
+    """returns either (ip_address, port) or "/path/to/socket" from string_"""
+    if '/' in string_:
+        return string_
+    else:
+        return validip(string_)
+
 ## URL Utilities
 
 def prefixurl(base=''):
@@ -672,9 +723,26 @@ def connect(dbn, **keywords):
     if globals().get('db_printing'):
         def db_execute(cur, sql_query, d=None):
             """executes an sql query"""
+            
+            def sqlquote(obj):
+                """converts `obj` to its proper SQL version"""
+                
+                # because `1 == True and hash(1) == hash(True)`
+                # we have to do this the hard way...
+                
+                if obj is None:
+                    return 'NULL'
+                elif obj is True:
+                    return "'t'"
+                elif obj is False:
+                    return "'f'"
+                else:
+                    return repr(obj)
+            
+            
             ctx.dbq_count += 1
             try: 
-                outq = sql_query % tuple(d)
+                outq = sql_query % tuple(map(sqlquote, d))
             except TypeError:
                 outq = sql_query
             print >> debug, str(ctx.dbq_count)+':', outq
@@ -1034,6 +1102,8 @@ def redirect(url, status='301 Moved Permanently'):
     """
     newloc = urlparse.urljoin(ctx.home + ctx.path, url)
     ctx.status = status
+    ctx.headers = []
+    ctx.output = ''    
     header('Content-Type', 'text/html')
     header('Location', newloc)
     # seems to add a three-second delay for some reason:
@@ -1071,7 +1141,9 @@ def nomethod(cls):
            ', '.join([method for method in \
                      ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'] \
                         if hasattr(cls, method)]))
-    return output('method not allowed')
+    
+    # commented out for the same reason redirect is
+    # return output('method not allowed')
 
 def gone():
     """Returns a `410 Gone` error."""
@@ -1513,7 +1585,7 @@ def websafe(val):
     unicode is converted to UTF-8.
     """
     if val is None: return ''
-    if isinstance(val, unicode): val = val.encode('utf8')
+    if not isinstance(val, unicode): val = str(val)
     return htmlquote(str(val))
 
 if _hasTemplating:
@@ -1559,7 +1631,7 @@ def render(template, terms=None, asTemplate=False, base=None,
         terms = (terms,)
     
     if not isString and template.endswith('.html'): 
-        header('Content-Type','text/html; charset=utf-8')
+        header('Content-Type','text/html; charset=utf-8', unique=True)
         
     compiled_tmpl = _compiletemplate(template, base=base, isString=isString)
     compiled_tmpl = compiled_tmpl(searchList=terms, filter=WebSafe)
@@ -1593,7 +1665,7 @@ def input(*requireds, **defaults):
 def data():
     """Returns the data sent with the request."""
     if 'data' not in ctx:
-        cl = int(ctx.env['CONTENT_LENGTH'])
+        cl = intget(ctx.env.get('CONTENT_LENGTH'), 0)
         ctx.data = ctx.env['wsgi.input'].read(cl)
     return ctx.data
 
@@ -1620,12 +1692,20 @@ def cookies(*requireds, **defaults):
     """
     cookie = Cookie.SimpleCookie()
     cookie.load(ctx.env.get('HTTP_COOKIE', ''))
-    return storify(cookie, *requireds, **defaults)
+    try:
+        return storify(cookie, *requireds, **defaults)
+    except KeyError:
+        badrequest()
+        raise StopIteration
 
 ## WSGI Sugar
 
-def header(hdr, value):
+def header(hdr, value, unique=False):
     """Adds the header `hdr: value` with the response."""
+    if unique:
+        for h, v in ctx.headers:
+            if h == hdr: return
+    
     ctx.headers.append((hdr, value))
 
 def output(string_):
@@ -1905,7 +1985,7 @@ def runfcgi(func):
         args = sys.argv[:]
         if 'fastcgi' in args: args.remove('fastcgi')
         elif 'fcgi' in args: args.remove('fcgi')
-        hostport = validip(args[1])
+        hostport = validaddr(args[1])
     elif len(sys.argv) > 1: 
         hostport = ('localhost', 8000)
     else:
@@ -1919,7 +1999,7 @@ def runscgi(func):
     if len(sys.argv) > 2: # progname, scgi
         args = sys.argv[:]
         args.remove('scgi')
-        hostport = validip(args[1])
+        hostport = validaddr(args[1])
     else: 
         hostport = ('localhost', 4000)
     return my_server(func, bindAddress=hostport).run()

@@ -1063,7 +1063,7 @@ def background(func):
             t = threading.Thread(target=newfunc)
             longterm.threaddb[id(t)] = t
             t.start()
-            return redirect(changequery(_t=id(t)))
+            return seeother(changequery(_t=id(t)))
     return internal
 longterm.threaddb = {}
 

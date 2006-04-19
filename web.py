@@ -1041,6 +1041,33 @@ def autodelegate(prefix=''):
             return notfound()
     return internal
 
+def background(func):
+    """A function decorator to run a long-running function as a background thread."""
+    def internal(*a, **kw):
+        i = input(_method='get')
+        if '_t' in i:
+            try:
+                t = longterm.threaddb[int(i._t)]
+            except KeyError:
+                return notfound()
+            _context[currentThread()] = _context[t]
+            return
+        else:
+            ctx = _context[currentThread()]
+            _context[currentThread()] = storage(ctx.copy())
+
+            def newfunc():
+                _context[currentThread()] = ctx
+                func(*a, **kw)
+
+            t = threading.Thread(target=newfunc)
+            longterm.threaddb[id(t)] = t
+            t.start()
+            return redirect(changequery(_t=id(t)))
+    return internal
+longterm.threaddb = {}
+
+
 ## HTTP Functions
 
 def httpdate(date_obj):

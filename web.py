@@ -25,7 +25,7 @@ from __future__ import generators
 #   - merge curval query with the insert
 #   - figure out how to handle squid, etc. for web.ctx.ip
 
-import os, os.path, sys, time, types, traceback
+import os, os.path, sys, time, types, traceback, threading
 import cgi, re, urllib, urlparse, Cookie, pprint
 from threading import currentThread
 from tokenize import tokenprog
@@ -1047,7 +1047,7 @@ def background(func):
         i = input(_method='get')
         if '_t' in i:
             try:
-                t = longterm.threaddb[int(i._t)]
+                t = background.threaddb[int(i._t)]
             except KeyError:
                 return notfound()
             _context[currentThread()] = _context[t]
@@ -1061,12 +1061,11 @@ def background(func):
                 func(*a, **kw)
 
             t = threading.Thread(target=newfunc)
-            longterm.threaddb[id(t)] = t
+            background.threaddb[id(t)] = t
             t.start()
             return seeother(changequery(_t=id(t)))
     return internal
-longterm.threaddb = {}
-
+background.threaddb = {}
 
 ## HTTP Functions
 

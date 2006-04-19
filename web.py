@@ -63,16 +63,9 @@ if not hasattr(traceback, 'format_exc'):
         return strbuf.getvalue()
     traceback.format_exc = format_exc
 
-## general utils
-class WrongDirection(Exception):
-    """raised for unsupported direction
-
-    Currently supported: r, l
-    """
-    pass
+## General Utilities
 
 def _strips(direction, text, remove):
-    """strips 'remove' from 'text' at 'direction' end"""
     if direction == 'l': 
         if text.startswith(remove): 
             return text[len(remove):]
@@ -80,7 +73,7 @@ def _strips(direction, text, remove):
         if text.endswith(remove):   
             return text[:-len(remove)]
     else: 
-        raise WrongDirection, "Needs to be r or l."
+        raise ValueError, "Direction needs to be r or l."
     return text
 
 def rstrips(text, remove):
@@ -156,7 +149,7 @@ def storify(mapping, *requireds, **defaults):
 
 class Memoize:
     """
-    "Memoizes" a function, caching its return values for each input.
+    'Memoizes' a function, caching its return values for each input.
     """
     def __init__(self, func): 
         self.func = func
@@ -277,6 +270,13 @@ def listget(lst, ind, default=None):
         return default
     return lst[ind]
 
+def intget(integer, default=None):
+    """Returns `integer` as an int or `default` if it can't."""
+    try:
+        return int(integer)
+    except (TypeError, ValueError):
+        return default
+
 def upvars(level=2):
     """Guido van Rossum doesn't want you to use this function."""
     return dictadd(
@@ -380,15 +380,18 @@ class ThreadedDict:
         return getattr(self.__d[currentThread()], attr)
     def __getitem__(self, item): 
         return self.__d[currentThread()][item]
-    def __setattr__(self, attr, value): 
-        return setattr(self.__d[currentThread()], attr, value)
+    def __setattr__(self, attr, value):
+        if attr == '__doc__':
+            self.__dict__[attr] = value
+        else:
+            return setattr(self.__d[currentThread()], attr, value)
     def __setitem__(self, item, value): 
         self.__d[currentThread()][item] = value
     def __hash__(self): 
         return hash(self.__d[currentThread()])
 threadeddict = ThreadedDict
 
-## ip utils
+## IP Utilities
 
 def validipaddr(address):
     """returns True if `address` is a valid IPv4 address"""
@@ -410,7 +413,7 @@ def validipport(port):
     return True
 
 def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
-    """returns (ip_address, port) from string `ip_addr_port`"""
+    """returns `(ip_address, port)` from string `ip_addr_port`"""
     addr = defaultaddr
     port = defaultport
     
@@ -433,7 +436,7 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
         raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
     return (addr, port)
     
-## url utils
+## URL Utilities
 
 def prefixurl(base=''):
     """
@@ -449,7 +452,7 @@ def prefixurl(base=''):
 
 urlquote = urllib.quote
 
-## formatting
+## Formatting
 
 try:
     from markdown import markdown # http://webpy.org/markdown.py
@@ -472,10 +475,11 @@ def safemarkdown(text):
         text = markdown(text)
         return text
 
-## db api
-class ItplError(ValueError):
+## Databases
+
+class _ItplError(ValueError):
     """String Interpolation Error
-    from http://lfw.org/python/Itpl.py 
+    from <http://lfw.org/python/Itpl.py>
     (cf. below for license)
     """
     def __init__(self, text, pos):
@@ -485,18 +489,19 @@ class ItplError(ValueError):
     def __str__(self):
         return "unfinished expression in %s at char %d" % (
             repr(self.text), self.pos)
+
 def _interpolate(format):
     """
     Takes a format string and returns a list of 2-tuples of the form
     (boolean, string) where boolean says whether string should be evaled
     or not.
     
-    from http://lfw.org/python/Itpl.py (public domain, Ka-Ping Yee)
+    from <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
     def matchorfail(text, pos):
         match = tokenprog.match(text, pos)
         if match is None:
-            raise ItplError(text, pos)
+            raise _ItplError(text, pos)
         return match, match.end()
     
     namechars = "abcdefghijklmnopqrstuvwxyz" \
@@ -740,6 +745,17 @@ def sqllist(lst):
         return lst
     else: return ', '.join(lst)
 
+def sqlwhere(dictionary):
+    """
+    Converts a `dictionary` like {'cust_id': 2, 'order_id':3} to
+    an SQL WHERE clause like "cust_id = 2 AND order_id = 3".
+    @@untested
+    """
+    
+    return ' AND '.join([
+      '%s = %s' % (k, aparam()) for k in dictionary.keys()
+    ]), dictionary.values()
+
 def select(tables, vars=None, what='*', where=None, order=None, group=None, 
            limit=None, offset=None):
     """
@@ -867,7 +883,7 @@ def delete(table, where, using=None, vars=None):
         ctx.db.commit()
     return db_cursor.rowcount
 
-## request handlers
+## Request Handlers
 
 def handle(mapping, fvars=None):
     """
@@ -957,7 +973,7 @@ def autodelegate(prefix=''):
             return notfound()
     return internal
 
-## http defaults
+## HTTP Functions
 
 def httpdate(date_obj):
     """Formats a datetime object for use in HTTP headers."""
@@ -1452,7 +1468,7 @@ installed Cheetah. See above.)</p>
     ctx.output = out
 
 
-## rendering
+## Rendering
 
 r_include = re_compile(r'(?!\\)#include \"(.*?)\"($|#)', re.M)
 def __compiletemplate(template, base=None, isString=False):
@@ -1489,6 +1505,13 @@ def htmlquote(text):
     return text
 
 def websafe(val):
+    """
+    Converts `val` so that it's safe for use in HTML.
+
+    HTML metacharacters are encoded,
+    None becomes the empty string, and
+    unicode is converted to UTF-8.
+    """
     if val is None: return ''
     if isinstance(val, unicode): val = val.encode('utf8')
     return htmlquote(str(val))
@@ -1545,7 +1568,7 @@ def render(template, terms=None, asTemplate=False, base=None,
     else: 
         return output(str(compiled_tmpl))
 
-## input forms
+## Input Forms
 
 def input(*requireds, **defaults):
     """
@@ -1568,12 +1591,13 @@ def input(*requireds, **defaults):
     return storify(ctx._inputfs, *requireds, **defaults)
 
 def data():
+    """Returns the data sent with the request."""
     if 'data' not in ctx:
         cl = int(ctx.env['CONTENT_LENGTH'])
         ctx.data = ctx.env['wsgi.input'].read(cl)
     return ctx.data
 
-## cookies
+## Cookies
 
 def setcookie(name, value, expires="", domain=None):
     """Sets a cookie."""
@@ -1603,13 +1627,16 @@ def cookies(*requireds, **defaults):
 def header(hdr, value):
     """Adds the header `hdr: value` with the response."""
     ctx.headers.append((hdr, value))
+
 def output(string_):
     """Appends `string_` to the response."""
+    if isinstance(string_, unicode): string_ = string_.encode('utf8')
     ctx.output += str(string_)
 
 def write(cgi_response):
-    """Converts a standard CGI-style string response into `header` and 
-       `output` calls.
+    """
+    Converts a standard CGI-style string response into `header` and 
+    `output` calls.
     """
     cgi_response = str(cgi_response)
     cgi_response.replace('\r\n', '\n')
@@ -1738,10 +1765,10 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     Runs a simple HTTP server hosting WSGI app `func`. The directory `static/` 
     is hosted statically.
 
-    Based on [WsgiServer] from [Colin Stewart].
+    Based on [WsgiServer][ws] from [Colin Stewart][cs].
     
-      [WsgiServer]: http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html
-      [Colin Stewart]: http://www.owlfish.com/
+  [ws]: http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html
+  [cs]: http://www.owlfish.com/
     """
     # Copyright (c) 2004 Colin Stewart (http://www.owlfish.com/)
     # Modified somewhat for simplicity
@@ -1897,7 +1924,7 @@ def runscgi(func):
         hostport = ('localhost', 4000)
     return my_server(func, bindAddress=hostport).run()
 
-## debug
+## Debugging
 
 def debug(*args):
     """
@@ -1963,7 +1990,7 @@ def profiler(app):
         return out + ['<pre>' + result + '</pre>'] #@@encode
     return profile_internal
 
-## setting up the context
+## Context
 
 class _outputter:
     """Wraps `sys.stdout` so that print statements go into the response."""
@@ -1983,49 +2010,67 @@ ctx = context = threadeddict(_context)
 ctx.__doc__ = """
 A `storage` object containing various information about the request:
   
-   `environ` (aka `env`)
-     : A dictionary containing the standard WSGI environment variables.
+`environ` (aka `env`)
+   : A dictionary containing the standard WSGI environment variables.
 
-   `host`
-     : The domain (`Host` header) requested by the user.
-  
-   `home`
-     : The base path for the application.
-  
-   `ip`
-     : The IP address of the requester.
-  
-   `method`
-     : The HTTP method used.
-  
-   `path`
-     : The path request.
-  
-   `fullpath`
-     : The full path requested, including query arguments.
-  
-   ### Response Data
-  
-   `status` (default: "200 OK")
-     : The status code to be used in the response.
-  
-   `headers`
-     : A list of 2-tuples to be used in the response.
-  
-   `output`
-     : A string to be used as the response.
+`host`
+   : The domain (`Host` header) requested by the user.
+
+`home`
+   : The base path for the application.
+
+`ip`
+   : The IP address of the requester.
+
+`method`
+   : The HTTP method used.
+
+`path`
+   : The path request.
+
+`fullpath`
+   : The full path requested, including query arguments.
+
+### Response Data
+
+`status` (default: "200 OK")
+   : The status code to be used in the response.
+
+`headers`
+   : A list of 2-tuples to be used in the response.
+
+`output`
+   : A string to be used as the response.
 """
 
 if not '_oldstdout' in globals(): 
     _oldstdout = sys.stdout
     sys.stdout = _outputter()
 
-def _load(env):
+loadhooks = {}
+
+def load():
+    """
+    Loads a new context for the thread.
+    
+    You can ask for a function to be run at loadtime by 
+    adding it to the dictionary `loadhooks`.
+    """
     _context[currentThread()] = Storage()
+    ctx.status = '200 OK'
+    ctx.headers = []
+    if 'db_parameters' in globals():
+        connect(**db_parameters)
+    
+    for x in loadhooks.values(): x()
+
+def _load(env):
+    load()
+    ctx.output = ''
     ctx.environ = ctx.env = env
     ctx.host = env.get('HTTP_HOST')
     ctx.home = 'http://' + env.get('HTTP_HOST', '[unknown]') + \
-                env.get('SCRIPT_NAME', '')
+                os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', ''))
     ctx.ip = env.get('REMOTE_ADDR')
     ctx.method = env.get('REQUEST_METHOD')
     ctx.path = env.get('PATH_INFO')
@@ -2037,15 +2082,22 @@ def _load(env):
     ctx.fullpath = ctx.path
     if env.get('QUERY_STRING'):
         ctx.fullpath += '?' + env.get('QUERY_STRING', '')
-    ctx.status = '200 OK'
-    ctx.headers = []
-    ctx.output = ''
-    if 'db_parameters' in globals():
-        connect(**db_parameters)
 
-def _unload(): 
+unloadhooks = {}
+
+def unload():
+    """
+    Unloads the context for the thread.
+    
+    You can ask for a function to be run at loadtime by
+    adding it ot the dictionary `unloadhooks`.
+    """
+    for x in unloadhooks.values(): x()
     # ensures db cursors and such are GCed promptly
     del _context[currentThread()]
+
+def _unload():
+    unload()
 
 if __name__ == "__main__":
     urls = ('/web.py', 'source')

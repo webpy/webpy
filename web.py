@@ -1642,25 +1642,34 @@ def render(template, terms=None, asTemplate=False, base=None,
 
 ## Input Forms
 
-def input(*requireds, **defaults):
+def input(_method='both', *requireds, **defaults):
     """
     Returns a `storage` object with the GET and POST arguments. 
     See `storify` for how `requireds` and `defaults` work.
     """
     from cStringIO import StringIO
     
-    if not '_inputfs' in ctx:
-        e = ctx.env.copy()
+    e = ctx.env.copy()
+    out = {}
+    
+    if _method.lower() in ['both', 'post']:
         a = {}
         if e['REQUEST_METHOD'] == 'POST':
             a = cgi.FieldStorage(fp = StringIO(data()), environ=e, 
               keep_blank_values=1)
             a = storify(a)
+        out = dictadd(out, a)
+
+    if _method.lower() in ['both', 'get']:
         e['REQUEST_METHOD'] = 'GET'
-        b = storify(cgi.FieldStorage(environ=e, keep_blank_values=1))
-        
-        ctx._inputfs = dictadd(a, b)
-    return storify(ctx._inputfs, *requireds, **defaults)
+        a = storify(cgi.FieldStorage(environ=e, keep_blank_values=1))
+        out = dictadd(out, a)
+    
+    try:
+        return storify(out, *requireds, **defaults)
+    except KeyError:
+        badrequest()
+        raise StopIteration
 
 def data():
     """Returns the data sent with the request."""
@@ -1668,6 +1677,23 @@ def data():
         cl = intget(ctx.env.get('CONTENT_LENGTH'), 0)
         ctx.data = ctx.env['wsgi.input'].read(cl)
     return ctx.data
+
+def changequery(**kw):
+    """
+    Imagine you're at `/foo?a=1&b=2`. Then `changequery(a=3)` will return
+    `/foo?a=3&b=2` -- the same URL but with the arguments you requested
+    changed.
+    """
+    query = input(_method='get')
+    for k, v in kw.iteritems():
+        if v is None:
+            query.pop(k, None)
+        else:
+            query[k] = v
+    out = ctx.path
+    if query:
+        out += '?' + urllib.urlencode(query)
+    return out
 
 ## Cookies
 

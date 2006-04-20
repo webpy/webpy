@@ -1043,6 +1043,25 @@ def autodelegate(prefix=''):
 
 def background(func):
     """A function decorator to run a long-running function as a background thread."""
+    @backgrounder
+    def internal(*a, **kw):
+        data() # cache it
+        ctx = _context[currentThread()]
+        _context[currentThread()] = storage(ctx.copy())
+
+        def newfunc():
+            _context[currentThread()] = ctx
+            func(*a, **kw)
+
+        t = threading.Thread(target=newfunc)
+        background.threaddb[id(t)] = t
+        t.start()
+        ctx.headers = []
+        return seeother(changequery(_t=id(t)))
+    return internal
+background.threaddb = {}
+
+def backgrounder(func):
     def internal(*a, **kw):
         i = input(_method='get')
         if '_t' in i:
@@ -1053,19 +1072,8 @@ def background(func):
             _context[currentThread()] = _context[t]
             return
         else:
-            ctx = _context[currentThread()]
-            _context[currentThread()] = storage(ctx.copy())
-
-            def newfunc():
-                _context[currentThread()] = ctx
-                func(*a, **kw)
-
-            t = threading.Thread(target=newfunc)
-            background.threaddb[id(t)] = t
-            t.start()
-            return seeother(changequery(_t=id(t)))
+            return func(*a, **kw)
     return internal
-background.threaddb = {}
 
 ## HTTP Functions
 
@@ -1128,7 +1136,6 @@ def redirect(url, status='301 Moved Permanently'):
     """
     newloc = urlparse.urljoin(ctx.home + ctx.path, url)
     ctx.status = status
-    ctx.headers = []
     ctx.output = ''    
     header('Content-Type', 'text/html')
     header('Location', newloc)
@@ -1612,7 +1619,7 @@ def websafe(val):
     """
     if val is None: return ''
     if not isinstance(val, unicode): val = str(val)
-    return htmlquote(str(val))
+    return htmlquote(val)
 
 if _hasTemplating:
     class WebSafe(Filter):
@@ -1668,16 +1675,17 @@ def render(template, terms=None, asTemplate=False, base=None,
 
 ## Input Forms
 
-def input(_method='both', *requireds, **defaults):
+def input(*requireds, **defaults):
     """
     Returns a `storage` object with the GET and POST arguments. 
     See `storify` for how `requireds` and `defaults` work.
     """
     from cStringIO import StringIO
     
+    _method = defaults.pop('_method', 'both')
+    
     e = ctx.env.copy()
     out = {}
-    
     if _method.lower() in ['both', 'post']:
         a = {}
         if e['REQUEST_METHOD'] == 'POST':

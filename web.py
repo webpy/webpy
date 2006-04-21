@@ -30,7 +30,8 @@ import cgi, re, urllib, urlparse, Cookie, pprint
 from threading import currentThread
 from tokenize import tokenprog
 iters = (list, tuple)
-if hasattr(__builtins__, 'set') or __builtins__.has_key('set'):
+if hasattr(__builtins__, 'set') or (
+  hasattr(__builtins__, 'has_key') and __builtins__.has_key('set')):
     iters += (set,)
 try: 
     from sets import Set
@@ -736,9 +737,10 @@ def connect(dbn, **keywords):
                     return "'t'"
                 elif obj is False:
                     return "'f'"
+                elif isinstance(obj, datetime.datetime):
+                    return repr(obj.isoformat())
                 else:
                     return repr(obj)
-            
             
             ctx.dbq_count += 1
             try: 
@@ -1043,7 +1045,6 @@ def autodelegate(prefix=''):
 
 def background(func):
     """A function decorator to run a long-running function as a background thread."""
-    @backgrounder
     def internal(*a, **kw):
         data() # cache it
         ctx = _context[currentThread()]
@@ -1058,7 +1059,7 @@ def background(func):
         t.start()
         ctx.headers = []
         return seeother(changequery(_t=id(t)))
-    return internal
+    return backgrounder(internal)
 background.threaddb = {}
 
 def backgrounder(func):

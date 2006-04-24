@@ -1,7 +1,7 @@
 """form.py: A simple Python form library."""
-__author__ = ['Aaron Swartz <me@aaronsw.com>', 'Steve Huffman <http://spez.name/>']
 __version__ = '0.22'
 __license__ = "Public domain"
+__author__ = ['Aaron Swartz <me@aaronsw.com>', 'Steve Huffman <http://spez.name/>']
 
 import copy, re
 import web
@@ -15,6 +15,7 @@ class Form:
     def __init__(self, *inputs):
         self.inputs = inputs
         self.valid = True
+        self.note = None
 
     def __call__(self, x=None):
         o = copy.deepcopy(self)
@@ -23,9 +24,10 @@ class Form:
     
     def render(self):
         out = ''
+        out += self.rendernote(self.note)
         out += '<table>\n'
         for i in self.inputs:
-            out += "\t<tr><th><label for='%s'>%s</label></th>" % (i.name, i.description)
+            out += '   <tr><th><label for="%s"">%s</label></th>' % (i.name, i.description)
             out += "<td>"+i.pre+i.render()+i.post+"</td>"
             out += '<td id="note_%s">%s</td></tr>\n' % (i.name, self.rendernote(i.note))
         out += "</table>"
@@ -35,15 +37,22 @@ class Form:
         if note: return '<strong class="wrong">%s</strong>' % note
         else: return ""
 
-    def validates(self, source=None):
-        if source is None: source = web.input()
+    def validates(self, source=None, _validate=True, **kw):
+        source = source or kw or web.input()
         out = True
         for i in self.inputs:
             v = attrget(source, i.name)
-            out = i.validate(v) and out
-        self.valid = out
+            if _validate:
+                out = i.validate(v) and out
+            else:
+                i.value = v
+        if _validate:
+            self.valid = out
         return out
-
+    
+    def fill(self, source=None, **kw):
+        return self.validates(source, _validate=False, **kw)
+    
     def __getitem__(self, i):
         for x in self.inputs:
             if x.name == i: return x
@@ -146,6 +155,13 @@ class Button(Input):
     def render(self):
         safename = web.websafe(self.name)
         x = '<button name="%s"%s>%s</button>' % (safename, self.addatts(), safename)
+        return x
+
+class Hidden(Input):
+    def render(self):
+        x = '<input type="hidden" name="%s' % web.websafe(self.name)
+        if self.value: x += ' value="%s"' % web.websafe(self.value)
+        x += ' />'
         return x
 
 class Validator:

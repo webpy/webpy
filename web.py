@@ -346,8 +346,10 @@ def datestr(then, now=None):
     if int(deltaseconds):
         if abs(deltaseconds) > (60 * 60):
             return agohence(deltaseconds, 'hour', 60 * 60)
-        else:
+        elif abs(deltaseconds) > 60:
             return agohence(deltaseconds, 'minute', 60)
+        else:
+            return agohence(deltaseconds, 'second')
 
     deltamicroseconds = delta.microseconds
     if delta.days: deltamicroseconds = int(delta.microseconds - 1e6) # datetime oddity

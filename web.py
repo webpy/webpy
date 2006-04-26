@@ -152,14 +152,22 @@ def storify(mapping, *requireds, **defaults):
         {}
     
     """
+    def getvalue(x):
+        if hasattr(x, 'value'):
+            return x.value
+        else:
+            return x
+    
     stor = Storage()
-
     for key in requireds + tuple(mapping.keys()):
         value = mapping[key]
-        if isinstance(value, list) and not isinstance(defaults.get(key), list):
-            value = value[-1]
-        if hasattr(value, 'value') and not isinstance(defaults.get(key), dict):
-            value = value.value
+        if isinstance(value, list):
+            if isinstance(defaults.get(key), list):
+                value = [getvalue(x) for x in value]
+            else:
+                value = value[-1]
+        if not isinstance(defaults.get(key), dict):
+            value = getvalue(value)
         if isinstance(defaults.get(key), list) and not isinstance(value, list):
             value = [value]
         setattr(stor, key, value)
@@ -1708,6 +1716,7 @@ def input(*requireds, **defaults):
     See `storify` for how `requireds` and `defaults` work.
     """
     from cStringIO import StringIO
+    def dictify(fs): return dict([(k, fs[k]) for k in fs.keys()])
     
     _method = defaults.pop('_method', 'both')
     
@@ -1718,12 +1727,12 @@ def input(*requireds, **defaults):
         if e['REQUEST_METHOD'] == 'POST':
             a = cgi.FieldStorage(fp = StringIO(data()), environ=e, 
               keep_blank_values=1)
-            a = storify(a)
+            a = dictify(a)
         out = dictadd(out, a)
 
     if _method.lower() in ['both', 'get']:
         e['REQUEST_METHOD'] = 'GET'
-        a = storify(cgi.FieldStorage(environ=e, keep_blank_values=1))
+        a = dictify(cgi.FieldStorage(environ=e, keep_blank_values=1))
         out = dictadd(out, a)
     
     try:

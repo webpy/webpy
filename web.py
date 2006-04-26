@@ -127,15 +127,41 @@ def storify(mapping, *requireds, **defaults):
 
     For example, `storify({'a':1, 'c':3}, b=2, c=0)` will return the equivalent of
     `storage({'a':1, 'b':2, 'c':3})`.
+    
+    If a `storify` value is a list (e.g. multiple values in a form submission), 
+    `storify` returns the last element of the list, unless the key appears in 
+    `defaults` as a list. Thus:
+    
+        >>> storify({'a':[1, 2]}).a
+        2
+        >>> storify({'a':[1, 2]}, a=[]).a
+        [1, 2]
+        >>> storify({'a':1}, a=[]).a
+        [1]
+        >>> storify({}, a=[]).a
+        []
+    
+    Similarly, if the value has a `value` attribute, `storify will return _its_
+    value, unless the key appears in `defaults` as a dictionary.
+    
+        >>> storify({'a':storage(value=1)}).a
+        1
+        >>> storify({'a':storage(value=1)}, a={}).a
+        <Storage {'value': 1}>
+        >>> storify({}, a={}).a
+        {}
+    
     """
     stor = Storage()
 
     for key in requireds + tuple(mapping.keys()):
         value = mapping[key]
-        if isinstance(value, list): 
+        if isinstance(value, list) and not isinstance(defaults.get(key), list):
             value = value[-1]
-        if hasattr(value, 'value'): 
+        if hasattr(value, 'value') and not isinstance(defaults.get(key), dict):
             value = value.value
+        if isinstance(defaults.get(key), list) and not isinstance(value, list):
+            value = [value]
         setattr(stor, key, value)
 
     for (key, value) in defaults.iteritems():
@@ -208,7 +234,7 @@ class IterBetter:
     def __getitem__(self, i):
         #todo: slices
         if i > self.c: 
-            raise KeyError, "already passed "+str(i)
+            raise IndexError, "already passed "+str(i)
         try:
             while i < self.c: 
                 self.i.next()
@@ -217,7 +243,7 @@ class IterBetter:
             self.c += 1
             return self.i.next()
         except StopIteration: 
-            raise KeyError, repr(i)
+            raise IndexError, str(i)
 iterbetter = IterBetter
 
 def dictreverse(mapping):
@@ -502,7 +528,7 @@ def prefixurl(base=''):
         base = './'
     return base
 
-urlquote = urllib.quote
+def urlquote(x): return urllib.quote(websafe(x).encode('utf-8'))
 
 ## Formatting
 
@@ -1059,7 +1085,7 @@ def background(func):
         t.start()
         ctx.headers = []
         return seeother(changequery(_t=id(t)))
-    return backgrounder(internal)
+    return internal
 background.threaddb = {}
 
 def backgrounder(func):

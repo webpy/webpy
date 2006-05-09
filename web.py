@@ -872,9 +872,11 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
     if vars is None: 
         vars = {}
     values = []
-    qout = "SELECT " + what + " FROM "+sqllist(tables)
-
+    qout = ""
+    
     for (sql, val) in (
+      ('SELECT', what),
+      ('FROM', sqllist(tables)),
       ('WHERE', where), 
       ('GROUP BY', group), 
       ('ORDER BY', order), 

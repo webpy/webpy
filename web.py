@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.137"
+__version__ = "0.138"
 __revision__ = "$Rev$"
-__license__ = "Public domain"
+__license__ = "public domain"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 __contributors__ = "see http://webpy.org/changes"
 
@@ -853,9 +853,16 @@ def sqllist(lst):
 
 def sqlwhere(dictionary):
     """
-    Converts a `dictionary` like {'cust_id': 2, 'order_id':3} to
-    an SQL WHERE clause like "cust_id = 2 AND order_id = 3".
-    @@untested
+    Converts a `dictionary` to an SQL WHERE clause in
+    `reparam` format. Thus,
+    
+        {'cust_id': 2, 'order_id':3}
+    
+    would result in the equivalent of:
+    
+        'cust_id = 2 AND order_id = 3'
+    
+    but properly quoted.
     """
     
     return ' AND '.join([
@@ -2331,6 +2338,9 @@ def _unload():
     unload()
 
 if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+    
     urls = ('/web.py', 'source')
     class source:
         def GET(self):

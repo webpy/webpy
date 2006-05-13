@@ -1818,7 +1818,7 @@ def header(hdr, value, unique=False):
     if unique is True:
         for h, v in ctx.headers:
             if h == hdr: return
-    elif unique is False:
+    elif unique is None:
         ctx.headers = [h for h in ctx.headers if h[0] != hdr]
     
     ctx.headers.append((hdr, value))

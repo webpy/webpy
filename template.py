@@ -371,10 +371,10 @@ class TemplateParser(Parser):
     def listr(self):
         self.tokr('[')
         self.lock()
+        if self.tokq(']'): return list
         x = []
         while True:
-            t = self.exprq()
-            if not t: break
+            t = self.exprr()
             x.append(t)
             if not self.tokq(', '): break
         self.tokr(']')
@@ -383,6 +383,7 @@ class TemplateParser(Parser):
     def dictr(self):
         self.tokr('{')
         self.lock()
+        if self.tokq('}'): return dict        
         x = {}
         while True:
             k = self.exprr()
@@ -467,6 +468,10 @@ class Fill(Handle):
             item = item
         elif isinstance(item, str) and item[0] in ['"', "'"]:
             item = item[1:-1]
+        elif item is list: #@@HACK
+            item = []
+        elif item is dict:
+            item = {}
         elif isinstance(item, list):
             item = self.h_list(item)
         elif isinstance(item, dict):

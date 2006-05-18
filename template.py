@@ -406,7 +406,7 @@ class TemplateParser(Parser):
               self.req('"[^"]*"') or #@@ no support for escapes
               self.req("'[^']*'"))
             if not o:
-                o = self.req('[0-9]+')
+                o = self.req('\-?[0-9]+')
                 if o is not False: o = int(o)
         if o is not False:
             return o
@@ -428,13 +428,13 @@ class Stowage(storage):
     def __str__(self): return self.get('_str')
     #@@ edits in place
     def __add__(self, other):
-        if isinstance(other, str):
+        if isinstance(other, (unicode, str)):
             self._str += other
             return self
         else:
             raise TypeError, 'cannot add'
     def __radd__(self, other):
-        if isinstance(other, str):
+        if isinstance(other, (unicode, str)):
             self._str = other + self._str
             return self
         else:
@@ -665,7 +665,6 @@ class Fill(Handle):
     
     def go(self):
         self.output = Stowage()
-        out = []
         self.output._str = ''.join(map(self.h, self.parsetree))
         if self.output.keys() == ['_str']:
             self.output = self.output['_str']
@@ -748,7 +747,7 @@ class render:
         if p.endswith('.html'):
             import web
             if 'headers' in web.ctx:
-                web.header('Content-Type', 'text/html; charset=utf-8')
+                web.header('Content-Type', 'text/html; charset=utf-8', unique=True)
             if not filter: c.filter = websafe
         elif p.endswith('.xml'):
             if not filter: c.filter = websafe

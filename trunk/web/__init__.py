@@ -15,6 +15,7 @@ from utils import *
 from db import *
 from net import *
 from http import *
+from wsgi import *
 from webapi import *
 from httpserver import *
 from request import *
@@ -27,11 +28,12 @@ except ImportError:
 def main():
     import doctest
     
-    import utils, net, db, http, webapi, request
+    import utils, net, db, http, wsgi, webapi, request
     doctest.testmod(utils)
     doctest.testmod(db)
     doctest.testmod(net)
     doctest.testmod(http)
+    doctest.testmod(wsgi)
     doctest.testmod(webapi)
     doctest.testmod(request)
     

@@ -17,8 +17,8 @@ from net import *
 from wsgi import *
 from http import *
 from webapi import *
-from httpserver import *
 from request import *
+from httpserver import *
 
 try:
     from cheetah import *

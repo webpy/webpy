@@ -14,8 +14,8 @@ from __future__ import generators
 from utils import *
 from db import *
 from net import *
-from http import *
 from wsgi import *
+from http import *
 from webapi import *
 from httpserver import *
 from request import *
@@ -32,8 +32,8 @@ def main():
     doctest.testmod(utils)
     doctest.testmod(db)
     doctest.testmod(net)
-    doctest.testmod(http)
     doctest.testmod(wsgi)
+    doctest.testmod(http)
     doctest.testmod(webapi)
     doctest.testmod(request)
     

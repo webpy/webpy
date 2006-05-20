@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.12"
+__version__ = "0.2"
 __revision__ = "$Rev: 62 $"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 __license__ = "public domain"

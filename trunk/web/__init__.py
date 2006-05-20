@@ -28,7 +28,7 @@ except ImportError:
 def main():
     import doctest
     
-    import utils, net, db, http, wsgi, webapi, request
+    import utils, net, db, wsgi, http, webapi, request
     doctest.testmod(utils)
     doctest.testmod(db)
     doctest.testmod(net)

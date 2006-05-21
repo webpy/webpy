@@ -518,7 +518,8 @@ class CaptureStdout:
     """
     Captures everything `func` prints to stdout and returns it instead.
     
-        >>> def idiot(): print "foo"
+        >>> def idiot():
+        ...     print "foo"
         >>> capturestdout(idiot)()
         'foo\\n'
     

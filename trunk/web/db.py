@@ -246,15 +246,17 @@ def connect(dbn, **keywords):
                 import psycopg as db
             except ImportError: 
                 import pgdb as db
-        keywords['password'] = keywords['pw']
-        del keywords['pw']
+        if 'pw' in keywords:
+            keywords['password'] = keywords['pw']
+            del keywords['pw']
         keywords['database'] = keywords['db']
         del keywords['db']
 
     elif dbn == "mysql":
         import MySQLdb as db
-        keywords['passwd'] = keywords['pw']
-        del keywords['pw']
+        if 'pw' in keywords:
+            keywords['passwd'] = keywords['pw']
+            del keywords['pw']
         db.paramstyle = 'pyformat' # it's both, like psycopg
 
     elif dbn == "sqlite":
@@ -398,24 +400,31 @@ def sqlors(left, lst):
     else:
         return SQLQuery(left + aparam(), [lst])
 
-def sqlwhere(dictionary):
+def sqlwhere(dictionary, grouping=' AND '):
     """
     Converts a `dictionary` to an SQL WHERE clause `SQLQuery`.
     
         >>> sqlwhere({'cust_id': 2, 'order_id':3})
         <sql: 'order_id = 3 AND cust_id = 2'>
+        >>> sqlwhere({'cust_id': 2, 'order_id':3}, grouping=', ')
+        <sql: 'order_id = 3, cust_id = 2'>
     """
     
-    return SQLQuery(' AND '.join([
+    return SQLQuery(grouping.join([
       '%s = %s' % (k, aparam()) for k in dictionary.keys()
     ]), dictionary.values())
 
 def select(tables, vars=None, what='*', where=None, order=None, group=None, 
-           limit=None, offset=None):
+           limit=None, offset=None, _test=False):
     """
     Selects `what` from `tables` with clauses `where`, `order`, 
     `group`, `limit`, and `offset. Uses vars to interpolate. 
     Otherwise, each clause can be a SQLQuery.
+    
+        >>> select('foo', _test=True)
+        <sql: 'SELECT * FROM foo'>
+        >>> select(['foo', 'bar'], where="foo.bar_id = bar.id", limit=5, _test=True)
+        <sql: 'SELECT * FROM foo, bar WHERE foo.bar_id = bar.id LIMIT 5'>
     """
     if vars is None: vars = {}
     qout = ""
@@ -441,17 +450,22 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
             nout = reparam(val, vars)
         else: 
             continue
-        qout += " " + sql + " " + nout
+        if qout: qout += " " 
+        qout += sql + " " + nout
+
+    if _test: return qout
     return query(qout, processed=True)
 
-def insert(tablename, seqname=None, **values):
+def insert(tablename, seqname=None, _test=False, **values):
     """
     Inserts `values` into `tablename`. Returns current sequence ID.
     Set `seqname` to the ID if it's not the default, or to `False`
     if there isn't one.
+    
+        >>> insert('foo', joe='bob', a=2, _test=True)
+        <sql: "INSERT INTO foo (a, joe) VALUES (2, 'bob')">
     """
-    db_cursor = web.ctx.db.cursor()
-
+    
     if values:
         sql_query = SQLQuery("INSERT INTO %s (%s) VALUES (%s)" % (
             tablename,
@@ -461,6 +475,9 @@ def insert(tablename, seqname=None, **values):
     else:
         sql_query = SQLQuery("INSERT INTO %s DEFAULT VALUES" % tablename)
 
+    if _test: return sql_query
+    
+    db_cursor = web.ctx.db.cursor()
     if seqname is False: 
         pass
     elif web.ctx.db_name == "postgres": 
@@ -474,7 +491,7 @@ def insert(tablename, seqname=None, **values):
         web.ctx.db_execute(db_cursor, sql_query)
         # not really the same...
         sql_query = SQLQuery("SELECT last_insert_rowid()")
-
+    
     web.ctx.db_execute(db_cursor, sql_query)
     try: 
         out = db_cursor.fetchone()[0]
@@ -485,10 +502,15 @@ def insert(tablename, seqname=None, **values):
 
     return out
 
-def update(tables, where, vars=None, **values):
+def update(tables, where, vars=None, _test=False, **values):
     """
     Update `tables` with clause `where` (interpolated using `vars`)
     and setting `values`.
+    
+        >>> joe = 'Joseph'
+        >>> update('foo', where='name = $joe', name='bob', age=5,
+        ...   vars=locals(), _test=True)
+        <sql: "UPDATE foo SET age = 5, name = 'bob' WHERE name = 'Joseph'">
     """
     if vars is None: vars = {}
     
@@ -501,22 +523,28 @@ def update(tables, where, vars=None, **values):
     else:
         where = reparam(where, vars)
     
+    query = (
+      "UPDATE " + sqllist(tables) + 
+      " SET " + sqlwhere(values, ', ') + 
+      " WHERE " + where)
+    
+    if _test: return query
+    
     db_cursor = web.ctx.db.cursor()
-    web.ctx.db_execute(db_cursor, SQLQuery("UPDATE %s SET %s WHERE %s" % (
-        sqllist(tables),
-        ', '.join([k + '=' + aparam() for k in values.keys()]),
-        where),
-    values.values() + vars))
+    web.ctx.db_execute(db_cursor, query)
     
     if not web.ctx.db_transaction: web.ctx.db.commit()
     return db_cursor.rowcount
 
-def delete(table, where, using=None, vars=None):
+def delete(table, where, using=None, vars=None, _test=False):
     """
     Deletes from `table` with clauses `where` and `using`.
+    
+        >>> name = 'Joe'
+        >>> delete('foo', where='name = $name', vars=locals(), _test=True)
+        <sql: "DELETE FROM foo WHERE name = 'Joe'">
     """
     if vars is None: vars = {}
-    db_cursor = web.ctx.db.cursor()
 
     if isinstance(where, (int, long)):
         where = "id = " + sqlquote(where)
@@ -527,9 +555,13 @@ def delete(table, where, using=None, vars=None):
     else:
         where = reparam(where, vars)
 
-    q = 'DELETE FROM %s WHERE %s' % (table, where)
+    q = 'DELETE FROM ' + table + ' WHERE ' + where
     if using: 
         q += ' USING ' + sqllist(using)
+    
+    if _test: return q
+    
+    db_cursor = web.ctx.db.cursor()
     web.ctx.db_execute(db_cursor, q)
 
     if not web.ctx.db_transaction: web.ctx.db.commit()

@@ -18,7 +18,6 @@ import sys, os, cgi, threading, Cookie, pprint
 try: import itertools
 except ImportError: pass
 from utils import storage, storify, threadeddict, dictadd, intget, lstrips
-import db
 
 config = storage()
 config.__doc__ = """
@@ -240,6 +239,7 @@ def load():
     ctx.status = '200 OK'
     ctx.headers = []
     if config.get('db_parameters'):
+        import db
         db.connect(**config.db_parameters)
     
     for x in loadhooks.values(): x()

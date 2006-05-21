@@ -1,7 +1,7 @@
 __all__ = ["runsimple"]
 
 import sys
-from webapi import debug, internalerror, ctx
+import webapi as web
 
 def runsimple(func, server_address=("0.0.0.0", 8080)):
     """
@@ -73,11 +73,11 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
                 except socket.timeout, socket_timeout: 
                     return
             except:
-                print >> debug, traceback.format_exc(),
-                internalerror()
+                print >> web.debug, traceback.format_exc(),
+                web.internalerror()
                 if not self.wsgi_sent_headers:
-                    self.wsgi_start_response(ctx.status, ctx.headers)
-                self.wsgi_write_data(ctx.output)
+                    self.wsgi_start_response(web.ctx.status, web.ctx.headers)
+                self.wsgi_write_data(web.ctx.output)
 
             if (not self.wsgi_sent_headers):
                 # We must write out something!

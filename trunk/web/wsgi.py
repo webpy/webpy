@@ -16,7 +16,7 @@ def makeserver(wsgi_server):
     class MyServer(wsgi_server):
         def error(self, req):
             w = req.stdout.write
-            http.internalerror()
+            web.internalerror()
             w('Status: ' + web.ctx.status + '\r\n')
             for (h, v) in web.ctx.headers:
                 w(h + ': ' + v + '\r\n')

@@ -39,8 +39,9 @@ def main():
     
     try:
         import cheetah
-    except ImportError:
         doctest.testmod(cheetah)
+    except ImportError:
+        pass
     
     import sys
     urls = ('/web.py', 'source')

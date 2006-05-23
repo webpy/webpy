@@ -545,10 +545,10 @@ class Profile:
     """
     Profiles `func` and returns a tuple containing its output
     and a string with human-readable profiling information.
-    
-        >>> out, inf = profile(strips)('why', 'wh')
+        
+        >>> import time
+        >>> out, inf = profile(time.sleep)(.001)
         >>> out
-        'y'
         >>> inf[:10].strip()
         'took 0.0'
     """

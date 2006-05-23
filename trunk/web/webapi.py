@@ -171,17 +171,25 @@ debug.write = _debugwrite
 
 class _outputter:
     """Wraps `sys.stdout` so that print statements go into the response."""
+    def __init__(self, file): self.file = file
     def write(self, string_): 
         if hasattr(ctx, 'output'): 
             return output(string_)
-        else: 
-            _oldstdout.write(string_)
+        else:
+            self.file.write(string_)
+    def __getattr__(self, attr): return getattr(self.file, attr)
+    def __getitem__(self, item): return self.file[item]
 
-    def flush(self): 
-        return _oldstdout.flush()
+def _capturedstdout():
+    sysstd = sys.stdout
+    while hasattr(sysstd, 'file'):
+        if isinstance(sys.stdout, _outputter): return True
+        sysstd = sysstd.file
+    if isinstance(sys.stdout, _outputter): return True    
+    return False
 
-    def close(self): 
-        return _oldstdout.close()
+if not _capturedstdout():
+    sys.stdout = _outputter(sys.stdout)
 
 _context = {threading.currentThread(): storage()}
 ctx = context = threadeddict(_context)
@@ -221,10 +229,6 @@ A `storage` object containing various information about the request:
 `output`
    : A string to be used as the response.
 """
-
-if not '_oldstdout' in globals(): 
-    _oldstdout = sys.stdout
-    sys.stdout = _outputter()
 
 loadhooks = {}
 

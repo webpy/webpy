@@ -128,8 +128,8 @@ def storify(mapping, *requireds, **defaults):
     return stor
 
 iters = [list, tuple]
-if hasattr(__builtins__, 'set') or (
-  hasattr(__builtins__, 'has_key') and __builtins__.has_key('set')):
+import __builtin__
+if hasattr(__builtin__, 'set'):
     iters.append(set)
 try: 
     from sets import Set

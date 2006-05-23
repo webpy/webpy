@@ -5,7 +5,8 @@ __version__ = 0.2
 
 import re, glob
 from types import FunctionType as function
-from web import storage, group, htmlquote, websafe
+from utils import storage, group
+from net import websafe
 
 # differences from python:
 #  - for: has an optional else: that gets called if the loop never runs
@@ -745,7 +746,7 @@ class render:
         if self.cache is not False: p, c = self.cache[name]
 
         if p.endswith('.html'):
-            import web
+            import webapi as web
             if 'headers' in web.ctx:
                 web.header('Content-Type', 'text/html; charset=utf-8', unique=True)
             if not filter: c.filter = websafe

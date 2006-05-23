@@ -11,6 +11,8 @@ from __future__ import generators
 # todo:
 #   - some sort of accounts system
 
+import utils, db, net, wsgi, http, webapi, request, httpserver, template
+
 from utils import *
 from db import *
 from net import *
@@ -21,6 +23,7 @@ from request import *
 from httpserver import *
 
 try:
+    import cheetah
     from cheetah import *
 except ImportError:
     pass
@@ -28,7 +31,6 @@ except ImportError:
 def main():
     import doctest
     
-    import utils, db, net, wsgi, http, webapi, request
     doctest.testmod(utils)
     doctest.testmod(db)
     doctest.testmod(net)
@@ -38,9 +40,8 @@ def main():
     doctest.testmod(request)
     
     try:
-        import cheetah
         doctest.testmod(cheetah)
-    except ImportError:
+    except NameError:
         pass
     
     import sys

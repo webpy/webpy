@@ -1,10 +1,11 @@
-"""form.py: A simple Python form library."""
-__version__ = '0.22'
-__license__ = "Public domain"
-__author__ = ['Aaron Swartz <me@aaronsw.com>', 'Steve Huffman <http://spez.name/>']
+"""
+HTML forms
+(part of web.py)
+"""
 
 import copy, re
-import web
+import webapi as web
+import utils, net
 
 def attrget(obj, attr, value=None):
     if hasattr(obj, 'has_key') and obj.has_key(attr): return obj[attr]
@@ -59,7 +60,7 @@ class Form:
         raise KeyError, i
     
     def _get_d(self): #@@ should really be form.attr, no?
-        return web.storage([(i.name, i.value) for i in self.inputs])
+        return utils.storage([(i.name, i.value) for i in self.inputs])
     d = property(_get_d)
 
 class Input(object):
@@ -86,33 +87,33 @@ class Input(object):
     def addatts(self):
         str = ""
         for (n, v) in self.attrs.items():
-            str += ' %s="%s"' % (n, web.websafe(v))
+            str += ' %s="%s"' % (n, net.websafe(v))
         return str
     
 #@@ quoting
 
 class Textbox(Input):
     def render(self):
-        x = '<input type="text" name="%s"' % web.websafe(self.name)
-        if self.value: x += ' value="%s"' % web.websafe(self.value)
+        x = '<input type="text" name="%s"' % net.websafe(self.name)
+        if self.value: x += ' value="%s"' % net.websafe(self.value)
         x += self.addatts()
         x += ' />'
         return x
 
 class Password(Input):
     def render(self):
-        x = '<input type="password" name="%s"' % web.websafe(self.name)
-        if self.value: x += ' value="%s"' % web.websafe(self.value)
+        x = '<input type="password" name="%s"' % net.websafe(self.name)
+        if self.value: x += ' value="%s"' % net.websafe(self.value)
         x += self.addatts()
         x += ' />'
         return x
 
 class Textarea(Input):
     def render(self):
-        x = '<textarea name="%s"' % web.websafe(self.name)
+        x = '<textarea name="%s"' % net.websafe(self.name)
         x += self.addatts()
         x += '>'
-        if self.value is not None: x += web.websafe(self.value)
+        if self.value is not None: x += net.websafe(self.value)
         x += '</textarea>'
         return x
 
@@ -122,11 +123,11 @@ class Dropdown(Input):
         super(Dropdown, self).__init__(name, *validators, **attrs)
 
     def render(self):
-        x = '<select name="%s"%s>\n' % (web.websafe(self.name), self.addatts())
+        x = '<select name="%s"%s>\n' % (net.websafe(self.name), self.addatts())
         for arg in self.args:
             if self.value == arg: select_p = ' selected="selected"'
             else: select_p = ''
-            x += "  <option"+select_p+">%s</option>\n" % web.websafe(arg)
+            x += "  <option"+select_p+">%s</option>\n" % net.websafe(arg)
         x += '</select>\n'
         return x
 
@@ -140,12 +141,12 @@ class Radio(Input):
         for arg in self.args:
             if self.value == arg: select_p = ' checked="checked"'
             else: select_p = ''
-            x += '<input type="radio" name="%s" value="%s"%s%s /> %s ' % (web.websafe(self.name), web.websafe(arg), select_p, self.addatts(), web.websafe(arg))
+            x += '<input type="radio" name="%s" value="%s"%s%s /> %s ' % (net.websafe(self.name), net.websafe(arg), select_p, self.addatts(), net.websafe(arg))
         return x+'</span>'
 
 class Checkbox(Input):
     def render(self):
-        x = '<input name="%s" type="checkbox"' % web.websafe(self.name)
+        x = '<input name="%s" type="checkbox"' % net.websafe(self.name)
         if self.value: x += ' checked="checked"'
         x += self.addatts()
         x += ' />'
@@ -153,20 +154,20 @@ class Checkbox(Input):
 
 class Button(Input):
     def render(self):
-        safename = web.websafe(self.name)
+        safename = net.websafe(self.name)
         x = '<button name="%s"%s>%s</button>' % (safename, self.addatts(), safename)
         return x
 
 class Hidden(Input):
     def render(self):
-        x = '<input type="hidden" name="%s' % web.websafe(self.name)
-        if self.value: x += ' value="%s"' % web.websafe(self.value)
+        x = '<input type="hidden" name="%s' % net.websafe(self.name)
+        if self.value: x += ' value="%s"' % net.websafe(self.value)
         x += ' />'
         return x
 
 class Validator:
     def __deepcopy__(self, memo): return copy.copy(self)
-    def __init__(self, msg, test, jstest=None): web.autoassign(self, locals())
+    def __init__(self, msg, test, jstest=None): utils.autoassign(self, locals())
     def valid(self, value): 
         try: return self.test(value)
         except: return False

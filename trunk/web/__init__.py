@@ -11,7 +11,8 @@ from __future__ import generators
 # todo:
 #   - some sort of accounts system
 
-import utils, db, net, wsgi, http, webapi, request, httpserver, template
+import utils, db, net, wsgi, http, webapi, request, httpserver
+import template, form
 
 from utils import *
 from db import *

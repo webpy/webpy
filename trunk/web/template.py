@@ -1,7 +1,7 @@
-"""template.py: simple, elegant templating"""
-__author__ = "Aaron Swartz <me@aaronsw.com>"
-__license__ = "Public domain"
-__version__ = 0.2
+"""
+simple, elegant templating
+(part of web.py)
+"""
 
 import re, glob
 from types import FunctionType as function

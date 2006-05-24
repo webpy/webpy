@@ -144,7 +144,8 @@ def background(func):
             myctx = web._context[threading.currentThread()]
             for k in myctx.keys():
                 if k not in ['status', 'headers', 'output']:
-                    del myctx[k]
+                    try: del myctx[k]
+                    except KeyError: pass
         
         t = threading.Thread(target=newfunc)
         background.threaddb[id(t)] = t

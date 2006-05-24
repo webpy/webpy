@@ -141,8 +141,11 @@ def background(func):
         def newfunc():
             web._context[threading.currentThread()] = tmpctx
             func(*a, **kw)
-            del web._context[threading.currentThread()].db
-
+            myctx = web._context[threading.currentThread()]
+            for k in myctx:
+                if k not in ['status', 'headers', 'output']:
+                    del myctx[k]
+        
         t = threading.Thread(target=newfunc)
         background.threaddb[id(t)] = t
         t.start()

@@ -293,6 +293,9 @@ def wsgifunc(func, *middleware):
             result = func()
         except StopIteration:
             result = None
+        except:
+            _unload()
+            raise
         
         is_generator = result and hasattr(result, 'next')
         if is_generator:

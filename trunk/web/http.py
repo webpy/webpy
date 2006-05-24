@@ -142,7 +142,7 @@ def background(func):
             web._context[threading.currentThread()] = tmpctx
             func(*a, **kw)
             myctx = web._context[threading.currentThread()]
-            for k in myctx:
+            for k in myctx.keys():
                 if k not in ['status', 'headers', 'output']:
                     del myctx[k]
         

@@ -141,7 +141,7 @@ def background(func):
         def newfunc():
             web._context[threading.currentThread()] = tmpctx
             func(*a, **kw)
-            del web._context[threading.currentThread()]
+            del web._context[threading.currentThread()].db
 
         t = threading.Thread(target=newfunc)
         background.threaddb[id(t)] = t

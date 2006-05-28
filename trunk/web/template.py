@@ -223,9 +223,7 @@ class TemplateParser(Parser):
         return o
         
     def primaryr(self):
-        """returns getattr, call, or getitem"""
-        parens = bool(self.tokq('('))
-        
+        """returns getattr, call, or getitem"""        
         n = self.atomr()
         while 1:
             if self.tokq('.'):
@@ -264,7 +262,6 @@ class TemplateParser(Parser):
             else:
                 break
         
-        if parens: self.tokr(')')
         return n
     
     def exprr(self):
@@ -273,9 +270,9 @@ class TemplateParser(Parser):
         if self.tokq(' '):
             operator = self.ltokr('not in', 'in', 'is not', 'is', '==', '!=', '>=', '<=', '<', '>', 'and', 'or', '*', '+', '-', '/', '%')
             self.tokr(' ')
-            y = self.primaryr()
+            y = self.exprr()
             x = self.o('test', 'x', x, 'op', operator, 'y', y)
-            
+        
         return self.o('expr', 'thing', x, 'negate', negate)
 
     def varr(self):
@@ -797,6 +794,7 @@ def test():
         lambda: t('$if 1:\n    1')(),                                       '1\n',
         lambda: t('$if 0: 0\n$elif 1: 1')(),                                '1\n',
         lambda: t('$if 0: 0\n$elif None: 0\n$else: 1')(),                   '1\n',
+        lambda: t('$if (0 < 1) and (1 < 2): 1')(),                          '1\n',
         lambda: t('$for x in [1, 2, 3]: $x')(),                             '1\n2\n3\n',
         lambda: t('$for x in []: 0\n$else: 1')(),                           '1\n',
         lambda: t('$def with (a)\n$while a and a.pop(): 1')([1, 2, 3]),     '1\n1\n1\n',

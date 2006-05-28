@@ -74,10 +74,6 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
                     return
             except:
                 print >> web.debug, traceback.format_exc(),
-                web.internalerror()
-                if not self.wsgi_sent_headers:
-                    self.wsgi_start_response(web.ctx.status, web.ctx.headers)
-                self.wsgi_write_data(web.ctx.output)
 
             if (not self.wsgi_sent_headers):
                 # We must write out something!
@@ -107,8 +103,8 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
             if (not self.wsgi_sent_headers):
                 status, headers = self.wsgi_headers
                 # Need to send header prior to data
-                status_code = status [:status.find(' ')]
-                status_msg = status [status.find(' ') + 1:]
+                status_code = status[:status.find(' ')]
+                status_msg = status[status.find(' ') + 1:]
                 self.send_response(int(status_code), status_msg)
                 for header, value in headers:
                     self.send_header(header, value)

@@ -10,29 +10,16 @@ import webapi as web
 from utils import listget
 from net import validaddr, validip
 import httpserver
-
-def makeserver(wsgi_server):
-    """Updates a flup-style WSGIServer with web.py-style error support."""
-    class MyServer(wsgi_server):
-        def error(self, req):
-            w = req.stdout.write
-            web.internalerror()
-            w('Status: ' + web.ctx.status + '\r\n')
-            for (h, v) in web.ctx.headers:
-                w(h + ': ' + v + '\r\n')
-            w('\r\n' + web.ctx.output)
-                
-    return MyServer
     
 def runfcgi(func, addr=('localhost', 8000)):
     """Runs a WSGI function as a FastCGI server."""
     import flup.server.fcgi as flups
-    return makeserver(flups.WSGIServer)(func, multiplexed=True, bindAddress=addr).run()
+    return flups.WSGIServer(func, multiplexed=True, bindAddress=addr).run()
 
 def runscgi(func, addr=('localhost', 4000)):
     """Runs a WSGI function as an SCGI server."""
     import flup.server.scgi as flups
-    return makeserver(flups.WSGIServer)(func, bindAddress=addr).run()
+    return flups.WSGIServer(func, bindAddress=addr).run()
 
 def runwsgi(func):
     """

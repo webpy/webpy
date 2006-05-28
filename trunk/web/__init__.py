@@ -11,7 +11,7 @@ from __future__ import generators
 # todo:
 #   - some sort of accounts system
 
-import utils, db, net, wsgi, http, webapi, request, httpserver
+import utils, db, net, wsgi, http, webapi, request, httpserver, debugerror
 import template, form
 
 from utils import *
@@ -22,6 +22,7 @@ from http import *
 from webapi import *
 from request import *
 from httpserver import *
+from debugerror import *
 
 try:
     import cheetah

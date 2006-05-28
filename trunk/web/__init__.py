@@ -45,6 +45,8 @@ def main():
     except NameError:
         pass
     
+    template.test()
+    
     import sys
     urls = ('/web.py', 'source')
     class source:

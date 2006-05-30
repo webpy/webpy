@@ -283,29 +283,27 @@ def connect(dbn, **keywords):
         web.ctx.db = db.connect(**keywords)
 
     web.ctx.dbq_count = 0
+    
+    def db_execute(cur, sql_query):
+        """executes an sql query"""
 
-    if web.config.get('db_printing'):
-        def db_execute(cur, sql_query):
-            """executes an sql query"""
-            
-            web.ctx.dbq_count += 1
-                        
-            try:
-                a = time.time()
-                out = cur.execute(sql_query.s, sql_query.v)
-                b = time.time()
-            except:
+        web.ctx.dbq_count += 1
+        
+        try:
+            a = time.time()
+            out = cur.execute(sql_query.s, sql_query.v)
+            b = time.time()
+        except:
+            if web.config.get('db_printing'):
                 print >> web.debug, 'ERR:', str(sql_query)
-                rollback()
-                raise
+            rollback()
+            raise
 
+        if web.config.get('db_printing'):
             print >> web.debug, '%s (%s): %s' % (round(b-a, 2), web.ctx.dbq_count, str(sql_query))
-            
-            return out
-        web.ctx.db_execute = db_execute
-    else:
-        web.ctx.db_execute = lambda cur, sql_query, d=None: \
-                                cur.execute(sql_query.s, sql_query.v)
+
+        return out
+    web.ctx.db_execute = db_execute
     return web.ctx.db
 
 def transact():
@@ -324,18 +322,27 @@ def rollback():
     web.ctx.db.rollback()
     web.ctx.db_transaction = False    
 
-def query(sql_query, vars=None, processed=False):
+def query(sql_query, vars=None, processed=False, _test=False):
     """
     Execute SQL query `sql_query` using dictionary `vars` to interpolate it.
     If `processed=True`, `vars` is a `reparam`-style list to use 
     instead of interpolating.
+    
+        >>> query("SELECT * FROM foo", _test=True)
+        <sql: 'SELECT * FROM foo'>
+        >>> query("SELECT * FROM foo WHERE x = $x", vars=dict(x='f'), _test=True)
+        <sql: "SELECT * FROM foo WHERE x = 'f'">
+        >>> query("SELECT * FROM foo WHERE x = " + sqlquote('f'), _test=True)
+        <sql: "SELECT * FROM foo WHERE x = 'f'">
     """
     if vars is None: vars = {}
     
-    db_cursor = web.ctx.db.cursor()
-
-    if not processed: sql_query = reparam(sql_query, vars)
+    if not processed and not isinstance(sql_query, SQLQuery):
+        sql_query = reparam(sql_query, vars)
     
+    if _test: return sql_query
+    
+    db_cursor = web.ctx.db.cursor()
     web.ctx.db_execute(db_cursor, sql_query)
     
     if db_cursor.description:

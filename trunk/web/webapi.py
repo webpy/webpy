@@ -90,9 +90,7 @@ def input(*requireds, **defaults):
     See `storify` for how `requireds` and `defaults` work.
     """
     from cStringIO import StringIO
-    def dictify(fs): 
-        if not data(): return {}
-        return dict([(k, fs[k]) for k in fs.keys()])
+    def dictify(fs): return dict([(k, fs[k]) for k in fs.keys()])
     
     _method = defaults.pop('_method', 'both')
     

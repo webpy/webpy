@@ -14,7 +14,7 @@ __all__ = [
     "wsgifunc"
 ]
 
-import sys, os, cgi, threading, Cookie, pprint
+import sys, os, cgi, threading, Cookie, pprint, traceback
 try: import itertools
 except ImportError: pass
 from utils import storage, storify, threadeddict, dictadd, intget, lstrips
@@ -90,7 +90,9 @@ def input(*requireds, **defaults):
     See `storify` for how `requireds` and `defaults` work.
     """
     from cStringIO import StringIO
-    def dictify(fs): return dict([(k, fs[k]) for k in fs.keys()])
+    def dictify(fs): 
+        if not data(): return {}
+        return dict([(k, fs[k]) for k in fs.keys()])
     
     _method = defaults.pop('_method', 'both')
     
@@ -294,6 +296,7 @@ def wsgifunc(func, *middleware):
         except StopIteration:
             result = None
         except:
+            print >> debug, traceback.format_exc()
             result = internalerror()
         
         is_generator = result and hasattr(result, 'next')

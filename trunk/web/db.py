@@ -230,6 +230,7 @@ def sqlquote(a):
 class UnknownDB(Exception):
     """raised for unsupported dbms"""
     pass
+
 def connect(dbn, **keywords):
     """
     Connects to the specified database. 
@@ -274,13 +275,19 @@ def connect(dbn, **keywords):
     web.ctx.db_name = dbn
     web.ctx.db_module = db
     web.ctx.db_transaction = False
-
-    if web.config._hasPooling:
-        if 'db' not in globals(): 
-            globals()['db'] = PooledDB(dbapi=db, **keywords)
-        web.ctx.db = globals()['db'].connection()
-    else:
-        web.ctx.db = db.connect(**keywords)
+    web.ctx.db = keywords
+    
+    def db_cursor():
+        if isinstance(web.ctx.db, dict):
+            keywords = web.ctx.db
+            if web.config._hasPooling:
+                if 'db' not in globals(): 
+                    globals()['db'] = PooledDB(dbapi=db, **keywords)
+                web.ctx.db = globals()['db'].connection()
+            else:
+                web.ctx.db = db.connect(**keywords)
+        return web.ctx.db.cursor()
+    web.ctx.db_cursor = db_cursor
 
     web.ctx.dbq_count = 0
     
@@ -342,7 +349,7 @@ def query(sql_query, vars=None, processed=False, _test=False):
     
     if _test: return sql_query
     
-    db_cursor = web.ctx.db.cursor()
+    db_cursor = web.ctx.db_cursor()
     web.ctx.db_execute(db_cursor, sql_query)
     
     if db_cursor.description:
@@ -484,7 +491,7 @@ def insert(tablename, seqname=None, _test=False, **values):
 
     if _test: return sql_query
     
-    db_cursor = web.ctx.db.cursor()
+    db_cursor = web.ctx.db_cursor()
     if seqname is False: 
         pass
     elif web.ctx.db_name == "postgres": 
@@ -537,7 +544,7 @@ def update(tables, where, vars=None, _test=False, **values):
     
     if _test: return query
     
-    db_cursor = web.ctx.db.cursor()
+    db_cursor = web.ctx.db_cursor()
     web.ctx.db_execute(db_cursor, query)
     
     if not web.ctx.db_transaction: web.ctx.db.commit()
@@ -568,7 +575,7 @@ def delete(table, where, using=None, vars=None, _test=False):
     
     if _test: return q
     
-    db_cursor = web.ctx.db.cursor()
+    db_cursor = web.ctx.db_cursor()
     web.ctx.db_execute(db_cursor, q)
 
     if not web.ctx.db_transaction: web.ctx.db.commit()

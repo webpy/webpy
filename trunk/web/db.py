@@ -189,7 +189,7 @@ class SQLQuery:
     """
     # tested in sqlquote's docstring
     def __init__(self, s='', v=()):
-        self.s, self.v = str(s), v
+        self.s, self.v = str(s), tuple(v)
     
     def __getitem__(self, key): # for backwards-compatibility
         return [self.s, self.v][key]

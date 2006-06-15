@@ -9,7 +9,7 @@ Database API
 
 __all__ = [
   "UnknownParamstyle", "UnknownDB",
-  "sqlors", "aparam", "reparam",
+  "sqllist", "sqlors", "aparam", "reparam",
   "SQLQuery", "sqlquote",
   "connect", 
   "transact", "commit", "rollback",

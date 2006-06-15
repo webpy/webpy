@@ -17,7 +17,8 @@ __all__ = [
   "CaptureStdout", "capturestdout", "Profile", "profile",
   "tryall",
   "ThreadedDict",
-  "autoassign"
+  "autoassign",
+  "safemarkdown"
 ]
 
 import re, sys, time, threading
@@ -675,6 +676,24 @@ def autoassign(self, locals):
         if key == 'self': 
             continue
         setattr(self, key, value)
+
+r_url = re_compile('(?<!\()(http://(\S+))')
+def safemarkdown(text):
+    """
+    Converts text to HTML following the rules of Markdown, but blocking any
+    outside HTML input, so that only the things supported by Markdown
+    can be used. Also converts raw URLs to links.
+
+    (requires [markdown.py](http://webpy.org/markdown.py))
+    """
+    import markdown
+    if text:
+        text = text.replace('<', '&lt;')
+        # TODO: automatically get page title?
+        text = r_url.sub(r'<\1>', text)
+        text = markdown(text)
+        return text
+
 
 if __name__ == "__main__":
     import doctest

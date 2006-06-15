@@ -32,7 +32,7 @@ def runwsgi(func):
 
     if (os.environ.has_key('PHP_FCGI_CHILDREN') #lighttpd fastcgi
       or os.environ.has_key('SERVER_SOFTWARE')):
-        return runfcgi(func)
+        return runfcgi(func, None)
     
     if 'fcgi' in sys.argv or 'fastcgi' in sys.argv:
         args = sys.argv[1:]
@@ -41,7 +41,7 @@ def runwsgi(func):
         if args:
             return runfcgi(func, validaddr(args[0]))
         else:
-            return runfcgi(func)
+            return runfcgi(func, None)
     
     if 'scgi' in sys.argv:
         args = sys.argv[1:]

@@ -686,7 +686,7 @@ def safemarkdown(text):
 
     (requires [markdown.py](http://webpy.org/markdown.py))
     """
-    import markdown
+    from markdown import markdown
     if text:
         text = text.replace('<', '&lt;')
         # TODO: automatically get page title?

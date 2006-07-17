@@ -316,17 +316,17 @@ def connect(dbn, **keywords):
 def transact():
     """Start a transaction."""
     # commit everything up to now, so we don't rollback it later
-    web.ctx.db.commit()
+    if hasattr(web.ctx.db, 'commit'): web.ctx.db.commit()
     web.ctx.db_transaction = True
 
 def commit():
     """Commits a transaction."""
-    web.ctx.db.commit()
+    if hasattr(web.ctx.db, 'commit'): web.ctx.db.commit()
     web.ctx.db_transaction = False
 
 def rollback():
     """Rolls back a transaction."""
-    web.ctx.db.rollback()
+    if hasattr(web.ctx.db, 'rollback'): web.ctx.db.rollback()
     web.ctx.db_transaction = False    
 
 def query(sql_query, vars=None, processed=False, _test=False):

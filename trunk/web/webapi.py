@@ -10,7 +10,7 @@ __all__ = [
     "input", "data",
     "setcookie", "cookies",
     "ctx", 
-    "loadhooks", "load", "unloadhooks", "unload", 
+    "loadhooks", "load", "unloadhooks", "unload", "_loadhooks",
     "wsgifunc"
 ]
 

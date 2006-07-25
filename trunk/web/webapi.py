@@ -231,6 +231,7 @@ A `storage` object containing various information about the request:
 """
 
 loadhooks = {}
+_loadhooks = {}
 
 def load():
     """
@@ -266,6 +267,7 @@ def _load(env):
     ctx.fullpath = ctx.path
     if env.get('QUERY_STRING'):
         ctx.fullpath += '?' + env.get('QUERY_STRING', '')
+    for x in _loadhooks.values(): x()
 
 unloadhooks = {}
 

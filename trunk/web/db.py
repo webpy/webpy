@@ -432,7 +432,7 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
            limit=None, offset=None, _test=False):
     """
     Selects `what` from `tables` with clauses `where`, `order`, 
-    `group`, `limit`, and `offset. Uses vars to interpolate. 
+    `group`, `limit`, and `offset`. Uses vars to interpolate. 
     Otherwise, each clause can be a SQLQuery.
     
         >>> select('foo', _test=True)

@@ -747,7 +747,7 @@ class render:
         if self.cache is False or name not in self.cache:
             p = glob.glob(self.loc + name + '.*')
             if not p and os.path.isdir(self.loc + name):
-                return render(self.loc + name + '/', chache=self.cache)
+                return render(self.loc + name + '/', cache=self.cache)
             elif not p:
                 raise AttributeError, 'no template named ' + name
             p = p[0]

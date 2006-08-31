@@ -3,7 +3,7 @@ simple, elegant templating
 (part of web.py)
 """
 
-import re, glob
+import re, glob, os, os.path
 from types import FunctionType as function
 from utils import storage, group
 from net import websafe
@@ -746,7 +746,9 @@ class render:
     def _do(self, name, filter=None):
         if self.cache is False or name not in self.cache:
             p = glob.glob(self.loc + name + '.*')
-            if not p:
+            if not p and os.path.isdir(self.loc + name):
+                return render(self.loc + name + '/', chache=self.cache)
+            elif not p:
                 raise AttributeError, 'no template named ' + name
             p = p[0]
             c = Template(open(p).read())

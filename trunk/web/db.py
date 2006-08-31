@@ -212,7 +212,7 @@ class SQLQuery:
     def __str__(self):
         try:
             return self.s % tuple([sqlify(x) for x in self.v])
-        except ValueError:
+        except (ValueError, TypeError):
             return self.s
     
     def __repr__(self):

@@ -14,6 +14,7 @@ __all__ = [
   "IterBetter", "iterbetter",
   "dictreverse", "dictfind", "dictfindall", "dictincr", "dictadd",
   "listget", "intget", "datestr",
+  "numify", "denumify", "dateify",
   "CaptureStdout", "capturestdout", "Profile", "profile",
   "tryall",
   "ThreadedDict",
@@ -515,6 +516,40 @@ def datestr(then, now=None):
         return agohence(deltamicroseconds, 'millisecond', 1000)
 
     return agohence(deltamicroseconds, 'microsecond')
+
+def numify(string):
+    """
+    Removes all non-digit characters from `string`.
+    
+        >>> numify('800-555-1212')
+        '8005551212'
+    
+    """
+    return ''.join(c for c in str(string).split('.')[0] if c.isdigit())
+
+def denumify(string, pattern):
+    """
+    Formats `string` according to `pattern`, where the letter X gets replaced
+    by characters from `string`.
+    
+        >>> denumify("8005551212", "(XXX) XXX-XXXX")
+        '(800) 555-1212'
+    
+    """
+    out = []
+    for c in pattern:
+        if c == "X":
+            out.append(string[0])
+            string = string[1:]
+        else:
+            out.append(c)
+    return ''.join(out)
+
+def dateify(datestring):
+    """
+    Formats a numified `datestring` properly.
+    """
+    return denumify(datestring, "XXXX-XX-XX XX:XX:XX")
 
 class CaptureStdout:
     """

@@ -121,5 +121,5 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
             self.app = func
             self.serverShuttingDown = 0
 
-    print "Launching server: http://%s:%d/" % server_address
+    print "http://%s:%d/" % server_address
     WSGIServer(func, server_address).serve_forever()

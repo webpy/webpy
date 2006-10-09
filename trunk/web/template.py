@@ -644,6 +644,8 @@ class Fill(Handle):
             return self.d[v]
         elif v in self.builtins:
             return self.builtins[v]
+        elif v == 'self':
+            return self.output
         else:
             raise NameError, 'could not find %s (line %s)' % (repr(i[NAME]), i[LINENO])
         

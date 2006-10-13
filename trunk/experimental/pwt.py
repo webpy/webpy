@@ -46,10 +46,10 @@ function receive(d) {
     def POST(self):
         i = web.input()
         if '_' in i: del i['_']
-        for k, v in i.iteritems(): setattr(self, k, v)
+        #for k, v in i.iteritems(): setattr(self, k, v)
         
         self._inFunc = True
-        self.work()
+        self.work(**i)
         self._inFunc = False
         
         web.header('Content-Type', 'text/javascript')
@@ -76,7 +76,13 @@ class sudoku(pwt):
     def work(self, **kw):
         values = dict((s, sudo.digits) for s in sudo.squares)
         for k, v in kw.iteritems():
-            sudo.assign(values, k, v)
+            if v:
+                sudo.assign(values, k, v)
+
+        for k, v in values.iteritems():
+            if len(v) == 1:
+                setattr(self, k, v)
+
         return values
 
 class length(pwt):

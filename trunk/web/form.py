@@ -28,7 +28,7 @@ class Form:
         out += self.rendernote(self.note)
         out += '<table>\n'
         for i in self.inputs:
-            out += '   <tr><th><label for="%s"">%s</label></th>' % (i.name, i.description)
+            out += '   <tr><th><label for="%s">%s</label></th>' % (i.name, i.description)
             out += "<td>"+i.pre+i.render()+i.post+"</td>"
             out += '<td id="note_%s">%s</td></tr>\n' % (i.name, self.rendernote(i.note))
         out += "</table>"
@@ -160,7 +160,7 @@ class Button(Input):
 
 class Hidden(Input):
     def render(self):
-        x = '<input type="hidden" name="%s' % net.websafe(self.name)
+        x = '<input type="hidden" name="%s"' % net.websafe(self.name)
         if self.value: x += ' value="%s"' % net.websafe(self.value)
         x += ' />'
         return x

@@ -268,6 +268,14 @@ def connect(dbn, **keywords):
             import sqlite as db
         keywords['database'] = keywords['db']
         del keywords['db']
+    
+    elif dbn == "firebird":
+        import kinterbasdb as db
+        if 'pw' in keywords:
+            keywords['passwd'] = keywords['pw']
+            del keywords['pw']
+        keywords['database'] = keywords['db']
+        del keywords['db']
 
     else: 
         raise UnknownDB, dbn
@@ -443,14 +451,7 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
     if vars is None: vars = {}
     qout = ""
     
-    for (sql, val) in (
-      ('SELECT', what),
-      ('FROM', sqllist(tables)),
-      ('WHERE', where), 
-      ('GROUP BY', group), 
-      ('ORDER BY', order), 
-      ('LIMIT', limit), 
-      ('OFFSET', offset)):
+    def gen_clause(sql, value):
         if isinstance(val, (int, long)):
             if sql == 'WHERE':
                 nout = 'id = ' + sqlquote(val)
@@ -463,9 +464,44 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
         elif val:
             nout = reparam(val, vars)
         else: 
-            continue
-        if qout: qout += " " 
-        qout += sql + " " + nout
+            return ""
+
+        out = ""
+        if qout: out += " " 
+        out += sql + " " + nout
+        return out
+    
+    if web.ctx.get('db_name') == "firebird":
+        for (sql, val) in (
+           ('FIRST', limit),
+           ('SKIP', offset)
+        ):
+            qout += gen_clause(sql, val)
+        if qout:
+            SELECT = 'SELECT ' + qout
+        else:
+            SELECT = 'SELECT'
+        qout = ""
+        sql_clauses = (
+          (SELECT, what),
+          ('FROM', sqllist(tables)),
+          ('WHERE', where),
+          ('GROUP BY', group),
+          ('ORDER BY', order)
+        )
+    else:
+        sql_clauses = (
+          ('SELECT', what),
+          ('FROM', sqllist(tables)),
+          ('WHERE', where),
+          ('GROUP BY', group),
+          ('ORDER BY', order),
+          ('LIMIT', limit),
+          ('OFFSET', offset)
+        )
+
+    for (sql, val) in sql_clauses:
+        qout += gen_clause(sql, val)
 
     if _test: return qout
     return query(qout, processed=True)
@@ -570,7 +606,7 @@ def delete(table, where, using=None, vars=None, _test=False):
         where = reparam(where, vars)
 
     q = 'DELETE FROM ' + table + ' WHERE ' + where
-    if using: 
+    if using and web.ctx.get('db_name') != "firebird":
         q += ' USING ' + sqllist(using)
     
     if _test: return q

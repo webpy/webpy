@@ -254,8 +254,9 @@ def _load(env):
     ctx.output = ''
     ctx.environ = ctx.env = env
     ctx.host = env.get('HTTP_HOST')
-    ctx.home = 'http://' + env.get('HTTP_HOST', '[unknown]') + \
-                os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', ''))
+    ctx.homedomain = 'http://' + env.get('HTTP_HOST', '[unknown]')
+    ctx.homepath = os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', ''))
+    ctx.home = ctx.homedomain + ctx.homepath
     ctx.ip = env.get('REMOTE_ADDR')
     ctx.method = env.get('REQUEST_METHOD')
     ctx.path = env.get('PATH_INFO')

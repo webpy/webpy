@@ -125,7 +125,7 @@ def changequery(**kw):
             query.pop(k, None)
         else:
             query[k] = v
-    out = web.ctx.path
+    out = web.ctx.homepath + web.ctx.path
     if query:
         out += '?' + urllib.urlencode(query)
     return out

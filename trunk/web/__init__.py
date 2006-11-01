@@ -1,12 +1,12 @@
 #!/usr/bin/env python
+from __future__ import generators
+
 """web.py: makes web apps (http://webpy.org)"""
 __version__ = "0.2"
 __revision__ = "$Rev: 62 $"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 __license__ = "public domain"
 __contributors__ = "see http://webpy.org/changes"
-
-from __future__ import generators
 
 # todo:
 #   - some sort of accounts system

@@ -224,7 +224,7 @@ reloader = Reloader
 
 def profiler(app):
     """Outputs basic profiling information at the bottom of each response."""
-    import profile
+    from utils import profile
     def profile_internal(e, o):
         out, result = profile(app)(e, o)
         return out + ['<pre>' + net.websafe(result) + '</pre>']

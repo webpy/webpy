@@ -368,7 +368,8 @@ def query(sql_query, vars=None, processed=False, _test=False):
                 yield storage(dict(zip(names, row)))
                 row = db_cursor.fetchone()
         out = iterbetter(iterwrapper())
-        out.__len__ = lambda: int(db_cursor.rowcount)
+        if web.ctx.db_name != "sqllite":
+            out.__len__ = lambda: int(db_cursor.rowcount)
         out.list = lambda: [storage(dict(zip(names, x))) \
                            for x in db_cursor.fetchall()]
     else:

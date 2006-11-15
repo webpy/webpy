@@ -214,9 +214,13 @@ A `storage` object containing various information about the request:
 
 `path`
    : The path request.
+   
+`query`
+   : If there are no query arguments, the empty string. Otherwise, a `?` followed
+     by the query string.
 
 `fullpath`
-   : The full path requested, including query arguments.
+   : The full path requested, including query arguments (`== path + query`).
 
 ### Response Data
 
@@ -265,9 +269,12 @@ def _load(env):
         ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], 
                            os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', '')))
 
-    ctx.fullpath = ctx.path
     if env.get('QUERY_STRING'):
-        ctx.fullpath += '?' + env.get('QUERY_STRING', '')
+        ctx.query = '?' + env.get('QUERY_STRING', '')
+    else:
+        ctx.query = ''
+    
+    ctx.fullpath = ctx.path + ctx.query
     for x in _loadhooks.values(): x()
 
 unloadhooks = {}

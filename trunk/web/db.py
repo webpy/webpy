@@ -4,7 +4,7 @@ Database API
 """
 
 # todo:
-#  - test with sqllite
+#  - test with sqlite
 #  - a store function?
 
 __all__ = [
@@ -235,7 +235,7 @@ def connect(dbn, **keywords):
     """
     Connects to the specified database. 
     
-    `dbn` currently must be "postgres", "mysql", or "sqllite". 
+    `dbn` currently must be "postgres", "mysql", or "sqlite". 
     
     If DBUtils is installed, connection pooling will be used.
     """
@@ -261,11 +261,16 @@ def connect(dbn, **keywords):
         db.paramstyle = 'pyformat' # it's both, like psycopg
 
     elif dbn == "sqlite":
-        try: ## try first sqlite3 version
-            from pysqlite2 import dbapi2 as db
+        try:
+            import sqlite3 as db
             db.paramstyle = 'qmark'
-        except ImportError: ## else try sqlite2
-            import sqlite as db
+        except ImportError:
+            try:
+                from pysqlite2 import dbapi2 as db
+                db.paramstyle = 'qmark'
+            except ImportError:
+                import sqlite as db
+        web.config._hasPooling = False
         keywords['database'] = keywords['db']
         del keywords['db']
     
@@ -368,7 +373,7 @@ def query(sql_query, vars=None, processed=False, _test=False):
                 yield storage(dict(zip(names, row)))
                 row = db_cursor.fetchone()
         out = iterbetter(iterwrapper())
-        if web.ctx.db_name != "sqllite":
+        if web.ctx.db_name != "sqlite":
             out.__len__ = lambda: int(db_cursor.rowcount)
         out.list = lambda: [storage(dict(zip(names, x))) \
                            for x in db_cursor.fetchall()]

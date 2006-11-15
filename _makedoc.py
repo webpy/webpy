@@ -1,12 +1,13 @@
 import web
+import os
 
 class Parser:
     def __init__(self):
         self.mode = 'normal'
         self.text = ''
         
-    def go(self):
-        for line in file('web.py'):
+    def go(self, pyfile):
+        for line in file(pyfile):
             if self.mode == 'in def':
                 self.text += ' ' + line.strip()
                 if line.strip().endswith(':'):
@@ -69,7 +70,10 @@ class Parser:
     def header(self, text):
         print '##', text.strip()
         print
-
-Parser().go()
+        
+for pyfile in os.listdir('trunk/web'):
+    if pyfile[-2:] == 'py': 
+        print '## ' + pyfile
+        Parser().go('trunk/web/' + pyfile)
 print '`ctx`\n   :',
 print '\n'.join('    '+x for x in web.ctx.__doc__.strip().split('\n'))

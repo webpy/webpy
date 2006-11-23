@@ -783,7 +783,7 @@ def test():
                 sys.stderr.write('.')
                 sys.stderr.flush()
         else:
-            assert a == b, "\nexpected: %s\ngot: %s" % (repr(a), repr(b))
+            assert a == b, "\nexpected: %s\ngot: %s" % (repr(b), repr(a))
     
     from utils import storage, group
     t = Template

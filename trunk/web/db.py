@@ -592,7 +592,7 @@ def update(tables, where, vars=None, _test=False, **values):
     if not web.ctx.db_transaction: web.ctx.db.commit()
     return db_cursor.rowcount
 
-def delete(table, where, using=None, vars=None, _test=False):
+def delete(table, where=None, using=None, vars=None, _test=False):
     """
     Deletes from `table` with clauses `where` and `using`.
     
@@ -608,10 +608,14 @@ def delete(table, where, using=None, vars=None, _test=False):
         where = SQLQuery(where[0], where[1])
     elif isinstance(where, SQLQuery):
         pass
+    elif where is None:
+        pass
     else:
         where = reparam(where, vars)
 
-    q = 'DELETE FROM ' + table + ' WHERE ' + where
+    q = 'DELETE FROM ' + table
+    if where:
+        q += ' WHERE ' + where
     if using and web.ctx.get('db_name') != "firebird":
         q += ' USING ' + sqllist(using)
     

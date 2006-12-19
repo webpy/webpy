@@ -126,9 +126,14 @@ class Dropdown(Input):
     def render(self):
         x = '<select name="%s"%s>\n' % (net.websafe(self.name), self.addatts())
         for arg in self.args:
-            if self.value == arg: select_p = ' selected="selected"'
+            if type(arg) == tuple:
+                value, desc= arg
+            else:
+                value, desc = arg, arg 
+
+            if self.value == value: select_p = ' selected="selected"'
             else: select_p = ''
-            x += "  <option"+select_p+">%s</option>\n" % net.websafe(arg)
+            x += '  <option %s value="%s">%s</option>\n' % (select_p, net.websafe(value), net.websafe(desc))
         x += '</select>\n'
         return x
 

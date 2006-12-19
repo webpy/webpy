@@ -28,9 +28,9 @@ class Form:
         out += self.rendernote(self.note)
         out += '<table>\n'
         for i in self.inputs:
-            out += '   <tr><th><label for="%s">%s</label></th>' % (i.name, i.description)
+            out += '   <tr><th><label for="%s">%s</label></th>' % (i.id, i.description)
             out += "<td>"+i.pre+i.render()+i.post+"</td>"
-            out += '<td id="note_%s">%s</td></tr>\n' % (i.name, self.rendernote(i.note))
+            out += '<td id="note_%s">%s</td></tr>\n' % (i.id, self.rendernote(i.note))
         out += "</table>"
         return out
     
@@ -69,6 +69,7 @@ class Input(object):
         self.value = attrs.pop('value', None)
         self.pre = attrs.pop('pre', "")
         self.post = attrs.pop('post', "")
+        self.id = attrs.setdefault('id', name)
         if 'class_' in attrs:
             attrs['class'] = attrs['class_']
             del attrs['class_']
@@ -159,6 +160,11 @@ class Button(Input):
         return x
 
 class Hidden(Input):
+    def __init__(self, name, *validators, **attrs):
+        Input.__init__(self, name, *validators, **attrs)
+        # for hidden field, nothing should be visible.
+        self.description = ""
+
     def render(self):
         x = '<input type="hidden" name="%s"' % net.websafe(self.name)
         if self.value: x += ' value="%s"' % net.websafe(self.value)

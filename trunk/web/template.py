@@ -464,7 +464,7 @@ class Template:
     def __init__(self, text, filter=None):
         self.filter = filter
         # universal newlines:
-        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
         if not text.endswith('\n'): text += '\n'
         header, tree = TemplateParser(text).go()
         self.tree = tree
@@ -823,6 +823,7 @@ def test():
         lambda: t('$ a = 1\n$a')(),                                         '1\n',
         lambda: t('$ a = 1.\n$a')(),                                        '1.0\n',
         lambda: t('$({1: 1}.keys()[0])')(),                                 '1\n',
+        lambda: t('$for x in [1, 2, 3]:\n\t$x') (),                         '    1\n    2\n    3\n'
     ]
 
     for func, value in group(tests, 2):

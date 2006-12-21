@@ -747,7 +747,7 @@ class render:
     
     def _do(self, name, filter=None):
         if self.cache is False or name not in self.cache:
-            p = glob.glob(self.loc + name + '.*')
+            p = [f for f in glob.glob(self.loc + name + '.*') if not f.endswith('~')] # skip backup files
             if not p and os.path.isdir(self.loc + name):
                 return render(self.loc + name + '/', cache=self.cache)
             elif not p:

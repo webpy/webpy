@@ -176,6 +176,13 @@ class Hidden(Input):
         x += ' />'
         return x
 
+class File(Input):
+    def render(self):
+        x = '<input type="file" name="%s"' % net.websafe(self.name)
+        x += self.addatts()
+        x += ' />'
+        return x
+    
 class Validator:
     def __deepcopy__(self, memo): return copy.copy(self)
     def __init__(self, msg, test, jstest=None): utils.autoassign(self, locals())

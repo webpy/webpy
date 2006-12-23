@@ -525,7 +525,7 @@ def numify(string):
         '8005551212'
     
     """
-    return ''.join(c for c in str(string).split('.')[0] if c.isdigit())
+    return ''.join([c for c in str(string).split('.')[0] if c.isdigit()])
 
 def denumify(string, pattern):
     """

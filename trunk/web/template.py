@@ -658,9 +658,8 @@ class Fill(Handle):
                 o = self.h(x[NAME])
                 if x[FILTER]:
                     o = self.filter(o)
-                else:
-                    if isinstance(o, Stowage):
-                        o = o._str
+                else: 
+                    o = (o is not None and str(o)) or ""
                 out.append(o)
             else:
                 raise WTF, x
@@ -823,7 +822,8 @@ def test():
         lambda: t('$ a = 1\n$a')(),                                         '1\n',
         lambda: t('$ a = 1.\n$a')(),                                        '1.0\n',
         lambda: t('$({1: 1}.keys()[0])')(),                                 '1\n',
-        lambda: t('$for x in [1, 2, 3]:\n\t$x') (),                         '    1\n    2\n    3\n'
+        lambda: t('$for x in [1, 2, 3]:\n\t$x') (),                         '    1\n    2\n    3\n',
+        lambda: t('$def with (a)\n$:a')(1),                                 '1\n',
     ]
 
     for func, value in group(tests, 2):

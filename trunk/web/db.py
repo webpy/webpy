@@ -457,7 +457,7 @@ def select(tables, vars=None, what='*', where=None, order=None, group=None,
     if vars is None: vars = {}
     qout = ""
     
-    def gen_clause(sql, value):
+    def gen_clause(sql, val):
         if isinstance(val, (int, long)):
             if sql == 'WHERE':
                 nout = 'id = ' + sqlquote(val)

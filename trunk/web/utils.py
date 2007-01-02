@@ -404,17 +404,17 @@ def dictincr(dictionary, element):
     dictionary[element] += 1
     return dictionary[element]
 
-def dictadd(dict_a, dict_b):
+def dictadd(*dicts):
     """
-    Returns a dictionary consisting of the keys in `a` and `b`.
-    If they share a key, the value from b is used.
+    Returns a dictionary consisting of the keys in the argument dictionaries.
+    If they share a key, the value from the last argument is used.
     
         >>> dictadd({1: 0, 2: 0}, {2: 1, 3: 1})
         {1: 0, 2: 1, 3: 1}
     """
     result = {}
-    result.update(dict_a)
-    result.update(dict_b)
+    for dct in dicts:
+        result.update(dct)
     return result
 
 def listget(lst, ind, default=None):

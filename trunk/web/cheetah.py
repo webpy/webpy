@@ -10,7 +10,7 @@ from Cheetah.Compiler import Compiler
 from Cheetah.Filters import Filter
 from utils import re_compile, memoize, dictadd
 from net import htmlquote, websafe
-from webapi import ctx, header, output, input, cookies
+from webapi import ctx, header, output, input, cookies, loadhooks
 
 def upvars(level=2):
     """Guido van Rossum sez: don't use this function."""
@@ -83,7 +83,10 @@ def render(template, terms=None, asTemplate=False, base=None,
     if not isString and template.endswith('.html'): 
         header('Content-Type','text/html; charset=utf-8', unique=True)
         
-    compiled_tmpl = _compiletemplate(template, base=base, isString=isString)
+    if loadhooks.has_key('reloader'):
+        compiled_tmpl = __compiletemplate(template, base=base, isString=isString)
+    else:
+        compiled_tmpl = _compiletemplate(template, base=base, isString=isString)
     compiled_tmpl = compiled_tmpl(searchList=terms, filter=WebSafe)
     if asTemplate: 
         return compiled_tmpl

@@ -58,7 +58,7 @@ def handle(mapping, fvars=None):
             args = list(result.groups())
             for d in re.findall(r'\\(\d+)', ofn):
                 args.pop(int(d) - 1)
-            return tocall(*([urllib.unquote(x) for x in args] + fna))
+            return tocall(*([x and urllib.unquote(x) for x in args] + fna))
 
     return web.notfound()
 

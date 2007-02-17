@@ -8,7 +8,7 @@ __all__ = [
   "prefixurl", "modified", 
   "redirect", "found", "seeother", "tempredirect", 
   "write",
-  "changequery",
+  "changequery", "url",
   "background", "backgrounder",
   "Reloader", "reloader", "profiler",
 ]
@@ -71,7 +71,11 @@ def redirect(url, status='301 Moved Permanently'):
     `url` is joined with the base URL so that things like 
     `redirect("about") will work properly.
     """
-    newloc = urlparse.urljoin(web.ctx.home + web.ctx.path, url)
+    if url.startswith("/"):
+        newloc = web.ctx.homepath + url
+    else:
+        newloc = url
+
     web.ctx.status = status
     web.ctx.output = ''    
     web.header('Content-Type', 'text/html')
@@ -128,6 +132,21 @@ def changequery(**kw):
     out = web.ctx.homepath + web.ctx.path
     if query:
         out += '?' + urllib.urlencode(query)
+    return out
+
+def url(path, **kw):
+    """
+    Makes url by concatinating web.ctx.homepath and path and the 
+    query string created using the arguments.
+    """
+    if path.startswith("/"):
+        out = web.ctx.homepath + path
+    else:
+        out = path
+
+    if kw:
+        out += '?' + urllib.urlencode(kw)
+    
     return out
 
 def background(func):

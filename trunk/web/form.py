@@ -159,6 +159,10 @@ class Checkbox(Input):
         return x
 
 class Button(Input):
+    def __init__(self, name, *validators, **attrs):
+        super(Button, self).__init__(name, *validators, **attrs)
+        self.description = ""
+
     def render(self):
         safename = net.websafe(self.name)
         x = '<button name="%s"%s>%s</button>' % (safename, self.addatts(), safename)
@@ -166,8 +170,8 @@ class Button(Input):
 
 class Hidden(Input):
     def __init__(self, name, *validators, **attrs):
-        Input.__init__(self, name, *validators, **attrs)
-        # for hidden field, nothing should be visible.
+        super(Hidden, self).__init__(name, *validators, **attrs)
+        # it doesnt make sence for a hidden field to have description
         self.description = ""
 
     def render(self):

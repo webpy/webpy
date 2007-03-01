@@ -13,10 +13,11 @@ def attrget(obj, attr, value=None):
     return value
 
 class Form:
-    def __init__(self, *inputs):
+    def __init__(self, *inputs, **kw):
         self.inputs = inputs
         self.valid = True
         self.note = None
+        self.validators = kw.pop('validators', [])
 
     def __call__(self, x=None):
         o = copy.deepcopy(self)
@@ -48,9 +49,17 @@ class Form:
             else:
                 i.value = v
         if _validate:
-            self.valid = out
+            self.valid = out and self._validate(source)
         return out
-    
+
+    def _validate(self, value):
+        self.value = value
+        for v in self.validators:
+            if not v.valid(value):
+                self.note = v.msg
+                return False
+        return True
+
     def fill(self, source=None, **kw):
         return self.validates(source, _validate=False, **kw)
     

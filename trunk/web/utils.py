@@ -687,6 +687,15 @@ class ThreadedDict:
         else:
             return setattr(self.__d[threading.currentThread()], attr, value)
 
+    def __delattr__(self, item):
+        try:
+            del self.__d[threading.currentThread()][item]
+        except KeyError, k:
+            raise AttributeError, k
+
+    def __delitem__(self, item):
+        del self.__d[threading.currentThread()][item]
+
     def __setitem__(self, item, value): 
         self.__d[threading.currentThread()][item] = value
 

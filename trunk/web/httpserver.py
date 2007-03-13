@@ -188,8 +188,8 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
             self.format = '%s - - [%s] "%s %s %s" - %s'
 
         def __call__(self, environ, start_response):
-            def xstart_response(status, response_headers):
-                start_response(status, response_headers)
+            def xstart_response(status, response_headers, *args):
+                start_response(status, response_headers, *args)
                 self.log(status, environ)
 
             path = environ.get('PATH_INFO', '')

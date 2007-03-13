@@ -1,9 +1,10 @@
 __all__ = ["runsimple"]
 
-import sys
+import sys, os
 import webapi as web
+import net
 
-def runsimple(func, server_address=("0.0.0.0", 8080)):
+def runbasic(func, server_address=("0.0.0.0", 8080)):
     """
     Runs a simple HTTP server hosting WSGI app `func`. The directory `static/` 
     is hosted statically.
@@ -26,6 +27,7 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
         def run_wsgi_app(self):
             protocol, host, path, parameters, query, fragment = \
                 urlparse.urlparse('http://dummyhost%s' % self.path)
+
             # we only use path, query
             env = {'wsgi.version': (1, 0)
                    ,'wsgi.url_scheme': 'http'
@@ -123,3 +125,99 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
 
     print "http://%s:%d/" % server_address
     WSGIServer(func, server_address).serve_forever()
+
+def runsimple(func, server_address=("0.0.0.0", 8080)):
+    """
+    Runs [CherryPy][cp] WSGI server hosting WSGI app `func`. 
+    The directory `static/` is hosted statically.
+
+    [cp]: http://www.cherrypy.org
+    """
+    from wsgiserver import CherryPyWSGIServer
+    from SimpleHTTPServer import SimpleHTTPRequestHandler
+    from BaseHTTPServer import BaseHTTPRequestHandler
+
+    class StaticApp(SimpleHTTPRequestHandler):
+        """WSGI application for serving static files."""
+        def __init__(self, environ, start_response):
+            self.headers = []
+            self.environ = environ
+            self.start_response = start_response
+
+        def send_response(self, status, msg=""):
+            self.status = str(status) + " " + msg
+
+        def send_header(self, name, value):
+            self.headers.append((name, value))
+
+        def end_headers(self):
+            pass
+
+        def log_message(*a): pass
+
+        def __iter__(self):
+            environ = self.environ
+
+            self.path = environ.get('PATH_INFO', '')
+            self.client_address = environ.get('REMOTE_ADDR','-'), \
+                                  environ.get('REMOTE_PORT','-')
+            self.command = environ.get('REQUEST_METHOD', '-')
+
+            from cStringIO import StringIO
+            self.wfile = StringIO() # for capturing error
+
+            f = self.send_head()
+            self.start_response(self.status, self.headers)
+
+            if f:
+                block_size = 16 * 1024
+                while True:
+                    buf = f.read(block_size)
+                    if not buf:
+                        break
+                    yield buf
+                f.close()
+            else:
+                value = self.wfile.getvalue()
+                yield value
+                    
+    class WSGIWrapper(BaseHTTPRequestHandler):
+        """WSGI wrapper for logging the status and serving static files."""
+        def __init__(self, app):
+            self.app = app
+            self.format = '%s - - [%s] "%s %s %s" - %s'
+
+        def __call__(self, environ, start_response):
+            def xstart_response(status, response_headers):
+                start_response(status, response_headers)
+                self.log(status, environ)
+
+            path = environ.get('PATH_INFO', '')
+            if path.startswith('/static/'):
+                return StaticApp(environ, xstart_response)
+            else:
+                return self.app(environ, xstart_response)
+
+        def log(self, status, environ):
+            outfile = environ.get('wsgi.errors', web.debug)
+            req = environ.get('PATH_INFO', '_')
+            protocol = environ.get('ACTUAL_SERVER_PROTOCOL', '-')
+            method = environ.get('REQUEST_METHOD', '-')
+            host = "%s:%s" % (environ.get('REMOTE_ADDR','-'), 
+                              environ.get('REMOTE_PORT','-'))
+
+            #@@ It is really bad to extend from 
+            #@@ BaseHTTPRequestHandler just for this method
+            time = self.log_date_time_string()
+
+            print >> outfile, self.format % (host, time, protocol, 
+                                             method, req, status)
+            
+    func = WSGIWrapper(func)
+    server = CherryPyWSGIServer(server_address, func, server_name="localhost")
+
+    print "http://%s:%d/" % server_address
+    try:
+        server.start()
+    except KeyboardInterrupt:
+        server.stop()

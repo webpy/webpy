@@ -488,6 +488,10 @@ def datestr(then, now=None):
     oneday = 24 * 60 * 60
 
     if not now: now = datetime.datetime.utcnow()
+    if type(now).__name__ == "DateTime":
+        now = datetime.datetime.fromtimestamp(now)
+    if type(then).__name__ == "DateTime":
+        then = datetime.datetime.fromtimestamp(then)
     delta = now - then
     deltaseconds = int(delta.days * oneday + delta.seconds + delta.microseconds * 1e-06)
     deltadays = abs(deltaseconds) // oneday

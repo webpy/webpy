@@ -80,7 +80,7 @@ def render(template, terms=None, asTemplate=False, base=None,
     if not isinstance(terms, tuple): 
         terms = (terms,)
     
-    if not isString and template.endswith('.html'): 
+    if 'headers' in ctx and not isString and template.endswith('.html'): 
         header('Content-Type','text/html; charset=utf-8', unique=True)
         
     if loadhooks.has_key('reloader'):

@@ -115,9 +115,7 @@ def webpyfunc(inp, fvars, autoreload=False):
     if not hasattr(inp, '__call__'):
         if autoreload:
             # black magic to make autoreload work:
-            mod = \
-                __import__(
-                    fvars['__file__'].split(os.path.sep).pop().split('.')[0])
+            mod = __import__(fvars['__name__'], None, None, [""])
             #@@probably should replace this with some inspect magic
             name = utils.dictfind(fvars, inp)
             func = lambda: handle(getattr(mod, name), mod)

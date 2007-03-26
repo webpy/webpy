@@ -93,20 +93,19 @@ def input(*requireds, **defaults):
     _method = defaults.pop('_method', 'both')
     
     e = ctx.env.copy()
-    out = {}
+    a = b = {}
+    
     if _method.lower() in ['both', 'post']:
-        a = {}
         if e['REQUEST_METHOD'] == 'POST':
             a = cgi.FieldStorage(fp = StringIO(data()), environ=e, 
               keep_blank_values=1)
             a = dictify(a)
-        out = dictadd(out, a)
 
     if _method.lower() in ['both', 'get']:
         e['REQUEST_METHOD'] = 'GET'
-        a = dictify(cgi.FieldStorage(environ=e, keep_blank_values=1))
-        out = dictadd(out, a)
-    
+        b = dictify(cgi.FieldStorage(environ=e, keep_blank_values=1))
+
+    out = dictadd(b, a)
     try:
         return storify(out, *requireds, **defaults)
     except KeyError:

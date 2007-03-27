@@ -61,12 +61,11 @@ def header(hdr, value, unique=False):
     Adds the header `hdr: value` with the response.
     
     If `unique` is True and a header with that name already exists,
-    it doesn't add a new one. If `unique` is None and a header with
-    that name already exists, it replaces it with this one.
+    it doesn't add a new one. 
     """
     if unique is True:
         for h, v in ctx.headers:
-            if h == hdr: return
+            if h.lower() == hdr.lower(): return
     
     ctx.headers.append((hdr, value))
 

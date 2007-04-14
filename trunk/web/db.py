@@ -287,7 +287,7 @@ def connect(dbn, **keywords):
 
     web.ctx.db_name = dbn
     web.ctx.db_module = db
-    web.ctx.db_transaction = False
+    web.ctx.db_transaction = 0
     web.ctx.db = keywords
     
     def db_cursor():
@@ -316,7 +316,7 @@ def connect(dbn, **keywords):
         except:
             if web.config.get('db_printing'):
                 print >> web.debug, 'ERR:', str(sql_query)
-            rollback()
+            rollback(care=False)
             raise
 
         if web.config.get('db_printing'):
@@ -326,21 +326,66 @@ def connect(dbn, **keywords):
     web.ctx.db_execute = db_execute
     return web.ctx.db
 
+class TransactionError(Exception): pass
+
+class transaction:
+    """
+    A context that can be used in conjunction with "with" statements
+    to implement SQL transactions. Starts a transaction on enter,
+    rolls it back if there's an error; otherwise it commits it at the
+    end.
+    """
+    def __enter__(self):
+        transact()
+
+    def __exit__(self, exctype, excvalue, traceback):
+        if exctype is not None:
+            rollback()
+        else:
+            commit()
+
 def transact():
     """Start a transaction."""
-    # commit everything up to now, so we don't rollback it later
-    if hasattr(web.ctx.db, 'commit'): web.ctx.db.commit()
-    web.ctx.db_transaction = True
+    if not web.ctx.db_transaction:
+        # commit everything up to now, so we don't rollback it later
+        if hasattr(web.ctx.db, 'commit'): 
+            web.ctx.db.commit()
+    else:
+        db_cursor = web.ctx.db_cursor()
+        web.ctx.db_execute(db_cursor, 
+            SQLQuery("SAVEPOINT webpy_sp_%s" % web.ctx.db_transaction))
+    web.ctx.db_transaction += 1
 
 def commit():
     """Commits a transaction."""
-    if hasattr(web.ctx.db, 'commit'): web.ctx.db.commit()
-    web.ctx.db_transaction = False
+    web.ctx.db_transaction -= 1
+    if web.ctx.db_transaction < 0: 
+        raise TransactionError, "not in a transaction"
 
-def rollback():
+    if not web.ctx.db_transaction:
+        if hasattr(web.ctx.db, 'commit'): 
+            web.ctx.db.commit()
+    else:
+        db_cursor = web.ctx.db_cursor()
+        web.ctx.db_execute(db_cursor, 
+            SQLQuery("RELEASE SAVEPOINT webpy_sp_%s" % web.ctx.db_transaction))
+
+def rollback(care=True):
     """Rolls back a transaction."""
-    if hasattr(web.ctx.db, 'rollback'): web.ctx.db.rollback()
-    web.ctx.db_transaction = False    
+    web.ctx.db_transaction -= 1     
+    if web.ctx.db_transaction < 0:
+        if care:
+            raise TransactionError, "not in a transaction"
+        else:
+            web.db_transaction = 0
+
+    if not web.ctx.db_transaction:
+        if hasattr(web.ctx.db, 'rollback'): 
+            web.ctx.db.rollback()
+    else:
+        db_cursor = web.ctx.db_cursor()
+        web.ctx.db_execute(db_cursor,
+            SQLQuery("ROLLBACK TO SAVEPOINT webpy_sp_%s" % web.ctx.db_transaction))
 
 def query(sql_query, vars=None, processed=False, _test=False):
     """

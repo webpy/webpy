@@ -49,7 +49,8 @@ class Form:
             else:
                 i.value = v
         if _validate:
-            self.valid = out and self._validate(source)
+            out = out and self._validate(source)
+            self.valid = out
         return out
 
     def _validate(self, value):

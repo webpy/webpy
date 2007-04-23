@@ -12,7 +12,7 @@ __all__ = [
   "sqllist", "sqlors", "aparam", "reparam",
   "SQLQuery", "sqlquote",
   "connect", 
-  "transact", "commit", "rollback",
+  "TransactionError", "transaction", "transact", "commit", "rollback",
   "query",
   "select", "insert", "update", "delete"
 ]

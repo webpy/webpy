@@ -304,7 +304,7 @@ def connect(dbn, **keywords):
 
     web.ctx.dbq_count = 0
     
-    def db_execute(cur, sql_query):
+    def db_execute(cur, sql_query, dorollback=True):
         """executes an sql query"""
 
         web.ctx.dbq_count += 1
@@ -316,7 +316,7 @@ def connect(dbn, **keywords):
         except:
             if web.config.get('db_printing'):
                 print >> web.debug, 'ERR:', str(sql_query)
-            rollback(care=False)
+            if dorollback: rollback(care=False)
             raise
 
         if web.config.get('db_printing'):
@@ -372,12 +372,15 @@ def commit():
 
 def rollback(care=True):
     """Rolls back a transaction."""
+    print web.ctx.db_transaction, 'a'
     web.ctx.db_transaction -= 1     
+    print web.ctx.db_transaction, 'b'
     if web.ctx.db_transaction < 0:
+        web.db_transaction = 0
         if care:
             raise TransactionError, "not in a transaction"
         else:
-            web.db_transaction = 0
+            return
 
     if not web.ctx.db_transaction:
         if hasattr(web.ctx.db, 'rollback'): 
@@ -385,7 +388,8 @@ def rollback(care=True):
     else:
         db_cursor = web.ctx.db_cursor()
         web.ctx.db_execute(db_cursor,
-            SQLQuery("ROLLBACK TO SAVEPOINT webpy_sp_%s" % web.ctx.db_transaction))
+            SQLQuery("ROLLBACK TO SAVEPOINT webpy_sp_%s" % web.ctx.db_transaction),
+            dorollback=False)
 
 def query(sql_query, vars=None, processed=False, _test=False):
     """

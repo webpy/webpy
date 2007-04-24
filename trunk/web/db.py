@@ -372,9 +372,7 @@ def commit():
 
 def rollback(care=True):
     """Rolls back a transaction."""
-    print web.ctx.db_transaction, 'a'
     web.ctx.db_transaction -= 1     
-    print web.ctx.db_transaction, 'b'
     if web.ctx.db_transaction < 0:
         web.db_transaction = 0
         if care:

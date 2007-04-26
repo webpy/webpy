@@ -51,10 +51,11 @@ r_var = '[a-zA-Z_][a-zA-Z0-9_]*'
 
 class ParseError(Exception): pass
 class Parser:
-    def __init__(self, text):
+    def __init__(self, text, name=""):
         self.t = text
         self.p = 0
         self._lock = [False]
+        self.name = name
     
     def lock(self):
         self._lock[-1] = True
@@ -67,7 +68,7 @@ class Parser:
 
     def Error(self, x, y=None):
         if y is None: y = self.csome()
-        raise ParseError, "expected %s, got %s (line %s)" % (x, y, self.curline())
+        raise ParseError, "%s: expected %s, got %s (line %s)" % (self.name, x, y, self.curline())
     
     def q(self, f):
         def internal(*a, **kw):
@@ -458,15 +459,24 @@ class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
     pass
 
+
+
+
 Required = object()
 class Template:
     globals = {}
-    def __init__(self, text, filter=None):
+    content_types = {
+        '.html' : 'text/html; charset=utf-8',
+        '.txt' : 'text/plain',
+    }
+    
+    def __init__(self, text, filter=None, filename=""):
         self.filter = filter
+        self.filename = filename
         # universal newlines:
         text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
         if not text.endswith('\n'): text += '\n'
-        header, tree = TemplateParser(text).go()
+        header, tree = TemplateParser(text, filename).go()
         self.tree = tree
         if header:
             self.h_defwith(header)
@@ -478,7 +488,19 @@ class Template:
         d.update(self._parseargs(a, kw))
         f = Fill(self.tree, d=d)
         if self.filter: f.filter = self.filter
+
+        import webapi as web
+        if 'headers' in web.ctx and self.filename:
+            content_type = self.find_content_type()
+            if content_type:
+                web.header('Content-Type', content_type, unique=True)
+        
         return f.go()
+
+    def find_content_type(self):
+        for ext, content_type in self.content_types:
+            if self.filename.endswith(ext):
+                return content_type
     
     def _parseargs(self, inargs, inkwargs):
         # difference from Python:
@@ -516,6 +538,9 @@ class Template:
         self.kwargs = []
         for var, valexpr in header[KWARGS]:
             self.kwargs.append((var, f.h(valexpr)))
+
+    def __repr__(self):
+        return "<Template: %s>" % self.filename
 
 class Handle:
     def __init__(self, parsetree, **kw):
@@ -746,25 +771,22 @@ class render:
     
     def _do(self, name, filter=None):
         if self.cache is False or name not in self.cache:
-            p = [f for f in glob.glob(self.loc + name + '.*') if not f.endswith('~')] # skip backup files
-            if not p and os.path.isdir(self.loc + name):
-                return render(self.loc + name + '/', cache=self.cache)
+
+            tmplpath = os.path.join(self.loc, name) 
+            p = [f for f in glob.glob(tmplpath + '.*') if not f.endswith('~')] # skip backup files
+            if not p and os.path.isdir(tmplpath):
+                return render(tmplpath, cache=self.cache)
             elif not p:
                 raise AttributeError, 'no template named ' + name
+
             p = p[0]
-            c = Template(open(p).read())
+            c = Template(open(p).read(), filename=p)
             if self.cache is not False: self.cache[name] = (p, c)
         
         if self.cache is not False: p, c = self.cache[name]
 
-        if p.endswith('.html'):
-            import webapi as web
-            if 'headers' in web.ctx:
-                web.header('Content-Type', 'text/html; charset=utf-8', unique=True)
+        if p.endswith('.html') or p.endswith('.xml'):
             if not filter: c.filter = websafe
-        elif p.endswith('.xml'):
-            if not filter: c.filter = websafe
-        
         return c
 
     def __getattr__(self, p):

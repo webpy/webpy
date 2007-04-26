@@ -498,7 +498,7 @@ class Template:
         return f.go()
 
     def find_content_type(self):
-        for ext, content_type in self.content_types:
+        for ext, content_type in self.content_types.iteritems():
             if self.filename.endswith(ext):
                 return content_type
     

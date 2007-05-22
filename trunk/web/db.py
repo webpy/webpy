@@ -11,6 +11,7 @@ __all__ = [
   "UnknownParamstyle", "UnknownDB",
   "sqllist", "sqlors", "aparam", "reparam",
   "SQLQuery", "sqlquote",
+  "SQLLiteral", "sqlliteral",
   "connect", 
   "TransactionError", "transaction", "transact", "commit", "rollback",
   "query",
@@ -217,6 +218,21 @@ class SQLQuery:
     
     def __repr__(self):
         return '<sql: %s>' % repr(str(self))
+
+class SQLLiteral:
+    """
+    Protects a string from `sqlquote`.
+
+        >>> insert('foo', time=SQLLiteral('NOW()'), _test=True)
+        <sql: 'INSERT INTO foo (time) VALUES (NOW())'>
+    """
+    def __init__(self, v): 
+        self.v = v
+
+    def __repr__(self): 
+        return self.v
+
+sqlliteral = SQLLiteral
 
 def sqlquote(a):
     """

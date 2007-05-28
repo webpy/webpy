@@ -63,6 +63,10 @@ def header(hdr, value, unique=False):
     If `unique` is True and a header with that name already exists,
     it doesn't add a new one. 
     """
+    # protection against HTTP response splitting attack
+    if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
+        raise ValueError, 'invalid characters in header'
+        
     if unique is True:
         for h, v in ctx.headers:
             if h.lower() == hdr.lower(): return

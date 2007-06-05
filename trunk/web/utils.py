@@ -527,9 +527,11 @@ def numify(string):
     
         >>> numify('800-555-1212')
         '8005551212'
+        >>> numify('800.555.1212')
+        '8005551212'
     
     """
-    return ''.join([c for c in str(string).split('.')[0] if c.isdigit()])
+    return ''.join([c for c in str(string) if c.isdigit()])
 
 def denumify(string, pattern):
     """

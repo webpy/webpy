@@ -555,8 +555,11 @@ class Fill(Handle):
     builtins = global_globals
     def filter(self, text):
         if text is None: return ''
-        else: return str(text)
-        # later: can do stuff like WebSafe
+        else:
+            if isinstance(text, unicode):
+                text = text.encode('utf-8')
+            return str(text)
+        # often replaced with stuff like net.websafe
     
     def h_literal(self, i):
         item = i[THING]
@@ -846,6 +849,7 @@ def test():
         lambda: t('$({1: 1}.keys()[0])')(),                                 '1\n',
         lambda: t('$for x in [1, 2, 3]:\n\t$x') (),                         '    1\n    2\n    3\n',
         lambda: t('$def with (a)\n$:a')(1),                                 '1\n',
+        lambda: t('$def with (a)\n$a')(u'\u203d'),                          '\xe2\x80\xbd\n'
     ]
 
     for func, value in group(tests, 2):

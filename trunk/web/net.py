@@ -134,15 +134,20 @@ def htmlquote(text):
 
 def websafe(val):
     """
-    Converts `val` so that it's safe for use in HTML.
+    Converts `val` so that it's safe for use in UTF-8 HTML.
     
         >>> websafe("<'&\\">")
         '&lt;&#39;&amp;&quot;&gt;'
         >>> websafe(None)
         ''
+        >>> websafe(u'\u203d')
+        '\\xe2\\x80\\xbd'
     """
-    if val is None: return ''
-    if not isinstance(val, unicode): val = str(val)
+    if val is None:
+        return ''
+    if isinstance(val, unicode):
+        val = val.encode('utf-8')
+    val = str(val)
     return htmlquote(val)
 
 if __name__ == "__main__":

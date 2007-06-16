@@ -810,50 +810,64 @@ def test():
             assert a == b, "\nexpected: %s\ngot: %s" % (repr(b), repr(a))
     
     from utils import storage, group
-    t = Template
 
-    tests = [
-        lambda: t('1')(),                                                   '1\n',
-        lambda: t('$def with ()\n1')(),                                     '1\n',
-        lambda: t('$def with (a)\n$a')(1),                                  '1\n',
-        lambda: t('$def with (a=0)\n$a')(1),                                '1\n',
-        lambda: t('$def with (a=0)\n$a')(a=1),                              '1\n',
-        lambda: t('$if 1: 1')(),                                            '1\n',
-        lambda: t('$if 1:\n    1')(),                                       '1\n',
-        lambda: t('$if 0: 0\n$elif 1: 1')(),                                '1\n',
-        lambda: t('$if 0: 0\n$elif None: 0\n$else: 1')(),                   '1\n',
-        lambda: t('$if (0 < 1) and (1 < 2): 1')(),                          '1\n',
-        lambda: t('$for x in [1, 2, 3]: $x')(),                             '1\n2\n3\n',
-        lambda: t('$for x in []: 0\n$else: 1')(),                           '1\n',
-        lambda: t('$def with (a)\n$while a and a.pop(): 1')([1, 2, 3]),     '1\n1\n1\n',
-        lambda: t('$while 0: 0\n$else: 1')(),                               '1\n',
-        lambda: t('$ a = 1\n$a')(),                                         '1\n',
-        lambda: t('$# 0')(),                                                '',
-        lambda: t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1}), '1\n',
-        lambda: t('$def with (a)\n$(a)')(1),                                '1\n',
-        lambda: t('$def with (a)\n$a')(1),                                  '1\n',
-        lambda: t('$def with (a)\n$a.b')(storage(b=1)),                     '1\n',
-        lambda: t('$def with (a)\n$a[0]')([1]),                             '1\n',
-        lambda: t('${0 or 1}')(),                                           '1\n',
-        lambda: t('$ a = [1]\n$a[0]')(),                                    '1\n',
-        lambda: t('$ a = {1: 1}\n$a.keys()[0]')(),                          '1\n',
-        lambda: t('$ a = []\n$if not a: 1')(),                              '1\n',
-        lambda: t('$ a = {}\n$if not a: 1')(),                              '1\n',
-        lambda: t('$ a = -1\n$a')(),                                        '-1\n',
-        lambda: t('$ a = "1"\n$a')(),                                       '1\n',
-        lambda: t('$if 1 is 1: 1')(),                                       '1\n',
-        lambda: t('$if not 0: 1')(),                                        '1\n',
-        lambda: t('$if 1:\n    $if 1: 1')(),                                '1\n',
-        lambda: t('$ a = 1\n$a')(),                                         '1\n',
-        lambda: t('$ a = 1.\n$a')(),                                        '1.0\n',
-        lambda: t('$({1: 1}.keys()[0])')(),                                 '1\n',
-        lambda: t('$for x in [1, 2, 3]:\n\t$x') (),                         '    1\n    2\n    3\n',
-        lambda: t('$def with (a)\n$:a')(1),                                 '1\n',
-        lambda: t('$def with (a)\n$a')(u'\u203d'),                          '\xe2\x80\xbd\n'
-    ]
+    class t:
+        def __init__(self, text):
+            self.text = text
 
-    for func, value in group(tests, 2):
-        assertEqual(func(), value)
+        def __call__(self, *a, **kw):
+            return TestResult(self.text, Template(self.text)(*a, **kw))
+
+    class TestResult:
+        def __init__(self, source, value):
+            self.source = source
+            self.value = value
+
+        def __eq__(self, other):
+            if self.value == other:
+                if verbose:
+                    sys.stderr.write('.')
+            else:
+                print >> sys.stderr, 'FAIL:', repr(self.source), 'expected', repr(other), ', got', repr(self.value)
+                sys.stderr.flush()
+    
+    t('1')() == '1\n'
+    t('$def with ()\n1')() == '1\n'
+    t('$def with (a)\n$a')(1) == '1\n'
+    t('$def with (a=0)\n$a')(1) == '1\n'
+    t('$def with (a=0)\n$a')(a=1) == '1\n'
+    t('$if 1: 1')() == '1\n'
+    t('$if 1:\n    1')() == '1\n'
+    t('$if 0: 0\n$elif 1: 1')() == '1\n'
+    t('$if 0: 0\n$elif None: 0\n$else: 1')() == '1\n'
+    t('$if (0 < 1) and (1 < 2): 1')() == '1\n'
+    t('$for x in [1, 2, 3]: $x')() == '1\n2\n3\n'
+    t('$for x in []: 0\n$else: 1')() == '1\n'
+    t('$def with (a)\n$while a and a.pop(): 1')([1, 2, 3]) == '1\n1\n1\n'
+    t('$while 0: 0\n$else: 1')() == '1\n'
+    t('$ a = 1\n$a')() == '1\n'
+    t('$# 0')() == ''
+    t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1}) == '1\n'
+    t('$def with (a)\n$(a)')(1) == '1\n'
+    t('$def with (a)\n$a')(1) == '1\n'
+    t('$def with (a)\n$a.b')(storage(b=1)) == '1\n'
+    t('$def with (a)\n$a[0]')([1]) == '1\n'
+    t('${0 or 1}')() == '1\n'
+    t('$ a = [1]\n$a[0]')() == '1\n'
+    t('$ a = {1: 1}\n$a.keys()[0]')() == '1\n'
+    t('$ a = []\n$if not a: 1')() == '1\n'
+    t('$ a = {}\n$if not a: 1')() == '1\n'
+    t('$ a = -1\n$a')() == '-1\n'
+    t('$ a = "1"\n$a')() == '1\n'
+    t('$if 1 is 1: 1')() == '1\n'
+    t('$if not 0: 1')() == '1\n'
+    t('$if 1:\n    $if 1: 1')() == '1\n'
+    t('$ a = 1\n$a')() == '1\n'
+    t('$ a = 1.\n$a')() == '1.0\n'
+    t('$({1: 1}.keys()[0])')() == '1\n'
+    t('$for x in [1, 2, 3]:\n\t$x')() == '    1\n    2\n    3\n'
+    t('$def with (a)\n$:a')(1) == '1\n'
+    t('$def with (a)\n$a')(u'\u203d') == '\xe2\x80\xbd\n'
 
     j = Template("$var foo: bar")()
     assertEqual(str(j), '')

@@ -72,8 +72,10 @@ class Parser:
         print
         
 for pyfile in os.listdir('trunk/web'):
-    if pyfile[-2:] == 'py': 
+    if pyfile[-2:] == 'py':
+        print
         print '## ' + pyfile
+        print
         Parser().go('trunk/web/' + pyfile)
 print '`ctx`\n   :',
 print '\n'.join('    '+x for x in web.ctx.__doc__.strip().split('\n'))

@@ -30,7 +30,7 @@ def assert_absence(*values):
         assert getrow(v) is None
     
 class PostgresTest(unittest.TestCase):
-    parameters = dict(dbn="postgres", db="webtest", user="webpy", pw="")
+    parameters = dict(dbn="postgres", db="webtest", user="postgres", pw="")
     
     def setUp(self):
         web.config.db_parameters = self.parameters

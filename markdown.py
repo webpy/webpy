@@ -9,6 +9,10 @@ Usage:
 Calling:
   import markdown
   somehtml = markdown.markdown(sometext)
+
+For other versions of markdown, see: 
+  http://www.freewisdom.org/projects/python-markdown/
+  http://en.wikipedia.org/wiki/Markdown
 """
 
 __version__ = '1.0.1-2' # port of 1.0.1

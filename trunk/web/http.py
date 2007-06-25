@@ -71,10 +71,11 @@ def redirect(url, status='301 Moved Permanently'):
     `url` is joined with the base URL so that things like 
     `redirect("about") will work properly.
     """
-    if url.startswith("/"):
-        newloc = web.ctx.homepath + url
-    else:
-        newloc = url
+    newloc = urlparse.urljoin(web.ctx.path, url)
+
+    # if newloc is relative then make it absolute
+    if newloc.startswith('/'):
+        newloc = web.ctx.home + newloc
 
     web.ctx.status = status
     web.ctx.output = ''    
@@ -129,7 +130,7 @@ def changequery(**kw):
             query.pop(k, None)
         else:
             query[k] = v
-    out = web.ctx.homepath + web.ctx.path
+    out = web.ctx.path
     if query:
         out += '?' + urllib.urlencode(query)
     return out

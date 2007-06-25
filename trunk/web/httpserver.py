@@ -189,8 +189,9 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
 
         def __call__(self, environ, start_response):
             def xstart_response(status, response_headers, *args):
-                start_response(status, response_headers, *args)
+                write = start_response(status, response_headers, *args)
                 self.log(status, environ)
+                return write
 
             path = environ.get('PATH_INFO', '')
             if path.startswith('/static/'):

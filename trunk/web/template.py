@@ -563,7 +563,7 @@ class Fill(Handle):
     
     def h_literal(self, i):
         item = i[THING]
-        if isinstance(item, str) and item[0] in ['"', "'"]:
+        if isinstance(item, (unicode, str)) and item[0] in ['"', "'"]:
             item = item[1:-1]
         elif isinstance(item, (float, int)):
             pass
@@ -868,6 +868,7 @@ def test():
     t('$for x in [1, 2, 3]:\n\t$x')() == '    1\n    2\n    3\n'
     t('$def with (a)\n$:a')(1) == '1\n'
     t('$def with (a)\n$a')(u'\u203d') == '\xe2\x80\xbd\n'
+    t(u'$def with (f)\n$:f("x")')(lambda x: x) == 'x\n'
 
     j = Template("$var foo: bar")()
     assertEqual(str(j), '')

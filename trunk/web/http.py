@@ -118,6 +118,16 @@ def write(cgi_response):
 
     web.output(body)
 
+def urlencode(query):
+    """
+    Same as urllib.urlencode, but supports unicode strings.
+    
+        >>> urlencode({'text':'foo bar'})
+        'text=foo+bar'
+    """
+    query = dict([(k, unicode(v).encode('utf-8')) for k, v in query.items()])
+    return urllib.urlencode(query)
+
 def changequery(**kw):
     """
     Imagine you're at `/foo?a=1&b=2`. Then `changequery(a=3)` will return
@@ -132,7 +142,7 @@ def changequery(**kw):
             query[k] = v
     out = web.ctx.path
     if query:
-        out += '?' + urllib.urlencode(query)
+        out += '?' + urlencode(query)
     return out
 
 def url(path, **kw):
@@ -146,7 +156,7 @@ def url(path, **kw):
         out = path
 
     if kw:
-        out += '?' + urllib.urlencode(kw)
+        out += '?' + urlencode(kw)
     
     return out
 

@@ -125,7 +125,13 @@ def urlencode(query):
         >>> urlencode({'text':'foo bar'})
         'text=foo+bar'
     """
-    query = dict([(k, unicode(v).encode('utf-8')) for k, v in query.items()])
+    def xstr(s):
+        if isinstance(s, str):
+            return s
+        else: 
+            return unicode(s).encode('utf-8')
+    
+    query = dict([(k, xstr(v)) for k, v in query.items()])
     return urllib.urlencode(query)
 
 def changequery(**kw):

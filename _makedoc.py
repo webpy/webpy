@@ -1,5 +1,5 @@
-import web
 import os
+import web
 
 class Parser:
     def __init__(self):

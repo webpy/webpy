@@ -26,7 +26,7 @@ from utils import storage, iters, iterbetter
 import webapi as web
 
 try:
-    from DBUtils.PooledDB import PooledDB
+    from DBUtils import PooledDB
     web.config._hasPooling = True
 except ImportError:
     web.config._hasPooling = False
@@ -305,13 +305,21 @@ def connect(dbn, **keywords):
     web.ctx.db_module = db
     web.ctx.db_transaction = 0
     web.ctx.db = keywords
+
+    def _PooledDB(db, keywords):
+        # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
+        # see Bug#122112
+        if PooledDB.__version__.split('.') < '0.9.3'.split('.'):
+            return PooledDB.PooledDB(dbapi=db, **keywords)
+        else:
+            return PooledDB.PooledDB(creator=db, **keywords)
     
     def db_cursor():
         if isinstance(web.ctx.db, dict):
             keywords = web.ctx.db
             if web.config._hasPooling:
                 if 'db' not in globals(): 
-                    globals()['db'] = PooledDB(dbapi=db, **keywords)
+                    globals()['db'] = _PooledDB(db, keywords)
                 web.ctx.db = globals()['db'].connection()
             else:
                 web.ctx.db = db.connect(**keywords)

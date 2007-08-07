@@ -5,7 +5,7 @@ simple, elegant templating
 
 import re, glob, os, os.path
 from types import FunctionType as function
-from utils import storage, group
+from utils import storage, group, utf8
 from net import websafe
 
 # differences from python:
@@ -555,10 +555,7 @@ class Fill(Handle):
     builtins = global_globals
     def filter(self, text):
         if text is None: return ''
-        else:
-            if isinstance(text, unicode):
-                text = text.encode('utf-8')
-            return str(text)
+        else: return utf8(text)
         # often replaced with stuff like net.websafe
     
     def h_literal(self, i):
@@ -680,6 +677,7 @@ class Fill(Handle):
     def h_line(self, i):
         out = []
         for x in i[THING]:
+            #@@ what if x is unicode
             if isinstance(x, str):
                 out.append(x)
             elif x[WHAT] == 'itpl':
@@ -687,7 +685,7 @@ class Fill(Handle):
                 if x[FILTER]:
                     o = self.filter(o)
                 else: 
-                    o = (o is not None and str(o)) or ""
+                    o = (o is not None and utf8(o)) or ""
                 out.append(o)
             else:
                 raise WTF, x

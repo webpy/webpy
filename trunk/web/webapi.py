@@ -17,7 +17,7 @@ __all__ = [
 import sys, os, cgi, threading, Cookie, pprint, traceback
 try: import itertools
 except ImportError: pass
-from utils import storage, storify, threadeddict, dictadd, intget, lstrips
+from utils import storage, storify, threadeddict, dictadd, intget, lstrips, utf8
 
 config = storage()
 config.__doc__ = """
@@ -63,6 +63,7 @@ def header(hdr, value, unique=False):
     If `unique` is True and a header with that name already exists,
     it doesn't add a new one. 
     """
+    hdr, value = utf8(hdr), utf8(value)
     # protection against HTTP response splitting attack
     if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
         raise ValueError, 'invalid characters in header'

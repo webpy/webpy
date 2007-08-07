@@ -114,8 +114,16 @@ def webpyfunc(inp, fvars, autoreload=False):
     """If `inp` is a url mapping, returns a function that calls handle."""
     if not hasattr(inp, '__call__'):
         if autoreload:
-            # black magic to make autoreload work:
-            mod = __import__(fvars['__name__'], None, None, [""])
+            def modname():
+                """find name of the module name from fvars."""
+                file, name = fvars['__file__'], fvars['__name__']
+                if name == '__main__':
+                    # Since the __main__ module can't be reloaded, the module has 
+                    # to be imported using its file name.
+                    name = os.path.splitext(file)[0]
+                return name
+    
+            mod = __import__(modname(), None, None, [""])
             #@@probably should replace this with some inspect magic
             name = utils.dictfind(fvars, inp)
             func = lambda: handle(getattr(mod, name), mod)

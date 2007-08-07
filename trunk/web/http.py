@@ -248,6 +248,7 @@ class Reloader:
             elif self.mtimes[mod] < mtime:
                 try: 
                     reload(mod)
+                    self.mtimes[mod] = mtime
                 except ImportError: 
                     pass
         return True

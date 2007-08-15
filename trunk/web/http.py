@@ -128,13 +128,14 @@ def urlencode(query):
     query = dict([(k, utils.utf8(v)) for k, v in query.items()])
     return urllib.urlencode(query)
 
-def changequery(**kw):
+def changequery(query=None, **kw):
     """
     Imagine you're at `/foo?a=1&b=2`. Then `changequery(a=3)` will return
     `/foo?a=3&b=2` -- the same URL but with the arguments you requested
     changed.
     """
-    query = web.input(_method='get')
+    if query is None:
+        query = web.input(_method='get')
     for k, v in kw.iteritems():
         if v is None:
             query.pop(k, None)
@@ -145,11 +146,13 @@ def changequery(**kw):
         out += '?' + urlencode(query)
     return out
 
-def url(path, **kw):
+def url(path=None, **kw):
     """
     Makes url by concatinating web.ctx.homepath and path and the 
     query string created using the arguments.
     """
+    if path is None:
+        path = web.ctx.path
     if path.startswith("/"):
         out = web.ctx.homepath + path
     else:

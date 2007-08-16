@@ -2,7 +2,7 @@
 from __future__ import generators
 
 """web.py: makes web apps (http://webpy.org)"""
-__version__ = "0.21"
+__version__ = "0.22"
 __revision__ = "$Rev$"
 __author__ = "Aaron Swartz <me@aaronsw.com>"
 __license__ = "public domain"

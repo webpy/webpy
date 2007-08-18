@@ -120,7 +120,7 @@ def webpyfunc(inp, fvars, autoreload=False):
                 if name == '__main__':
                     # Since the __main__ module can't be reloaded, the module has 
                     # to be imported using its file name.
-                    name = os.path.splitext(file)[0]
+                    name = os.path.splitext(os.path.basename(file))[0]
                 return name
     
             mod = __import__(modname(), None, None, [""])

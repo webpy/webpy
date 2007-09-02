@@ -7,7 +7,7 @@ __all__ = [
   "validipaddr", "validipport", "validip", "validaddr", 
   "urlquote",
   "httpdate", "parsehttpdate", 
-  "htmlquote", "websafe",
+  "htmlquote", "htmlunquote", "websafe",
 ]
 
 import urllib, time
@@ -131,6 +131,22 @@ def htmlquote(text):
     text = text.replace("'", "&#39;")
     text = text.replace('"', "&quot;")
     return text
+
+def htmlunquote(text):
+    """
+    Decodes `text` that's HTML quoted.
+
+        >>> htmlunquote('&lt;&#39;&amp;&quot;&gt;')
+        '<\\'&">'
+    """
+    text = text.replace("&quot;", '"')
+    text = text.replace("&#39;", "'")
+    text = text.replace("&gt;", ">")
+    text = text.replace("&lt;", "<")
+    text = text.replace("&amp;", "&") # Must be done last!
+    return text
+
+
 
 def websafe(val):
     """

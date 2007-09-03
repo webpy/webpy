@@ -20,10 +20,11 @@ __all__ = [
   "ThreadedDict",
   "autoassign",
   "to36",
-  "safemarkdown"
+  "safemarkdown",
+  "sendmail"
 ]
 
-import re, sys, time, threading
+import re, sys, time, threading, os
 try: import datetime
 except ImportError: pass
 
@@ -790,6 +791,33 @@ def safemarkdown(text):
         text = markdown(text)
         return text
 
+def sendmail(from_address, to_address, message):
+    """
+    Sends the email message `message` to `to_address` with the
+    envelope sender set to `from_address`.
+
+    If `web.config.smtp_server` is set, it will send the message
+    to that SMTP server. Otherwise it will look for
+    `/usr/lib/sendmail`, the typical location for the sendmail-style
+    binary.
+    """
+    try:
+        import webapi
+    except ImportError:
+        webapi = Storage(config=storage())
+
+    if webapi.config.get('smtp_server'):
+        import smtplib
+        smtpserver = smtplib.SMTP(web.config.smtp_server)
+        smtpserver.sendmail(from_address, [to_address], message)
+        smtpserver.quit()
+    else:
+        assert not from_address.startswith('-') and not to_address.startswith('-'), 'security'
+        i, o = os.popen2(["/usr/lib/sendmail", '-f', from_address, to_address])
+        i.write(message)
+        i.close()
+        o.close()
+        del i, o
 
 if __name__ == "__main__":
     import doctest

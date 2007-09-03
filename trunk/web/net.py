@@ -146,8 +146,6 @@ def htmlunquote(text):
     text = text.replace("&amp;", "&") # Must be done last!
     return text
 
-
-
 def websafe(val):
     """
     Converts `val` so that it's safe for use in UTF-8 HTML.

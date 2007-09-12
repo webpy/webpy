@@ -24,6 +24,7 @@ from webapi import *
 from request import *
 from httpserver import *
 from debugerror import *
+from application import *
 
 try:
     import cheetah

@@ -323,11 +323,6 @@ def emailerrors(email_address, olderror):
         request = web.ctx.method+' '+web.ctx.home+web.ctx.fullpath
         eaddr = email_address
         text = ("""\
-From: your buggy site <%(eaddr)s>
-To: the bugfixer <%(eaddr)s>
-Subject: bug: %(error_name)s: %(error_value)s (%(path)s)
-Content-Type: multipart/mixed; boundary="----here----"
-
 ------here----
 Content-Type: text/plain
 Content-Disposition: inline
@@ -341,7 +336,12 @@ Content-Type: text/html; name="bug.html"
 Content-Disposition: attachment; filename="bug.html"
 
 """ % locals()) + str(djangoerror())
-        sendmail(email_address, email_address, text)
+        sendmail(
+          "your buggy site <%s>" % eaddr,
+          "the bugfixer <%s>" % eaddr,
+          "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
+          text, 
+          headers={'Content-Type': 'multipart/mixed; boundary="----here----"'})
     
     return emailerrors_internal
 

@@ -1,11 +1,17 @@
 """
-Web application.
+Web application
+(from web.py)
 """
 import webapi as web
 import webapi, wsgi, utils
 from request import nomethod
+from utils import lstrips
 
 import urllib
+import traceback
+import itertools
+import os
+import types
 
 __all__ = [
     "application", "auto_application",
@@ -26,8 +32,8 @@ class application:
         >>> class hello:
         ...     def GET(self): return "hello"
         >>>
-        >>> app.request("/hello")
-        "hello"
+        >>> app.request("/hello").data
+        'hello'
     """
     def __init__(self, mapping=(), fvars={}):
         self.mapping = mapping
@@ -41,48 +47,48 @@ class application:
         """Adds a processor to the application. 
         
             >>> urls = ("/(.*)", "echo")
-            >>> app = web.application(urls, globals())
+            >>> app = application(urls, globals())
             >>> class echo:
             ...     def GET(self, name): return name
             ...
             >>>
             >>> def hello(handler): return "hello, " +  handler()
             >>> app.add_processor(hello)
-            >>> app.request("/web.py")
-            "hello, web.py"
+            >>> app.request("/web.py").data
+            'hello, web.py'
         """
         self.processors.append(processor)
 
     def request(self, path='/', method='GET', host="0.0.0.0:8080"):
-        path, query = urllib.splitquery(path)
-        query = query or ""
+        """Makes request to this application for the specified path and method.
+        Response will be a storage object with data, status and headers.
+        
+            >>> urls = ("/hello", "hello")
+            >>> app = application(urls, globals())
+            >>> class hello:
+            ...     def GET(self): 
+            ...         web.header('Content-Type', 'text/plain')
+            ...         return "hello"
+            ...
+            >>> response = app.request("/hello")
+            >>> response.data
+            'hello'
+            >>> response.status
+            '200 OK'
+            >>> response.headers['Content-Type']
+            'text/plain'
+        """
+        query = urllib.splitquery(path)[1] or ""
+        env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query)
+        self.load(env)
+        data = self.handle_with_processors()
+        return web.storage(data=data, status=web.ctx.status, headers=dict(web.ctx.headers))
 
-        homepath = ""
-        d = {
-            'home': "http://" + host + homepath,
-            'homedomain': "http://" + host,
-            'homepath': homepath,
-            'host': host,
-            'ip': '127.0.0.1',
-            'method': method,
-            'path': path,
-            'query': query,
-            'output': '',
-        }
-        env = {
-            'REQUEST_METHOD': method,
-            'QUERY_STRING': query
-        }
-        web.ctx.environ = web.ctx.env = env
-        web.ctx.update(d)
-        return self.handle()
-
-    def handle(self, autoreload=False):
-        #TODO: take care of reloading
+    def handle(self):
         fn, args = self._match(self.mapping, web.ctx.path)
         return self._delegate(fn, self.fvars, args)
         
-    def xhandle(self):
+    def handle_with_processors(self):
         def process(processors):
             if processors:
                 p, processors = processors[0], processors[1:]
@@ -91,7 +97,47 @@ class application:
                 return self.handle()
                 
         # processors must be applied in the resvere order.
-        return process(self.processors[::-1])
+        return process(self.processors)
+                
+    def wsgifunc(self, *middleware):
+        """Returns a WSGI-compatible function for this application."""
+        def peep(iterator):
+            """Peeps into an iterator by doing an iteration
+            and returns an equivalent iterator.
+            """
+            # wsgi requires the headers first
+            # so we need to do an iteration
+            # and save the result for later
+            try:
+                firstchunk = iterator.next()
+            except StopIteration:
+                firstchunk = ''
+            
+            return itertools.chain([firstchunk], iterator)    
+                                
+        def is_generator(x): return x and hasattr(x, 'next')
+        
+        def wsgi(env, start_resp):
+            self.load(env)
+            try:
+                result = self.handle_with_processors()
+            except:
+                print >> web.debug, traceback.format_exc()
+                result = web.internalerror()
+
+            if is_generator(result):
+                result = peep(result)
+            else:
+                result = [str(result)]
+            
+            status, headers = web.ctx.status, web.ctx.headers
+            start_resp(status, headers)
+            return result
+
+        for m in middleware: 
+            wsgi = m(wsgi)
+
+        return wsgi
         
     def run(self, *middleware):
         """
@@ -103,24 +149,52 @@ class application:
         `middleware` is a list of WSGI middleware which is applied to the resulting WSGI
         function.
         """
-        def handle():
-            try:
-                result = self.xhandle()
-                # web.py expects print
-                if result:
-                    print result
-            except NotFound:
-                web.notfound()
-            
-        return wsgi.runwsgi(webapi.wsgifunc(handle, *middleware))
+        return wsgi.runwsgi(self.wsgifunc(*middleware))
+        
+    def load(self, env):
+        """Initializes ctx using env."""
+        ctx = web.ctx
+        
+        ctx.status = '200 OK'
+        ctx.headers = []
+        ctx.output = ''
+        ctx.environ = ctx.env = env
+        ctx.host = env.get('HTTP_HOST')
+        ctx.homedomain = 'http://' + env.get('HTTP_HOST', '[unknown]')
+        ctx.homepath = os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', ''))
+        ctx.home = ctx.homedomain + ctx.homepath
+        ctx.ip = env.get('REMOTE_ADDR')
+        ctx.method = env.get('REQUEST_METHOD')
+        ctx.path = env.get('PATH_INFO')
+        # http://trac.lighttpd.net/trac/ticket/406 requires:
+        if env.get('SERVER_SOFTWARE', '').startswith('lighttpd/'):
+            ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], ctx.homepath)
+
+        if env.get('QUERY_STRING'):
+            ctx.query = '?' + env.get('QUERY_STRING', '')
+        else:
+            ctx.query = ''
+
+        ctx.fullpath = ctx.path + ctx.query
 
     def _delegate(self, f, fvars, args=[]):
+        def handle_class(cls):
+            meth = web.ctx.method
+            if meth == 'HEAD' and not hasattr(cls, meth):
+                meth = 'GET'
+            if not hasattr(cls, meth):
+                return nomethod(cls)
+            tocall = getattr(cls(), meth)
+            return tocall(*args)
+            
+        def is_class(o): return isinstance(o, (types.ClassType, type))
+            
         if f is None:
             raise NotFound
         elif isinstance(f, application):
             return f.handle()
-        elif hasattr(f, '__call__'):
-            return f()
+        elif is_class(f):
+            return handle_class(f)
         elif isinstance(f, str):
             if '.' in f:
                 x = f.split('.')
@@ -129,14 +203,9 @@ class application:
                 cls = getattr(mod, cls)
             else:
                 cls = fvars[f]
-
-            meth = web.ctx.method
-            if meth == 'HEAD' and not hasattr(cls, meth):
-                meth = 'GET'
-            if not hasattr(cls, meth):
-                return nomethod(cls)
-            tocall = getattr(cls(), meth)
-            return tocall(*args)
+            return handle_class(cls)
+        elif hasattr(f, '__call__'):
+            return f()
         else:
             return web.notfound()
 
@@ -159,27 +228,23 @@ class auto_application(application):
         >>> class foo(app.page):
         ...     path = '/foo/.*'
         ...     def GET(self): return "foo"
-        >>>
-        >>> app.request('/hello')
-        "hello, world"
-        >>> app.request('/foo/bar')
-        "foo"
+        >>> app.request("/hello").data
+        'hello, world'
+        >>> app.request('/foo/bar').data
+        'foo'
     """
     def __init__(self):
-        self.urls = urls = []
-        application.__init__(self, self.urls)
+        application.__init__(self)
 
         class metapage(type):
             def __init__(klass, name, bases, attrs):
                 type.__init__(klass, name, bases, attrs)
-                mod, name = klass.__module__, klass.__name__
-                path = getattr(klass, 'path', '/' + name)
+                path = attrs.get('path', '/' + name)
 
                 # path can be specified as None to ignore that class
                 # typically required to create a abstract base class.
                 if path is not None:
-                    urls.append(path)
-                    urls.append(mod + '.' + name)
+                    self.add_mapping(path, klass)
 
         class page:
             path = None
@@ -191,17 +256,16 @@ class subdir_application(application):
     """Application to delegate requests based on directory.
 
         >>> urls = ("/hello", "hello")
-        >>> app = application(urls)
+        >>> app = application(urls, globals())
         >>> class hello:
         ...     def GET(self): return "hello"
         >>>
         >>> mapping = ("/foo", app)
         >>> app2 = subdir_application(mapping)
-        >>> app2.request("/foo/hello")
-        "hello"
+        >>> app2.request("/foo/hello").data
+        'hello'
     """
-    def handle(self, autoreload=False):
-        #TODO: take care of reloading
+    def handle(self):
         for dir, what in utils.group(self.mapping, 2):
             if web.ctx.path.startswith(dir + '/'):
                 # change paths to make path relative to dir
@@ -217,17 +281,20 @@ class subdomain_application(application):
     """Application to delegate requests based on the host.
 
         >>> urls = ("/hello", "hello")
-        >>> app = application(urls)
+        >>> app = application(urls, globals())
         >>> class hello:
         ...     def GET(self): return "hello"
         >>>
         >>> mapping = ("hello.example.com", app)
         >>> app2 = subdomain_application(mapping)
-        >>> app2.request("/hello", host="hello.example.com")
-        "hello2"
+        >>> app2.request("/hello", host="hello.example.com").data
+        'hello'
+        >>> app2.request("/hello", host="something.example.com").data
+        Traceback (most recent call last):
+            ...
+        NotFound
     """
-    def handle(self, autoreload=False):
-        #TODO: take care of reloading
+    def handle(self):
         host = web.ctx.host.split(':')[0] #strip port
         fn, args = self._match(self.mapping, host)
         return self._delegate(fn, self.fvars, args)
@@ -244,11 +311,11 @@ class combine_applications(application):
         ...     def GET(self): return "bar"
         ...
         >>> app = combine_applications(app1, app2)
-        >>> app.request('/foo')
-        "foo"
-        >>> app.request('/bar')
-        "bar"
-        >>> app.request("/hello")
+        >>> app.request('/foo').data
+        'foo'
+        >>> app.request('/bar').data
+        'bar'
+        >>> app.request("/hello").data
         Traceback (most recent call last):
             ...
         NotFound
@@ -257,7 +324,7 @@ class combine_applications(application):
         self.apps = apps
         application.__init__(self)
         
-    def handle(self, autoreload=False):
+    def handle(self):
         for a in self.apps:
             try:
                 return a.handle()
@@ -268,7 +335,7 @@ class combine_applications(application):
 def loadhook(h):
     """Converts a load hook into an application processor.
     
-        >>> app = web.auto_application()
+        >>> app = auto_application()
         >>> def f(): "something done before handling request"
         ...
         >>> app.add_processor(loadhook(f))
@@ -282,7 +349,7 @@ def loadhook(h):
 def unloadhook(h):
     """Converts an unload hook into an application processor.
     
-        >>> app = web.auto_application()
+        >>> app = auto_application()
         >>> def f(): "something done after handling request"
         ...
         >>> app.add_processor(unloadhook(f))    

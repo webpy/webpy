@@ -691,41 +691,43 @@ def tryall(context, prefix=None):
         print ' '*2, str(key)+':', value
 
 class ThreadedDict:
+    """Thread local storage.
+    
+        >>> d = ThreadedDict()
+        >>> d.x = 1
+        >>> d.x
+        1
+        >>> import threading
+        >>> def f(): d.x = 2
+        >>> t = threading.Thread(target=f)
+        >>> t.start()
+        >>> t.join()
+        >>> d.x
+        1
     """
-    Takes a dictionary that maps threads to objects. 
-    When a thread tries to get or set an attribute or item 
-    of the threadeddict, it passes it on to the object 
-    for that thread in dictionary.
-    """
-    def __init__(self, dictionary): 
-        self.__dict__['_ThreadedDict__d'] = dictionary
-    
-    def __getattr__(self, attr): 
-        return getattr(self.__d[threading.currentThread()], attr)
-    
-    def __getitem__(self, item): 
-        return self.__d[threading.currentThread()][item]
-    
-    def __setattr__(self, attr, value):
-        if attr == '__doc__':
-            self.__dict__[attr] = value
-        else:
-            return setattr(self.__d[threading.currentThread()], attr, value)
-    
-    def __delattr__(self, item):
-        try:
-            del self.__d[threading.currentThread()][item]
-        except KeyError, k:
-            raise AttributeError, k
-    
-    def __delitem__(self, item):
-        del self.__d[threading.currentThread()][item]
-    
-    def __setitem__(self, item, value): 
-        self.__d[threading.currentThread()][item] = value
-    
+    def __getattr__(self, key):
+        return getattr(self._getd(), key)
+
+    def __setattr__(self, key, value):
+        return setattr(self._getd(), key, value)
+
+    def __delattr__(self, key):
+        return delattr(self._getd(), key)
+
     def __hash__(self): 
-        return hash(self.__d[threading.currentThread()])
+        return id(self)
+
+    def _getd(self):
+        t = threading.currentThread()
+        if not hasattr(t, '_d'):
+            # using __dict__ of thread as thread local storage
+            t._d = {}
+
+        # there could be multiple instances of ThreadedDict.
+        # use self as key
+        if self not in t._d:
+            t._d[self] = storage()
+        return t._d[self]
 
 threadeddict = ThreadedDict
 

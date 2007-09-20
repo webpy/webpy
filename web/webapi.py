@@ -6,18 +6,14 @@ Web API (wrapper around WSGI)
 __all__ = [
     "config",
     "badrequest", "notfound", "gone", "internalerror",
-    "header", "output", "flush", "debug",
+    "header", "debug",
     "input", "data",
     "setcookie", "cookies",
     "ctx", 
-    "loadhooks", "load", "unloadhooks", "unload", "_loadhooks",
-    "wsgifunc"
 ]
 
-import sys, os, cgi, threading, Cookie, pprint, traceback
-try: import itertools
-except ImportError: pass
-from utils import storage, storify, threadeddict, dictadd, intget, lstrips, utf8
+import sys, cgi, Cookie, pprint
+from utils import storage, storify, threadeddict, dictadd, intget, utf8
 
 config = storage()
 config.__doc__ = """
@@ -45,25 +41,25 @@ def badrequest():
     """Return a `400 Bad Request` error."""
     ctx.status = '400 Bad Request'
     header('Content-Type', 'text/html')
-    return output('bad request')
+    return 'bad request'
 
 def notfound():
     """Returns a `404 Not Found` error."""
     ctx.status = '404 Not Found'
     header('Content-Type', 'text/html')
-    return output('not found')
+    return 'not found'
 
 def gone():
     """Returns a `410 Gone` error."""
     ctx.status = '410 Gone'
     header('Content-Type', 'text/html')
-    return output("gone")
+    return "gone"
 
 def internalerror():
     """Returns a `500 Internal Server` error."""
     ctx.status = "500 Internal Server Error"
     ctx.headers = [('Content-Type', 'text/html')]
-    ctx.output = "internal server error"
+    return "internal server error"
 
 def header(hdr, value, unique=False):
     """
@@ -82,18 +78,6 @@ def header(hdr, value, unique=False):
             if h.lower() == hdr.lower(): return
     
     ctx.headers.append((hdr, value))
-
-def output(string_):
-    """Appends `string_` to the response."""
-    if isinstance(string_, unicode): string_ = string_.encode('utf8')
-    if ctx.get('flush'):
-        ctx._write(string_)
-    else:
-        ctx.output += str(string_)
-
-def flush():
-    ctx.flush = True
-    return flush
 
 def input(*requireds, **defaults):
     """
@@ -179,30 +163,7 @@ def _debugwrite(x):
     out.write(x)
 debug.write = _debugwrite
 
-class _outputter:
-    """Wraps `sys.stdout` so that print statements go into the response."""
-    def __init__(self, file): self.file = file
-    def write(self, string_): 
-        if hasattr(ctx, 'output'): 
-            return output(string_)
-        else:
-            self.file.write(string_)
-    def __getattr__(self, attr): return getattr(self.file, attr)
-    def __getitem__(self, item): return self.file[item]
-
-def _capturedstdout():
-    sysstd = sys.stdout
-    while hasattr(sysstd, 'file'):
-        if isinstance(sys.stdout, _outputter): return True
-        sysstd = sysstd.file
-    if isinstance(sys.stdout, _outputter): return True    
-    return False
-
-if not _capturedstdout():
-    sys.stdout = _outputter(sys.stdout)
-
-_context = {threading.currentThread(): storage()}
-ctx = context = threadeddict(_context)
+ctx = context = threadeddict()
 
 ctx.__doc__ = """
 A `storage` object containing various information about the request:
@@ -243,136 +204,3 @@ A `storage` object containing various information about the request:
 `output`
    : A string to be used as the response.
 """
-
-loadhooks = {}
-_loadhooks = {}
-
-def load():
-    """
-    Loads a new context for the thread.
-    
-    You can ask for a function to be run at loadtime by 
-    adding it to the dictionary `loadhooks`.
-    """
-    _context[threading.currentThread()] = storage()
-    ctx.status = '200 OK'
-    ctx.headers = []
-    if config.get('db_parameters'):
-        import db
-        db.connect(**config.db_parameters)
-    
-    for x in loadhooks.values(): x()
-
-def _load(env):
-    load()
-    ctx.output = ''
-    ctx.environ = ctx.env = env
-    ctx.host = env.get('HTTP_HOST')
-    ctx.homedomain = 'http://' + env.get('HTTP_HOST', '[unknown]')
-    ctx.homepath = os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', ''))
-    ctx.home = ctx.homedomain + ctx.homepath
-    ctx.ip = env.get('REMOTE_ADDR')
-    ctx.method = env.get('REQUEST_METHOD')
-    ctx.path = env.get('PATH_INFO')
-    # http://trac.lighttpd.net/trac/ticket/406 requires:
-    if env.get('SERVER_SOFTWARE', '').startswith('lighttpd/'):
-        ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], 
-                           os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', '')))
-
-    if env.get('QUERY_STRING'):
-        ctx.query = '?' + env.get('QUERY_STRING', '')
-    else:
-        ctx.query = ''
-    
-    ctx.fullpath = ctx.path + ctx.query
-    for x in _loadhooks.values(): x()
-
-unloadhooks = {}
-
-def unload():
-    """
-    Unloads the context for the thread.
-    
-    You can ask for a function to be run at loadtime by
-    adding it ot the dictionary `unloadhooks`.
-    """
-    for x in unloadhooks.values(): x()
-    # ensures db cursors and such are GCed promptly
-    del _context[threading.currentThread()]
-
-def _unload():
-    unload()
-
-def wsgifunc(func, *middleware):
-    """Returns a WSGI-compatible function from a webpy-function."""
-    middleware = list(middleware)
-    
-    def wsgifunc(env, start_resp):
-        _load(env)
-        try:
-            result = func()
-        except StopIteration:
-            result = None
-        except:
-            print >> debug, traceback.format_exc()
-            result = internalerror()
-        
-        is_generator = result and hasattr(result, 'next')
-        if is_generator:
-            # wsgi requires the headers first
-            # so we need to do an iteration
-            # and save the result for later
-            try:
-                firstchunk = result.next()
-            except StopIteration:
-                firstchunk = ''
-
-        status, headers, output = ctx.status, ctx.headers, ctx.output
-        ctx._write = start_resp(status, headers)
-
-        # and now, the fun:
-        
-        def cleanup():
-            # we insert this little generator
-            # at the end of our itertools.chain
-            # so that it unloads the request
-            # when everything else is done
-            
-            yield '' # force it to be a generator
-            _unload()
-
-        # result is the output of calling the webpy function
-        #   it could be a generator...
-        
-        if is_generator:
-            if firstchunk is flush:
-                # oh, it's just our special flush mode
-                # ctx._write is set up, so just continue execution
-                try:
-                    result.next()
-                except StopIteration:
-                    pass
-
-                _unload()
-                return []
-            else:
-                return itertools.chain([firstchunk], result, cleanup())
-        
-        #   ... but it's usually just None
-        # 
-        # output is the stuff in ctx.output
-        #   it's usually a string...
-        if isinstance(output, str): #@@ other stringlikes?
-            _unload()
-            return [output] 
-        #   it could be a generator...
-        elif hasattr(output, 'next'):
-            return itertools.chain(output, cleanup())
-        else:
-            _unload()
-            raise Exception, "Invalid ctx.output"
-    
-    for mw_func in middleware: 
-        wsgifunc = mw_func(wsgifunc)
-    
-    return wsgifunc

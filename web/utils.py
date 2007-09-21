@@ -829,7 +829,7 @@ def sendmail(from_address, to_address, subject, message, headers=None):
     
     if webapi.config.get('smtp_server'):
         import smtplib
-        smtpserver = smtplib.SMTP(web.config.smtp_server)
+        smtpserver = smtplib.SMTP(webapi.config.smtp_server)
         smtpserver.sendmail(from_address, [to_address], message)
         smtpserver.quit()
     else:

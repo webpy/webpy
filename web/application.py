@@ -128,7 +128,7 @@ class application:
             if is_generator(result):
                 result = peep(result)
             else:
-                result = [str(result)]
+                result = [utils.utf8(result)]
             
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)

@@ -3,35 +3,34 @@ Database API
 (part of web.py)
 """
 
-# todo:
-#  - test with sqlite
-#  - a store function?
-
 __all__ = [
-  "UnknownParamstyle", "UnknownDB",
-  "sqllist", "sqlors", "aparam", "reparam",
-  "SQLQuery", "sqlquote",
+  "UnknownParamstyle", "UnknownDB", "TransactionError", 
+  "sqllist", "sqlors", "reparam", "sqlquote",
+  "SQLQuery", "SQLParam", "sqlparam",
   "SQLLiteral", "sqlliteral",
-  "connect", 
-  "TransactionError", "transaction", "transact", "commit", "rollback",
-  "query",
-  "select", "insert", "update", "delete"
+  "database", 'DB',
 ]
 
 import time
-try: import datetime
-except ImportError: datetime = None
+try:
+    import datetime
+except ImportError:
+    datetime = None
 
-from utils import storage, iters, iterbetter
-import webapi as web
+from utils import threadeddict, storage, iters, iterbetter
 
 try:
-    from DBUtils import PooledDB
-    web.config._hasPooling = True
-except ImportError:
-    web.config._hasPooling = False
+    # db module can work independent of web.py
+    from webapi import debug
+except:
+    import sys
+    debug = sys.stderr
 
-class _ItplError(ValueError):
+class UnknownDB(Exception):
+    """raised for unsupported dbms"""
+    pass
+
+class _ItplError(ValueError): 
     def __init__(self, text, pos):
         ValueError.__init__(self)
         self.text = text
@@ -40,22 +39,734 @@ class _ItplError(ValueError):
         return "unfinished expression in %s at char %d" % (
             repr(self.text), self.pos)
 
-def _interpolate(format):
+class TransactionError(Exception): pass
+
+class UnknownParamstyle(Exception): 
+    """
+    raised for unsupported db paramstyles
+
+    (currently supported: qmark, numeric, format, pyformat)
+    """
+    pass
+    
+class SQLParam:
+    """Parameter in SQLQuery.
+    
+        >>> q = SQLQuery(["SELECT * FROM test WHERE name=", SQLParam("joe")])
+        >>> q
+        <sql: "SELECT * FROM test WHERE name='joe'">
+        >>> q.query()
+        'SELECT * FROM test WHERE name=%s'
+        >>> q.values()
+        ['joe']
+    """
+    def __init__(self, value):
+        self.value = value
+        
+    def get_marker(self, paramstyle='pyformat'):
+        if paramstyle == 'qmark':
+            return '?'
+        elif paramstyle == 'numeric':
+            return ':1'
+        elif paramstyle is None or paramstyle in ['format', 'pyformat']:
+            return '%s'
+        raise UnknownParamstyle, paramstyle
+        
+    def sqlquery(self): 
+        return SQLQuery([self])
+        
+    def __add__(self, other):
+        return self.sqlquery() + other
+        
+    def __radd__(self, other):
+        return other + self.sqlquery() 
+            
+    def __str__(self): 
+        return str(self.value)
+    
+    def __repr__(self):
+        return '<param: %s>' % repr(self.value)
+
+sqlparam =  SQLParam
+
+class SQLQuery:
+    """
+    You can pass this sort of thing as a clause in any db function.
+    Otherwise, you can pass a dictionary to the keyword argument `vars`
+    and the function will call reparam for you.
+    """
+    # tested in sqlquote's docstring
+    def __init__(self, items=[]):
+        """Creates a new SQLQuery.
+        
+            >>> SQLQuery("x")
+            <sql: 'x'>
+            >>> SQLQuery(['SELECT * FROM ', 'test', ' WHERE x=', SQLParam(1)])
+            <sql: 'SELECT * FROM test WHERE x=1'>
+            >>> SQLQuery(SQLParam(1))
+            <sql: '1'>
+        """
+        if isinstance(items, list):
+            self.items = items
+        elif isinstance(items, SQLParam):
+            self.items = [items]
+        else:
+            self.items = [str(items)]
+
+    def __add__(self, other):
+        if isinstance(other, str):
+            items = [other]
+        elif isinstance(other, SQLQuery):
+            items = other.items
+        else:
+            return NotImplemented
+        return SQLQuery(self.items + items)
+
+    def __radd__(self, other):
+        if isinstance(other, str):
+            items = [other]
+        else:
+            return NotImplemented
+            
+        return SQLQuery(items + self.items)
+
+    def __len__(self):
+        return len(self.query())
+        
+    def query(self, paramstyle=None):
+        """
+        Returns the query part of the sql query.
+            >>> q = SQLQuery(["SELECT * FROM test WHERE name=", SQLParam('joe')])
+            >>> q.query()
+            'SELECT * FROM test WHERE name=%s'
+            >>> q.query(paramstyle='qmark')
+            'SELECT * FROM test WHERE name=?'
+        """
+        s = ''
+        for x in self.items:
+            if isinstance(x, SQLParam):
+                x = x.get_marker(paramstyle)
+            s += x
+        return s
+    
+    def values(self):
+        """
+        Returns the values of the parameters used in the sql query.
+            >>> q = SQLQuery(["SELECT * FROM test WHERE name=", SQLParam('joe')])
+            >>> q.values()
+            ['joe']
+        """
+        return [i.value for i in self.items if isinstance(i, SQLParam)]
+        
+    def join(items, sep=' '):
+        """
+        Joins multiple queries.
+        
+        >>> SQLQuery.join(['a', 'b'], ', ')
+        <sql: 'a, b'>
+        """
+        if len(items) == 0:
+            return SQLQuery("")
+            
+        q = SQLQuery(items[0])
+        for i in items[1:]:
+            q = q + sep + i
+        
+        return q
+    
+    join = staticmethod(join)
+
+    def __str__(self):
+        try:
+            return self.query() % tuple([sqlify(x) for x in self.values()])
+        except (ValueError, TypeError):
+            return self.query()
+
+    def __repr__(self):
+        return '<sql: %s>' % repr(str(self))
+
+class SQLLiteral: 
+    """
+    Protects a string from `sqlquote`.
+
+        >>> sqlquote('NOW()')
+        <sql: "'NOW()'">
+        >>> sqlquote(SQLLiteral('NOW()'))
+        <sql: 'NOW()'>
+    """
+    def __init__(self, v): 
+        self.v = v
+
+    def __repr__(self): 
+        return self.v
+
+sqlliteral = SQLLiteral
+
+def reparam(string_, dictionary): 
+    """
+    Takes a string and a dictionary and interpolates the string
+    using values from the dictionary. Returns an `SQLQuery` for the result.
+
+        >>> reparam("s = $s", dict(s=True))
+        <sql: "s = 't'">
+    """
+    vals = []
+    result = []
+    for live, chunk in _interpolate(string_):
+        if live:
+            v = eval(chunk, dictionary)
+            result.append(sqlparam(v))
+        else: 
+            result.append(chunk)
+    return SQLQuery.join(result, '')
+
+def sqlify(obj): 
+    """
+    converts `obj` to its proper SQL version
+
+        >>> sqlify(None)
+        'NULL'
+        >>> sqlify(True)
+        "'t'"
+        >>> sqlify(3)
+        '3'
+    """
+    # because `1 == True and hash(1) == hash(True)`
+    # we have to do this the hard way...
+
+    if obj is None:
+        return 'NULL'
+    elif obj is True:
+        return "'t'"
+    elif obj is False:
+        return "'f'"
+    elif datetime and isinstance(obj, datetime.datetime):
+        return repr(obj.isoformat())
+    else:
+        return repr(obj)
+
+def sqllist(lst): 
+    """
+    Converts the arguments for use in something like a WHERE clause.
+    
+        >>> sqllist(['a', 'b'])
+        'a, b'
+        >>> sqllist('a')
+        'a'
+    """
+    if isinstance(lst, str): 
+        return lst
+    else:
+        return ', '.join(lst)
+
+def sqlors(left, lst):
+    """
+    `left is a SQL clause like `tablename.arg = ` 
+    and `lst` is a list of values. Returns a reparam-style
+    pair featuring the SQL that ORs together the clause
+    for each item in the lst.
+
+        >>> sqlors('foo = ', [])
+        <sql: '2+2=5'>
+        >>> sqlors('foo = ', [1])
+        <sql: 'foo = 1'>
+        >>> sqlors('foo = ', 1)
+        <sql: 'foo = 1'>
+        >>> sqlors('foo = ', [1,2,3])
+        <sql: '(foo = 1 OR foo = 2 OR foo = 3)'>
+    """
+    if isinstance(lst, iters):
+        lst = list(lst)
+        ln = len(lst)
+        if ln == 0:
+            return SQLQuery("2+2=5")
+        if ln == 1:
+            lst = lst[0]
+
+    if isinstance(lst, iters):
+        return '(' + SQLQuery.join([left + sqlparam(x) for x in lst], ' OR ') + ')'
+    else:
+        return left + sqlparam(lst)
+        
+def sqlwhere(dictionary, grouping=' AND '): 
+    """
+    Converts a `dictionary` to an SQL WHERE clause `SQLQuery`.
+    
+        >>> sqlwhere({'cust_id': 2, 'order_id':3})
+        <sql: 'order_id = 3 AND cust_id = 2'>
+        >>> sqlwhere({'cust_id': 2, 'order_id':3}, grouping=', ')
+        <sql: 'order_id = 3, cust_id = 2'>
+    """
+    return SQLQuery.join([k + ' = ' + sqlparam(v) for k, v in dictionary.items()], grouping)
+
+def sqlquote(a): 
+    """
+    Ensures `a` is quoted properly for use in a SQL query.
+
+        >>> 'WHERE x = ' + sqlquote(True) + ' AND y = ' + sqlquote(3)
+        <sql: "WHERE x = 't' AND y = 3">
+    """
+    return sqlparam(a).sqlquery()
+    
+class DB: 
+    """Database"""
+    def __init__(self):
+        self._ctx = threadeddict()
+
+        # flag to enable/disable printing queries
+        self.printing = False
+
+    def _getctx(self): 
+        if not self._ctx.get('db'):
+            self._ctx.dbq_count = 0
+            self._ctx.db_transaction = 0
+            self._ctx.db = self.db_module.connect(**self.keywords)
+            if not hasattr(self._ctx.db, 'commit'):
+                self._ctx.db.commit = lambda: None
+
+            if not hasattr(self._ctx.db, 'rollback'):
+                self._ctx.db.rollback = lambda: None
+
+        return self._ctx
+    ctx = property(_getctx)
+    
+    def _db_cursor(self):
+        return self.ctx.db.cursor()
+
+    def _param_marker(self):
+        """Returns parameter marker based on paramstyle attribute if this database."""
+        style = getattr(self, 'paramstyle', 'pyformat')
+
+        if style == 'qmark':
+            return '?'
+        elif style == 'numeric':
+            return ':1'
+        elif style in ['format', 'pyformat']:
+            return '%s'
+        raise UnknownParamstyle, style
+
+    def _db_execute(self, cur, sql_query, dorollback=True): 
+        """executes an sql query"""
+        self.ctx.dbq_count += 1
+
+        try:
+            a = time.time()
+            paramstyle = getattr(self, 'paramstyle', 'pyformat')
+            out = cur.execute(sql_query.query(paramstyle), sql_query.values())
+            b = time.time()
+        except:
+            if self.printing:
+                print >> debug, 'ERR:', str(sql_query), sql_query.s
+            if dorollback: self.rollback(care=False)
+            raise
+
+        if self.printing:
+            print >> debug, '%s (%s): %s' % (round(b-a, 2), self.ctx.dbq_count, str(sql_query))
+        return out
+    
+    def _where(self, where, vars): 
+        if isinstance(where, (int, long)):
+            where = "id = " + sqlparam(where)
+        #@@@ for backward-compatibility
+        elif isinstance(where, (list, tuple)) and len(where) == 2:
+            where = SQLQuery(where[0], where[1])
+        elif isinstance(where, SQLQuery):
+            pass
+        else:
+            where = reparam(where, vars)        
+        return where
+    
+    def query(self, sql_query, vars=None, processed=False, _test=False): 
+        """
+        Execute SQL query `sql_query` using dictionary `vars` to interpolate it.
+        If `processed=True`, `vars` is a `reparam`-style list to use 
+        instead of interpolating.
+        
+            >>> db = DB()
+            >>> db.query("SELECT * FROM foo", _test=True)
+            <sql: 'SELECT * FROM foo'>
+            >>> db.query("SELECT * FROM foo WHERE x = $x", vars=dict(x='f'), _test=True)
+            <sql: "SELECT * FROM foo WHERE x = 'f'">
+            >>> db.query("SELECT * FROM foo WHERE x = " + sqlquote('f'), _test=True)
+            <sql: "SELECT * FROM foo WHERE x = 'f'">
+        """
+        if vars is None: vars = {}
+        
+        if not processed and not isinstance(sql_query, SQLQuery):
+            sql_query = reparam(sql_query, vars)
+        
+        if _test: return sql_query
+        
+        db_cursor = self._db_cursor()
+        self._db_execute(db_cursor, sql_query)
+        
+        if db_cursor.description:
+            names = [x[0] for x in db_cursor.description]
+            def iterwrapper():
+                row = db_cursor.fetchone()
+                while row:
+                    yield storage(dict(zip(names, row)))
+                    row = db_cursor.fetchone()
+            out = iterbetter(iterwrapper())
+            out.__len__ = lambda: int(db_cursor.rowcount)
+            out.list = lambda: [storage(dict(zip(names, x))) \
+                               for x in db_cursor.fetchall()]
+        else:
+            out = db_cursor.rowcount
+        
+        if not self.ctx.db_transaction: self.ctx.db.commit()
+        return out
+    
+    def select(self, tables, vars=None, what='*', where=None, order=None, group=None, 
+               limit=None, offset=None, _test=False): 
+        """
+        Selects `what` from `tables` with clauses `where`, `order`, 
+        `group`, `limit`, and `offset`. Uses vars to interpolate. 
+        Otherwise, each clause can be a SQLQuery.
+        
+            >>> db = DB()
+            >>> db.select('foo', _test=True)
+            <sql: 'SELECT * FROM foo'>
+            >>> db.select(['foo', 'bar'], where="foo.bar_id = bar.id", limit=5, _test=True)
+            <sql: 'SELECT * FROM foo, bar WHERE foo.bar_id = bar.id LIMIT 5'>
+        """
+        if vars is None: vars = {}
+        sql_clauses = self.sql_clauses(what, tables, where, group, order, limit, offset)
+        clauses = [self.gen_clause(sql, val, vars) for sql, val in sql_clauses if val is not None]
+        qout = SQLQuery.join(clauses)
+        if _test: return qout
+        return self.query(qout, processed=True)
+    
+    def sql_clauses(self, what, tables, where, group, order, limit, offset): 
+        return (
+            ('SELECT', what),
+            ('FROM', sqllist(tables)),
+            ('WHERE', where),
+            ('GROUP BY', group),
+            ('ORDER BY', order),
+            ('LIMIT', limit),
+            ('OFFSET', offset))
+    
+    def gen_clause(self, sql, val, vars): 
+        if isinstance(val, (int, long)):
+            if sql == 'WHERE':
+                nout = 'id = ' + sqlquote(val)
+            else:
+                nout = SQLQuery(val)
+        #@@@
+        elif isinstance(val, (list, tuple)) and len(val) == 2:
+            nout = SQLQuery(val[0], val[1]) # backwards-compatibility
+        elif isinstance(val, SQLQuery):
+            nout = val
+        else:
+            nout = reparam(val, vars)
+
+        def xjoin(a, b):
+            if a and b: return a + ' ' + b
+            else: return a or b
+
+        return xjoin(sql, nout)
+
+    def insert(self, tablename, seqname=None, _test=False, **values): 
+        """
+        Inserts `values` into `tablename`. Returns current sequence ID.
+        Set `seqname` to the ID if it's not the default, or to `False`
+        if there isn't one.
+        
+            >>> db = DB()
+            >>> db.insert('foo', joe='bob', a=2, _test=True)
+            <sql: "INSERT INTO foo (a, joe) VALUES (2, 'bob')">
+        """
+        def q(x): return "(" + x + ")"
+        
+        if values:
+            _keys = SQLQuery.join(values.keys(), ', ')
+            _values = SQLQuery.join([sqlparam(v) for v in values.values()], ', ')
+            sql_query = "INSERT INTO %s " % tablename + q(_keys) + ' VALUES ' + q(_values)
+        else:
+            sql_query = SQLQuery("INSERT INTO %s DEFAULT VALUES" % tablename)
+
+        if _test: return sql_query
+        
+        db_cursor = self._db_cursor()
+        if seqname is not False: 
+            sql_query = self._process_insert_query(sql_query, tablename, seqname)
+
+        if isinstance(sql_query, tuple):
+            # for some databases, a separate query has to be made to find 
+            # the id of the inserted row.
+            q1, q2 = sql_query
+            self._db_execute(db_cursor, q1)
+            self._db_execute(db_cursor, q2)
+        else:
+            self._db_execute(db_cursor, sql_query)
+
+        try: 
+            out = db_cursor.fetchone()[0]
+        except Exception: 
+            out = None
+        
+        if not self.ctx.db_transaction: self.ctx.db.commit()
+        return out
+    
+    def update(self, tables, where, vars=None, _test=False, **values): 
+        """
+        Update `tables` with clause `where` (interpolated using `vars`)
+        and setting `values`.
+
+            >>> db = DB()
+            >>> joe = 'Joseph'
+            >>> db.update('foo', where='name = $joe', name='bob', age=5,
+            ...   vars=locals(), _test=True)
+            <sql: "UPDATE foo SET age = 5, name = 'bob' WHERE name = 'Joseph'">
+        """
+        if vars is None: vars = {}
+        where = self._where(where, vars)
+
+        query = (
+          "UPDATE " + sqllist(tables) + 
+          " SET " + sqlwhere(values, ', ') + 
+          " WHERE " + where)
+
+        if _test: return query
+
+        db_cursor = self._db_cursor()
+        self._db_execute(db_cursor, query)
+        if not self.ctx.db_transaction: self.ctx.db.commit()
+        return db_cursor.rowcount
+    
+    def delete(self, table, where=None, using=None, vars=None, _test=False): 
+        """
+        Deletes from `table` with clauses `where` and `using`.
+
+            >>> db = DB()
+            >>> name = 'Joe'
+            >>> db.delete('foo', where='name = $name', vars=locals(), _test=True)
+            <sql: "DELETE FROM foo WHERE name = 'Joe'">
+        """
+        if vars is None: vars = {}
+        where = self._where(where, vars)
+
+        q = 'DELETE FROM ' + table
+        if where: q += ' WHERE ' + where
+        if using: q += ' USING ' + sqllist(using)
+
+        if _test: return q
+
+        db_cursor = self._db_cursor()
+        self._db_execute(db_cursor, q)
+        if not self.ctx.db_transaction: self.ctx.db.commit()
+        return db_cursor.rowcount
+
+    def _process_insert_query(self, query, tablename, seqname):
+        return query
+
+    def transact(self): 
+        """Start a transaction."""
+        if not self.ctx.db_transaction:
+            # commit everything up to now, so we don't rollback it later
+            self.ctx.db.commit()
+        else:
+            db_cursor = self._db_cursor()
+            self._db_execute(db_cursor,
+                SQLQuery("SAVEPOINT webpy_sp_%s" % self.ctx.db_transaction))
+        self.ctx.db_transaction += 1
+
+    def commit(self): 
+        """Commits a transaction."""
+        self.ctx.db_transaction -= 1
+        if self.ctx.db_transaction < 0:
+            raise TransactionError, "not in a transaction"
+
+        if not self.ctx.db_transaction:
+            self.ctx.db.commit()
+        else:
+            db_cursor = self._db_cursor()
+            self._db_execute(db_cursor,
+                SQLQuery("RELEASE SAVEPOINT webpy_sp_%s" % self.ctx.db_transaction))
+
+    def rollback(self, care=True): 
+        """Rolls back a transaction."""
+        self.ctx.db_transaction -= 1    
+        if self.ctx.db_transaction < 0:
+            self.db_transaction = 0
+            if care:
+                raise TransactionError, "not in a transaction"
+            else:
+                return
+
+        if not self.ctx.db_transaction:
+            self.ctx.db.rollback()
+        else:
+            db_cursor = self._db_cursor()
+            self._db_execute(db_cursor,
+                SQLQuery("ROLLBACK TO SAVEPOINT webpy_sp_%s" % self.ctx.db_transaction),
+                dorollback=False)
+    
+class PostgresDB(DB): 
+    """Postgres driver."""
+    def __init__(self, **keywords):
+        DB.__init__(self)
+        if 'pw' in keywords:
+            keywords['password'] = keywords['pw']
+            del keywords['pw']
+        keywords['database'] = keywords['db']
+        del keywords['db']
+
+        self.dbname = "postgres"
+        self.db_module = self.get_db_module()
+        self.paramstyle = self.db_module.paramstyle
+        self.keywords = keywords
+
+    def get_db_module(self):
+        try: 
+            import psycopg2 as db
+        except ImportError: 
+            try: 
+                import psycopg as db
+            except ImportError: 
+                import pgdb as db
+        return db
+
+    def _process_insert_query(self, query, tablename, seqname):
+        if seqname is None: 
+            seqname = tablename + "_id_seq"
+        return query + "; SELECT currval('%s')" % seqname
+
+
+class MySQLDB(DB): 
+    def __init__(self, **keywords):
+        DB.__init__(self)
+        import MySQLdb as db
+        if 'pw' in keywords:
+            keywords['passwd'] = keywords['pw']
+            del keywords['pw']
+        self.paramstyle = db.paramstyle = 'pyformat' # it's both, like psycopg
+        self.db_module = db
+        self.keywords = keywords
+        self.dbname = "mysql"
+
+    def _process_insert_query(self, query, tablename, seqname):
+        return query, SQLQuery('SELECT last_insert_id();')
+
+
+class SqliteDB(DB): 
+    def __init__(self, **keywords):
+        DB.__init__(self)
+        try:
+            import sqlite3 as db
+            db.paramstyle = 'qmark'
+        except ImportError:
+            try:
+                from pysqlite2 import dbapi2 as db
+                db.paramstyle = 'qmark'
+            except ImportError:
+                import sqlite as db
+        #web.config._hasPooling = False
+        self.paramstyle = db.paramstyle
+        keywords['database'] = keywords['db']
+        del keywords['db']
+        self.keywords = keywords
+        self.db_module = db
+        self.dbname = "sqlite"
+
+    def _process_insert_query(self, query, tablename, seqname):
+        return query, SQLQuery('SELECT last_insert_rowid();')
+    
+    def query(self, *a, **kw):
+        out = DB.query(self, *a, **kw)
+        if isinstance(out, iterbetter):
+            # rowcount is not provided by sqlite
+            del out.__len__
+        return out
+
+class FirebirdDB(DB):
+    """Firebird Database.
+    >>> db = FirebirdDB(db='foo')
+    >>> db.select('foo', _test=True)
+    <sql: 'SELECT * FROM foo'>
+    >>> db.select(['foo', 'bar'], where="foo.bar_id = bar.id", limit=5, offset=10, _test=True)
+    <sql: 'SELECT FIRST 5 SKIP 10 * FROM foo, bar WHERE foo.bar_id = bar.id'>
+    """
+    def __init__(self, **keywords):
+        DB.__init__(self)
+        try:
+            import kinterbasdb as db
+        except Exception:
+            db = None
+            pass
+        if 'pw' in keywords:
+            keywords['passwd'] = keywords['pw']
+            del keywords['pw']
+        keywords['database'] = keywords['db']
+        del keywords['db']
+        self.keywords = keywords
+        self.db_module = db
+
+    def delete(self, table, where=None, using=None, vars=None, _test=False):
+        # firebird doesn't support using clause
+        using=None
+        return DB.delete(self, table, where, using, vars, _test)
+
+    def sql_clauses(self, what, tables, where, group, order, limit, offset):
+        return (
+            ('SELECT', ''),
+            ('FIRST', limit),
+            ('SKIP', offset),
+            ('', what),
+            ('FROM', sqllist(tables)),
+            ('WHERE', where),
+            ('GROUP BY', group),
+            ('ORDER BY', order)
+        )
+
+_databases = {}
+def database(dburl=None, **params):
+    """Creates appropriate database using params.
+
+        >>> db = database(dbn='mysql', db='test', host='optional', user='joe', pw='secret')
+        >>> db = database(dbn='postgres', db='test', user='joe', pw='secret')
+        >>> db = database(dbn='sqlite', db='test.db')
+    """
+    dbn = params.pop('dbn')
+    if dbn in _databases:
+        return _databases[dbn](**params)
+    else:
+        raise UnknownDB, dbn
+
+def register_database(name, clazz):
+    """Register a database.
+
+        >>> class LegacyDB(DB): 
+        ...     def __init__(self, **params): 
+        ...        pass 
+        ...
+        >>> register_database('legacy', LegacyDB)
+        >>> db = database(dbn='legacy', db='test', user='joe', passwd='secret') 
+    """
+    _databases[name] = clazz
+
+register_database('mysql', MySQLDB)
+register_database('postgres', PostgresDB)
+register_database('sqlite', SqliteDB)
+register_database('firebird', FirebirdDB)
+
+def _interpolate(format): 
     """
     Takes a format string and returns a list of 2-tuples of the form
     (boolean, string) where boolean says whether string should be evaled
     or not.
-    
+
     from <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
     from tokenize import tokenprog
-    
+
     def matchorfail(text, pos):
         match = tokenprog.match(text, pos)
         if match is None:
             raise _ItplError(text, pos)
         return match, match.end()
-    
+
     namechars = "abcdefghijklmnopqrstuvwxyz" \
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
     chunks = []
@@ -108,595 +819,6 @@ def _interpolate(format):
     if pos < len(format): 
         chunks.append((0, format[pos:]))
     return chunks
-
-class UnknownParamstyle(Exception):
-    """
-    raised for unsupported db paramstyles
-    
-    (currently supported: qmark, numeric, format, pyformat)
-    """
-    pass
-
-def aparam():
-    """
-    Returns the appropriate string to be used to interpolate
-    a value with the current `web.ctx.db_module` or simply %s
-    if there isn't one.
-    
-        >>> aparam()
-        '%s'
-    """
-    if hasattr(web.ctx, 'db_module'):
-        style = web.ctx.db_module.paramstyle
-    else:
-        style = 'pyformat'
-    
-    if style == 'qmark': 
-        return '?'
-    elif style == 'numeric': 
-        return ':1'
-    elif style in ['format', 'pyformat']: 
-        return '%s'
-    raise UnknownParamstyle, style
-
-def reparam(string_, dictionary):
-    """
-    Takes a string and a dictionary and interpolates the string
-    using values from the dictionary. Returns an `SQLQuery` for the result.
-    
-        >>> reparam("s = $s", dict(s=True))
-        <sql: "s = 't'">
-    """
-    vals = []
-    result = []
-    for live, chunk in _interpolate(string_):
-        if live:
-            result.append(aparam())
-            vals.append(eval(chunk, dictionary))
-        else: result.append(chunk)
-    return SQLQuery(''.join(result), vals)
-
-def sqlify(obj):
-    """
-    converts `obj` to its proper SQL version
-    
-        >>> sqlify(None)
-        'NULL'
-        >>> sqlify(True)
-        "'t'"
-        >>> sqlify(3)
-        '3'
-    """
-    
-    # because `1 == True and hash(1) == hash(True)`
-    # we have to do this the hard way...
-    
-    if obj is None:
-        return 'NULL'
-    elif obj is True:
-        return "'t'"
-    elif obj is False:
-        return "'f'"
-    elif datetime and isinstance(obj, datetime.datetime):
-        return repr(obj.isoformat())
-    else:
-        return repr(obj)
-
-class SQLQuery:
-    """
-    You can pass this sort of thing as a clause in any db function.
-    Otherwise, you can pass a dictionary to the keyword argument `vars`
-    and the function will call reparam for you.
-    """
-    # tested in sqlquote's docstring
-    def __init__(self, s='', v=()):
-        self.s, self.v = str(s), tuple(v)
-    
-    def __getitem__(self, key): # for backwards-compatibility
-        return [self.s, self.v][key]
-
-    def __add__(self, other):
-        if isinstance(other, str):
-            self.s += other
-        elif isinstance(other, SQLQuery):
-            self.s += other.s
-            self.v += other.v
-        return self
-
-    def __radd__(self, other):
-        if isinstance(other, str):
-            self.s = other + self.s
-            return self
-        else:
-            return NotImplemented
-    
-    def __str__(self):
-        try:
-            return self.s % tuple([sqlify(x) for x in self.v])
-        except (ValueError, TypeError):
-            return self.s
-    
-    def __repr__(self):
-        return '<sql: %s>' % repr(str(self))
-
-class SQLLiteral:
-    """
-    Protects a string from `sqlquote`.
-
-        >>> insert('foo', time=SQLLiteral('NOW()'), _test=True)
-        <sql: 'INSERT INTO foo (time) VALUES (NOW())'>
-    """
-    def __init__(self, v): 
-        self.v = v
-
-    def __repr__(self): 
-        return self.v
-
-sqlliteral = SQLLiteral
-
-def sqlquote(a):
-    """
-    Ensures `a` is quoted properly for use in a SQL query.
-    
-        >>> 'WHERE x = ' + sqlquote(True) + ' AND y = ' + sqlquote(3)
-        <sql: "WHERE x = 't' AND y = 3">
-    """
-    return SQLQuery(aparam(), (a,))
-
-class UnknownDB(Exception):
-    """raised for unsupported dbms"""
-    pass
-
-def connect(dbn, **keywords):
-    """
-    Connects to the specified database. 
-    
-    `dbn` currently must be "postgres", "mysql", or "sqlite". 
-    
-    If DBUtils is installed, connection pooling will be used.
-    """
-    if dbn == "postgres": 
-        try: 
-            import psycopg2 as db
-        except ImportError: 
-            try: 
-                import psycopg as db
-            except ImportError: 
-                import pgdb as db
-        if 'pw' in keywords:
-            keywords['password'] = keywords['pw']
-            del keywords['pw']
-        keywords['database'] = keywords['db']
-        del keywords['db']
-
-    elif dbn == "mysql":
-        import MySQLdb as db
-        if 'pw' in keywords:
-            keywords['passwd'] = keywords['pw']
-            del keywords['pw']
-        db.paramstyle = 'pyformat' # it's both, like psycopg
-
-    elif dbn == "sqlite":
-        try:
-            import sqlite3 as db
-            db.paramstyle = 'qmark'
-        except ImportError:
-            try:
-                from pysqlite2 import dbapi2 as db
-                db.paramstyle = 'qmark'
-            except ImportError:
-                import sqlite as db
-        web.config._hasPooling = False
-        keywords['database'] = keywords['db']
-        del keywords['db']
-    
-    elif dbn == "firebird":
-        import kinterbasdb as db
-        if 'pw' in keywords:
-            keywords['passwd'] = keywords['pw']
-            del keywords['pw']
-        keywords['database'] = keywords['db']
-        del keywords['db']
-
-    else: 
-        raise UnknownDB, dbn
-
-    web.ctx.db_name = dbn
-    web.ctx.db_module = db
-    web.ctx.db_transaction = 0
-    web.ctx.db = keywords
-
-    def _PooledDB(db, keywords):
-        # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
-        # see Bug#122112
-        if PooledDB.__version__.split('.') < '0.9.3'.split('.'):
-            return PooledDB.PooledDB(dbapi=db, **keywords)
-        else:
-            return PooledDB.PooledDB(creator=db, **keywords)
-    
-    def db_cursor():
-        if isinstance(web.ctx.db, dict):
-            keywords = web.ctx.db
-            if web.config._hasPooling:
-                if 'db' not in globals(): 
-                    globals()['db'] = _PooledDB(db, keywords)
-                web.ctx.db = globals()['db'].connection()
-            else:
-                web.ctx.db = db.connect(**keywords)
-        return web.ctx.db.cursor()
-    web.ctx.db_cursor = db_cursor
-
-    web.ctx.dbq_count = 0
-    
-    def db_execute(cur, sql_query, dorollback=True):
-        """executes an sql query"""
-
-        web.ctx.dbq_count += 1
-        
-        try:
-            a = time.time()
-            out = cur.execute(sql_query.s, sql_query.v)
-            b = time.time()
-        except:
-            if web.config.get('db_printing'):
-                print >> web.debug, 'ERR:', str(sql_query)
-            if dorollback: rollback(care=False)
-            raise
-
-        if web.config.get('db_printing'):
-            print >> web.debug, '%s (%s): %s' % (round(b-a, 2), web.ctx.dbq_count, str(sql_query))
-
-        return out
-    web.ctx.db_execute = db_execute
-    return web.ctx.db
-
-class TransactionError(Exception): pass
-
-class transaction:
-    """
-    A context that can be used in conjunction with "with" statements
-    to implement SQL transactions. Starts a transaction on enter,
-    rolls it back if there's an error; otherwise it commits it at the
-    end.
-    """
-    def __enter__(self):
-        transact()
-
-    def __exit__(self, exctype, excvalue, traceback):
-        if exctype is not None:
-            rollback()
-        else:
-            commit()
-
-def transact():
-    """Start a transaction."""
-    if not web.ctx.db_transaction:
-        # commit everything up to now, so we don't rollback it later
-        if hasattr(web.ctx.db, 'commit'): 
-            web.ctx.db.commit()
-    else:
-        db_cursor = web.ctx.db_cursor()
-        web.ctx.db_execute(db_cursor, 
-            SQLQuery("SAVEPOINT webpy_sp_%s" % web.ctx.db_transaction))
-    web.ctx.db_transaction += 1
-
-def commit():
-    """Commits a transaction."""
-    web.ctx.db_transaction -= 1
-    if web.ctx.db_transaction < 0: 
-        raise TransactionError, "not in a transaction"
-
-    if not web.ctx.db_transaction:
-        if hasattr(web.ctx.db, 'commit'): 
-            web.ctx.db.commit()
-    else:
-        db_cursor = web.ctx.db_cursor()
-        web.ctx.db_execute(db_cursor, 
-            SQLQuery("RELEASE SAVEPOINT webpy_sp_%s" % web.ctx.db_transaction))
-
-def rollback(care=True):
-    """Rolls back a transaction."""
-    web.ctx.db_transaction -= 1     
-    if web.ctx.db_transaction < 0:
-        web.db_transaction = 0
-        if care:
-            raise TransactionError, "not in a transaction"
-        else:
-            return
-
-    if not web.ctx.db_transaction:
-        if hasattr(web.ctx.db, 'rollback'): 
-            web.ctx.db.rollback()
-    else:
-        db_cursor = web.ctx.db_cursor()
-        web.ctx.db_execute(db_cursor,
-            SQLQuery("ROLLBACK TO SAVEPOINT webpy_sp_%s" % web.ctx.db_transaction),
-            dorollback=False)
-
-def query(sql_query, vars=None, processed=False, _test=False):
-    """
-    Execute SQL query `sql_query` using dictionary `vars` to interpolate it.
-    If `processed=True`, `vars` is a `reparam`-style list to use 
-    instead of interpolating.
-    
-        >>> query("SELECT * FROM foo", _test=True)
-        <sql: 'SELECT * FROM foo'>
-        >>> query("SELECT * FROM foo WHERE x = $x", vars=dict(x='f'), _test=True)
-        <sql: "SELECT * FROM foo WHERE x = 'f'">
-        >>> query("SELECT * FROM foo WHERE x = " + sqlquote('f'), _test=True)
-        <sql: "SELECT * FROM foo WHERE x = 'f'">
-    """
-    if vars is None: vars = {}
-    
-    if not processed and not isinstance(sql_query, SQLQuery):
-        sql_query = reparam(sql_query, vars)
-    
-    if _test: return sql_query
-    
-    db_cursor = web.ctx.db_cursor()
-    web.ctx.db_execute(db_cursor, sql_query)
-    
-    if db_cursor.description:
-        names = [x[0] for x in db_cursor.description]
-        def iterwrapper():
-            row = db_cursor.fetchone()
-            while row:
-                yield storage(dict(zip(names, row)))
-                row = db_cursor.fetchone()
-        out = iterbetter(iterwrapper())
-        if web.ctx.db_name != "sqlite":
-            out.__len__ = lambda: int(db_cursor.rowcount)
-        out.list = lambda: [storage(dict(zip(names, x))) \
-                           for x in db_cursor.fetchall()]
-    else:
-        out = db_cursor.rowcount
-    
-    if not web.ctx.db_transaction: web.ctx.db.commit()
-    return out
-
-def sqllist(lst):
-    """
-    Converts the arguments for use in something like a WHERE clause.
-    
-        >>> sqllist(['a', 'b'])
-        'a, b'
-        >>> sqllist('a')
-        'a'
-        
-    """
-    if isinstance(lst, str): 
-        return lst
-    else:
-        return ', '.join(lst)
-
-def sqlors(left, lst):
-    """
-    `left is a SQL clause like `tablename.arg = ` 
-    and `lst` is a list of values. Returns a reparam-style
-    pair featuring the SQL that ORs together the clause
-    for each item in the lst.
-
-        >>> sqlors('foo = ', [])
-        <sql: '2+2=5'>
-        >>> sqlors('foo = ', [1])
-        <sql: 'foo = 1'>
-        >>> sqlors('foo = ', 1)
-        <sql: 'foo = 1'>
-        >>> sqlors('foo = ', [1,2,3])
-        <sql: '(foo = 1 OR foo = 2 OR foo = 3)'>
-    """
-    if isinstance(lst, iters):
-        lst = list(lst)
-        ln = len(lst)
-        if ln == 0:
-            return SQLQuery("2+2=5", [])
-        if ln == 1: 
-            lst = lst[0]
-
-    if isinstance(lst, iters):
-        return SQLQuery('(' + left + 
-               (' OR ' + left).join([aparam() for param in lst]) + ")", lst)
-    else:
-        return SQLQuery(left + aparam(), [lst])
-
-def sqlwhere(dictionary, grouping=' AND '):
-    """
-    Converts a `dictionary` to an SQL WHERE clause `SQLQuery`.
-    
-        >>> sqlwhere({'cust_id': 2, 'order_id':3})
-        <sql: 'order_id = 3 AND cust_id = 2'>
-        >>> sqlwhere({'cust_id': 2, 'order_id':3}, grouping=', ')
-        <sql: 'order_id = 3, cust_id = 2'>
-    """
-    
-    return SQLQuery(grouping.join([
-      '%s = %s' % (k, aparam()) for k in dictionary.keys()
-    ]), dictionary.values())
-
-def select(tables, vars=None, what='*', where=None, order=None, group=None, 
-           limit=None, offset=None, _test=False):
-    """
-    Selects `what` from `tables` with clauses `where`, `order`, 
-    `group`, `limit`, and `offset`. Uses vars to interpolate. 
-    Otherwise, each clause can be a SQLQuery.
-    
-        >>> select('foo', _test=True)
-        <sql: 'SELECT * FROM foo'>
-        >>> select(['foo', 'bar'], where="foo.bar_id = bar.id", limit=5, _test=True)
-        <sql: 'SELECT * FROM foo, bar WHERE foo.bar_id = bar.id LIMIT 5'>
-    """
-    if vars is None: vars = {}
-    qout = ""
-    
-    def gen_clause(sql, val):
-        if isinstance(val, (int, long)):
-            if sql == 'WHERE':
-                nout = 'id = ' + sqlquote(val)
-            else:
-                nout = SQLQuery(val)
-        elif isinstance(val, (list, tuple)) and len(val) == 2:
-            nout = SQLQuery(val[0], val[1]) # backwards-compatibility
-        elif isinstance(val, SQLQuery):
-            nout = val
-        elif val:
-            nout = reparam(val, vars)
-        else: 
-            return ""
-
-        out = ""
-        if qout: out += " " 
-        out += sql + " " + nout
-        return out
-    
-    if web.ctx.get('db_name') == "firebird":
-        for (sql, val) in (
-           ('FIRST', limit),
-           ('SKIP', offset)
-        ):
-            qout += gen_clause(sql, val)
-        if qout:
-            SELECT = 'SELECT ' + qout
-        else:
-            SELECT = 'SELECT'
-        qout = ""
-        sql_clauses = (
-          (SELECT, what),
-          ('FROM', sqllist(tables)),
-          ('WHERE', where),
-          ('GROUP BY', group),
-          ('ORDER BY', order)
-        )
-    else:
-        sql_clauses = (
-          ('SELECT', what),
-          ('FROM', sqllist(tables)),
-          ('WHERE', where),
-          ('GROUP BY', group),
-          ('ORDER BY', order),
-          ('LIMIT', limit),
-          ('OFFSET', offset)
-        )
-
-    for (sql, val) in sql_clauses:
-        qout += gen_clause(sql, val)
-
-    if _test: return qout
-    return query(qout, processed=True)
-
-def insert(tablename, seqname=None, _test=False, **values):
-    """
-    Inserts `values` into `tablename`. Returns current sequence ID.
-    Set `seqname` to the ID if it's not the default, or to `False`
-    if there isn't one.
-    
-        >>> insert('foo', joe='bob', a=2, _test=True)
-        <sql: "INSERT INTO foo (a, joe) VALUES (2, 'bob')">
-    """
-    
-    if values:
-        sql_query = SQLQuery("INSERT INTO %s (%s) VALUES (%s)" % (
-            tablename,
-            ", ".join(values.keys()),
-            ', '.join([aparam() for x in values])
-        ), values.values())
-    else:
-        sql_query = SQLQuery("INSERT INTO %s DEFAULT VALUES" % tablename)
-
-    if _test: return sql_query
-    
-    db_cursor = web.ctx.db_cursor()
-    if seqname is False: 
-        pass
-    elif web.ctx.db_name == "postgres": 
-        if seqname is None: 
-            seqname = tablename + "_id_seq"
-        sql_query += "; SELECT currval('%s')" % seqname
-    elif web.ctx.db_name == "mysql":
-        web.ctx.db_execute(db_cursor, sql_query)
-        sql_query = SQLQuery("SELECT last_insert_id()")
-    elif web.ctx.db_name == "sqlite":
-        web.ctx.db_execute(db_cursor, sql_query)
-        # not really the same...
-        sql_query = SQLQuery("SELECT last_insert_rowid()")
-    
-    web.ctx.db_execute(db_cursor, sql_query)
-    try: 
-        out = db_cursor.fetchone()[0]
-    except Exception: 
-        out = None
-    
-    if not web.ctx.db_transaction: web.ctx.db.commit()
-
-    return out
-
-def update(tables, where, vars=None, _test=False, **values):
-    """
-    Update `tables` with clause `where` (interpolated using `vars`)
-    and setting `values`.
-    
-        >>> joe = 'Joseph'
-        >>> update('foo', where='name = $joe', name='bob', age=5,
-        ...   vars=locals(), _test=True)
-        <sql: "UPDATE foo SET age = 5, name = 'bob' WHERE name = 'Joseph'">
-    """
-    if vars is None: vars = {}
-    
-    if isinstance(where, (int, long)):
-        where = "id = " + sqlquote(where)
-    elif isinstance(where, (list, tuple)) and len(where) == 2:
-        where = SQLQuery(where[0], where[1])
-    elif isinstance(where, SQLQuery):
-        pass
-    else:
-        where = reparam(where, vars)
-    
-    query = (
-      "UPDATE " + sqllist(tables) + 
-      " SET " + sqlwhere(values, ', ') + 
-      " WHERE " + where)
-    
-    if _test: return query
-    
-    db_cursor = web.ctx.db_cursor()
-    web.ctx.db_execute(db_cursor, query)
-    
-    if not web.ctx.db_transaction: web.ctx.db.commit()
-    return db_cursor.rowcount
-
-def delete(table, where=None, using=None, vars=None, _test=False):
-    """
-    Deletes from `table` with clauses `where` and `using`.
-    
-        >>> name = 'Joe'
-        >>> delete('foo', where='name = $name', vars=locals(), _test=True)
-        <sql: "DELETE FROM foo WHERE name = 'Joe'">
-    """
-    if vars is None: vars = {}
-
-    if isinstance(where, (int, long)):
-        where = "id = " + sqlquote(where)
-    elif isinstance(where, (list, tuple)) and len(where) == 2:
-        where = SQLQuery(where[0], where[1])
-    elif isinstance(where, SQLQuery):
-        pass
-    elif where is None:
-        pass
-    else:
-        where = reparam(where, vars)
-
-    q = 'DELETE FROM ' + table
-    if where:
-        q += ' WHERE ' + where
-    if using and web.ctx.get('db_name') != "firebird":
-        q += ' USING ' + sqllist(using)
-    
-    if _test: return q
-    
-    db_cursor = web.ctx.db_cursor()
-    web.ctx.db_execute(db_cursor, q)
-
-    if not web.ctx.db_transaction: web.ctx.db.commit()
-    return db_cursor.rowcount
 
 if __name__ == "__main__":
     import doctest

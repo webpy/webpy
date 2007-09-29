@@ -4,7 +4,6 @@ Web application
 """
 import webapi as web
 import webapi, wsgi, utils
-from request import nomethod
 from utils import lstrips
 
 import urllib
@@ -59,7 +58,7 @@ class application:
         """
         self.processors.append(processor)
 
-    def request(self, path='/', method='GET', host="0.0.0.0:8080"):
+    def request(self, path='/', method='GET', data=None, host="0.0.0.0:8080"):
         """Makes request to this application for the specified path and method.
         Response will be a storage object with data, status and headers.
         
@@ -80,9 +79,16 @@ class application:
         """
         query = urllib.splitquery(path)[1] or ""
         env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query)
-        self.load(env)
-        data = self.handle_with_processors()
-        return web.storage(data=data, status=web.ctx.status, headers=dict(web.ctx.headers))
+        if data:
+            import StringIO
+            q = urllib.urlencode(data)
+            env['wsgi.input'] = StringIO.StringIO(q)
+        response = web.storage()
+        def start_response(status, headers):
+            response.status = status
+            response.headers = dict(headers)
+        response.data = "".join(self.wsgifunc()(env, start_response))
+        return response
 
     def handle(self):
         fn, args = self._match(self.mapping, web.ctx.path)
@@ -121,23 +127,44 @@ class application:
             self.load(env)
             try:
                 result = self.handle_with_processors()
+            except NotFound:
+                raise
+            except web.HTTPError, e:
+                result = e.data
             except:
                 print >> web.debug, traceback.format_exc()
-                result = web.internalerror()
+                web.ctx.status = '500 Internal Server Error'
+                web.header('Content-Type', 'text/html')
+                result = self.internalerror()
 
             if is_generator(result):
                 result = peep(result)
             else:
                 result = [utils.utf8(result)]
-            
+
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)
+
+            #@@@
+            # Since the CherryPy Webserver uses thread pool, the thread-local state is never cleared.
+            # This interferes with the other requests. 
+            # clearing the thread-local storage to avoid that.
+            # see utils.ThreadedDict for details
+            import threading
+            t = threading.currentThread()
+            if hasattr(t, '_d'):
+                del t._d
+        
             return result
 
         for m in middleware: 
             wsgi = m(wsgi)
 
         return wsgi
+
+    def internalerror(self):
+        """Message for `500 internal error`."""
+        return "internal server error"
         
     def run(self, *middleware):
         """
@@ -183,7 +210,7 @@ class application:
             if meth == 'HEAD' and not hasattr(cls, meth):
                 meth = 'GET'
             if not hasattr(cls, meth):
-                return nomethod(cls)
+                raise web.nomethod(cls)
             tocall = getattr(cls(), meth)
             return tocall(*args)
             

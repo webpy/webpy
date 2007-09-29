@@ -6,7 +6,6 @@ HTTP Utilities
 __all__ = [
   "expires", "lastmodified", 
   "prefixurl", "modified", 
-  "redirect", "found", "seeother", "tempredirect", 
   "write",
   "changequery", "url",
   "background", "backgrounder",
@@ -59,42 +58,6 @@ def modified(date=None, etag=None):
 
     if validate: web.ctx.status = '304 Not Modified'
     return not validate
-
-"""
-By default, these all return simple error messages that send very short messages 
-(like "bad request") to the user. They can and should be overridden 
-to return nicer ones.
-"""
-def redirect(url, status='301 Moved Permanently'):
-    """
-    Returns a `status` redirect to the new URL. 
-    `url` is joined with the base URL so that things like 
-    `redirect("about") will work properly.
-    """
-    newloc = urlparse.urljoin(web.ctx.path, url)
-
-    # if newloc is relative then make it absolute
-    if newloc.startswith('/'):
-        newloc = web.ctx.home + newloc
-
-    web.ctx.status = status
-    web.ctx.output = ''    
-    web.header('Content-Type', 'text/html')
-    web.header('Location', newloc)
-    # seems to add a three-second delay for some reason:
-    # web.output('<a href="'+ newloc + '">moved permanently</a>')
-
-def found(url):
-    """A `302 Found` redirect."""
-    return redirect(url, '302 Found')
-
-def seeother(url):
-    """A `303 See Other` redirect."""
-    return redirect(url, '303 See Other')
-
-def tempredirect(url):
-    """A `307 Temporary Redirect` redirect."""
-    return redirect(url, '307 Temporary Redirect')
 
 def write(cgi_response):
     """

@@ -5,14 +5,19 @@ Web API (wrapper around WSGI)
 
 __all__ = [
     "config",
-    "badrequest", "notfound", "gone", "internalerror",
     "header", "debug",
     "input", "data",
     "setcookie", "cookies",
     "ctx", 
+    "HTTPError", 
+    "BadRequest", "NotFound", "Gone", 
+    "badrequest", "notfound", "gone", "internalerror",
+    "Redirect", "Found", "SeeOther", "TempRedirect",
+    "redirect", "found", "seeother", "tempredirect", 
+    "NoMethod", "nomethod",
 ]
 
-import sys, cgi, Cookie, pprint
+import sys, cgi, Cookie, pprint, urlparse
 from utils import storage, storify, threadeddict, dictadd, intget, utf8
 
 config = storage()
@@ -37,23 +42,99 @@ A configuration object for various aspects of web.py.
     db_table
 """
 
-def badrequest():
-    """Return a `400 Bad Request` error."""
-    ctx.status = '400 Bad Request'
-    header('Content-Type', 'text/html')
-    return 'bad request'
+class HTTPError(Exception):
+    def __init__(self, status, headers, data=""):
+        ctx.status = status
+        for k, v in headers.items():
+            header(k, v)
+        self.data = data
+        Exception.__init__(self, status)
 
-def notfound():
-    """Returns a `404 Not Found` error."""
-    ctx.status = '404 Not Found'
-    header('Content-Type', 'text/html')
-    return 'not found'
+class BadRequest(HTTPError):
+    """`400 Bad Request` error."""
+    def __init__(self):
+        status = "400 Bad Request"
+        headers = {'Content-Type': 'text/html'}
+        data = 'bad request'
+        HTTPError.__init__(self, status, headers, data)
 
-def gone():
-    """Returns a `410 Gone` error."""
-    ctx.status = '410 Gone'
-    header('Content-Type', 'text/html')
-    return "gone"
+badrequest = BadRequest
+
+class NotFound(HTTPError):
+    """`404 Not Found` error."""
+    def __init__(self):
+        status = '404 Not Found'
+        headers = {'Content-Type': 'text/html'}
+        data = 'not found'
+        HTTPError.__init__(self, status, headers, data)
+
+notfound = NotFound
+
+class Gone(HTTPError):
+    """`410 Gone` error."""
+    def __init__(self):
+        status = '410 Gone'
+        headers = {'Content-Type': 'text/html'}
+        data = 'gone'
+        HTTPError.__init__(self, status, headers, data)
+
+gone = Gone
+
+class Redirect(HTTPError):
+    """A `301 Moved Permanently` redirect."""
+    def __init__(self, url, status='301 Moved Permanently'):
+        """
+        Returns a `status` redirect to the new URL. 
+        `url` is joined with the base URL so that things like 
+        `redirect("about") will work properly.
+        """
+        newloc = urlparse.urljoin(ctx.path, url)
+
+        if newloc.startswith('/'):
+            newloc = ctx.home + newloc
+
+        headers = {
+            'Content-Type': 'text/html',
+            'Location': newloc
+        }
+        HTTPError.__init__(self, status, headers, "")
+
+redirect = Redirect
+
+class Found(Redirect):
+    """A `302 Found` redirect."""
+    def __init__(self, url):
+        Redirect.__init__(self, url, '302 Found')
+
+found = Found
+
+class SeeOther(Redirect):
+    """A `303 See Other` redirect."""
+    def __init__(self, url):
+        Redirect.__init__(self, url, '303 See Other')
+    
+seeother = SeeOther
+
+class TempRedirect(Redirect):
+    """A `307 Temporary Redirect` redirect."""
+    def __init__(self, url):
+        Redirect.__init__(self, url, '307 Temporary Redirect')
+
+tempredirect = TempRedirect
+
+class NoMethod(HTTPError):
+    """A `405 Method Not Allowed` error."""
+    def __init__(self, cls):
+        status = '405 Method Not Allowed'
+        headers = {}
+        headers['Content-Type'] = 'text/html'
+        headers['Allow'] = ', '.join([method for method in \
+                             ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'] \
+                                if hasattr(cls, method)])
+        data = None
+        HTTPError.__init__(self, status, headers, data)
+        
+nomethod = NoMethod
 
 def internalerror():
     """Returns a `500 Internal Server` error."""

@@ -128,7 +128,8 @@ class application:
             try:
                 result = self.handle_with_processors()
             except NotFound:
-                raise
+                web.ctx.status = "404 Not Found"
+                result = self.notfound()
             except web.HTTPError, e:
                 result = e.data
             except:
@@ -165,6 +166,10 @@ class application:
     def internalerror(self):
         """Message for `500 internal error`."""
         return "internal server error"
+
+    def notfound(self):
+        """Message for `404 not found`."""
+        return "not found"
         
     def run(self, *middleware):
         """

@@ -5,6 +5,7 @@ Web application
 import webapi as web
 import webapi, wsgi, utils
 from utils import lstrips
+import sys
 
 import urllib
 import traceback
@@ -34,11 +35,36 @@ class application:
         >>> app.request("/hello").data
         'hello'
     """
-    def __init__(self, mapping=(), fvars={}):
+    def __init__(self, mapping=(), fvars={}, autoreload=False):
         self.mapping = mapping
         self.fvars = fvars
         self.processors = []
-        
+
+        if autoreload:
+            def modname(fvars):
+                """find name of the module name from fvars."""
+                file, name = fvars['__file__'], fvars['__name__']
+                if name == '__main__':
+                    # Since the __main__ module can't be reloaded, the module has 
+                    # to be imported using its file name.                    
+                    name = os.path.splitext(os.path.basename(file))[0]
+                return name
+                
+            mapping_name = utils.dictfind(fvars, mapping)
+            module_name = modname(fvars)
+            
+            def reload_mapping():
+                """loadhook to reload mapping and fvars."""
+                mod = __import__(module_name)
+                self.fvars = mod.__dict__
+                self.mapping = getattr(mod, mapping_name)
+            
+            # to reload modified modules
+            self.add_processor(loadhook(Reloader()))
+
+            # to update mapping and fvars
+            self.add_processor(loadhook(reload_mapping))
+            
     def add_mapping(self, pattern, classname):
         self.mapping += (pattern, classname)
         
@@ -321,10 +347,11 @@ class subdomain_application(application):
         >>> app2 = subdomain_application(mapping)
         >>> app2.request("/hello", host="hello.example.com").data
         'hello'
-        >>> app2.request("/hello", host="something.example.com").data
-        Traceback (most recent call last):
-            ...
-        NotFound
+        >>> response = app2.request("/hello", host="something.example.com")
+        >>> response.status
+        '404 Not Found'
+        >>> response.data
+        'not found'
     """
     def handle(self):
         host = web.ctx.host.split(':')[0] #strip port
@@ -347,10 +374,11 @@ class combine_applications(application):
         'foo'
         >>> app.request('/bar').data
         'bar'
-        >>> app.request("/hello").data
-        Traceback (most recent call last):
-            ...
-        NotFound
+        >>> response = app.request("/hello")
+        >>> response.status
+        '404 Not Found'
+        >>> response.data
+        'not found'
     """
     def __init__(self, *apps):
         self.apps = apps
@@ -393,6 +421,33 @@ def unloadhook(h):
             h()
             
     return processor
+    
+class Reloader:
+    """Checks to see if any loaded modules have changed on disk and, 
+    if so, reloads them.
+    """
+    def __init__(self):
+        self.mtimes = {}
+
+    def __call__(self):
+        for mod in sys.modules.values():
+            self.check(mod)
+            
+    def check(self, mod):
+        try: 
+            mtime = os.stat(mod.__file__).st_mtime
+        except (AttributeError, OSError, IOError): 
+            return
+        if mod.__file__.endswith('.pyc') and os.path.exists(mod.__file__[:-1]):
+            mtime = max(os.stat(mod.__file__[:-1]).st_mtime, mtime)
+        if mod not in self.mtimes:
+            self.mtimes[mod] = mtime
+        elif self.mtimes[mod] < mtime:
+            try: 
+                reload(mod)
+                self.mtimes[mod] = mtime
+            except ImportError: 
+                pass
 
 if __name__ == "__main__":
     import doctest

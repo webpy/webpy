@@ -801,7 +801,7 @@ def sendmail(from_address, to_address, subject, message, headers=None):
     `headers.
 
     If `web.config.smtp_server` is set, it will send the message
-    to that SMTP server. Otherwise it will look for
+    to that SMTP server. Otherwise it will look for 
     `/usr/lib/sendmail`, the typical location for the sendmail-style
     binary.
     """
@@ -811,30 +811,64 @@ def sendmail(from_address, to_address, subject, message, headers=None):
         webapi = Storage(config=Storage())
     
     if headers is None: headers = {}
+
+    if not isinstance(to_address, list):
+        to_address = [to_address]
+
+    #@@ should get as arguments
+    cc = []
+    bcc = []
+
+    recipients = to_address + cc + bcc
     
     headers = dictadd({
       'MIME-Version': '1.0',
       'Content-Type': 'text/plain; charset=UTF-8',
       'Content-Disposition': 'inline',
       'From': from_address,
-      'To': to_address,
+      'To': ", ".join(to_address),
       'Subject': subject
     }, headers)
+
+    if cc:
+        headers['Cc'] = ", ".join(cc)
     
-    import email
+    import email.Utils
     from_address = email.Utils.parseaddr(from_address)[1]
-    to_address = email.Utils.parseaddr(to_address)[1]
+    recipients = [email.Utils.parseaddr(r)[1] for r in recipients]
     message = ('\n'.join(['%s: %s' % x for x in headers.iteritems()])
       + "\n\n" +  message)
     
     if webapi.config.get('smtp_server'):
+        server = webapi.config.get('smtp_server')
+        port = webapi.config.get('smtp_port', 0)
+        username = webapi.config.get('smtp_username') 
+        password = webapi.config.get('smtp_password')
+        debug_level = webapi.config.get('smtp_debuglevel', None)
+        starttls = webapi.config.get('smtp_starttls', False)
+
         import smtplib
-        smtpserver = smtplib.SMTP(webapi.config.smtp_server)
-        smtpserver.sendmail(from_address, [to_address], message)
+        smtpserver = smtplib.SMTP(server, port)
+
+        if debug_level:
+            smtpserver.set_debuglevel(debug_level)
+
+        if starttls:
+            smtpserver.ehlo()
+            smtpserver.starttls()
+            smtpserver.ehlo()
+
+        if username and password:
+            smtpserver.login(username, password)
+
+        smtpserver.sendmail(from_address, recipients, message)
         smtpserver.quit()
     else:
-        assert not from_address.startswith('-') and not to_address.startswith('-'), 'security'
-        i, o = os.popen2(["/usr/lib/sendmail", '-f', from_address, to_address])
+        assert not from_address.startswith('-'), 'security'
+        for r in recipients:
+            assert not r.startswith('-'), 'security'
+
+        i, o = os.popen2(["/usr/lib/sendmail", '-f', from_address] + recipients)
         i.write(message)
         i.close()
         o.close()

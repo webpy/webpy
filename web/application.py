@@ -84,7 +84,7 @@ class application:
         """
         self.processors.append(processor)
 
-    def request(self, path='/', method='GET', data=None, host="0.0.0.0:8080"):
+    def request(self, path='/', method='GET', data=None, host="0.0.0.0:8080", https=False):
         """Makes request to this application for the specified path and method.
         Response will be a storage object with data, status and headers.
         
@@ -102,9 +102,23 @@ class application:
             '200 OK'
             >>> response.headers['Content-Type']
             'text/plain'
+            
+        To use https, use https=True.
+        
+            >>> urls = ("/redirect", "redirect")
+            >>> app = application(urls, globals())
+            >>> class redirect:
+            ...     def GET(self): raise web.seeother("/foo")
+            ...
+            >>> response = app.request("/redirect")
+            >>> response.headers['Location']
+            'http://0.0.0.0:8080/foo'
+            >>> response = app.request("/redirect", https=True)
+            >>> response.headers['Location']
+            'https://0.0.0.0:8080/foo'
         """
         query = urllib.splitquery(path)[1] or ""
-        env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query)
+        env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=https)
         if data:
             import StringIO
             q = urllib.urlencode(data)
@@ -218,7 +232,8 @@ class application:
         ctx.output = ''
         ctx.environ = ctx.env = env
         ctx.host = env.get('HTTP_HOST')
-        ctx.homedomain = 'http://' + env.get('HTTP_HOST', '[unknown]')
+        ctx.protocol = env.get('HTTPS') and 'https' or 'http'
+        ctx.homedomain = ctx.protocol + '://' + env.get('HTTP_HOST', '[unknown]')
         ctx.homepath = os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', ''))
         ctx.home = ctx.homedomain + ctx.homepath
         ctx.ip = env.get('REMOTE_ADDR')

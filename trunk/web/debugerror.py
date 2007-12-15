@@ -2,17 +2,18 @@
 pretty debug errors
 (part of web.py)
 
-adapted from Django <djangoproject.com> 
+portions adapted from Django <djangoproject.com> 
 Copyright (c) 2005, the Lawrence Journal-World
 Used under the modified BSD license:
 http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 """
 
-__all__ = ["debugerror", "djangoerror"]
+__all__ = ["debugerror", "djangoerror", "emailerrors"]
 
-import sys, urlparse, pprint
+import sys, urlparse, pprint, traceback
 from net import websafe
 from template import Template
+from utils import sendmail
 import webapi as web
 
 import os, os.path
@@ -302,6 +303,47 @@ def debugerror():
     
     web.ctx.headers = [('Content-Type', 'text/html')]
     web.ctx.output = djangoerror()
+
+def emailerrors(email_address, olderror):
+    """
+    Wraps the old `internalerror` handler (pass as `olderror`) to 
+    additionally email all errors to `email_address`, to aid in 
+    debugging production websites.
+    
+    Emails contain a normal text traceback as well as an
+    attachment containing the nice `debugerror` page.
+    """
+    def emailerrors_internal():
+        olderror()
+        tb = sys.exc_info()
+        error_name = tb[0]
+        error_value = tb[1]
+        tb_txt = ''.join(traceback.format_exception(*tb))
+        path = web.ctx.path
+        request = web.ctx.method+' '+web.ctx.home+web.ctx.fullpath
+        eaddr = email_address
+        text = ("""\
+From: your buggy site <%(eaddr)s>
+To: the bugfixer <%(eaddr)s>
+Subject: bug: %(error_name)s: %(error_value)s (%(path)s)
+Content-Type: multipart/mixed; boundary="----here----"
+
+------here----
+Content-Type: text/plain
+Content-Disposition: inline
+
+%(request)s
+
+%(tb_txt)s
+
+------here----
+Content-Type: text/html; name="bug.html"
+Content-Disposition: attachment; filename="bug.html"
+
+""" % locals()) + str(djangoerror())
+        sendmail(email_address, email_address, text)
+    
+    return emailerrors_internal
 
 if __name__ == "__main__":
     urls = (

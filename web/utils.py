@@ -811,13 +811,19 @@ def sendmail(from_address, to_address, subject, message, headers=None):
         webapi = Storage(config=Storage())
     
     if headers is None: headers = {}
+    
+    cc = kw.get('cc', [])
+    bcc = kw.get('bcc', [])
+    
+    def listify(x):
+        if not isinstance(x, list):
+            return [x]
+        else:
+            return x
 
-    if not isinstance(to_address, list):
-        to_address = [to_address]
-
-    #@@ should get as arguments
-    cc = []
-    bcc = []
+    to_address = listify(to_address)
+    cc = listify(cc)
+    bcc = listify(bcc)
 
     recipients = to_address + cc + bcc
     

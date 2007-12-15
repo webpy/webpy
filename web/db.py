@@ -362,11 +362,13 @@ class transaction:
     end.
     """
     def __enter__(self):
+        self.db_transaction = web.ctx.db_transaction
         transact()
 
     def __exit__(self, exctype, excvalue, traceback):
         if exctype is not None:
-            rollback()
+            while self.db_transaction < web.ctx.db_transaction:
+                rollback()
         else:
             commit()
 
@@ -400,7 +402,7 @@ def rollback(care=True):
     """Rolls back a transaction."""
     web.ctx.db_transaction -= 1     
     if web.ctx.db_transaction < 0:
-        web.db_transaction = 0
+        web.ctx.db_transaction = 0
         if care:
             raise TransactionError, "not in a transaction"
         else:

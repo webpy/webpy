@@ -53,16 +53,16 @@ class Storage(dict):
             return self[key]
         except KeyError, k:
             raise AttributeError, k
-
+    
     def __setattr__(self, key, value): 
         self[key] = value
-
+    
     def __delattr__(self, key):
         try:
             del self[key]
         except KeyError, k:
             raise AttributeError, k
-
+    
     def __repr__(self):     
         return '<Storage ' + dict.__repr__(self) + '>'
 
@@ -791,10 +791,12 @@ def safemarkdown(text):
         text = markdown(text)
         return text
 
-def sendmail(from_address, to_address, message):
+def sendmail(from_address, to_address, subject, message, headers=None):
     """
-    Sends the email message `message` to `to_address` with the
-    envelope sender set to `from_address`.
+    Sends the email message `message` with mail and envelope headers
+    for from `from_address_` to `to_address` with `subject`. 
+    Additional email headers can be specified with the dictionary 
+    `headers.
 
     If `web.config.smtp_server` is set, it will send the message
     to that SMTP server. Otherwise it will look for
@@ -804,8 +806,25 @@ def sendmail(from_address, to_address, message):
     try:
         import webapi
     except ImportError:
-        webapi = Storage(config=storage())
-
+        webapi = Storage(config=Storage())
+    
+    if headers is None: headers = {}
+    
+    headers = dictadd(headers, {
+      'MIME-Version': '1.0',
+      'Content-Type': 'text/plain; charset=UTF-8',
+      'Content-Disposition': 'inline',
+      'From': from_address,
+      'To': to_address,
+      'Subject': subject
+    })
+    
+    import email
+    from_address = email.Utils.parseaddr(from_address)[1]
+    to_address = email.Utils.parseaddr(to_address)[1]
+    message = ('\n'.join(['%s: %s' % x for x in headers.iteritems()])
+      + "\n\n" +  message)
+    
     if webapi.config.get('smtp_server'):
         import smtplib
         smtpserver = smtplib.SMTP(web.config.smtp_server)

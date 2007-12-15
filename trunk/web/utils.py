@@ -698,31 +698,31 @@ class ThreadedDict:
     """
     def __init__(self, dictionary): 
         self.__dict__['_ThreadedDict__d'] = dictionary
-
+    
     def __getattr__(self, attr): 
         return getattr(self.__d[threading.currentThread()], attr)
-
+    
     def __getitem__(self, item): 
         return self.__d[threading.currentThread()][item]
-
+    
     def __setattr__(self, attr, value):
         if attr == '__doc__':
             self.__dict__[attr] = value
         else:
             return setattr(self.__d[threading.currentThread()], attr, value)
-
+    
     def __delattr__(self, item):
         try:
             del self.__d[threading.currentThread()][item]
         except KeyError, k:
             raise AttributeError, k
-
+    
     def __delitem__(self, item):
         del self.__d[threading.currentThread()][item]
-
+    
     def __setitem__(self, item, value): 
         self.__d[threading.currentThread()][item] = value
-
+    
     def __hash__(self): 
         return hash(self.__d[threading.currentThread()])
 

@@ -123,13 +123,15 @@ def data():
         ctx.data = ctx.env['wsgi.input'].read(cl)
     return ctx.data
 
-def setcookie(name, value, expires="", domain=None):
+def setcookie(name, value, expires="", domain=None, secure=False):
     """Sets a cookie."""
     if expires < 0: 
         expires = -1000000000 
     kargs = {'expires': expires, 'path':'/'}
     if domain: 
         kargs['domain'] = domain
+    if secure:
+        kargs['secure'] = secure
     # @@ should we limit cookies to a different path?
     cookie = Cookie.SimpleCookie()
     cookie[name] = value

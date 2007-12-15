@@ -810,14 +810,14 @@ def sendmail(from_address, to_address, subject, message, headers=None):
     
     if headers is None: headers = {}
     
-    headers = dictadd(headers, {
+    headers = dictadd({
       'MIME-Version': '1.0',
       'Content-Type': 'text/plain; charset=UTF-8',
       'Content-Disposition': 'inline',
       'From': from_address,
       'To': to_address,
       'Subject': subject
-    })
+    }, headers)
     
     import email
     from_address = email.Utils.parseaddr(from_address)[1]

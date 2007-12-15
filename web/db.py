@@ -462,11 +462,12 @@ def sqllist(lst):
     
         >>> sqllist(['a', 'b'])
         'a, b'
-        >>> sqllist('a')
-        'a'
-        
+        >>> sqllist('foo')
+        'foo'
+        >>> sqllist(u'foo')
+        u'foo'
     """
-    if isinstance(lst, str): 
+    if isinstance(lst, (str, unicode)): 
         return lst
     else:
         return ', '.join(lst)

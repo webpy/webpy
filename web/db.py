@@ -147,6 +147,8 @@ def reparam(string_, dictionary):
         >>> reparam("s = $s", dict(s=True))
         <sql: "s = 't'">
     """
+    # making a copy of dictionary because eval mangles it
+    dictionary = dictionary.copy()
     vals = []
     result = []
     for live, chunk in _interpolate(string_):

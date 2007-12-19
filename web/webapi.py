@@ -303,6 +303,11 @@ def wsgifunc(func, *middleware):
     
     def wsgifunc(env, start_resp):
         _load(env)
+
+        # allow uppercase methods only
+        if ctx.method.upper() != ctx.method:
+            return notfound()
+
         try:
             result = func()
         except StopIteration:

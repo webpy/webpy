@@ -624,14 +624,18 @@ class Profile:
         stime = time.time()
         result = prof.runcall(self.func, *args)
         stime = time.time() - stime
-
         prof.close()
-        stats = hotshot.stats.load(temp.name)
-        stats.strip_dirs()
-        stats.sort_stats('time', 'calls')
+
+        def print_stats():
+            stats = hotshot.stats.load(temp.name)
+            stats.strip_dirs()
+            stats.sort_stats('time', 'calls')
+            stats.print_stats(40)
+            stats.print_callers()
+    
         x =  '\n\ntook '+ str(stime) + ' seconds\n'
-        x += capturestdout(stats.print_stats)(40)
-        x += capturestdout(stats.print_callers)()
+        x += capturestdout(print_stats)()
+
         return result, x
 
 profile = Profile

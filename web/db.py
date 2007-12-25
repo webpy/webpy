@@ -110,6 +110,8 @@ class SQLQuery:
             self.items = items
         elif isinstance(items, SQLParam):
             self.items = [items]
+        elif isinstance(items, SQLQuery):
+            self.items = list(items.items)
         else:
             self.items = [str(items)]
 
@@ -296,6 +298,8 @@ def sqlwhere(dictionary, grouping=' AND '):
         <sql: 'order_id = 3 AND cust_id = 2'>
         >>> sqlwhere({'cust_id': 2, 'order_id':3}, grouping=', ')
         <sql: 'order_id = 3, cust_id = 2'>
+        >>> sqlwhere({'a': 'a', 'b': 'b'}).query()
+        'a = %s AND b = %s'
     """
     return SQLQuery.join([k + ' = ' + sqlparam(v) for k, v in dictionary.items()], grouping)
 
@@ -356,7 +360,7 @@ class DB:
             b = time.time()
         except:
             if self.printing:
-                print >> debug, 'ERR:', str(sql_query), sql_query.s
+                print >> debug, 'ERR:', str(sql_query)
             if dorollback: self.rollback(care=False)
             raise
 
@@ -529,7 +533,7 @@ class DB:
           " WHERE " + where)
 
         if _test: return query
-
+        
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, query)
         if not self.ctx.db_transaction: self.ctx.db.commit()
@@ -682,11 +686,6 @@ class SqliteDB(DB):
 
 class FirebirdDB(DB):
     """Firebird Database.
-    >>> db = FirebirdDB(db='foo')
-    >>> db.select('foo', _test=True)
-    <sql: 'SELECT * FROM foo'>
-    >>> db.select(['foo', 'bar'], where="foo.bar_id = bar.id", limit=5, offset=10, _test=True)
-    <sql: 'SELECT FIRST 5 SKIP 10 * FROM foo, bar WHERE foo.bar_id = bar.id'>
     """
     def __init__(self, **keywords):
         DB.__init__(self)
@@ -723,10 +722,6 @@ class FirebirdDB(DB):
 _databases = {}
 def database(dburl=None, **params):
     """Creates appropriate database using params.
-
-        >>> db = database(dbn='mysql', db='test', host='optional', user='joe', pw='secret')
-        >>> db = database(dbn='postgres', db='test', user='joe', pw='secret')
-        >>> db = database(dbn='sqlite', db='test.db')
     """
     dbn = params.pop('dbn')
     if dbn in _databases:

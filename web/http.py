@@ -164,7 +164,12 @@ def url(path=None, **kw):
     return out
 
 def background(func):
-    """A function decorator to run a long-running function as a background thread."""
+    """A function decorator to run a long-running function as a background thread.
+
+    GOTCHA in postgres: Until the foreground task ends, any db access by background 
+    task will necessarily get old data from before the foreground task started
+    because psycopg2 begins a transaction in the foreground task until it quits.
+    """
     def internal(*a, **kw):
         web.data() # cache it
 
@@ -173,6 +178,11 @@ def background(func):
 
         def newfunc():
             web._context[threading.currentThread()] = tmpctx
+            # Create new db cursor if there is one else background thread
+            # overwrites foreground cursor causing rubbish data into dbase
+            if web.config.get('db_parameters'):
+                import db
+                db.connect(**web.config.db_parameters)
             func(*a, **kw)
             myctx = web._context[threading.currentThread()]
             for k in myctx.keys():

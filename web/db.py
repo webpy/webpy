@@ -260,6 +260,10 @@ def connect(dbn, **keywords):
     if dbn == "postgres": 
         try: 
             import psycopg2 as db
+            
+            # fix for Bug#177265
+            import psycopg2.extensions
+            psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)            
         except ImportError: 
             try: 
                 import psycopg as db
@@ -324,7 +328,12 @@ def connect(dbn, **keywords):
                     globals()['db'] = _PooledDB(db, keywords)
                 web.ctx.db = globals()['db'].connection()
             else:
-                web.ctx.db = db.connect(**keywords)
+                web.ctx.db = db.connect(**keywords)  
+    
+            # fix for Bug#177265
+            if web.ctx.get('db_name') == "postgres":
+                web.ctx.db.set_client_encoding('UTF8')
+
         return web.ctx.db.cursor()
     web.ctx.db_cursor = db_cursor
 

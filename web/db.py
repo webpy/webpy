@@ -101,8 +101,11 @@ class SQLQuery:
         
             >>> SQLQuery("x")
             <sql: 'x'>
-            >>> SQLQuery(['SELECT * FROM ', 'test', ' WHERE x=', SQLParam(1)])
+            >>> q = SQLQuery(['SELECT * FROM ', 'test', ' WHERE x=', SQLParam(1)])
+            >>> q
             <sql: 'SELECT * FROM test WHERE x=1'>
+            >>> q.query(), q.values()
+            ('SELECT * FROM test WHERE x=%s', [1])
             >>> SQLQuery(SQLParam(1))
             <sql: '1'>
         """
@@ -114,6 +117,11 @@ class SQLQuery:
             self.items = list(items.items)
         else:
             self.items = [str(items)]
+            
+        # Take care of SQLLiterals
+        for i, item in enumerate(self.items):
+            if isinstance(item, SQLParam) and isinstance(item.value, SQLLiteral):
+                self.items[i] = item.value.v
 
     def __add__(self, other):
         if isinstance(other, str):
@@ -478,8 +486,13 @@ class DB:
         if there isn't one.
         
             >>> db = DB()
-            >>> db.insert('foo', joe='bob', a=2, _test=True)
-            <sql: "INSERT INTO foo (a, joe) VALUES (2, 'bob')">
+            >>> q = db.insert('foo', name='bob', age=2, created=SQLLiteral('NOW()'), _test=True)
+            >>> q
+            <sql: "INSERT INTO foo (age, name, created) VALUES (2, 'bob', NOW())">
+            >>> q.query()
+            'INSERT INTO foo (age, name, created) VALUES (%s, %s, NOW())'
+            >>> q.values()
+            [2, 'bob']
         """
         def q(x): return "(" + x + ")"
         
@@ -519,10 +532,15 @@ class DB:
         and setting `values`.
 
             >>> db = DB()
-            >>> joe = 'Joseph'
-            >>> db.update('foo', where='name = $joe', name='bob', age=5,
-            ...   vars=locals(), _test=True)
-            <sql: "UPDATE foo SET age = 5, name = 'bob' WHERE name = 'Joseph'">
+            >>> name = 'Joseph'
+            >>> q = db.update('foo', where='name = $name', name='bob', age=2,
+            ...     created=SQLLiteral('NOW()'), vars=locals(), _test=True)
+            >>> q
+            <sql: "UPDATE foo SET age = 2, name = 'bob', created = NOW() WHERE name = 'Joseph'">
+            >>> q.query()
+            'UPDATE foo SET age = %s, name = %s, created = NOW() WHERE name = %s'
+            >>> q.values()
+            [2, 'bob', 'Joseph']
         """
         if vars is None: vars = {}
         where = self._where(where, vars)

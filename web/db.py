@@ -332,7 +332,14 @@ def connect(dbn, **keywords):
     
             # fix for Bug#177265
             if web.ctx.get('db_name') == "postgres":
-                web.ctx.db.set_client_encoding('UTF8')
+                try:
+                    if web.config._hasPooling:
+                        # hack to call a function in actual db connection
+                        web.ctx.db._con._con.set_client_encoding('UTF8')
+                    else:
+                        web.ctx.db.set_client_encoding('UTF8')
+                except Exception, e:
+                   print >> web.debug, 'Error in setting utf-8 encoding:', str(e), '(ignored)' 
 
         return web.ctx.db.cursor()
     web.ctx.db_cursor = db_cursor

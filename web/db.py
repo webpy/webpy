@@ -358,7 +358,7 @@ def connect(dbn, **keywords):
         except:
             if web.config.get('db_printing'):
                 print >> web.debug, 'ERR:', str(sql_query)
-            if dorollback: rollback(care=False)
+            if dorollback and not web.ctx.db_transaction: web.ctx.db.rollback() 
             raise
 
         if web.config.get('db_printing'):

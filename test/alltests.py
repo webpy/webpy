@@ -1,7 +1,7 @@
 import webtest
 
 def suite():
-    modules = ["doctests", "db"]
+    modules = ["doctests", "db", "application"]
     return webtest.suite(modules)
     
 if __name__ == "__main__":

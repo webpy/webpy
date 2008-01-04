@@ -165,7 +165,12 @@ class application:
         
         def wsgi(env, start_resp):
             self.load(env)
+
             try:
+                # allow uppercase methods only
+                if web.ctx.method.upper() != web.ctx.method:
+                    raise web.nomethod()
+
                 result = self.handle_with_processors()
             except NotFound:
                 web.ctx.status = "404 Not Found"
@@ -451,10 +456,11 @@ class Reloader:
     def check(self, mod):
         try: 
             mtime = os.stat(mod.__file__).st_mtime
-        except (AttributeError, OSError, IOError): 
+        except (AttributeError, OSError, IOError):
             return
         if mod.__file__.endswith('.pyc') and os.path.exists(mod.__file__[:-1]):
             mtime = max(os.stat(mod.__file__[:-1]).st_mtime, mtime)
+            
         if mod not in self.mtimes:
             self.mtimes[mod] = mtime
         elif self.mtimes[mod] < mtime:

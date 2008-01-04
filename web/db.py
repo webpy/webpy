@@ -677,6 +677,8 @@ class PostgresDB(DB):
     def get_db_module(self):
         try: 
             import psycopg2 as db
+            import psycopg2.extensions
+            psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
         except ImportError: 
             try: 
                 import psycopg as db
@@ -688,6 +690,10 @@ class PostgresDB(DB):
         if seqname is None: 
             seqname = tablename + "_id_seq"
         return query + "; SELECT currval('%s')" % seqname
+
+    def _load_context(self):
+        DB._load_context(self)
+        self.ctx.db.set_client_encoding('UTF8')
 
 class MySQLDB(DB): 
     def __init__(self, **keywords):

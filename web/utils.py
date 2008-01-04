@@ -797,7 +797,7 @@ def safemarkdown(text):
         text = markdown(text)
         return text
 
-def sendmail(from_address, to_address, subject, message, headers=None):
+def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     """
     Sends the email message `message` with mail and envelope headers
     for from `from_address_` to `to_address` with `subject`. 

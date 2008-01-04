@@ -302,7 +302,7 @@ def debugerror():
     """
     
     web.ctx.headers = [('Content-Type', 'text/html')]
-    web.ctx.output = djangoerror()
+    return djangoerror()
 
 def emailerrors(email_address, olderror):
     """
@@ -314,7 +314,7 @@ def emailerrors(email_address, olderror):
     attachment containing the nice `debugerror` page.
     """
     def emailerrors_internal():
-        olderror()
+        error = olderror()
         tb = sys.exc_info()
         error_name = tb[0]
         error_value = tb[1]
@@ -342,6 +342,7 @@ Content-Disposition: attachment; filename="bug.html"
           "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
           text, 
           headers={'Content-Type': 'multipart/mixed; boundary="----here----"'})
+        return error
     
     return emailerrors_internal
 

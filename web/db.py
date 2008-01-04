@@ -319,7 +319,71 @@ def sqlquote(a):
         <sql: "WHERE x = 't' AND y = 3">
     """
     return sqlparam(a).sqlquery()
-    
+
+class Transaction:
+    """Database transaction."""
+    def __init__(self, ctx):
+        self.ctx = ctx
+        self.transaction_count = transaction_count = len(ctx.transactions)
+
+        class transaction_engine:
+            def do_transact(self):
+                ctx.db.commit()
+
+            def do_commit(self):
+                ctx.db.commit()
+
+            def do_rollback(self):
+                ctx.db.rollback()
+
+        class subtransaction_engine:
+            def query(self, q):
+                db_cursor = ctx.db.cursor()
+                ctx.db_execute(db_cursor, SQLQuery(q % transaction_count))
+
+            def do_transact(self):
+                self.query('SAVEPOINT webpy_sp_%s')
+
+            def do_commit(self):
+                self.query('RELEASE SAVEPOINT webpy_sp_%s')
+
+            def do_rollback(self):
+                self.query('ROLLBACK TO SAVEPOINT webpy_sp_%s')
+
+        class dummy_engine:
+            do_transact = do_commit = do_rollback = lambda self: None
+
+        if self.transaction_count:
+            # nested transactions are not supported in some databases
+            if self.ctx.get('ignore_nested_transactions'):
+                self.engine = dummy_engine()
+            else:
+                self.engine = subtransaction_engine()
+        else:
+            self.engine = transaction_engine()
+
+        self.engine.do_transact()
+        self.ctx.transactions.append(self)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exctype, excvalue, traceback):
+        if exctype is not None:
+            self.rollback()
+        else:
+            self.commit()
+
+    def commit(self):
+        if len(self.ctx.transactions) > self.transaction_count:
+            self.engine.do_commit()
+            self.ctx.transactions = self.ctx.transactions[:self.transaction_count]
+
+    def rollback(self):
+        if len(self.ctx.transactions) > self.transaction_count:
+            self.engine.do_rollback()
+            self.ctx.transactions = self.ctx.transactions[:self.transaction_count]
+
 class DB: 
     """Database"""
     def __init__(self):
@@ -330,18 +394,22 @@ class DB:
 
     def _getctx(self): 
         if not self._ctx.get('db'):
-            self._ctx.dbq_count = 0
-            self._ctx.db_transaction = 0
-            self._ctx.db = self.db_module.connect(**self.keywords)
-            if not hasattr(self._ctx.db, 'commit'):
-                self._ctx.db.commit = lambda: None
-
-            if not hasattr(self._ctx.db, 'rollback'):
-                self._ctx.db.rollback = lambda: None
-
+            self._load_context()
         return self._ctx
     ctx = property(_getctx)
-    
+
+    def _load_context(self):
+        self._ctx.dbq_count = 0
+        self._ctx.transactions = [] # stack of transactions
+        self._ctx.db = self.db_module.connect(**self.keywords)
+        self._ctx.db_execute = self._db_execute
+        
+        if not hasattr(self._ctx.db, 'commit'):
+            self._ctx.db.commit = lambda: None
+
+        if not hasattr(self._ctx.db, 'rollback'):
+            self._ctx.db.rollback = lambda: None
+
     def _db_cursor(self):
         return self.ctx.db.cursor()
 
@@ -369,7 +437,11 @@ class DB:
         except:
             if self.printing:
                 print >> debug, 'ERR:', str(sql_query)
-            if dorollback: self.rollback(care=False)
+            if dorollback: 
+                if self.ctx.transactions:
+                    self.ctx.transactions[-1].rollback()
+                else:
+                    self.ctx.db.rollback()
             raise
 
         if self.printing:
@@ -426,7 +498,7 @@ class DB:
         else:
             out = db_cursor.rowcount
         
-        if not self.ctx.db_transaction: self.ctx.db.commit()
+        if not self.ctx.transactions: self.ctx.db.commit()
         return out
     
     def select(self, tables, vars=None, what='*', where=None, order=None, group=None, 
@@ -523,7 +595,7 @@ class DB:
         except Exception: 
             out = None
         
-        if not self.ctx.db_transaction: self.ctx.db.commit()
+        if not self.ctx.transactions: self.ctx.db.commit()
         return out
     
     def update(self, tables, where, vars=None, _test=False, **values): 
@@ -554,7 +626,7 @@ class DB:
         
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, query)
-        if not self.ctx.db_transaction: self.ctx.db.commit()
+        if not self.ctx.transactions: self.ctx.db.commit()
         return db_cursor.rowcount
     
     def delete(self, table, where=None, using=None, vars=None, _test=False): 
@@ -577,53 +649,15 @@ class DB:
 
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, q)
-        if not self.ctx.db_transaction: self.ctx.db.commit()
+        if not self.ctx.transactions: self.ctx.db.commit()
         return db_cursor.rowcount
 
     def _process_insert_query(self, query, tablename, seqname):
         return query
 
-    def transact(self): 
+    def transaction(self): 
         """Start a transaction."""
-        if not self.ctx.db_transaction:
-            # commit everything up to now, so we don't rollback it later
-            self.ctx.db.commit()
-        else:
-            db_cursor = self._db_cursor()
-            self._db_execute(db_cursor,
-                SQLQuery("SAVEPOINT webpy_sp_%s" % self.ctx.db_transaction))
-        self.ctx.db_transaction += 1
-
-    def commit(self): 
-        """Commits a transaction."""
-        self.ctx.db_transaction -= 1
-        if self.ctx.db_transaction < 0:
-            raise TransactionError, "not in a transaction"
-
-        if not self.ctx.db_transaction:
-            self.ctx.db.commit()
-        else:
-            db_cursor = self._db_cursor()
-            self._db_execute(db_cursor,
-                SQLQuery("RELEASE SAVEPOINT webpy_sp_%s" % self.ctx.db_transaction))
-
-    def rollback(self, care=True): 
-        """Rolls back a transaction."""
-        self.ctx.db_transaction -= 1    
-        if self.ctx.db_transaction < 0:
-            self.db_transaction = 0
-            if care:
-                raise TransactionError, "not in a transaction"
-            else:
-                return
-
-        if not self.ctx.db_transaction:
-            self.ctx.db.rollback()
-        else:
-            db_cursor = self._db_cursor()
-            self._db_execute(db_cursor,
-                SQLQuery("ROLLBACK TO SAVEPOINT webpy_sp_%s" % self.ctx.db_transaction),
-                dorollback=False)
+        return Transaction(self.ctx)
     
 class PostgresDB(DB): 
     """Postgres driver."""
@@ -654,7 +688,6 @@ class PostgresDB(DB):
         if seqname is None: 
             seqname = tablename + "_id_seq"
         return query + "; SELECT currval('%s')" % seqname
-
 
 class MySQLDB(DB): 
     def __init__(self, **keywords):

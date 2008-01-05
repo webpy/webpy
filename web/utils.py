@@ -846,6 +846,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     recipients = [email.Utils.parseaddr(r)[1] for r in recipients]
     message = ('\n'.join(['%s: %s' % x for x in headers.iteritems()])
       + "\n\n" +  message)
+    message = utf8(message)
     
     if webapi.config.get('smtp_server'):
         server = webapi.config.get('smtp_server')

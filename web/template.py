@@ -607,7 +607,7 @@ class Fill(Handle):
     def h_call(self, i):
         call = self.h(i[THING])
         args = [self.h(x) for x in i[ARGS]]
-        kw = dict([(x, self.h(y)) for (x, y) in i[KWARGS]])
+        kw = dict([(str(x), self.h(y)) for (x, y) in i[KWARGS]])
         return call(*args, **kw)
     
     def h_getitem(self, i):
@@ -677,8 +677,7 @@ class Fill(Handle):
     def h_line(self, i):
         out = []
         for x in i[THING]:
-            #@@ what if x is unicode
-            if isinstance(x, str):
+            if isinstance(x, (unicode, str)):
                 out.append(x)
             elif x[WHAT] == 'itpl':
                 o = self.h(x[NAME])
@@ -797,82 +796,98 @@ def frender(fn, *a, **kw):
     return Template(open(fn).read(), *a, **kw)
 
 def test():
-    import sys
-    verbose = '-v' in sys.argv
-    def assertEqual(a, b):
-        if a == b:
-            if verbose:
-                sys.stderr.write('.')
-                sys.stderr.flush()
-        else:
-            assert a == b, "\nexpected: %s\ngot: %s" % (repr(b), repr(a))
-    
-    from utils import storage, group
+    r"""Doctest for testing template module.
 
-    class t:
-        def __init__(self, text):
-            self.text = text
-
-        def __call__(self, *a, **kw):
-            return TestResult(self.text, Template(self.text)(*a, **kw))
-
-    class TestResult:
-        def __init__(self, source, value):
-            self.source = source
-            self.value = value
-
-        def __eq__(self, other):
-            if self.value == other:
-                if verbose:
-                    sys.stderr.write('.')
-            else:
-                print >> sys.stderr, 'FAIL:', repr(self.source), 'expected', repr(other), ', got', repr(self.value)
-                sys.stderr.flush()
-    
-    t('1')() == '1\n'
-    t('$def with ()\n1')() == '1\n'
-    t('$def with (a)\n$a')(1) == '1\n'
-    t('$def with (a=0)\n$a')(1) == '1\n'
-    t('$def with (a=0)\n$a')(a=1) == '1\n'
-    t('$if 1: 1')() == '1\n'
-    t('$if 1:\n    1')() == '1\n'
-    t('$if 0: 0\n$elif 1: 1')() == '1\n'
-    t('$if 0: 0\n$elif None: 0\n$else: 1')() == '1\n'
-    t('$if (0 < 1) and (1 < 2): 1')() == '1\n'
-    t('$for x in [1, 2, 3]: $x')() == '1\n2\n3\n'
-    t('$for x in []: 0\n$else: 1')() == '1\n'
-    t('$def with (a)\n$while a and a.pop(): 1')([1, 2, 3]) == '1\n1\n1\n'
-    t('$while 0: 0\n$else: 1')() == '1\n'
-    t('$ a = 1\n$a')() == '1\n'
-    t('$# 0')() == ''
-    t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1}) == '1\n'
-    t('$def with (a)\n$(a)')(1) == '1\n'
-    t('$def with (a)\n$a')(1) == '1\n'
-    t('$def with (a)\n$a.b')(storage(b=1)) == '1\n'
-    t('$def with (a)\n$a[0]')([1]) == '1\n'
-    t('${0 or 1}')() == '1\n'
-    t('$ a = [1]\n$a[0]')() == '1\n'
-    t('$ a = {1: 1}\n$a.keys()[0]')() == '1\n'
-    t('$ a = []\n$if not a: 1')() == '1\n'
-    t('$ a = {}\n$if not a: 1')() == '1\n'
-    t('$ a = -1\n$a')() == '-1\n'
-    t('$ a = "1"\n$a')() == '1\n'
-    t('$if 1 is 1: 1')() == '1\n'
-    t('$if not 0: 1')() == '1\n'
-    t('$if 1:\n    $if 1: 1')() == '1\n'
-    t('$ a = 1\n$a')() == '1\n'
-    t('$ a = 1.\n$a')() == '1.0\n'
-    t('$({1: 1}.keys()[0])')() == '1\n'
-    t('$for x in [1, 2, 3]:\n\t$x')() == '    1\n    2\n    3\n'
-    t('$def with (a)\n$:a')(1) == '1\n'
-    t('$def with (a)\n$a')(u'\u203d') == '\xe2\x80\xbd\n'
-    t(u'$def with (f)\n$:f("x")')(lambda x: x) == 'x\n'
-
-    j = Template("$var foo: bar")()
-    assertEqual(str(j), '')
-    assertEqual(j.foo, 'bar\n')
-    if verbose: sys.stderr.write('\n')
-    
+        >>> t = Template
+        >>> t('1')()
+        '1\n'
+        >>> t('$def with ()\n1')()
+        '1\n'
+        >>> t('$def with (a)\n$a')(1)
+        '1\n'
+        >>> t('$def with (a=0)\n$a')(1)
+        '1\n'
+        >>> t('$def with (a=0)\n$a')(a=1)
+        '1\n'
+        >>> t('$if 1: 1')()
+        '1\n'
+        >>> t('$if 1:\n    1')()
+        '1\n'
+        >>> t('$if 0: 0\n$elif 1: 1')()
+        '1\n'
+        >>> t('$if 0: 0\n$elif None: 0\n$else: 1')()
+        '1\n'
+        >>> t('$if (0 < 1) and (1 < 2): 1')()
+        '1\n'
+        >>> t('$for x in [1, 2, 3]: $x')()
+        '1\n2\n3\n'
+        >>> t('$for x in []: 0\n$else: 1')()
+        '1\n'
+        >>> t('$def with (a)\n$while a and a.pop(): 1')([1, 2, 3])
+        '1\n1\n1\n'
+        >>> t('$while 0: 0\n$else: 1')()
+        '1\n'
+        >>> t('$ a = 1\n$a')()
+        '1\n'
+        >>> t('$# 0')()
+        ''
+        >>> t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1})
+        '1\n'
+        >>> t('$def with (a)\n$(a)')(1)
+        '1\n'
+        >>> t('$def with (a)\n$a')(1)
+        '1\n'
+        >>> t('$def with (a)\n$a.b')(storage(b=1))
+        '1\n'
+        >>> t('$def with (a)\n$a[0]')([1])
+        '1\n'
+        >>> t('${0 or 1}')()
+        '1\n'
+        >>> t('$ a = [1]\n$a[0]')()
+        '1\n'
+        >>> t('$ a = {1: 1}\n$a.keys()[0]')()
+        '1\n'
+        >>> t('$ a = []\n$if not a: 1')()
+        '1\n'
+        >>> t('$ a = {}\n$if not a: 1')()
+        '1\n'
+        >>> t('$ a = -1\n$a')()
+        '-1\n'
+        >>> t('$ a = "1"\n$a')()
+        '1\n'
+        >>> t('$if 1 is 1: 1')()
+        '1\n'
+        >>> t('$if not 0: 1')()
+        '1\n'
+        >>> t('$if 1:\n    $if 1: 1')()
+        '1\n'
+        >>> t('$ a = 1\n$a')()
+        '1\n'
+        >>> t('$ a = 1.\n$a')()
+        '1.0\n'
+        >>> t('$({1: 1}.keys()[0])')()
+        '1\n'
+        >>> t('$for x in [1, 2, 3]:\n\t$x')()
+        '    1\n    2\n    3\n'
+        >>> t('$def with (a)\n$:a')(1)
+        '1\n'
+        >>> t('$def with (a)\n$a')(u'\u203d')
+        '\xe2\x80\xbd\n'
+        >>> t(u'$def with ()\nfoo')()
+        u'foo\n'
+        >>> def f(x): return x
+        ...
+        >>> t(u'$def with (f)\n$:f("x")')(f)
+        'x\n'
+        >>> t(u'$def with (f)\n$:f(x="x")')(f)
+        'x\n'
+        >>> x = t('$var foo: bar')()
+        >>> str(x)
+        ''
+        >>> x.foo
+        'bar\n'
+    """
 
 if __name__ == "__main__":
-    test()
+    import doctest
+    doctest.testmod()

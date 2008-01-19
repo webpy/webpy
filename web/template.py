@@ -678,7 +678,7 @@ class Fill(Handle):
         out = []
         for x in i[THING]:
             if isinstance(x, (unicode, str)):
-                out.append(x)
+                out.append(utf8(x))
             elif x[WHAT] == 'itpl':
                 o = self.h(x[NAME])
                 if x[FILTER]:
@@ -873,8 +873,10 @@ def test():
         '1\n'
         >>> t('$def with (a)\n$a')(u'\u203d')
         '\xe2\x80\xbd\n'
+        >>> t(u'$def with (a)\n$a $:a')(u'\u203d')
+        '\xe2\x80\xbd \xe2\x80\xbd\n'
         >>> t(u'$def with ()\nfoo')()
-        u'foo\n'
+        'foo\n'
         >>> def f(x): return x
         ...
         >>> t(u'$def with (f)\n$:f("x")')(f)

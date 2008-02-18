@@ -31,15 +31,9 @@ A configuration object for various aspects of web.py.
    : Set to `True` if you would like SQL queries and timings to be
      printed to the debug output.
 `session_parameters`
-   : dictionary/storage containing main session parameters
-    cookie_name, cookie_domain, timeout, max_age,
-    id_seed, regenerate_id, generator,
-    ignore_change_ip, ignore_expiration, ignore_old_age,
-    handler
-`handler_parameters`
-   : session handler parameters
-    file_dir, file_prefix,
-    db_table
+   : A dictionary containing session parameters
+    cookie_name, cookie_domain, timeout, 
+    ignore_change_ip, ignore_expiry, expired_message
 """
 
 class HTTPError(Exception):

@@ -14,7 +14,7 @@ __contributors__ = "see http://webpy.org/changes"
 import utils, db, net, wsgi, http, webapi, request, httpserver, debugerror
 import template, form
 
-#import session
+import session
 
 from utils import *
 from db import *

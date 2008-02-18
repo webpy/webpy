@@ -84,7 +84,7 @@ class application:
         """
         self.processors.append(processor)
 
-    def request(self, path='/', method='GET', data=None, host="0.0.0.0:8080", https=False):
+    def request(self, path='/', method='GET', data=None, host="0.0.0.0:8080", headers=None,https=False):
         """Makes request to this application for the specified path and method.
         Response will be a storage object with data, status and headers.
         
@@ -119,6 +119,10 @@ class application:
         """
         query = urllib.splitquery(path)[1] or ""
         env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=https)
+        headers = headers or {}
+        for k, v in headers.items():
+            env[k.upper()] = v
+            
         if data:
             import StringIO
             q = urllib.urlencode(data)

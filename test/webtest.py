@@ -119,6 +119,10 @@ def suite(module_names):
     
 def setup_database(dbname):
     if dbname == 'sqlite':
-        return web.database(dbn=dbname, db='webpy.db')
+        db = web.database(dbn=dbname, db='webpy.db')
     else:
-        return web.database(dbn=dbname, db='webpy', user='scott', pw='tiger')
+        db = web.database(dbn=dbname, db='webpy', user='scott', pw='tiger')
+        
+    if '-v' in sys.argv:
+        db.printing = True
+    return db

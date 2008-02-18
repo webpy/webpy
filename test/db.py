@@ -7,7 +7,6 @@ class DBTest(webtest.TestCase):
     
     def setUp(self):
         self.db = webtest.setup_database(self.dbname)
-        self.db.printing = True
         self.db.query("CREATE TABLE person (name text, email text)")
 
     def tearDown(self):
@@ -80,7 +79,6 @@ class MySQLTest(DBTest):
     
     def setUp(self):
         self.db = webtest.setup_database(self.dbname)
-        self.db.printing = True
         # In mysql, transactions are supported only with INNODB engine.
         self.db.query("CREATE TABLE person (name text, email text) ENGINE=INNODB")
 

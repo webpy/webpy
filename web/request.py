@@ -134,20 +134,4 @@ def webpyfunc(inp, fvars, autoreload=False):
     return func
 
 def run(inp, fvars, *middleware):
-    """
-    Starts handling requests. If called in a CGI or FastCGI context, it will follow
-    that protocol. If called from the command line, it will start an HTTP
-    server on the port named in the first command line argument, or, if there
-    is no argument, on port 8080.
-
-    `input` is a callable, then it's called with no arguments.
-    Otherwise, it's a `mapping` object to be passed to `handle(...)`.
-
-    **Caveat:** So that `reloader` will work correctly, input has to be a variable,
-    it can't be a tuple passed in directly.
-
-    `middleware` is a list of WSGI middleware which is applied to the resulting WSGI
-    function.
-    """
-    autoreload = http.reloader in middleware
-    return wsgi.runwsgi(webapi.wsgifunc(webpyfunc(inp, fvars, autoreload), *middleware))
+    raise NotImplementedError, "web.run has been replaced in 0.3 -- please use web.application instead"

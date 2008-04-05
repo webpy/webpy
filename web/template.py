@@ -7,6 +7,7 @@ import re, glob, os, os.path
 from types import FunctionType as function
 from utils import storage, group, utf8
 from net import websafe
+from webapi import config
 
 # differences from python:
 #  - for: has an optional else: that gets called if the loop never runs
@@ -763,12 +764,16 @@ class Fill(Handle):
         return self.output
 
 class render:
-    def __init__(self, loc='templates/', cache=True):
+    def __init__(self, loc='templates/', cache=None, base=None):
+        if cache is None:
+            cache = not config.get('debug', False)
         self.loc = loc
         if cache:
             self.cache = {}
         else:
             self.cache = False
+        
+        self.base = base
     
     def _do(self, name, filter=None):
         if self.cache is False or name not in self.cache:
@@ -791,7 +796,10 @@ class render:
         return c
 
     def __getattr__(self, p):
-        return self._do(p)
+        if self.base:
+            return lambda *a, **kw: self._do(self.base)(self._do(p)(*a, **kw))
+        else:
+            return self._do(p)
 
 def frender(fn, *a, **kw):
     return Template(open(fn).read(), *a, **kw)

@@ -4,6 +4,7 @@ Web application
 """
 import webapi as web
 import webapi, wsgi, utils
+import debugerror
 from utils import lstrips
 import sys
 
@@ -35,7 +36,9 @@ class application:
         >>> app.request("/hello").data
         'hello'
     """
-    def __init__(self, mapping=(), fvars={}, autoreload=False):
+    def __init__(self, mapping=(), fvars={}, autoreload=None):
+        if autoreload is None:
+            autoreload = web.config.get('debug', False)
         self.mapping = mapping
         self.fvars = fvars
         self.processors = []
@@ -214,7 +217,11 @@ class application:
 
     def internalerror(self):
         """Message for `500 internal error`."""
-        return "internal server error"
+        
+        if web.config.get('debug'):
+            return debugerror.debugerror()
+        else:
+            return "internal server error"
 
     def notfound(self):
         """Message for `404 not found`."""

@@ -14,6 +14,11 @@ import itertools
 import os
 import types
 
+try:
+    import wsgiref.handlers
+except ImportError:
+    pass # don't break people with old Pythons
+
 __all__ = [
     "application", "auto_application",
     "subdir_application", "subdomain_application", 
@@ -238,7 +243,23 @@ class application:
         function.
         """
         return wsgi.runwsgi(self.wsgifunc(*middleware))
+    
+    def cgirun(self, *middleware):
+        """
+        Return a CGI handler. This is mostly useful with Google App Engine.
+        There you can just do:
         
+            main = app.cgirun()
+        """
+        wsgiapp = self.wsgifunc(*middleware)
+
+        try:
+            import google.appengine.ext.utils
+            return google.appengine.ext.utils.run_wsgi_app(wsgiapp)
+        except ImportError:
+            # we're not running from within Google App Engine
+            return wsgiref.handlers.CGIHandler().run(wsgiapp)
+    
     def load(self, env):
         """Initializes ctx using env."""
         ctx = web.ctx

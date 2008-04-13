@@ -14,7 +14,7 @@ __all__ = [
   "IterBetter", "iterbetter",
   "dictreverse", "dictfind", "dictfindall", "dictincr", "dictadd",
   "listget", "intget", "datestr",
-  "numify", "denumify", "dateify",
+  "numify", "denumify", "commify", "dateify",
   "CaptureStdout", "capturestdout", "Profile", "profile",
   "tryall",
   "ThreadedDict",
@@ -569,6 +569,27 @@ def denumify(string, pattern):
         else:
             out.append(c)
     return ''.join(out)
+
+def commify(n):
+    """
+    Add commas to an integer `n`.
+
+        >>> commify(1)
+        '1'
+        >>> commify(123)
+        '123'
+        >>> commify(1234)
+        '1,234'
+        >>> commify(1234567890)
+        '1,234,567,890'
+
+    """
+    r = []
+    for i, c in enumerate(reversed(str(n))):
+        if i and (not (i % 3)):
+            r.insert(0, ',')
+        r.insert(0, c)
+    return ''.join(r)
 
 def dateify(datestring):
     """

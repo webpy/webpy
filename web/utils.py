@@ -582,8 +582,11 @@ def commify(n):
         '1,234'
         >>> commify(1234567890)
         '1,234,567,890'
-
+        >>> commify(None)
+        None
+    
     """
+    if n is None: return None
     r = []
     for i, c in enumerate(reversed(str(n))):
         if i and (not (i % 3)):

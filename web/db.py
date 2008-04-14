@@ -220,6 +220,7 @@ def reparam(string_, dictionary):
         >>> reparam("s = $s", dict(s=True))
         <sql: "s = 't'">
     """
+    dictionary = dictionary.copy() # eval mucks with it
     vals = []
     result = []
     for live, chunk in _interpolate(string_):

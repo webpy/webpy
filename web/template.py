@@ -767,37 +767,37 @@ class render:
     def __init__(self, loc='templates/', cache=None, base=None):
         if cache is None:
             cache = not config.get('debug', False)
-        self.loc = loc
+        self._loc = loc
         if cache:
-            self.cache = {}
+            self._cache = {}
         else:
-            self.cache = False
+            self._cache = False
         
-        self.base = base
+        self._base = base
     
     def _do(self, name, filter=None):
-        if self.cache is False or name not in self.cache:
+        if self._cache is False or name not in self._cache:
 
-            tmplpath = os.path.join(self.loc, name) 
+            tmplpath = os.path.join(self._loc, name) 
             p = [f for f in glob.glob(tmplpath + '.*') if not f.endswith('~')] # skip backup files
             if not p and os.path.isdir(tmplpath):
-                return render(tmplpath, cache=self.cache)
+                return render(tmplpath, cache=self._cache)
             elif not p:
                 raise AttributeError, 'no template named ' + name
 
             p = p[0]
             c = Template(open(p).read(), filename=p)
-            if self.cache is not False: self.cache[name] = (p, c)
+            if self._cache is not False: self._cache[name] = (p, c)
         
-        if self.cache is not False: p, c = self.cache[name]
+        if self._cache is not False: p, c = self._cache[name]
 
         if p.endswith('.html') or p.endswith('.xml'):
             if not filter: c.filter = websafe
         return c
 
     def __getattr__(self, p):
-        if self.base:
-            return lambda *a, **kw: self._do(self.base)(self._do(p)(*a, **kw))
+        if self._base:
+            return lambda *a, **kw: self._do(self._base)(self._do(p)(*a, **kw))
         else:
             return self._do(p)
 

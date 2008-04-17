@@ -13,7 +13,6 @@ import urllib
 import traceback
 import itertools
 import os
-import string
 import types
 
 try:
@@ -147,11 +146,9 @@ class application:
         query = maybe_query or ""
         env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=https)
         headers = headers or {}
-        translation_table = string.maketrans(string.ascii_lowercase + '-',
-                                             string.ascii_uppercase + '_')
         for k, v in headers.items():
-            env['HTTP_' + string.translate(k, translation_table)] = v
-
+            env[k.upper().replace('-', '_')] = v
+            
         if data:
             import StringIO
             q = urllib.urlencode(data)
@@ -327,7 +324,14 @@ class application:
         elif is_class(f):
             return handle_class(f)
         elif isinstance(f, str):
-            if '.' in f:
+            if f.startswith('redirect '):
+                url = f.split(' ', 1)[1]
+                if web.ctx.method == "GET":
+                    x = web.ctx.env.get('QUERY_STRING', '')
+                    if x:
+                        url += '?' + x
+                raise web.redirect(url)
+            elif '.' in f:
                 x = f.split('.')
                 mod, cls = '.'.join(x[:-1]), x[-1]
                 mod = __import__(mod, globals(), locals(), [""])
@@ -342,9 +346,8 @@ class application:
 
     def _match(self, mapping, value):
         for pat, what in utils.group(mapping, 2):
-            rx = utils.re_compile('^' + pat + '$')
-            result = rx.match(value)
-            if result:
+            what, result = utils.re_subm('^' + pat + '$', what, web.ctx.path)
+            if result: # it's a match
                 return what, [x and urllib.unquote(x) for x in result.groups()]
         return None, None
 

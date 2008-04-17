@@ -147,7 +147,7 @@ class application:
         env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=https)
         headers = headers or {}
         for k, v in headers.items():
-            env[k.upper().replace('-', '_')] = v
+            env['HTTP_' + k.upper().replace('-', '_')] = v
             
         if data:
             import StringIO

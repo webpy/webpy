@@ -328,6 +328,7 @@ class Transaction:
         self.transaction_count = transaction_count = len(ctx.transactions)
 
         class transaction_engine:
+            """Transaction Engine used in top level transactions."""
             def do_transact(self):
                 ctx.db.commit()
 
@@ -338,6 +339,7 @@ class Transaction:
                 ctx.db.rollback()
 
         class subtransaction_engine:
+            """Transaction Engine used in sub transactions."""
             def query(self, q):
                 db_cursor = ctx.db.cursor()
                 ctx.db_execute(db_cursor, SQLQuery(q % transaction_count))
@@ -352,6 +354,8 @@ class Transaction:
                 self.query('ROLLBACK TO SAVEPOINT webpy_sp_%s')
 
         class dummy_engine:
+            """Transaction Engine used instead of subtransaction_engine 
+            when sub transactions are not supported."""
             do_transact = do_commit = do_rollback = lambda self: None
 
         if self.transaction_count:
@@ -392,25 +396,42 @@ class DB:
 
         # flag to enable/disable printing queries
         self.printing = False
+        self.hasPooling = False
 
     def _getctx(self): 
         if not self._ctx.get('db'):
-            self._load_context()
+            self._load_context(self._ctx)
         return self._ctx
     ctx = property(_getctx)
 
-    def _load_context(self):
-        self._ctx.dbq_count = 0
-        self._ctx.transactions = [] # stack of transactions
-        self._ctx.db = self.db_module.connect(**self.keywords)
-        self._ctx.db_execute = self._db_execute
+    def _load_context(self, ctx):
+        ctx.dbq_count = 0
+        ctx.transactions = [] # stack of transactions
         
-        if not hasattr(self._ctx.db, 'commit'):
-            self._ctx.db.commit = lambda: None
+        if self.hasPooling:
+            ctx.db = self._connect_with_pooling(self.keywords)
+        else:
+            ctx.db = self._connect(self.keywords)
+        ctx.db_execute = self._db_execute
+        
+        if not hasattr(ctx.db, 'commit'):
+            ctx.db.commit = lambda: None
 
-        if not hasattr(self._ctx.db, 'rollback'):
-            self._ctx.db.rollback = lambda: None
-
+        if not hasattr(ctx.db, 'rollback'):
+            ctx.db.rollback = lambda: None
+            
+    def _connect(self, keywords):
+        return self.db_module.connect(**keywords)
+        
+    def _connect_with_pooling(self, keywords):
+        from DBUtils import PooledDB
+        # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
+        # see Bug#122112
+        if PooledDB.__version__.split('.') < '0.9.3'.split('.'):
+            return PooledDB.PooledDB(dbapi=self._connect, **keywords)
+        else:
+            return PooledDB.PooledDB(creator=self._connect, **keywords)
+            
     def _db_cursor(self):
         return self.ctx.db.cursor()
 
@@ -692,9 +713,10 @@ class PostgresDB(DB):
             seqname = tablename + "_id_seq"
         return query + "; SELECT currval('%s')" % seqname
 
-    def _load_context(self):
-        DB._load_context(self)
-        self.ctx.db.set_client_encoding('UTF8')
+    def _connect(self, keywords):
+        conn = DB._connect(self, keywords)
+        conn.set_client_encoding('UTF8')
+        return conn
 
 class MySQLDB(DB): 
     def __init__(self, **keywords):
@@ -864,7 +886,6 @@ def _interpolate(format):
                 else: 
                     break
             chunks.append((1, format[dollar + 1:pos]))
-
         else:
             chunks.append((0, format[pos:dollar + 1]))
             pos = dollar + 1 + (nextchar == "$")

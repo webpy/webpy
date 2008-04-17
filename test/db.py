@@ -66,7 +66,13 @@ class DBTest(webtest.TestCase):
         t3.commit()
         t1.commit()
         self.assertRows(2)
-
+        
+    def testPooling(self):
+        db = webtest.setup_database(self.dbname)
+        db.hasPooling = True
+        import DBUtils
+        self.assertTrue(isinstance(db.ctx.db, DBUtils.PooledDB.PooledDB))
+        
 class SqliteTest(DBTest):
     dbname = "sqlite"
     

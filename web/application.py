@@ -129,7 +129,7 @@ class application:
         env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query or '', HTTPS=https)
         headers = headers or {}
         for k, v in headers.items():
-            env[k.upper()] = v
+            env[k.upper().replace('-', '_')] = v
             
         if data:
             import StringIO
@@ -310,7 +310,7 @@ class application:
                 url = f.split(' ', 1)[1]
                 if web.ctx.method == "GET":
                     x = web.ctx.env.get('QUERY_STRING', '')
-                    if x: 
+                    if x:
                         url += '?' + x
                 raise web.redirect(url)
             elif '.' in f:

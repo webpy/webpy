@@ -47,6 +47,30 @@ class ApplicationTest(webtest.TestCase):
             
         response = app.request('/', method='internal')
         self.assertEquals(response.status, '405 Method Not Allowed')
+        
+    def testRedirect(self):
+        urls = (
+            "/a", "redirect /hello/",
+            "/b/(.*)", r"redirect /hello/\1",
+            "/hello/(.*)", "hello"
+        )
+        app = web.application(urls, locals())
+        class hello:
+            def GET(self, name): 
+                name = name or 'world'
+                return "hello " + name
+            
+        response = app.request('/a')
+        self.assertEquals(response.status, '301 Moved Permanently')
+        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/hello/')
+
+        response = app.request('/a?x=2')
+        self.assertEquals(response.status, '301 Moved Permanently')
+        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/hello/?x=2')
+
+        response = app.request('/b/foo?x=2')
+        self.assertEquals(response.status, '301 Moved Permanently')
+        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/hello/foo?x=2')
 
 if __name__ == '__main__':
     webtest.main()

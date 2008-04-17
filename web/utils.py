@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 General Utilities
 (part of web.py)
@@ -15,6 +16,7 @@ __all__ = [
   "dictreverse", "dictfind", "dictfindall", "dictincr", "dictadd",
   "listget", "intget", "datestr",
   "numify", "denumify", "commify", "dateify",
+  "nthstr",
   "CaptureStdout", "capturestdout", "Profile", "profile",
   "tryall",
   "ThreadedDict",
@@ -599,6 +601,29 @@ def dateify(datestring):
     Formats a numified `datestring` properly.
     """
     return denumify(datestring, "XXXX-XX-XX XX:XX:XX")
+
+
+def nthstr(n):
+    """
+    Formats an ordinal.
+    Doesn't handle negative numbers.
+
+        >>> nthstr(1)
+        '1st'
+        >>> nthstr(0)
+        '0th'
+        >>> [nthstr(x) for x in [2, 3, 4, 5, 10, 11, 12, 13, 14, 15]]
+        ['2nd', '3rd', '4th', '5th', '10th', '11th', '12th', '13th', '14th', '15th']
+        >>> [nthstr(x) for x in [91, 92, 93, 94, 99, 100, 101, 102]]
+        ['91st', '92nd', '93rd', '94th', '99th', '100th', '101st', '102nd']
+        >>> [nthstr(x) for x in [111, 112, 113, 114, 115]]
+        ['111th', '112th', '113th', '114th', '115th']
+
+    """
+    
+    assert n >= 0
+    if n % 100 in [11, 12, 13]: return '%sth' % n
+    return {1: '%sst', 2: '%snd', 3: '%srd'}.get(n % 10, '%sth') % n
 
 class CaptureStdout:
     """

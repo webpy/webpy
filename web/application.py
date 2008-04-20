@@ -352,7 +352,6 @@ class application:
             else:
                 result = utils.re_compile('^' + pat + '$').match(web.ctx.path)
             if result: # it's a match
-                if isinstance(what, basestring): what = re.sub(rx, what, value)
                 return what, [x and urllib.unquote(x) for x in result.groups()]
         return None, None
 

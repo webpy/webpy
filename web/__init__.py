@@ -56,10 +56,11 @@ def main():
     class source:
         def GET(self):
             header('Content-Type', 'text/python')
-            print open(sys.argv[0]).read()
+            return open(sys.argv[0]).read()
     
     if listget(sys.argv, 1) != 'test':
-        run(urls, locals())
+        app = application(urls, locals())
+        app.run()
 
 if __name__ == "__main__": main()
 

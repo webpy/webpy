@@ -94,6 +94,9 @@ class SQLQuery:
     You can pass this sort of thing as a clause in any db function.
     Otherwise, you can pass a dictionary to the keyword argument `vars`
     and the function will call reparam for you.
+
+    Internally, consists of `items`, which is a list of strings and
+    SQLParams, which get concatenated to produce the actual query.
     """
     # tested in sqlquote's docstring
     def __init__(self, items=[]):
@@ -447,6 +450,15 @@ class DB:
             return '%s'
         raise UnknownParamstyle, style
 
+    def _py2sql(self, val):
+        """
+        Transforms a Python value into a value to pass to cursor.execute.
+
+        This exists specifically for a workaround in SqliteDB.
+
+        """
+        return val
+
     def _db_execute(self, cur, sql_query, dorollback=True): 
         """executes an sql query"""
         self.ctx.dbq_count += 1
@@ -454,7 +466,9 @@ class DB:
         try:
             a = time.time()
             paramstyle = getattr(self, 'paramstyle', 'pyformat')
-            out = cur.execute(sql_query.query(paramstyle), sql_query.values())
+            out = cur.execute(sql_query.query(paramstyle),
+                              [self._py2sql(x)
+                               for x in sql_query.values()])
             b = time.time()
         except:
             if self.printing:
@@ -763,6 +777,29 @@ class SqliteDB(DB):
             # rowcount is not provided by sqlite
             del out.__len__
         return out
+
+    # as with PostgresDB, the database is assumed to be in UTF-8.
+    # This doesn't mean we turn byte-strings coming out of it into
+    # Unicode objects, but we avoid trying to put Unicode objects into
+    # it.
+    encoding = 'UTF-8'
+
+    def _py2sql(self, val):
+        r"""
+        Work around a couple of problems in SQLite that maybe pysqlite
+        should take care of: give it True and False and it thinks
+        they're column names; give it Unicode and it tries to insert
+        it in, possibly, ASCII.
+
+            >>> meth = SqliteDB(db='nonexistent')._py2sql
+            >>> [meth(x) for x in [True, False, 1, 2, 'foo', u'souffl\xe9']]
+            [1, 0, 1, 2, 'foo', 'souffl\xc3\xa9']
+
+        """
+        if val is True: return 1
+        elif val is False: return 0
+        elif isinstance(val, unicode): return val.encode(self.encoding)
+        else: return val
 
 class FirebirdDB(DB):
     """Firebird Database.

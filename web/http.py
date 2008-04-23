@@ -178,7 +178,7 @@ class Reloader:
         # _compiletemplate = globals()['__compiletemplate']
         # _compiletemplate.bases = b
         
-        web.loadhooks['reloader'] = self.check
+        #web.loadhooks['reloader'] = self.check
         # todo:
         #  - replace relrcheck with a loadhook
         #if reloader in middleware:

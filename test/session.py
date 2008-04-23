@@ -14,11 +14,10 @@ class Browser:
     def open(self, path):
         headers = {}
         if self.cookies:
-            headers['HTTP_COOKIE'] = self.cookie_header()
+            headers['cookie'] = self.cookie_header()
         self.response = self.app.request(path, headers=headers)
         if 'Set-Cookie' in self.response.headers:
             self.read_cookie(self.response.headers['Set-Cookie'])
-        
         return self.response.data
         
     def cookie_header(self):

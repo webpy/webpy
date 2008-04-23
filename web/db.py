@@ -94,6 +94,9 @@ class SQLQuery:
     You can pass this sort of thing as a clause in any db function.
     Otherwise, you can pass a dictionary to the keyword argument `vars`
     and the function will call reparam for you.
+
+    Internally, consists of `items`, which is a list of strings and
+    SQLParams, which get concatenated to produce the actual query.
     """
     # tested in sqlquote's docstring
     def __init__(self, items=[]):
@@ -328,6 +331,7 @@ class Transaction:
         self.transaction_count = transaction_count = len(ctx.transactions)
 
         class transaction_engine:
+            """Transaction Engine used in top level transactions."""
             def do_transact(self):
                 ctx.db.commit()
 
@@ -338,6 +342,7 @@ class Transaction:
                 ctx.db.rollback()
 
         class subtransaction_engine:
+            """Transaction Engine used in sub transactions."""
             def query(self, q):
                 db_cursor = ctx.db.cursor()
                 ctx.db_execute(db_cursor, SQLQuery(q % transaction_count))
@@ -352,6 +357,8 @@ class Transaction:
                 self.query('ROLLBACK TO SAVEPOINT webpy_sp_%s')
 
         class dummy_engine:
+            """Transaction Engine used instead of subtransaction_engine 
+            when sub transactions are not supported."""
             do_transact = do_commit = do_rollback = lambda self: None
 
         if self.transaction_count:
@@ -392,25 +399,42 @@ class DB:
 
         # flag to enable/disable printing queries
         self.printing = False
+        self.hasPooling = False
 
     def _getctx(self): 
         if not self._ctx.get('db'):
-            self._load_context()
+            self._load_context(self._ctx)
         return self._ctx
     ctx = property(_getctx)
 
-    def _load_context(self):
-        self._ctx.dbq_count = 0
-        self._ctx.transactions = [] # stack of transactions
-        self._ctx.db = self.db_module.connect(**self.keywords)
-        self._ctx.db_execute = self._db_execute
+    def _load_context(self, ctx):
+        ctx.dbq_count = 0
+        ctx.transactions = [] # stack of transactions
         
-        if not hasattr(self._ctx.db, 'commit'):
-            self._ctx.db.commit = lambda: None
+        if self.hasPooling:
+            ctx.db = self._connect_with_pooling(self.keywords)
+        else:
+            ctx.db = self._connect(self.keywords)
+        ctx.db_execute = self._db_execute
+        
+        if not hasattr(ctx.db, 'commit'):
+            ctx.db.commit = lambda: None
 
-        if not hasattr(self._ctx.db, 'rollback'):
-            self._ctx.db.rollback = lambda: None
-
+        if not hasattr(ctx.db, 'rollback'):
+            ctx.db.rollback = lambda: None
+            
+    def _connect(self, keywords):
+        return self.db_module.connect(**keywords)
+        
+    def _connect_with_pooling(self, keywords):
+        from DBUtils import PooledDB
+        # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
+        # see Bug#122112
+        if PooledDB.__version__.split('.') < '0.9.3'.split('.'):
+            return PooledDB.PooledDB(dbapi=self._connect, **keywords)
+        else:
+            return PooledDB.PooledDB(creator=self._connect, **keywords)
+            
     def _db_cursor(self):
         return self.ctx.db.cursor()
 
@@ -426,6 +450,15 @@ class DB:
             return '%s'
         raise UnknownParamstyle, style
 
+    def _py2sql(self, val):
+        """
+        Transforms a Python value into a value to pass to cursor.execute.
+
+        This exists specifically for a workaround in SqliteDB.
+
+        """
+        return val
+
     def _db_execute(self, cur, sql_query, dorollback=True): 
         """executes an sql query"""
         self.ctx.dbq_count += 1
@@ -433,7 +466,9 @@ class DB:
         try:
             a = time.time()
             paramstyle = getattr(self, 'paramstyle', 'pyformat')
-            out = cur.execute(sql_query.query(paramstyle), sql_query.values())
+            out = cur.execute(sql_query.query(paramstyle),
+                              [self._py2sql(x)
+                               for x in sql_query.values()])
             b = time.time()
         except:
             if self.printing:
@@ -692,9 +727,10 @@ class PostgresDB(DB):
             seqname = tablename + "_id_seq"
         return query + "; SELECT currval('%s')" % seqname
 
-    def _load_context(self):
-        DB._load_context(self)
-        self.ctx.db.set_client_encoding('UTF8')
+    def _connect(self, keywords):
+        conn = DB._connect(self, keywords)
+        conn.set_client_encoding('UTF8')
+        return conn
 
 class MySQLDB(DB): 
     def __init__(self, **keywords):
@@ -741,6 +777,29 @@ class SqliteDB(DB):
             # rowcount is not provided by sqlite
             del out.__len__
         return out
+
+    # as with PostgresDB, the database is assumed to be in UTF-8.
+    # This doesn't mean we turn byte-strings coming out of it into
+    # Unicode objects, but we avoid trying to put Unicode objects into
+    # it.
+    encoding = 'UTF-8'
+
+    def _py2sql(self, val):
+        r"""
+        Work around a couple of problems in SQLite that maybe pysqlite
+        should take care of: give it True and False and it thinks
+        they're column names; give it Unicode and it tries to insert
+        it in, possibly, ASCII.
+
+            >>> meth = SqliteDB(db='nonexistent')._py2sql
+            >>> [meth(x) for x in [True, False, 1, 2, 'foo', u'souffl\xe9']]
+            [1, 0, 1, 2, 'foo', 'souffl\xc3\xa9']
+
+        """
+        if val is True: return 1
+        elif val is False: return 0
+        elif isinstance(val, unicode): return val.encode(self.encoding)
+        else: return val
 
 class FirebirdDB(DB):
     """Firebird Database.
@@ -864,7 +923,6 @@ def _interpolate(format):
                 else: 
                     break
             chunks.append((1, format[dollar + 1:pos]))
-
         else:
             chunks.append((0, format[pos:dollar + 1]))
             pos = dollar + 1 + (nextchar == "$")

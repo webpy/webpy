@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 Web application
 (from web.py)
@@ -12,6 +13,7 @@ import urllib
 import traceback
 import itertools
 import os
+import re
 import types
 
 try:
@@ -92,10 +94,11 @@ class application:
         """
         self.processors.append(processor)
 
-    def request(self, path='/', method='GET', data=None, host="0.0.0.0:8080", headers=None,https=False):
+    def request(self, localpart='/', method='GET', data=None,
+                host="0.0.0.0:8080", headers=None, https=False):
         """Makes request to this application for the specified path and method.
         Response will be a storage object with data, status and headers.
-        
+
             >>> urls = ("/hello", "hello")
             >>> app = application(urls, globals())
             >>> class hello:
@@ -110,9 +113,9 @@ class application:
             '200 OK'
             >>> response.headers['Content-Type']
             'text/plain'
-            
+
         To use https, use https=True.
-        
+
             >>> urls = ("/redirect", "redirect")
             >>> app = application(urls, globals())
             >>> class redirect:
@@ -124,13 +127,29 @@ class application:
             >>> response = app.request("/redirect", https=True)
             >>> response.headers['Location']
             'https://0.0.0.0:8080/foo'
+
+        The headers argument specifies HTTP headers as a mapping object
+        such as a dict.
+
+            >>> urls = ('/ua', 'uaprinter')
+            >>> class uaprinter:
+            ...     def GET(self):
+            ...         return 'your user-agent is ' + web.ctx.env['HTTP_USER_AGENT']
+            ... 
+            >>> app = application(urls, globals())
+            >>> app.request('/ua', headers = {
+            ...      'User-Agent': 'a small jumping bean/1.0 (compatible)'
+            ... }).data
+            'your user-agent is a small jumping bean/1.0 (compatible)'
+
         """
-        query = urllib.splitquery(path)[1] or ""
+        path, maybe_query = urllib.splitquery(localpart)
+        query = maybe_query or ""
         env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=https)
         headers = headers or {}
         for k, v in headers.items():
-            env[k.upper()] = v
-            
+            env['HTTP_' + k.upper().replace('-', '_')] = v
+        
         if data:
             import StringIO
             q = urllib.urlencode(data)
@@ -306,7 +325,14 @@ class application:
         elif is_class(f):
             return handle_class(f)
         elif isinstance(f, str):
-            if '.' in f:
+            if f.startswith('redirect '):
+                url = f.split(' ', 1)[1]
+                if web.ctx.method == "GET":
+                    x = web.ctx.env.get('QUERY_STRING', '')
+                    if x:
+                        url += '?' + x
+                raise web.redirect(url)
+            elif '.' in f:
                 x = f.split('.')
                 mod, cls = '.'.join(x[:-1]), x[-1]
                 mod = __import__(mod, globals(), locals(), [""])
@@ -321,9 +347,11 @@ class application:
 
     def _match(self, mapping, value):
         for pat, what in utils.group(mapping, 2):
-            rx = utils.re_compile('^' + pat + '$')
-            result = rx.match(value)
-            if result:
+            if isinstance(what, basestring):
+                what, result = utils.re_subm('^' + pat + '$', what, web.ctx.path)
+            else:
+                result = utils.re_compile('^' + pat + '$').match(web.ctx.path)
+            if result: # it's a match
                 return what, [x and urllib.unquote(x) for x in result.groups()]
         return None, None
 

@@ -636,6 +636,19 @@ class DB:
         return out
         
     def multiple_insert(self, tablename, values, seqname=None, _test=False):
+        """
+        Inserts multiple rows into `tablename`. The `values` must be a list of dictioanries, 
+        one for each row to be inserted, each with the same set of keys.
+        Returns the list of ids of the inserted rows.        
+        Set `seqname` to the ID if it's not the default, or to `False`
+        if there isn't one.
+        
+            >>> db = DB()
+            >>> db.supports_multiple_insert = True
+            >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
+            >>> db.multiple_insert('person', values=values, _test=True)
+            <sql: "INSERT INTO person (name, email) VALUES ('foo', 'foo@example.com'), ('bar', 'bar@example.com')">
+        """        
         if not values:
             return []
             

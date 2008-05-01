@@ -400,6 +400,7 @@ class DB:
         # flag to enable/disable printing queries
         self.printing = False
         self.hasPooling = False
+        self.supports_multiple_insert = False
 
     def _getctx(self): 
         if not self._ctx.get('db'):
@@ -633,6 +634,58 @@ class DB:
         
         if not self.ctx.transactions: self.ctx.db.commit()
         return out
+        
+    def multiple_insert(self, tablename, values, seqname=None, _test=False):
+        if not values:
+            return []
+            
+        if not self.supports_multiple_insert:
+            out = [self.insert(tablename, seqname=seqname, _test=_test, **v) for v in values]
+            if seqname is False:
+                return None
+            else:
+                return out
+                
+        keys = values[0].keys()
+        #@@ make sure all keys are valid
+
+        # make sure all rows have same keys.
+        for v in values:
+            if v.keys() != keys:
+                raise ValueError, 'Bad data'
+
+        sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys))) 
+
+        data = []
+        for row in values:
+            d = SQLQuery.join([SQLParam(row[k]) for k in keys], ', ')
+            data.append('(' + d + ')')
+        sql_query += SQLQuery.join(data, ', ')
+
+        if _test: return sql_query
+
+        db_cursor = self._db_cursor()
+        if seqname is not False: 
+            sql_query = self._process_insert_query(sql_query, tablename, seqname)
+
+        if isinstance(sql_query, tuple):
+            # for some databases, a separate query has to be made to find 
+            # the id of the inserted row.
+            q1, q2 = sql_query
+            self._db_execute(db_cursor, q1)
+            self._db_execute(db_cursor, q2)
+        else:
+            self._db_execute(db_cursor, sql_query)
+
+        try: 
+            out = db_cursor.fetchone()[0]
+            out = range(out-len(values)+1, out+1)        
+        except Exception: 
+            out = None
+
+        if not self.ctx.transactions: self.ctx.db.commit()
+        return out
+
     
     def update(self, tables, where, vars=None, _test=False, **values): 
         """
@@ -709,6 +762,7 @@ class PostgresDB(DB):
         self.db_module = self.get_db_module()
         self.paramstyle = self.db_module.paramstyle
         self.keywords = keywords
+        self.supports_multiple_insert = True
 
     def get_db_module(self):
         try: 
@@ -743,10 +797,10 @@ class MySQLDB(DB):
         self.db_module = db
         self.keywords = keywords
         self.dbname = "mysql"
-
+        self.supports_multiple_insert = True
+        
     def _process_insert_query(self, query, tablename, seqname):
         return query, SQLQuery('SELECT last_insert_id();')
-
 
 class SqliteDB(DB): 
     def __init__(self, **keywords):

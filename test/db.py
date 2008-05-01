@@ -72,7 +72,14 @@ class DBTest(webtest.TestCase):
         db.hasPooling = True
         import DBUtils
         self.assertTrue(isinstance(db.ctx.db, DBUtils.PooledDB.PooledDB))
-        
+
+    def test_multiple_insert(self):
+        db = webtest.setup_database(self.dbname)
+        db.multiple_insert('person', [dict(name='a'), dict(name='b')], seqname=False)
+
+        assert db.select("person", where="name='a'")
+        assert db.select("person", where="name='b'")
+
 class SqliteTest(DBTest):
     dbname = "sqlite"
     

@@ -85,7 +85,9 @@ def runTests(suite):
 def main(suite=None):
     if not suite:
         main_module = __import__('__main__')
-        suite = module_suite(main_module, sys.argv[1:] or None)
+        # allow command line switches
+        args = [a for a in sys.argv[1:] if not a.startswith('-')]
+        suite = module_suite(main_module, args or None)
 
     result = runTests(suite)
     sys.exit(not result.wasSuccessful())

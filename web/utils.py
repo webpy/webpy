@@ -19,7 +19,7 @@ __all__ = [
   "nthstr",
   "CaptureStdout", "capturestdout", "Profile", "profile",
   "tryall",
-  "ThreadedDict",
+  "ThreadedDict", "threadeddict",
   "autoassign",
   "to36",
   "safemarkdown",

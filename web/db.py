@@ -558,6 +558,24 @@ class DB:
         if _test: return qout
         return self.query(qout, processed=True)
     
+    def where(self, table, what='*', order=None, group=None, limit=None, 
+              offset=None, _test=False, **kwargs):
+        """
+        Selects from `table` where keys are equal to values in `kwargs`.
+        
+            >>> db = DB()
+            >>> db.where('foo', bar_id=3, _test=True)
+            <sql: 'SELECT * FROM foo WHERE bar_id = 3'>
+            >>> db.where('foo', source=2, crust='dewey', _test=True)
+            <sql: "SELECT * FROM foo WHERE source = 2 AND crust = 'dewey'">
+        """
+        where = []
+        for k, v in kwargs.iteritems():
+            where.append(k + ' = ' + sqlquote(v))
+        return self.select(table, what=what, order=order, 
+               group=group, limit=limit, offset=offset, _test=_test, 
+               where=SQLQuery.join(where, ' AND '))
+    
     def sql_clauses(self, what, tables, where, group, order, limit, offset): 
         return (
             ('SELECT', what),
@@ -731,7 +749,7 @@ class DB:
         if not self.ctx.transactions: self.ctx.db.commit()
         return db_cursor.rowcount
     
-    def delete(self, table, where=None, using=None, vars=None, _test=False): 
+    def delete(self, table, where, using=None, vars=None, _test=False): 
         """
         Deletes from `table` with clauses `where` and `using`.
 

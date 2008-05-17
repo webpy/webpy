@@ -399,7 +399,7 @@ class DB:
 
         # flag to enable/disable printing queries
         self.printing = False
-        self.hasPooling = False
+        self.has_pooling = False
         self.supports_multiple_insert = False
 
     def _getctx(self): 
@@ -412,7 +412,7 @@ class DB:
         ctx.dbq_count = 0
         ctx.transactions = [] # stack of transactions
         
-        if self.hasPooling:
+        if self.has_pooling:
             ctx.db = self._connect_with_pooling(self.keywords)
         else:
             ctx.db = self._connect(self.keywords)
@@ -428,14 +428,22 @@ class DB:
         return self.db_module.connect(**keywords)
         
     def _connect_with_pooling(self, keywords):
-        from DBUtils import PooledDB
-        # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
-        # see Bug#122112
-        if PooledDB.__version__.split('.') < '0.9.3'.split('.'):
-            return PooledDB.PooledDB(dbapi=self._connect, **keywords)
-        else:
-            return PooledDB.PooledDB(creator=self._connect, **keywords)
+        def get_pooled_db():
+            from DBUtils import PooledDB
+
+            # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
+            # see Bug#122112
             
+            if PooledDB.__version__.split('.') < '0.9.3'.split('.'):
+                return PooledDB.PooledDB(dbapi=self.db_module, **keywords)
+            else:
+                return PooledDB.PooledDB(creator=self.db_module, **keywords)
+        
+        if getattr(self, '_pooleddb', None) is None:
+            self._pooleddb = get_pooled_db()
+        
+        return self._pooleddb.connection()
+        
     def _db_cursor(self):
         return self.ctx.db.cursor()
 
@@ -816,6 +824,11 @@ class PostgresDB(DB):
         conn = DB._connect(self, keywords)
         conn.set_client_encoding('UTF8')
         return conn
+        
+    def _connect_with_pooling(self, keywords):
+        conn = DB._connect_with_pooling(self, keywords)
+        conn._con._con.set_client_encoding('UTF8')
+        return conn
 
 class MySQLDB(DB): 
     def __init__(self, **keywords):
@@ -845,7 +858,6 @@ class SqliteDB(DB):
                 db.paramstyle = 'qmark'
             except ImportError:
                 import sqlite as db
-        #web.config._hasPooling = False
         self.paramstyle = db.paramstyle
         keywords['database'] = keywords['db']
         del keywords['db']

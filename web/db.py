@@ -333,13 +333,13 @@ class Transaction:
         class transaction_engine:
             """Transaction Engine used in top level transactions."""
             def do_transact(self):
-                ctx.db.commit()
+                ctx.commit(unload=False)
 
             def do_commit(self):
-                ctx.db.commit()
+                ctx.commit()
 
             def do_rollback(self):
-                ctx.db.rollback()
+                ctx.rollback()
 
         class subtransaction_engine:
             """Transaction Engine used in sub transactions."""
@@ -437,6 +437,24 @@ class DB:
         if not hasattr(ctx.db, 'rollback'):
             ctx.db.rollback = lambda: None
             
+        def commit(unload=True):
+            # do db commit and release the connection if pooling is enabled.            
+            ctx.db.commit()
+            if unload and self.has_pooling:
+                self._unload_context(self._ctx)
+                
+        def rollback():
+            # do db rollback and release the connection if pooling is enabled.
+            ctx.db.rollback()
+            if self.has_pooling:
+                self._unload_context(self._ctx)
+                
+        ctx.commit = commit
+        ctx.rollback = rollback
+            
+    def _unload_context(self, ctx):
+        del ctx.db
+            
     def _connect(self, keywords):
         return self.db_module.connect(**keywords)
         
@@ -481,7 +499,7 @@ class DB:
         """
         return val
 
-    def _db_execute(self, cur, sql_query, dorollback=True): 
+    def _db_execute(self, cur, sql_query): 
         """executes an sql query"""
         self.ctx.dbq_count += 1
 
@@ -495,11 +513,10 @@ class DB:
         except:
             if self.printing:
                 print >> debug, 'ERR:', str(sql_query)
-            if dorollback: 
-                if self.ctx.transactions:
-                    self.ctx.transactions[-1].rollback()
-                else:
-                    self.ctx.db.rollback()
+            if self.ctx.transactions:
+                self.ctx.transactions[-1].rollback()
+            else:
+                self.ctx.rollback()
             raise
 
         if self.printing:
@@ -557,7 +574,7 @@ class DB:
             out = db_cursor.rowcount
         
         if not self.ctx.transactions: 
-            self.ctx.db.commit()
+            self.ctx.commit()
         return out
     
     def select(self, tables, vars=None, what='*', where=None, order=None, group=None, 
@@ -673,7 +690,7 @@ class DB:
             out = None
         
         if not self.ctx.transactions: 
-            self.ctx.db.commit()
+            self.ctx.commit()
         return out
         
     def multiple_insert(self, tablename, values, seqname=None, _test=False):
@@ -738,7 +755,7 @@ class DB:
             out = None
 
         if not self.ctx.transactions: 
-            self.ctx.db.commit()
+            self.ctx.commit()
         return out
 
     
@@ -771,7 +788,7 @@ class DB:
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, query)
         if not self.ctx.transactions: 
-            self.ctx.db.commit()
+            self.ctx.commit()
         return db_cursor.rowcount
     
     def delete(self, table, where, using=None, vars=None, _test=False): 
@@ -795,7 +812,7 @@ class DB:
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, q)
         if not self.ctx.transactions: 
-            self.ctx.db.commit()
+            self.ctx.commit()
         return db_cursor.rowcount
 
     def _process_insert_query(self, query, tablename, seqname):

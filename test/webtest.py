@@ -119,11 +119,11 @@ def suite(module_names):
         suite.addTest(module_suite(mod))
     return suite
     
-def setup_database(dbname):
+def setup_database(dbname, pooling=False):
     if dbname == 'sqlite':
-        db = web.database(dbn=dbname, db='webpy.db')
+        db = web.database(dbn=dbname, db='webpy.db', pooling=pooling)
     else:
-        db = web.database(dbn=dbname, db='webpy', user='scott', pw='tiger')
+        db = web.database(dbn=dbname, db='webpy', user='scott', pw='tiger', pooling=pooling)
         
     if '-v' in sys.argv:
         db.printing = True

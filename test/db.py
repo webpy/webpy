@@ -68,8 +68,7 @@ class DBTest(webtest.TestCase):
         self.assertRows(2)
         
     def testPooling(self):
-        db = webtest.setup_database(self.dbname)
-        db.has_pooling = True
+        db = webtest.setup_database(self.dbname, pooling=True)
         self.assertEquals(db.ctx.db.__class__.__module__, 'DBUtils.PooledDB')
         db.select('person', limit=1)
 

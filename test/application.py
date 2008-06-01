@@ -71,6 +71,32 @@ class ApplicationTest(webtest.TestCase):
         response = app.request('/b/foo?x=2')
         self.assertEquals(response.status, '301 Moved Permanently')
         self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/hello/foo?x=2')
+        
+    def test_subdirs(self):
+        urls = (
+            "/(.*)", "blog"
+        )
+        class blog:
+            def GET(self, path):
+                return "blog " + path
+        app_blog = web.application(urls, locals())
+        
+        urls = (
+            "/blog", app_blog,
+            "/(.*)", "index"
+        )
+        class index:
+            def GET(self, path):
+                return "hello " + path
+        app = web.application(urls, locals())
+        
+        self.assertEquals(app.request('/blog/foo').data, 'blog foo')
+        self.assertEquals(app.request('/foo').data, 'hello foo')
+        
+        def processor(handler):
+            return web.ctx.path + ":" + handler()
+        app.add_processor(processor)
+        self.assertEquals(app.request('/blog/foo').data, '/blog/foo:blog foo')
 
 if __name__ == '__main__':
     webtest.main()

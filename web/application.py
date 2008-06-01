@@ -347,13 +347,40 @@ class application:
 
     def _match(self, mapping, value):
         for pat, what in utils.group(mapping, 2):
-            if isinstance(what, basestring):
-                what, result = utils.re_subm('^' + pat + '$', what, web.ctx.path)
+            if isinstance(what, application):
+                if value.startswith(pat):
+                    f = lambda: self._delegate_sub_application(pat, what)
+                    return f, None
+                else:
+                    continue
+            elif isinstance(what, basestring):
+                what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
-                result = utils.re_compile('^' + pat + '$').match(web.ctx.path)
+                result = utils.re_compile('^' + pat + '$').match(value)
+            
             if result: # it's a match
                 return what, [x and urllib.unquote(x) for x in result.groups()]
         return None, None
+        
+    def _delegate_sub_application(self, dir, app):
+        """Deletes request to sub application `app` rooted at the directory `dir`.
+        The home, homepath, path and fullpath values in web.ctx are updated to mimic request
+        to the subapp and are restored after it is handled. 
+        
+        @@Any issues with when used with yield?
+        """
+        try:
+            oldctx = web.storage(web.ctx)
+            web.ctx.home += dir
+            web.ctx.homepath += dir
+            web.ctx.path = web.ctx.path[len(dir):]
+            web.ctx.fullpath = web.ctx.fullpath[len(dir):]
+            return app.handle()
+        finally:
+            web.ctx.home = oldctx.home
+            web.ctx.homepath = oldctx.homepath
+            web.ctx.path = oldctx.path
+            web.ctx.fullpath = oldctx.fullpath
 
 class auto_application(application):
     """Application similar to `application` but urls are constructed 

@@ -931,7 +931,6 @@ class FirebirdDB(DB):
     """Firebird Database.
     """
     def __init__(self, **keywords):
-        DB.__init__(self)
         try:
             import kinterbasdb as db
         except Exception:
@@ -960,6 +959,15 @@ class FirebirdDB(DB):
             ('GROUP BY', group),
             ('ORDER BY', order)
         )
+
+class MSSQLDB(DB):
+    def __init__(self, **keywords):
+        import pymssql as db    
+        if 'pw' in keywords:
+            keywords['password'] = keywords.pop('kw')
+        keywords['database'] = keywords.pop('db')
+        self.dbname = "mssql"
+        DB.__init__(self, db, keywords)
 
 _databases = {}
 def database(dburl=None, **params):
@@ -990,6 +998,7 @@ register_database('mysql', MySQLDB)
 register_database('postgres', PostgresDB)
 register_database('sqlite', SqliteDB)
 register_database('firebird', FirebirdDB)
+register_database('mssql', MSSQLDB)
 
 def _interpolate(format): 
     """

@@ -464,6 +464,18 @@ class subdomain_application(application):
         host = web.ctx.host.split(':')[0] #strip port
         fn, args = self._match(self.mapping, host)
         return self._delegate(fn, self.fvars, args)
+        
+    def _match(self, mapping, value):
+        for pat, what in utils.group(mapping, 2):
+            if isinstance(what, basestring):
+                what, result = utils.re_subm('^' + pat + '$', what, value)
+            else:
+                result = utils.re_compile('^' + pat + '$').match(value)
+
+            if result: # it's a match
+                return what, [x and urllib.unquote(x) for x in result.groups()]
+        return None, None
+        
 
 class combine_applications(application):
     """Combines a list of applications into single application.

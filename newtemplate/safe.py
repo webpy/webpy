@@ -366,12 +366,9 @@ def safe_eval(code, context = {}, timeout_secs = 5):
         raise SafeEvalContextException(ctx_errkeys, ctx_errors)
 
     ast = compiler.parse(code)
-    print ast
     checker = SafeEvalVisitor()
 
     if checker.walk(ast):
-        return
-        return eval(code, dict(context))
         exec_timed(code, context, timeout_secs)
     else:
         raise SafeEvalCodeException(code, checker.errors)

@@ -13,7 +13,8 @@ so that the error messages can point to exact line number in template. (It doesn
 
 TODOs:
     * support for `$def with` and ability to call it like function
-    * support for $:
+    * support for web.py style render
+    * support for escaping and $:
     * take care of unicode issues
     * makesure it is completely secure
 """
@@ -50,7 +51,7 @@ def read_node(text):
     elif text.startswith('$'):
         text = text[1:] # strip $
         ahead = python_lookahead(text)
-        if ahead in STATEMENT_KEYWORDS:
+        if ahead in STATEMENT_NODES:
             return read_statement(text)
         elif ahead.strip() == '':
             # assignments starts with a space after $
@@ -61,8 +62,6 @@ def read_node(text):
     else:
         return read_text(text)
 
-STATEMENT_KEYWORDS = ['for', 'if', 'elif', 'else']
-        
 def read_statement(text):
     """Reads a python statement.
     A python statement always ends with token ':'.
@@ -82,12 +81,9 @@ def read_statement(text):
     if isinstance(nodelist[0], NewLineNode):
         nodelist[0].emit_code = False
     
-    if stmt.startswith('for'):
-        return ForNode(stmt, nodelist), text
-    elif stmt.startswith('if'):
-        return IfNode(stmt, nodelist), text
-    elif stmt.startswith('else'):
-        return ElseNode(stmt, nodelist), text
+    for keyword in STATEMENT_NODES:
+        if stmt.startswith(keyword):
+            return STATEMENT_NODES[keyword](stmt, nodelist), text
     else:
         assert False, "unknown statement: %s" % (repr(stmt))
     
@@ -355,7 +351,21 @@ class IfNode(BlockNode):
 
 class ElseNode(BlockNode):
     pass
-    
+
+class ElifNode(BlockNode):
+    pass
+
+class DefNode(BlockNode):
+    pass
+
+STATEMENT_NODES = {
+    'for': ForNode,
+    'if': IfNode,
+    'elif': ElifNode,
+    'else': ElseNode,
+    'def': DefNode
+}
+
 class NodeList:
     def __init__(self, nodes):
         self.nodes = nodes

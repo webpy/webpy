@@ -117,8 +117,8 @@ unallowed_builtins = [
 
 for ast_name in unallowed_ast_nodes:
     assert(is_valid_ast_node(ast_name))
-for name in unallowed_builtins:
-    assert(is_valid_builtin(name))
+#for name in unallowed_builtins:
+#    assert is_valid_builtin(name), name
 
 def is_unallowed_ast_node(kind):
     return kind in unallowed_ast_nodes
@@ -366,9 +366,12 @@ def safe_eval(code, context = {}, timeout_secs = 5):
         raise SafeEvalContextException(ctx_errkeys, ctx_errors)
 
     ast = compiler.parse(code)
+    print ast
     checker = SafeEvalVisitor()
 
     if checker.walk(ast):
+        return
+        return eval(code, dict(context))
         exec_timed(code, context, timeout_secs)
     else:
         raise SafeEvalCodeException(code, checker.errors)

@@ -1,3 +1,22 @@
+"""
+Template design:
+
+Template string is split into tokens and the tokens are combined into nodes. 
+Parse tree is a nodelist. TextNode and ExpressionNode are simple nodes and 
+for-loop, if-loop etc are block nodes, which contain multiple child nodes. 
+
+Each node can emit some python string. python string emitted by the 
+root node is validated for safeeval and executed using python in the given environment.
+
+Enough care is taken to make sure the generated code and the template has line to line match, 
+so that the error messages can point to exact line number in template. (It doesn't work in some cases still.)
+
+TODOs:
+    * support for `$def with` and ability to call it like function
+    * support for $:
+    * take care of unicode issues
+    * makesure it is completely secure
+"""
 import tokenize
 from web import storage
 

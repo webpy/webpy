@@ -531,6 +531,7 @@ class DefNode(BlockNode):
 
 class VarNode:
     def __init__(self, stmt, node):
+        stmt = stmt.strip(':')
         _, self.name = stmt.split()
         self.node = node
         
@@ -658,7 +659,7 @@ class BaseTemplate:
         for k in d.keys():
             d[k] = "".join(d[k])
             
-        d._str = d.main
+        d._str = d.main                
         return d
 
     def make_env(self, globals, builtins):
@@ -897,12 +898,7 @@ class Stowage(storage):
         
     def __repr__(self):
         return "<Stowage: %s, %s>" % (self.keys(), repr(str(self)[:30]))
-    
-    def __getattr__(self, name):
-        if name == 'rawtext':
-            return storage.__getattr__(self, name)
-        return self.get(name, '')
-        
+            
     #@@ edits in place
     def __add__(self, other):
         if isinstance(other, (unicode, str)):

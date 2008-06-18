@@ -1,446 +1,904 @@
 """
-simple, elegant templating
-(part of web.py)
+Template design:
+
+Template string is split into tokens and the tokens are combined into nodes. 
+Parse tree is a nodelist. TextNode and ExpressionNode are simple nodes and 
+for-loop, if-loop etc are block nodes, which contain multiple child nodes. 
+
+Each node can emit some python string. python string emitted by the 
+root node is validated for safeeval and executed using python in the given environment.
+
+Enough care is taken to make sure the generated code and the template has line to line match, 
+so that the error messages can point to exact line number in template. (It doesn't work in some cases still.)
+
+Grammer:
+
+    template -> defwith sections 
+    defwith -> '$def with (' arguments ')' | ''
+    sections -> section*
+    section -> block | assignment | line
+
+    assignment -> '$ ' <assignment expression>
+    line -> (text|expr)*
+    text -> <any characters other than $>
+    expr -> '$' pyexpr | '$(' pyexpr ')' | '${' pyexpr '}'
+    pyexpr -> <python expression>
+
+TODOs:
+    * take care of unicode issues
+    * support for \$
 """
 
-import re, glob, os, os.path
-from types import FunctionType as function
-from utils import storage, group, utf8
-from net import websafe
+import tokenize, compiler
+import os
+import glob
+
+from utils import storage
 from webapi import config
+from net import websafe
 
-# differences from python:
-#  - for: has an optional else: that gets called if the loop never runs
-# differences to add:
-#  - you can use the expression inside if, while blocks
-#  - special for loop attributes, like django?
-#  - you can check to see if a variable is defined (perhaps w/ get func?)
-# all these are probably good ideas for python...
+DEBUG = True
 
-# todo:
-#  inline tuple
-#  relax constraints on spacing
-#  continue, break, etc.
-#  tracebacks
+def splitline(text):
+    r"""Splits the given text at newline.
+    
+        >>> splitline('foo\nbar')
+        ('foo\n', 'bar')
+        >>> splitline('foo')
+        ('foo', '')
+        >>> splitline('')
+        ('', '')
+    """
+    index = text.find('\n') + 1
+    if index:
+        return text[:index], text[index:]
+    else:
+        return text, ''
 
-global_globals = {'None':None, 'False':False, 'True': True}
-MAX_ITERS = 100000
-
-WHAT = 0
-ARGS = 4
-KWARGS = 6
-NAME = 2
-BODY = 4
-CLAUSE = 2
-ELIF = 6
-ELSE = 8
-IN = 6
-NAME = 2
-EXPR = 4
-FILTER = 4
-THING = 2
-ATTR = 4
-ITEM = 4
-NEGATE = 4
-X = 2
-OP = 4
-Y = 6
-LINENO = -1
-
-# http://docs.python.org/ref/identifiers.html
-r_var = '[a-zA-Z_][a-zA-Z0-9_]*'
-
-class ParseError(Exception): pass
 class Parser:
-    def __init__(self, text, name=""):
-        self.t = text
-        self.p = 0
-        self._lock = [False]
+    """Parser Base.
+    """
+    def __init__(self, text, name="<template>"):
+        self.text = text
         self.name = name
-    
-    def lock(self):
-        self._lock[-1] = True
-    
-    def curline(self):
-        return self.t[:self.p].count('\n')+1
-        
-    def csome(self):
-        return repr(self.t[self.p:self.p+5]+'...')
 
-    def Error(self, x, y=None):
-        if y is None: y = self.csome()
-        raise ParseError, "%s: expected %s, got %s (line %s)" % (self.name, x, y, self.curline())
+    def parse(self):
+        text = self.text
+        defwith, text = self.read_defwith(text)
+        suite = self.read_suite(text)
+        return DefwithNode(defwith, suite)
+
+    def read_defwith(self, text):
+        if text.startswith('$def with'):
+            defwith, text = splitline(text)
+            defwith = defwith[1:].strip() # strip $ and spaces
+            return defwith, text
+        else:
+            return '', text
     
-    def q(self, f):
-        def internal(*a, **kw):
-            checkp = self.p
-            self._lock.append(False)
-            try:
-                q = f(*a, **kw)
-            except ParseError:
-                if self._lock[-1]:
-                    raise
-                self.p = checkp
-                self._lock.pop()
-                return False
-            self._lock.pop()
-            return q or True
-        return internal
+    def readlines(self, text):
+        pass
+        
+    def read_section(self, text):
+        r"""Reads one section from the given text.
+        
+        section -> block | assignment | line
+        
+            >>> read_section = Parser('').read_section
+            >>> read_section('foo\nbar\n')
+            (<line: [t'foo\n']>, 'bar\n')
+            >>> read_section('$ a = b + 1\nfoo\n')
+            (<assignment: 'a = b + 1'>, 'foo\n')
+            
+        read_section('$for in range(10):\n    hello $i\nfoo)
+        """
+        if text.lstrip(' ').startswith('$'):
+            index = text.index('$')
+            begin_indent, text2 = text[:index], text[index+1:]
+            ahead = self.python_lookahead(text2)
+            if ahead in STATEMENT_NODES:
+                return self.read_block_section(text2, begin_indent)
+            elif ahead.strip() == '':
+                # assignments starts with a space after $
+                # ex: $ a = b + 2
+                return self.read_assignment(text2)
+        return self.readline(text)
+        
+    def read_suite(self, text):
+        r"""Reads section by section till end of text.
+        
+            >>> read_suite = Parser('').read_suite
+            >>> read_suite('hello $name\nfoo\n')
+            [<line: [t'hello ', $name, t'\n']>, <line: [t'foo\n']>]
+        """
+        sections = []
+        while text:
+            section, text = self.read_section(text)
+            sections.append(section)
+        return SuiteNode(sections)
     
-    def tokr(self, t): 
-        text = self.c(len(t))
-        if text != t:
-            self.Error(repr(t), repr(text))
+    def readline(self, text):
+        r"""Reads one line from the text. Newline is supressed if the line ends with \.
+        
+            >>> readline = Parser('').readline
+            >>> readline('hello $name!\nbye!')
+            (<line: [t'hello ', $name, t'!\n']>, 'bye!')
+            >>> readline('hello $name!\\\nbye!')
+            (<line: [t'hello ', $name, t'!']>, 'bye!')
+            >>> readline('$f()\n\n')
+            (<line: [$f(), t'\n']>, '\n')
+        """
+        line, text = splitline(text)
+
+        # supress new line if line ends with \
+        if line.endswith('\\\n'):
+            line = line[:-2]
+                
+        nodes = []
+        while line:
+            node, line = self.read_node(line)
+            nodes.append(node)
+            
+        return LineNode(nodes), text
+
+    def read_node(self, text):
+        r"""Reads a node from the given text and returns the node and remaining text.
+
+            >>> read_node = Parser('').read_node
+            >>> read_node('hello $name')
+            (t'hello ', '$name')
+            >>> read_node('$name')
+            ($name, '')
+        """
+        if text.startswith('$$'):
+            return TextNode('$'), text[2:]
+        elif text.startswith('$#'): # comment
+            line, text = splitline(text)
+            return TextNode('\n'), text
+        elif text.startswith('$'):
+            text = text[1:] # strip $
+            if text.startswith(':'):
+                escape = False
+                text = text[1:] # strip :
+            else:
+                escape = True
+            return self.read_expr(text, escape=escape)
+        else:
+            return self.read_text(text)
+    
+    def read_text(self, text):
+        r"""Reads a text node from the given text.
+        
+            >>> read_text = Parser('').read_text
+            >>> read_text('hello $name')
+            (t'hello ', '$name')
+        """
+        index = text.find('$')
+        if index < 0:
+            return TextNode(text), ''
+        else:
+            return TextNode(text[:index]), text[index:]
+
+    def read_expr(self, text, escape=True):
+        """Reads a python expression from the text and returns the expression and remaining text.
+
+        expr -> simple_expr | paren_expr
+        simple_expr -> id extended_expr
+        extended_expr -> attr_access | paren_expr extended_expr | ''
+        attr_access -> dot id extended_expr
+        paren_expr -> [ tokens ] | ( tokens ) | { tokens }
+     
+            >>> read_expr = Parser('').read_expr
+            >>> read_expr("name")
+            ($name, '')
+            >>> read_expr("a.b and c")
+            ($a.b, ' and c')
+            >>> read_expr("a. b")
+            ($a, '. b')
+            >>> read_expr("name</h1>")
+            ($name, '</h1>')
+            >>> read_expr("(limit)ing")
+            ($(limit), 'ing')
+            >>> read_expr('a[1, 2][:3].f(1+2, "weird string[).", 3 + 4) done.')
+            ($a[1, 2][:3].f(1+2, "weird string[).", 3 + 4), ' done.')
+        """
+        def simple_expr():
+            identifier()
+            extended_expr()
+        
+        def identifier():
+            tokens.next()
+        
+        def extended_expr():
+            lookahead = tokens.lookahead()
+            if lookahead is None:
+                return
+            elif lookahead.value == '.':
+                attr_access()
+            elif lookahead.value in parens:
+                paren_expr()
+                extended_expr()
+            else:
+                return
+        
+        def attr_access():
+            from token import NAME # python token constants
+            dot = tokens.lookahead()
+            if tokens.lookahead2().type == NAME:
+                tokens.next() # consume dot
+                identifier()
+                extended_expr()
+        
+        def paren_expr():
+            begin = tokens.next().value
+            end = parens[begin]
+            while True:
+                if tokens.lookahead().value in parens:
+                    paren_expr()
+                else:
+                    t = tokens.next()
+                    if t.value == end:
+                        break
+            return
+
+        parens = {
+            "(": ")",
+            "[": "]",
+            "{": "}"
+        }
+        
+        def get_tokens(text):
+            """tokenize text using python tokenizer.
+            Python tokenizer ignores spaces, but they might be important in some cases. 
+            This function introduces dummy space tokens when it identifies any ignored space.
+            Each token is a storage object containing type, value, begin and end.
+            """
+            readline = iter([text]).next
+            end = None
+            for t in tokenize.generate_tokens(readline):
+                t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
+                if end is not None and end != t.begin:
+                    _, x1 = end
+                    _, x2 = t.begin
+                    yield storage(type=-1, value=text[x1:x2], begin=end, end=t.begin)
+                end = t.end
+                yield t
+                
+        class BetterIter:
+            """Iterator like object with 2 support for 2 look aheads."""
+            def __init__(self, items):
+                self.iteritems = iter(items)
+                self.items = []
+                self.position = 0
+                self.current_item = None
+            
+            def lookahead(self):
+                if len(self.items) <= self.position:
+                    self.items.append(self._next())
+                return self.items[self.position]
+
+            def _next(self):
+                try:
+                    return self.iteritems.next()
+                except StopIteration:
+                    return None
+                
+            def lookahead2(self):
+                if len(self.items) <= self.position+1:
+                    self.items.append(self._next())
+                return self.items[self.position+1]
+                    
+            def next(self):
+                self.current_item = self.lookahead()
+                self.position += 1
+                return self.current_item
+
+        tokens = BetterIter(get_tokens(text))
+                
+        if tokens.lookahead().value in parens:
+            paren_expr()
+        else:
+            simple_expr()
+        row, col = tokens.current_item.end
+        return ExpressionNode(text[:col], escape=escape), text[col:]    
+
+    def read_assignment(self, text):
+        r"""Reads assignment statement from text.
+    
+            >>> read_assignment = Parser('').read_assignment
+            >>> read_assignment('a = b + 1\nfoo')
+            (<assignment: 'a = b + 1'>, 'foo')
+        """
+        line, text = splitline(text)
+        return AssignmentNode(line.strip()), text
+    
+    def python_lookahead(self, text):
+        """Returns the first python token from the given text.
+        
+            >>> python_lookahead = Parser('').python_lookahead
+            >>> python_lookahead('for i in range(10):')
+            'for'
+            >>> python_lookahead('else:')
+            'else'
+            >>> python_lookahead(' x = 1')
+            ' '
+        """
+        readline = iter([text]).next
+        tokens = tokenize.generate_tokens(readline)
+        return tokens.next()[1]
+        
+    def read_indented_block(self, text, indent):
+        r"""Read a block of text. A block is what typically follows a for or it statement.
+        It can be in the same line as that of the statement or an indented block.
+
+            >>> read_indented_block = Parser('').read_indented_block
+            >>> read_indented_block('  a\n  b\nc', '  ')
+            ('a\nb\n', 'c')
+            >>> read_indented_block('  a\n    b\n  c\nd', '  ')
+            ('a\n  b\nc\n', 'd')
+        """
+        block = ""
+        while True:
+            if text.startswith(indent):
+                line, text = splitline(text)
+                block += line[len(indent):]
+            else:
+                break
+        return block, text
+
+    def read_statement(self, text):
+        r"""Reads a python statement.
+        
+            >>> read_statement = Parser('').read_statement
+            >>> read_statement('for i in range(10): hello $name')
+            ('for i in range(10):', ' hello $name')
+        """
+        tok = PythonTokenizer(text)
+        tok.consume_till(':')
+        return text[:tok.index], text[tok.index:]
+        
+    def read_block_section(self, text, begin_indent=''):
+        r"""
+            >>> read_block_section = Parser('').read_block_section
+            >>> read_block_section('for i in range(10): hello $i\nfoo')
+            (<block: 'for i in range(10):', [<line: [t' hello ', $i, t'\n']>]>, 'foo')
+            >>> read_block_section('for i in range(10):\n        hello $i\n    foo', begin_indent='    ')
+            (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, '    foo')
+        """
+        line, text = splitline(text)
+        stmt, line = self.read_statement(line)
+        keyword = self.python_lookahead(stmt)
+        
+        #@@ quick hack to support var
+        if keyword == 'var':
+            node, _ = self.readline(line)
+            return VarNode(stmt, node), text
+        
+        # if there is some thing left in the line
+        if line.strip():
+            block = line
+        else:
+            block, text = self.read_indented_block(text, begin_indent + INDENT)
+            
+        suite = self.read_suite(block)
+        return self.create_block_node(keyword, stmt, suite, begin_indent), text
+        
+    def create_block_node(self, keyword, stmt, suite, begin_indent):
+        if keyword in STATEMENT_NODES:
+            return STATEMENT_NODES[keyword](stmt, suite, begin_indent)
+        else:
+            raise ParseError, 'Unknown statement: %s' % repr(keyword)
+        
+class PythonTokenizer:
+    """Utility wrapper over python tokenizer."""
+    def __init__(self, text):
+        self.text = text
+        readline = iter([text]).next
+        self.tokens = tokenize.generate_tokens(readline)
+        self.index = 0
+        
+    def consume_till(self, delim):        
+        """Consumes tokens till colon.
+        
+            >>> tok = PythonTokenizer('for i in range(10): hello $i')
+            >>> tok.consume_till(':')
+            >>> tok.text[:tok.index]
+            'for i in range(10):'
+            >>> tok.text[tok.index:]
+            ' hello $i'
+        """      
+        while True:
+            t = self.next()
+            if t.value == delim:
+                break
+    
+    def next(self):
+        type, t, begin, end, line = self.tokens.next()
+        row, col = end
+        self.index = col
+        return storage(type=type, value=t, begin=begin, end=end)
+        
+class DefwithNode:
+    def __init__(self, defwith, suite):
+        if defwith:
+            self.defwith = defwith.replace('with', '__template__') + ':'
+        else:
+            self.defwith = 'def __template__():'
+        self.suite = suite
+
+    def emit(self, indent):
+        return self.defwith + self.suite.emit(indent + INDENT)
+
+    def __repr__(self):
+        return "<defwith: %s, %s>" % (self.defwith, self.nodes)
+
+class TextNode:
+    def __init__(self, value):
+        self.value = value
+
+    def emit(self, indent):
+        return repr(self.value)
+        
+    def __repr__(self):
+        return 't' + repr(self.value)
+        
+class ExpressionNode:
+    def __init__(self, value, escape=True):
+        self.value = value.strip()
+        
+        # convert ${...} to $(...)
+        if value.startswith('{') and value.endswith('}'):
+            self.value = '(' + self.value[1:-1] + ')'
+            
+        self.escape = escape
+
+    def emit(self, indent):
+        return 'escape_(%s, %s)' % (self.value, bool(self.escape))
+        
+    def __repr__(self):
+        if self.escape:
+            escape = ''
+        else:
+            escape = ':'
+        return "$%s%s" % (escape, self.value)
+        
+class AssignmentNode:
+    def __init__(self, code):
+        self.code = code
+        
+    def emit(self, indent, begin_indent=''):
+        return indent + self.code + "\n"
+        
+    def __repr__(self):
+        return "<assignment: %s>" % repr(self.code)
+        
+class LineNode:
+    def __init__(self, nodes):
+        self.nodes = nodes
+        
+    def emit(self, indent, text_indent='', name='main'):
+        text = [node.emit('') for node in self.nodes]
+        if text_indent:
+            text = [repr(text_indent)] + text
+        return indent + 'yield %s, join_(%s)\n' % (repr(name), ', '.join(text))
+    
+    def __repr__(self):
+        return "<line: %s>" % repr(self.nodes)
+
+INDENT = '    ' # 4 spaces
+        
+class BlockNode:
+    def __init__(self, stmt, suite, begin_indent=''):
+        self.stmt = stmt
+        self.suite = suite
+        self.begin_indent = begin_indent
+
+    def emit(self, indent, text_indent=''):
+        text_indent = self.begin_indent + text_indent
+        out = indent + self.stmt + self.suite.emit(indent + INDENT, text_indent)
+        return out
+        
+    def text(self):
+        return '${' + self.stmt + '}' + "".join(node.text(indent) for node in self.nodes)
+        
+    def __repr__(self):
+        return "<block: %s, %s>" % (repr(self.stmt), repr(self.nodelist))
+
+class ForNode(BlockNode):
+    def __init__(self, stmt, suite, begin_indent=''):
+        self.original_stmt = stmt
+        tok = PythonTokenizer(stmt)
+        tok.consume_till('in')
+        a = stmt[:tok.index] # for i in
+        b = stmt[tok.index:-1] # rest of for stmt excluding :
+        stmt = a + ' loop.setup(' + b.strip() + '):'
+        BlockNode.__init__(self, stmt, suite, begin_indent)
+        
+    def __repr__(self):
+        return "<block: %s, %s>" % (repr(self.original_stmt), repr(self.suite))
+    
+class IfNode(BlockNode):
+    pass
+
+class ElseNode(BlockNode):
+    pass
+
+class ElifNode(BlockNode):
+    pass
+
+class DefNode(BlockNode):
+    pass
+
+class VarNode:
+    def __init__(self, stmt, node):
+        stmt = stmt.strip(':')
+        _, self.name = stmt.split()
+        self.node = node
+        
+    def emit(self, indent, text_indent):
+        return self.node.emit(indent, text_indent, self.name)
+
+class SuiteNode:
+    """Suite is a list of sections."""
+    def __init__(self, sections):
+        self.sections = sections
+        
+    def emit(self, indent, text_indent=''):
+        return "\n" + "".join([s.emit(indent, text_indent) for s in self.sections])
+        
+    def __repr__(self):
+        return repr(self.sections)
+
+STATEMENT_NODES = {
+    'for': ForNode,
+    'if': IfNode,
+    'elif': ElifNode,
+    'else': ElseNode,
+    'def': DefNode,
+    'var': VarNode,
+}
+        
+TEMPLATE_BUILTIN_NAMES = [
+    "dict", "enumerate", "float", "int", "bool", "list", "long", "reversed", 
+    "set", "slice", "tuple", "xrange",
+    "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex", 
+    "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
+    "True", "False"
+]
+
+import __builtin__
+TEMPLATE_BUILTINS = dict([(name, getattr(__builtin__, name)) for name in TEMPLATE_BUILTIN_NAMES if name in __builtin__.__dict__])
+
+class ForLoop:
+    """Wrapper for expression in for stament to support forloop.xxx helpers.
+    
+        >>> forloop = ForLoop()
+        >>> for x in forloop.setup(['a', 'b', 'c']):
+        ...     print forloop.index, forloop.parity, x
+        ...
+        1 odd a
+        2 even b
+        3 odd c
+        >>> forloop.index
+        Traceback (most recent call last):
+            ...
+        AttributeError: index
+    """
+    def __init__(self):
+        self._ctx = None
+        
+    def __getattr__(self, name):
+        if self._ctx is None:
+            raise AttributeError, name
+        else:
+            return getattr(self._ctx, name)
+        
+    def setup(self, seq):
+        self._push()
+        return self._ctx.setup(seq)
+        
+    def _push(self):
+        self._ctx = ForLoopContext(self, self._ctx)
+        
+    def _pop(self):
+        self._ctx = self._ctx.parent
+                
+class ForLoopContext:
+    """Stackable context for ForLoop to support nested for loops.
+    """
+    def __init__(self, forloop, parent):
+        self._forloop = forloop
+        self.parent = parent
+        
+    def setup(self, seq):
+        if hasattr(seq, '__len__'):
+            n = len(seq)
+        else:
+            n = 0
+
+        try:
+            for i, x in enumerate(seq):
+                self._next(i+1, n)
+                yield x
+        finally:
+            self._forloop._pop()
+    
+    def _next(self, i, n):
+        self.index = i
+        self.index0 = i - 1
+        self.first = (i == 1)
+        self.last = (i == n)
+        self.odd = (i % 2 == 1)
+        self.even = (i % 2 == 0)
+        self.parity = ['odd', 'even'][self.even]
+        
+class BaseTemplate:
+    def __init__(self, code, filename, filter, globals, builtins):
+        self.code = code
+        self.filename = filename
+        self.filter = filter
+        self._globals = globals
+        self._builtins = builtins
+        self.t = None
+        
+    def _compile(self):
+        env = self.make_env(self._globals or {}, self._builtins or TEMPLATE_BUILTINS)
+        exec(self.code, env)
+        return env['__template__']
+
+    def __call__(self, *a, **kw):
+        #@@ HACK: compile lazily on demand
+        if self.t is None:
+            self.t = self._compile()
+        
+        out = self.t(*a, **kw)
+        d = Stowage()
+        for name, value in out:
+            d.setdefault(name, []).append(value)
+            
+        for k in d.keys():
+            d[k] = "".join(d[k])
+            
+        d._str = d.main                
+        return d
+
+    def make_env(self, globals, builtins):
+        return dict(globals, 
+            __builtins__=builtins, 
+            loop=ForLoop(),
+            escape_=self._escape,
+            join_=self._join
+        )
+        
+    def _join(self, *items):
+        return "".join(items)
+        
+    def _escape(self, value, escape=False):
+        import types
+        if value is None: 
+            value = ''
+        elif isinstance(value, types.GeneratorType):
+            value = "".join(value)
+        else:
+            value = str(value)
+        if escape and self.filter:
+            value = self.filter(value)
+        return value
+
+class Template(BaseTemplate):
+    CONTENT_TYPES = {
+        '.html' : 'text/html; charset=utf-8',
+        '.txt' : 'text/plain',
+    }
+    FILTERS = {
+        '.html': websafe,
+        '.xml': websafe
+    }
+    globals = {}
+    
+    def __init__(self, text, filename='<template>', filter=None, globals=None, builtins=None):
+        text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
+        if not text.endswith('\n'):
+            text += '\n'
+        code = self.compile_template(text, filename)
+        
+        _, ext = os.path.splitext(filename)
+        filter = filter and self.FILTERS.get(ext, None)
+        self.content_type = self.CONTENT_TYPES.get(ext, None)
+        
+        globals = globals or self.globals
+        
+        BaseTemplate.__init__(self, code=code, filename=filename, filter=filter, globals=globals, builtins=builtins)
+        
+    def __calll__(self, *a, **kw):
+        import webapi as web
+        if 'headers' in web.ctx and self.content_type:
+            web.header('Content-Type', self.content_type)
+            
+        return BaseTemplate.__calll__(self, *a, **kw)
+        
+    def compile_template(self, template_string, filename):
+        # parse the template string
+        rootnode = Parser(template_string, filename).parse()
+        
+        # generate python code from the parse tree
+        code = rootnode.emit(indent="").strip()
+        
+        # make sure code is safe
+        ast = compiler.parse(code)
+        SafeVisitor().walk(ast, filename)
+
+        # compile the python code
+        return compile(code, filename, 'exec')
+                
+def frender(filename, filter=None, globals=None):
+    text = open(filename).read()
+    if filter is None:
+        if filename.endswith('.html') or filename.endswith('.xml'):
+            filter = websafe
+    return Template(text, filename=filename, filter=filter)    
+    
+class render:
+    filters = {'html': websafe, 'xml': websafe}
+    
+    def __init__(self, loc='templates/', cache=None, base=None):
+        if cache is None:
+            cache = not config.get('debug', False)
+            
+        self._loc = loc
+        if cache:
+            self._cache = {}
+        else:
+            self._cache = False
+
+        self._base = base
+        
+    def _get_filter(self, filename):
+        _, ext = os.path.splitext(filename)
+        ext = ext[1:] #strip .
+        return self.filters.get(ext, None)
+        
+    def _get_template(self, name, filter):
+        path = os.path.join(self._loc, name)
+        p = [f for f in glob.glob(path + '.*') if not f.endswith('~')] # skip backup files
+        if not p and os.path.isdir(path):
+            return render(path, cache=self._cache, base=self._base)
+        elif not p:
+            raise AttributeError, 'no template named ' + name
+            
+        p = p[0]
+        filter = filter or self._get_filter(p)
+        return Template(open(p).read(), filter=filter, filename=p)
+
+    def _do(self, name, filter=None):
+        if self._cache and name not in self._cache:
+            t = self._get_template(name, filter)
+            self._cache[name] = t
+        else:
+            t = self._get_template(name, filter)
         return t
     
-    def ltokr(self, *l):
-        for x in l:
-            o = self.tokq(x)
-            if o: return o
-        self.Error('one of '+repr(l))
-    
-    def rer(self, r):
-        x = re.match(r, self.t[self.p:]) #@@re_compile
-        if not x:
-            self.Error('r'+repr(r))
-        return self.tokr(x.group())
-    
-    def endr(self):
-        if self.p != len(self.t):
-            self.Error('EOF')
-        
-    def c(self, n=1):
-        out = self.t[self.p:self.p+n]
-        if out == '' and n != 0:
-            self.Error('character', 'EOF')
-        self.p += n
-        return out
-
-    def lookbehind(self, t):
-        return self.t[self.p-len(t):self.p] == t
-    
-    def __getattr__(self, a):
-        if a.endswith('q'):
-            return self.q(getattr(self, a[:-1]+'r'))
-        raise AttributeError, a
-
-class TemplateParser(Parser):
-    def __init__(self, *a, **kw):
-        Parser.__init__(self, *a, **kw)
-        self.curws = ''
-        self.curind = ''
-        
-    def o(self, *a):
-        return a+('lineno', self.curline())
-    
-    def go(self): 
-        # maybe try to do some traceback parsing/hacking
-        return self.gor()
-    
-    def gor(self):
-        header = self.defwithq()
-        results = self.lines(start=True)
-        self.endr()
-        return header, results
-    
-    def ws(self):
-        n = 0
-        while self.tokq(" "): n += 1
-        return " " * n
-    
-    def defwithr(self):
-        self.tokr('$def with ')
-        self.lock()
-        self.tokr('(')
-        args = []
-        kw = []
-        x = self.req(r_var)
-        while x:
-            if self.tokq('='):
-                v = self.exprr()
-                kw.append((x, v))
-            else: 
-                args.append(x)
-            x = self.tokq(', ') and self.req(r_var)
-        self.tokr(')\n')
-        return self.o('defwith', 'null', None, 'args', args, 'kwargs', kw)
-    
-    def literalr(self):
-        o = (
-          self.req('"[^"]*"') or #@@ no support for escapes
-          self.req("'[^']*'")
-        )
-        if o is False:
-            o = self.req('\-?[0-9]+(\.[0-9]*)?')
-            if o is not False:
-                if '.' in o: o = float(o)
-                else: o = int(o)
-
-        if o is False: self.Error('literal')
-        return self.o('literal', 'thing', o)
-    
-    def listr(self):
-        self.tokr('[')
-        self.lock()
-        x = []
-        if not self.tokq(']'):
-            while True:
-                t = self.exprr()
-                x.append(t)
-                if not self.tokq(', '): break
-            self.tokr(']')
-        return self.o('list', 'thing', x)
-    
-    def dictr(self):
-        self.tokr('{')
-        self.lock()
-        x = {}
-        if not self.tokq('}'):
-            while True:
-                k = self.exprr()
-                self.tokr(': ')
-                v = self.exprr()
-                x[k] = v
-                if not self.tokq(', '): break
-            self.tokr('}')
-        return self.o('dict', 'thing', x)
-
-    def parenr(self):
-        self.tokr('(')
-        self.lock()
-        o = self.exprr() # todo: allow list
-        self.tokr(')')
-        return self.o('paren', 'thing', o)
-    
-    def atomr(self):
-        """returns var, literal, paren, dict, or list"""
-        o = (
-          self.varq() or 
-          self.parenq() or
-          self.dictq() or
-          self.listq() or
-          self.literalq()
-        )
-        if o is False: self.Error('atom')
-        return o
-        
-    def primaryr(self):
-        """returns getattr, call, or getitem"""        
-        n = self.atomr()
-        while 1:
-            if self.tokq('.'):
-                v = self.req(r_var)
-                if not v:
-                    self.p -= 1 # get rid of the '.'
-                    break
-                else:
-                    n = self.o('getattr', 'thing', n, 'attr', v)
-            elif self.tokq('('):
-                args = []
-                kw = []
-                
-                while 1:
-                    # need to see if we're doing a keyword argument
-                    checkp = self.p
-                    k = self.req(r_var)
-                    if k and self.tokq('='): # yup
-                        v = self.exprr()
-                        kw.append((k, v))
-                    else:
-                        self.p = checkp
-                        x = self.exprq()
-                        if x: # at least it's something
-                            args.append(x)
-                        else:
-                            break
-                            
-                    if not self.tokq(', '): break
-                self.tokr(')')
-                n = self.o('call', 'thing', n, 'args', args, 'kwargs', kw)
-            elif self.tokq('['):
-                v = self.exprr()
-                self.tokr(']')
-                n = self.o('getitem', 'thing', n, 'item', v)
-            else:
-                break
-        
-        return n
-    
-    def exprr(self):
-        negate = self.tokq('not ')
-        x = self.primaryr()
-        if self.tokq(' '):
-            operator = self.ltokr('not in', 'in', 'is not', 'is', '==', '!=', '>=', '<=', '<', '>', 'and', 'or', '*', '+', '-', '/', '%')
-            self.tokr(' ')
-            y = self.exprr()
-            x = self.o('test', 'x', x, 'op', operator, 'y', y)
-        
-        return self.o('expr', 'thing', x, 'negate', negate)
-
-    def varr(self):
-        return self.o('var', 'name', self.rer(r_var))
-    
-    def liner(self):
-        out = []
-        o = self.curws
-        while 1:
-            c = self.c()
-            self.lock()
-            if c == '\n':
-                self.p -= 1
-                break
-            if c == '$':
-                if self.lookbehind('\\$'):
-                    o = o[:-1] + c
-                else:
-                    filter = not bool(self.tokq(':'))
-                    
-                    if self.tokq('{'):
-                        out.append(o)
-                        out.append(self.o('itpl', 'name', self.exprr(), 'filter', filter))
-                        self.tokr('}')
-                        o = ''
-                    else:
-                        g = self.primaryq()
-                        if g: 
-                            out.append(o)
-                            out.append(self.o('itpl', 'name', g, 'filter', filter))
-                            o = ''
-                        else:
-                            o += c
-            else:
-                o += c
-        self.tokr('\n')
-        if not self.lookbehind('\\\n'):
-            o += '\n'
+    def __getattr__(self, p):
+        if self._base:
+            return lambda *a, **kw: self._do(self._base)(self._do(p)(*a, **kw))
         else:
-            o = o[:-1]
-        out.append(o)
-        return self.o('line', 'thing', out)
-    
-    def varsetr(self):
-        self.tokr('$var ')
-        self.lock()
-        what = self.rer(r_var)
-        self.tokr(':')
-        body = self.lines()
-        return self.o('varset', 'name', what, 'body', body)
+            return self._do(p)
 
-    def ifr(self):
-        self.tokr("$if ")
-        self.lock()
-        expr = self.exprr()
-        self.tokr(":")
-        ifc = self.lines()
-        
-        elifs = []
-        while self.tokq(self.curws + self.curind + '$elif '):
-            v = self.exprr()
-            self.tokr(':')
-            c = self.lines()
-            elifs.append(self.o('elif', 'clause', v, 'body', c))
-        
-        if self.tokq(self.curws + self.curind + "$else:"):
-            elsec = self.lines()
-        else:
-            elsec = None
-        
-        return self.o('if', 'clause', expr, 'then', ifc, 'elif', elifs, 'else', elsec)
+class ParseError(Exception):
+    pass
     
-    def forr(self):
-        self.tokr("$for ")
-        self.lock()
-        v = self.setabler()
-        self.tokr(" in ")
-        g = self.exprr()
-        self.tokr(":")
-        l = self.lines()
+class SecurityError(Exception):
+    """The template seems to be trying to do something naughty."""
+    pass
 
-        if self.tokq(self.curws + self.curind + '$else:'):
-            elsec = self.lines()
+# Enumerate all the allowed AST nodes
+ALLOWED_AST_NODES = [
+    "Add", "And",
+#   "AssAttr",
+    "AssList", "AssName", "AssTuple",
+#   "Assert",
+    "Assign", "AugAssign",
+#   "Backquote",
+    "Bitand", "Bitor", "Bitxor", "Break",
+    "CallFunc","Class", "Compare", "Const", "Continue",
+    "Decorators", "Dict", "Discard", "Div",
+    "Ellipsis", "EmptyNode",
+#   "Exec",
+    "Expression", "FloorDiv", "For",
+#   "From",
+    "Function", 
+    "GenExpr", "GenExprFor", "GenExprIf", "GenExprInner",
+    "Getattr", 
+#   "Global", 
+    "If", "IfExp",
+#   "Import",
+    "Invert", "Keyword", "Lambda", "LeftShift",
+    "List", "ListComp", "ListCompFor", "ListCompIf", "Mod",
+    "Module",
+    "Mul", "Name", "Not", "Or", "Pass", "Power",
+#   "Print", "Printnl", "Raise",
+    "Return", "RightShift", "Slice", "Sliceobj",
+    "Stmt", "Sub", "Subscript",
+#   "TryExcept", "TryFinally",
+    "Tuple", "UnaryAdd", "UnarySub",
+    "While", "With", "Yield",
+]
+
+class SafeVisitor(object):
+    """
+    Make sure code is safe by walking through the AST.
+    
+    Code considered unsafe if:
+        * it has restricted AST nodes
+        * it is trying to access resricted attributes   
+        
+    Adopted from http://www.zafar.se/bkz/uploads/safe.txt (public domain, Babar K. Zafar)
+    """
+    def __init__(self):
+        "Initialize visitor by generating callbacks for all AST node types."
+        self.errors = []
+
+    def walk(self, ast, filename):
+        "Validate each node in AST and raise SecurityError if the code is not safe."
+        self.filename = filename
+        self.visit(ast)
+        
+        if self.errors:        
+            raise SecurityError, '\n'.join([str(err) for err in self.errors])
+        
+    def visit(self, node, *args):
+        "Recursively validate node and all of its children."
+        def classname(obj):
+            return obj.__class__.__name__
+        nodename = classname(node)
+        fn = getattr(self, 'visit' + nodename, None)
+        
+        if fn:
+            fn(node, *args)
         else:
-            elsec = None
-        
-        return self.o('for', 'name', v, 'body', l, 'in', g, 'else', elsec)
-    
-    def whiler(self):
-        self.tokr('$while ')
-        self.lock()
-        v = self.exprr()
-        self.tokr(":")
-        l = self.lines()
-        
-        if self.tokq(self.curws + self.curind + '$else:'):
-            elsec = self.lines()
-        else:
-            elsec = None
-        
-        return self.o('while', 'clause', v, 'body', l, 'null', None, 'else', elsec)
-    
-    def assignr(self):
-        self.tokr('$ ')
-        assign = self.rer(r_var) # NOTE: setable
-        self.tokr(' = ')
-        expr = self.exprr()
-        self.tokr('\n')
-        
-        return self.o('assign', 'name', assign, 'expr', expr)
-        
-    def commentr(self):
-        self.tokr('$#')
-        self.lock()
-        while self.c() != '\n': pass
-        return self.o('comment')
-        
-    def setabler(self):
-        out = [self.varr()] #@@ not quite right
-        while self.tokq(', '):
-             out.append(self.varr())
-        return out
-    
-    def lines(self, start=False):
-        """
-        This function gets called from two places:
-          1. at the start, where it's matching the document itself
-          2. after any command, where it matches one line or an indented block
-        """
-        o = []
-        if not start: # try to match just one line
-            singleline = self.tokq(' ') and self.lineq()
-            if singleline:
-                return [singleline]
-            else:
-                self.rer(' *') #@@slurp space?
-                self.tokr('\n')
-                oldind = self.curind
-                self.curind += '    '
-        while 1:
-            oldws = self.curws
-            t = self.tokq(oldws + self.curind)
-            if not t: break
+            if nodename not in ALLOWED_AST_NODES:
+                self.fail(node, *args)
             
-            self.curws += self.ws()
-            x = t and (
-              self.varsetq() or 
-              self.ifq() or 
-              self.forq() or 
-              self.whileq() or 
-              self.assignq() or
-              self.commentq() or
-              self.lineq())
-            self.curws = oldws
-            if not x:
-                break
-            elif x[WHAT] == 'comment':
-                pass
-            else:
-                o.append(x)
+        for child in node.getChildNodes():
+            self.visit(child, *args)
 
-        if not start: self.curind = oldind
-        return o
-    
+    def visitName(self, node, *args):
+        "Disallow any attempts to access a restricted attr."
+        #self.assert_attr(node.getChildren()[0], node)
+        pass
+        
+    def visitGetattr(self, node, *args):
+        "Disallow any attempts to access a restricted attribute."
+        self.assert_attr(node.attrname, node)
+            
+    def assert_attr(self, attrname, node):
+        if self.is_unallowed_attr(attrname):
+            lineno = self.get_node_lineno(node)
+            e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
+            self.errors.append(e)
+
+    def is_unallowed_attr(self, name):
+        return name.startswith('_') \
+            or name.startswith('func_') \
+            or name.startswith('im_')
+            
+    def get_node_lineno(self, node):
+        return (node.lineno) and node.lineno or 0
+        
+    def fail(self, node, *args):
+        "Default callback for unallowed AST nodes."
+        lineno = self.get_node_lineno(node)
+        nodename = node.__class__.__name__
+        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
+        self.errors.append(e)
+
 class Stowage(storage):
-    def __str__(self): return self.get('_str')
+    def __str__(self): 
+        return self.get('_str')
+        
+    def __repr__(self):
+        return "<Stowage: %s, %s>" % (self.keys(), repr(str(self)[:30]))
+            
     #@@ edits in place
     def __add__(self, other):
         if isinstance(other, (unicode, str)):
@@ -454,433 +912,8 @@ class Stowage(storage):
             return self
         else:
             raise TypeError, 'cannot add'
-    
-class WTF(AssertionError): pass
-class SecurityError(Exception):
-    """The template seems to be trying to do something naughty."""
-    pass
-
-
-
-
-Required = object()
-class Template:
-    globals = {}
-    content_types = {
-        '.html' : 'text/html; charset=utf-8',
-        '.txt' : 'text/plain',
-    }
-    
-    def __init__(self, text, filter=None, filename=""):
-        self.filter = filter
-        self.filename = filename
-        # universal newlines:
-        text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
-        if not text.endswith('\n'): text += '\n'
-        header, tree = TemplateParser(text, filename).go()
-        self.tree = tree
-        if header:
-            self.h_defwith(header)
-        else:
-            self.args, self.kwargs = (), {}
-    
-    def __call__(self, *a, **kw):
-        d = self.globals.copy()
-        d.update(self._parseargs(a, kw))
-        f = Fill(self.tree, d=d)
-        if self.filter: f.filter = self.filter
-
-        import webapi as web
-        if 'headers' in web.ctx and self.filename:
-            content_type = self.find_content_type()
-            if content_type:
-                web.header('Content-Type', content_type, unique=True)
         
-        return f.go()
-
-    def find_content_type(self):
-        for ext, content_type in self.content_types.iteritems():
-            if self.filename.endswith(ext):
-                return content_type
-    
-    def _parseargs(self, inargs, inkwargs):
-        # difference from Python:
-        #   no error on setting a keyword arg twice
-        d = {}
-        for arg in self.args:
-            d[arg] = Required
-        for kw, val in self.kwargs:
-            d[kw] = val
-
-        for n, val in enumerate(inargs):
-            if n < len(self.args):
-                d[self.args[n]] = val
-            elif n < len(self.args)+len(self.kwargs):
-                kw = self.kwargs[n - len(self.args)][0]
-                d[kw] = val
-
-        for kw, val in inkwargs.iteritems():
-            d[kw] = val
-
-        unset = []
-        for k, v in d.iteritems():
-            if v is Required:
-                unset.append(k)
-        if unset:
-            raise TypeError, 'values for %s are required' % unset 
-
-        return d
-    
-    def h_defwith(self, header):
-        assert header[WHAT] == 'defwith'
-        f = Fill(self.tree, d={})
-
-        self.args = header[ARGS]
-        self.kwargs = []
-        for var, valexpr in header[KWARGS]:
-            self.kwargs.append((var, f.h(valexpr)))
-
-    def __repr__(self):
-        return "<Template: %s>" % self.filename
-
-class Handle:
-    def __init__(self, parsetree, **kw):
-        self._funccache = {}
-        self.parsetree = parsetree
-        for (k, v) in kw.iteritems(): setattr(self, k, v)    
-    
-    def h(self, item):
-        return getattr(self, 'h_' + item[WHAT])(item)
-        
-class Fill(Handle):
-    builtins = global_globals
-    def filter(self, text):
-        if text is None: return ''
-        else: return utf8(text)
-        # often replaced with stuff like net.websafe
-    
-    def h_literal(self, i):
-        item = i[THING]
-        if isinstance(item, (unicode, str)) and item[0] in ['"', "'"]:
-            item = item[1:-1]
-        elif isinstance(item, (float, int)):
-            pass
-        return item
-    
-    def h_list(self, i):
-        x = i[THING]
-        out = []
-        for item in x:
-            out.append(self.h(item))
-        return out
-    
-    def h_dict(self, i):
-        x = i[THING]
-        out = {}
-        for k, v in x.iteritems():
-            out[self.h(k)] = self.h(v)
-        return out
-    
-    def h_paren(self, i):
-        item = i[THING]
-        if isinstance(item, list):
-            raise NotImplementedError, 'tuples'
-        return self.h(item)
-    
-    def h_getattr(self, i):
-        thing, attr = i[THING], i[ATTR]
-        thing = self.h(thing)
-        if attr.startswith('_') or attr.startswith('func_') or attr.startswith('im_'):
-            raise SecurityError, 'tried to get ' + attr
-        try:
-            if thing in self.builtins:
-                raise SecurityError, 'tried to getattr on ' + repr(thing)
-        except TypeError:
-            pass # raised when testing an unhashable object
-        try:
-            return getattr(thing, attr)
-        except AttributeError:
-            if isinstance(thing, list) and attr == 'join':
-                return lambda s: s.join(thing)
-            else:
-                raise
-    
-    def h_call(self, i):
-        call = self.h(i[THING])
-        args = [self.h(x) for x in i[ARGS]]
-        kw = dict([(x, self.h(y)) for (x, y) in i[KWARGS]])
-        return call(*args, **kw)
-    
-    def h_getitem(self, i):
-        thing, item = i[THING], i[ITEM]
-        thing = self.h(thing)
-        item = self.h(item)
-        return thing[item]
-    
-    def h_expr(self, i):
-        item = self.h(i[THING])
-        if i[NEGATE]:
-            item = not item
-        return item
-    
-    def h_test(self, item):
-        ox, op, oy = item[X], item[OP], item[Y]
-        # for short-circuiting to work, we can't eval these here
-        e = self.h
-        if op == 'is':
-            return e(ox) is e(oy)
-        elif op == 'is not':
-            return e(ox) is not e(oy)
-        elif op == 'in':
-            return e(ox) in e(oy)
-        elif op == 'not in':
-            return e(ox) not in e(oy)
-        elif op == '==':
-            return e(ox) == e(oy)
-        elif op == '!=':
-            return e(ox) != e(oy)
-        elif op == '>':
-            return e(ox) > e(oy)
-        elif op == '<':
-            return e(ox) < e(oy)
-        elif op == '<=':
-            return e(ox) <= e(oy)
-        elif op == '>=':
-            return e(ox) >= e(oy)
-        elif op == 'and':
-            return e(ox) and e(oy)
-        elif op == 'or':
-            return e(ox) or e(oy)
-        elif op == '+':
-            return e(ox) + e(oy)
-        elif op == '-':
-            return e(ox) - e(oy)
-        elif op == '*':
-            return e(ox) * e(oy)
-        elif op == '/':
-            return e(ox) / e(oy)
-        elif op == '%':
-            return e(ox) % e(oy)
-        else:
-            raise WTF, 'op ' + op
-    
-    def h_var(self, i):
-        v = i[NAME]
-        if v in self.d:
-            return self.d[v]
-        elif v in self.builtins:
-            return self.builtins[v]
-        elif v == 'self':
-            return self.output
-        else:
-            raise NameError, 'could not find %s (line %s)' % (repr(i[NAME]), i[LINENO])
-        
-    def h_line(self, i):
-        out = []
-        for x in i[THING]:
-            #@@ what if x is unicode
-            if isinstance(x, str):
-                out.append(x)
-            elif x[WHAT] == 'itpl':
-                o = self.h(x[NAME])
-                if x[FILTER]:
-                    o = self.filter(o)
-                else: 
-                    o = (o is not None and utf8(o)) or ""
-                out.append(o)
-            else:
-                raise WTF, x
-        return ''.join(out)
-    
-    def h_varset(self, i):
-        self.output[i[NAME]] = ''.join(self.h_lines(i[BODY]))
-        return ''
-
-    def h_if(self, i):
-        expr = self.h(i[CLAUSE])
-        if expr:
-            do = i[BODY]
-        else:
-            for e in i[ELIF]:
-                expr = self.h(e[CLAUSE])
-                if expr:
-                    do = e[BODY]
-                    break
-            else:
-                do = i[ELSE]
-        return ''.join(self.h_lines(do))
-        
-    def h_for(self, i):
-        out = []
-        assert i[IN][WHAT] == 'expr'
-        invar = self.h(i[IN])
-        forvar = i[NAME]
-        if invar:
-            for nv in invar:
-                if len(forvar) == 1:
-                    fv = forvar[0]
-                    assert fv[WHAT] == 'var'
-                    self.d[fv[NAME]] = nv # same (lack of) scoping as Python
-                else:
-                    for x, y in zip(forvar, nv):
-                        assert x[WHAT] == 'var'
-                        self.d[x[NAME]] = y
-                
-                out.extend(self.h_lines(i[BODY]))
-        else:
-            if i[ELSE]:
-                out.extend(self.h_lines(i[ELSE]))
-        return ''.join(out)
-    
-    def h_while(self, i):
-        out = []
-        expr = self.h(i[CLAUSE])
-        if not expr:
-            return ''.join(self.h_lines(i[ELSE]))
-        c = 0
-        while expr:
-            c += 1
-            if c >= MAX_ITERS:
-                raise RuntimeError, 'too many while-loop iterations (line %s)' % i[LINENO]
-            out.extend(self.h_lines(i[BODY]))
-            expr = self.h(i[CLAUSE])
-        return ''.join(out)
-
-    def h_assign(self, i):
-        self.d[i[NAME]] = self.h(i[EXPR])
-        return ''
-
-    def h_comment(self, i): pass
-    
-    def h_lines(self, lines):
-        if lines is None: return []
-        return map(self.h, lines)
-    
-    def go(self):
-        self.output = Stowage()
-        self.output._str = ''.join(map(self.h, self.parsetree))
-        if self.output.keys() == ['_str']:
-            self.output = self.output['_str']
-        return self.output
-
-class render:
-    def __init__(self, loc='templates/', cache=None, base=None):
-        if cache is None:
-            cache = not config.get('debug', False)
-        self._loc = loc
-        if cache:
-            self._cache = {}
-        else:
-            self._cache = False
-        
-        self._base = base
-    
-    def _do(self, name, filter=None):
-        if self._cache is False or name not in self._cache:
-
-            tmplpath = os.path.join(self._loc, name) 
-            p = [f for f in glob.glob(tmplpath + '.*') if not f.endswith('~')] # skip backup files
-            if not p and os.path.isdir(tmplpath):
-                return render(tmplpath, cache=self._cache)
-            elif not p:
-                raise AttributeError, 'no template named ' + name
-
-            p = p[0]
-            c = Template(open(p).read(), filename=p)
-            if self._cache is not False: self._cache[name] = (p, c)
-        
-        if self._cache is not False: p, c = self._cache[name]
-
-        if p.endswith('.html') or p.endswith('.xml'):
-            if not filter: c.filter = websafe
-        return c
-
-    def __getattr__(self, p):
-        if self._base:
-            return lambda *a, **kw: self._do(self._base)(self._do(p)(*a, **kw))
-        else:
-            return self._do(p)
-
-def frender(fn, *a, **kw):
-    return Template(open(fn).read(), *a, **kw)
-
-def test():
-    import sys
-    verbose = '-v' in sys.argv
-    def assertEqual(a, b):
-        if a == b:
-            if verbose:
-                sys.stderr.write('.')
-                sys.stderr.flush()
-        else:
-            assert a == b, "\nexpected: %s\ngot: %s" % (repr(b), repr(a))
-    
-    from utils import storage, group
-
-    class t:
-        def __init__(self, text):
-            self.text = text
-
-        def __call__(self, *a, **kw):
-            return TestResult(self.text, Template(self.text)(*a, **kw))
-
-    class TestResult:
-        def __init__(self, source, value):
-            self.source = source
-            self.value = value
-
-        def __eq__(self, other):
-            if self.value == other:
-                if verbose:
-                    sys.stderr.write('.')
-            else:
-                print >> sys.stderr, 'FAIL:', repr(self.source), 'expected', repr(other), ', got', repr(self.value)
-                sys.stderr.flush()
-    
-    t('1')() == '1\n'
-    t('$def with ()\n1')() == '1\n'
-    t('$def with (a)\n$a')(1) == '1\n'
-    t('$def with (a=0)\n$a')(1) == '1\n'
-    t('$def with (a=0)\n$a')(a=1) == '1\n'
-    t('$if 1: 1')() == '1\n'
-    t('$if 1:\n    1')() == '1\n'
-    t('$if 0: 0\n$elif 1: 1')() == '1\n'
-    t('$if 0: 0\n$elif None: 0\n$else: 1')() == '1\n'
-    t('$if (0 < 1) and (1 < 2): 1')() == '1\n'
-    t('$for x in [1, 2, 3]: $x')() == '1\n2\n3\n'
-    t('$for x in []: 0\n$else: 1')() == '1\n'
-    t('$def with (a)\n$while a and a.pop(): 1')([1, 2, 3]) == '1\n1\n1\n'
-    t('$while 0: 0\n$else: 1')() == '1\n'
-    t('$ a = 1\n$a')() == '1\n'
-    t('$# 0')() == ''
-    t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1}) == '1\n'
-    t('$def with (a)\n$(a)')(1) == '1\n'
-    t('$def with (a)\n$a')(1) == '1\n'
-    t('$def with (a)\n$a.b')(storage(b=1)) == '1\n'
-    t('$def with (a)\n$a[0]')([1]) == '1\n'
-    t('${0 or 1}')() == '1\n'
-    t('$ a = [1]\n$a[0]')() == '1\n'
-    t('$ a = {1: 1}\n$a.keys()[0]')() == '1\n'
-    t('$ a = []\n$if not a: 1')() == '1\n'
-    t('$ a = {}\n$if not a: 1')() == '1\n'
-    t('$ a = -1\n$a')() == '-1\n'
-    t('$ a = "1"\n$a')() == '1\n'
-    t('$if 1 is 1: 1')() == '1\n'
-    t('$if not 0: 1')() == '1\n'
-    t('$if 1:\n    $if 1: 1')() == '1\n'
-    t('$ a = 1\n$a')() == '1\n'
-    t('$ a = 1.\n$a')() == '1.0\n'
-    t('$({1: 1}.keys()[0])')() == '1\n'
-    t('$for x in [1, 2, 3]:\n\t$x')() == '    1\n    2\n    3\n'
-    t('$def with (a)\n$:a')(1) == '1\n'
-    t('$def with (a)\n$a')(u'\u203d') == '\xe2\x80\xbd\n'
-    t(u'$def with (f)\n$:f("x")')(lambda x: x) == 'x\n'
-
-    j = Template("$var foo: bar")()
-    assertEqual(str(j), '')
-    assertEqual(j.foo, 'bar\n')
-    if verbose: sys.stderr.write('\n')
-    
-
 if __name__ == "__main__":
-    test()
+    import doctest
+    doctest.testmod()
+        

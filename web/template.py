@@ -617,11 +617,14 @@ class ForLoopContext:
             n = 0
 
         try:
-            for i, x in enumerate(seq):
-                self._next(i+1, n)
-                yield x
+            return self._setup(seq)
         finally:
             self._forloop._pop()
+
+    def _setup(self, seq):
+        for i, x in enumerate(seq):
+            self._next(i+1, n)
+            yield x
     
     def _next(self, i, n):
         self.index = i

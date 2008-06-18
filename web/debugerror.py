@@ -85,7 +85,7 @@ $def with (exception_type, exception_value, frames)
         oElm.getElementsByTagName(strTagName);
         var arrReturnElements = new Array();
         strClassName = strClassName.replace(/\-/g, "\\-");
-        var oRegExp = new RegExp("(^|\\s)" + strClassName + "(\\s|$)");
+        var oRegExp = new RegExp("(^|\\s)" + strClassName + "(\\s|$$)");
         var oElement;
         for(var i=0; i<arrElements.length; i++){
             oElement = arrElements[i];
@@ -153,10 +153,10 @@ $for frame in frames:
             </ol>
             <ol start="$frame.lineno" class="context-line"><li onclick="toggle('pre$frame.id', 'post$frame.id')">$frame.context_line <span>...</span></li></ol>
         $if frame.post_context:
-          <ol start='${frame.lineno + 1}' class="post-context" id="post$frame.id">
-          $for line in frame.post_context:
-              <li onclick="toggle('pre$frame.id', 'post$frame.id')">$line</li>
-          </ol>
+            <ol start='${frame.lineno + 1}' class="post-context" id="post$frame.id">
+            $for line in frame.post_context:
+                <li onclick="toggle('pre$frame.id', 'post$frame.id')">$line</li>
+            </ol>
       </div>
     
     $if frame.vars:

@@ -1,4 +1,7 @@
 """
+simple, elegant templating
+(part of web.py)
+
 Template design:
 
 Template string is split into tokens and the tokens are combined into nodes. 
@@ -37,7 +40,7 @@ from utils import storage, safeunicode, safestr
 from webapi import config, debug
 from net import websafe
 
-DEBUG = True
+DEBUG = False
 
 def splitline(text):
     r"""Splits the given text at newline.
@@ -154,7 +157,7 @@ class Parser:
             return TextNode('$'), text[2:]
         elif text.startswith('$#'): # comment
             line, text = splitline(text)
-            return TextNode('\n'), text
+            return TextNode(''), text
         elif text.startswith('$'):
             text = text[1:] # strip $
             if text.startswith(':'):
@@ -380,12 +383,11 @@ class Parser:
         else:
             block, text = self.read_indented_block(text, begin_indent + INDENT)
             
-        suite = self.read_suite(block)
-        return self.create_block_node(keyword, stmt, suite, begin_indent), text
+        return self.create_block_node(keyword, stmt, block, begin_indent), text
         
-    def create_block_node(self, keyword, stmt, suite, begin_indent):
+    def create_block_node(self, keyword, stmt, block, begin_indent):
         if keyword in STATEMENT_NODES:
-            return STATEMENT_NODES[keyword](stmt, suite, begin_indent)
+            return STATEMENT_NODES[keyword](stmt, block, begin_indent)
         else:
             raise ParseError, 'Unknown statement: %s' % repr(keyword)
         
@@ -488,9 +490,9 @@ class LineNode:
 INDENT = '    ' # 4 spaces
         
 class BlockNode:
-    def __init__(self, stmt, suite, begin_indent=''):
+    def __init__(self, stmt, block, begin_indent=''):
         self.stmt = stmt
-        self.suite = suite
+        self.suite = Parser('').read_suite(block)
         self.begin_indent = begin_indent
 
     def emit(self, indent, text_indent=''):
@@ -505,18 +507,30 @@ class BlockNode:
         return "<block: %s, %s>" % (repr(self.stmt), repr(self.nodelist))
 
 class ForNode(BlockNode):
-    def __init__(self, stmt, suite, begin_indent=''):
+    def __init__(self, stmt, block, begin_indent=''):
         self.original_stmt = stmt
         tok = PythonTokenizer(stmt)
         tok.consume_till('in')
         a = stmt[:tok.index] # for i in
         b = stmt[tok.index:-1] # rest of for stmt excluding :
         stmt = a + ' loop.setup(' + b.strip() + '):'
-        BlockNode.__init__(self, stmt, suite, begin_indent)
+        BlockNode.__init__(self, stmt, block, begin_indent)
         
     def __repr__(self):
         return "<block: %s, %s>" % (repr(self.original_stmt), repr(self.suite))
-    
+
+class CodeNode:
+    def __init__(self, stmt, block, begin_indent=''):
+        self.code = block
+        
+    def emit(self, indent, text_indent=''):
+        import re
+        rx = re.compile('^', re.M)
+        return rx.sub(indent, self.code).rstrip(' ')
+        
+    def __repr__(self):
+        return "<code: %s>" % repr(self.code)
+        
 class IfNode(BlockNode):
     pass
 
@@ -551,11 +565,13 @@ class SuiteNode:
 
 STATEMENT_NODES = {
     'for': ForNode,
+    'while': BlockNode,
     'if': IfNode,
     'elif': ElifNode,
     'else': ElseNode,
     'def': DefNode,
     'var': VarNode,
+    'code': CodeNode
 }
         
 TEMPLATE_BUILTIN_NAMES = [
@@ -648,7 +664,7 @@ class BaseTemplate:
         self.filter = filter
         self._globals = globals
         self._builtins = builtins
-        self.t = None
+        self.t = self._compile()
         
     def _compile(self):
         env = self.make_env(self._globals or {}, self._builtins or TEMPLATE_BUILTINS)
@@ -656,10 +672,6 @@ class BaseTemplate:
         return env['__template__']
 
     def __call__(self, *a, **kw):
-        #@@ HACK: compile lazily on demand
-        if self.t is None:
-            self.t = self._compile()
-        
         out = self.t(*a, **kw)
         return self._join_output(out)
         
@@ -671,18 +683,29 @@ class BaseTemplate:
         for k in d.keys():
             d[k] = "".join(d[k])
             
-        d._str = d.main
-        del d.main
+        d._str = d.pop('main', '')
         return d       
 
     def make_env(self, globals, builtins):
-        return dict(globals, 
+        # layered dictioary to allow changing of globals after template is compiled.
+        class Env(dict):
+            def __init__(self, parent, *a, **kw):
+                self._parent = parent
+                dict.__init__(self, *a, **kw)
+            
+            def __getitem__(self, key):
+                try:
+                    return dict.__getitem__(self, key)
+                except:
+                    return self._parent[key]
+        
+        return Env(globals,
             __builtins__=builtins, 
             loop=ForLoop(),
             escape_=self._escape,
             join_=self._join
         )
-        
+    
     def _join(self, *items):
         return "".join(items)
         
@@ -713,6 +736,10 @@ class Template(BaseTemplate):
         text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
         if not text.endswith('\n'):
             text += '\n'
+        
+        # support fort \$ for backward-compatibility 
+        text = text.replace(r'\$', '$$')
+                
         code = self.compile_template(text, filename)
                 
         _, ext = os.path.splitext(filename)
@@ -737,6 +764,9 @@ class Template(BaseTemplate):
         # generate python code from the parse tree
         code = rootnode.emit(indent="").strip()
         code = safestr(code)
+        
+        if DEBUG:
+            print code
         
         # make sure code is safe
         ast = compiler.parse(code)
@@ -942,7 +972,105 @@ class Stowage(storage):
             return self
         else:
             raise TypeError, 'cannot add'
-        
+
+def test():
+    r"""Doctest for testing template module.
+
+        >>> def t(code):
+        ...     tmpl = Template(code)
+        ...     return lambda *a, **kw: unicode(tmpl(*a, **kw))
+        ...
+        >>> t('1')()
+        u'1\n'
+        >>> t('$def with ()\n1')()
+        u'1\n'
+        >>> t('$def with (a)\n$a')(1)
+        u'1\n'
+        >>> t('$def with (a=0)\n$a')(1)
+        u'1\n'
+        >>> t('$def with (a=0)\n$a')(a=1)
+        u'1\n'
+        >>> t('$if 1: 1')()
+        u' 1\n'
+        >>> t('$if 1:\n    1')()
+        u'1\n'
+        >>> t('$if 1:\n    1\\')()
+        u'1'
+        >>> t('$if 0: 0\n$elif 1: 1')()
+        u' 1\n'
+        >>> t('$if 0: 0\n$elif None: 0\n$else: 1')()
+        u' 1\n'
+        >>> t('$if 0 < 1 and 1 < 2: 1')()
+        u' 1\n'
+        >>> t('$for x in [1, 2, 3]: $x')()
+        u' 1\n 2\n 3\n'
+        >>> t('$def with (a)\n$while a and a.pop():1')([1, 2, 3])
+        u'1\n1\n1\n'
+        >>> t('$ a = 1\n$a')()
+        u'1\n'
+        >>> t('$# 0')()
+        u''
+        >>> t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1})
+        u' 1\n'
+        >>> t('$def with (a)\n$(a)')(1)
+        u'1\n'
+        >>> t('$def with (a)\n$a')(1)
+        u'1\n'
+        >>> t('$def with (a)\n$a.b')(storage(b=1))
+        u'1\n'
+        >>> t('$def with (a)\n$a[0]')([1])
+        u'1\n'
+        >>> t('${0 or 1}')()
+        u'1\n'
+        >>> t('$ a = [1]\n$a[0]')()
+        u'1\n'
+        >>> t('$ a = {1: 1}\n$a.keys()[0]')()
+        u'1\n'
+        >>> t('$ a = []\n$if not a: 1')()
+        u' 1\n'
+        >>> t('$ a = {}\n$if not a: 1')()
+        u' 1\n'
+        >>> t('$ a = -1\n$a')()
+        u'-1\n'
+        >>> t('$ a = "1"\n$a')()
+        u'1\n'
+        >>> t('$if 1 is 1: 1')()
+        u' 1\n'
+        >>> t('$if not 0: 1')()
+        u' 1\n'
+        >>> t('$if 1:\n    $if 1: 1')()
+        u' 1\n'
+        >>> t('$ a = 1\n$a')()
+        u'1\n'
+        >>> t('$ a = 1.\n$a')()
+        u'1.0\n'
+        >>> t('$({1: 1}.keys()[0])')()
+        u'1\n'
+        >>> t('$for x in [1, 2, 3]:\n\t$x')()
+        u'    1\n    2\n    3\n'
+        >>> t('$def with (a)\n$:a')(1)
+        u'1\n'
+        >>> t('$def with (a)\n$a')(u'\u203d')
+        u'\u203d\n'
+        >>> t(u'$def with (a)\n$a $:a')(u'\u203d')
+        u'\u203d \u203d\n'
+        >>> t(u'$def with ()\nfoo')()
+        u'foo\n'
+        >>> def f(x): return x
+        ...
+        >>> t(u'$def with (f)\n$:f("x")')(f)
+        u'x\n'
+        >>> t('$def with (f)\n$:f("x")')(f)
+        u'x\n'
+        >>> t('$def with (limit)\nkeep $(limit)ing.')('go')
+        u'keep going.\n'
+        >>> t("Stop, $$money isn't evaluated.")()
+        u"Stop, $money isn't evaluated.\n"
+        >>> t("Stop, \$money isn't evaluated.")()
+        u"Stop, $money isn't evaluated.\n"
+    """
+    pass
+            
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

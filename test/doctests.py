@@ -3,7 +3,18 @@
 import webtest
 
 def suite():
-    modules = ["web.utils", "web.db", "web.net", "web.wsgi", "web.http", "web.webapi", "web.request", "web.session", "web.application"]
+    modules = [
+        "web.application",
+        "web.db", 
+        "web.http", 
+        "web.net", 
+        "web.request", 
+        "web.session",
+        "web.template",
+        "web.utils", 
+        "web.webapi", 
+        "web.wsgi", 
+    ]
     return webtest.doctest_suite(modules)
     
 if __name__ == "__main__":

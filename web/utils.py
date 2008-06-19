@@ -7,7 +7,8 @@ General Utilities
 __all__ = [
   "Storage", "storage", "storify", 
   "iters", 
-  "rstrips", "lstrips", "strips", "utf8",
+  "rstrips", "lstrips", "strips", 
+  "safeunicode", "safestr", "utf8",
   "TimeoutError", "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
@@ -190,24 +191,41 @@ def strips(text, remove):
     """
     return rstrips(lstrips(text, remove), remove)
 
-def utf8(text):
-    """Encodes text in utf-8.
-        
-        >> utf8(u'\u1234') # doctest doesn't seem to like utf-8
-        '\xe1\x88\xb4'
-
-        >>> utf8('hello')
-        'hello'
-        >>> utf8(42)
-        '42'
+def safeunicode(obj, encoding='utf-8'):
+    r"""Converts any given object to unicode string.
+    
+        >>> safeunicode('hello')
+        u'hello'
+        >>> safeunicode(2)
+        u'2'
+        >>> safeunicode('\xe1\x88\xb4')
+        u'\u1234'
     """
-    if isinstance(text, unicode):
-        return text.encode('utf-8')
-    elif isinstance(text, str):
-        return text
+    if isinstance(obj, unicode):
+        return obj
+    elif isinstance(obj, str):
+        return obj.decode(encoding)
     else:
-        return str(text)
+        if hasattr(obj, '__unicode__'):
+            return unicode(obj)
+        else:
+            return str(obj).decode(encoding)
+    
+def safestr(obj, encoding='utf-8'):
+    r"""Converts any given object to utf-8 encoded string. 
+    
+        >>> safestr('hello')
+        'hello'
+        >>> safestr(u'\u1234')
+        '\xe1\x88\xb4'
+        >>> safestr(2)
+        '2'
+    """
+    return safeunicode(obj).encode(encoding)
 
+# for backward-compatibility
+utf8 = safestr
+    
 class TimeoutError(Exception): pass
 def timelimit(timeout):
     """

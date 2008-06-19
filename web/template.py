@@ -11,7 +11,7 @@ root node is validated for safeeval and executed using python in the given envir
 Enough care is taken to make sure the generated code and the template has line to line match, 
 so that the error messages can point to exact line number in template. (It doesn't work in some cases still.)
 
-Grammer:
+Grammar:
 
     template -> defwith sections 
     defwith -> '$def with (' arguments ')' | ''
@@ -33,8 +33,8 @@ import tokenize, compiler
 import os
 import glob
 
-from utils import storage
-from webapi import config
+from utils import storage, safeunicode, safestr
+from webapi import config, debug
 from net import websafe
 
 DEBUG = True
@@ -499,7 +499,7 @@ class BlockNode:
         return out
         
     def text(self):
-        return '${' + self.stmt + '}' + "".join(node.text(indent) for node in self.nodes)
+        return '${' + self.stmt + '}' + "".join([node.text(indent) for node in self.nodes])
         
     def __repr__(self):
         return "<block: %s, %s>" % (repr(self.stmt), repr(self.nodelist))
@@ -570,16 +570,16 @@ import __builtin__
 TEMPLATE_BUILTINS = dict([(name, getattr(__builtin__, name)) for name in TEMPLATE_BUILTIN_NAMES if name in __builtin__.__dict__])
 
 class ForLoop:
-    """Wrapper for expression in for stament to support forloop.xxx helpers.
+    """Wrapper for expression in for stament to support loop.xxx helpers.
     
-        >>> forloop = ForLoop()
-        >>> for x in forloop.setup(['a', 'b', 'c']):
-        ...     print forloop.index, forloop.parity, x
+        >>> loop = ForLoop()
+        >>> for x in loop.setup(['a', 'b', 'c']):
+        ...     print loop.index, loop.parity, x
         ...
         1 odd a
         2 even b
         3 odd c
-        >>> forloop.index
+        >>> loop.index
         Traceback (most recent call last):
             ...
         AttributeError: index
@@ -593,7 +593,7 @@ class ForLoop:
         else:
             return getattr(self._ctx, name)
         
-    def setup(self, seq):
+    def setup(self, seq):        
         self._push()
         return self._ctx.setup(seq)
         
@@ -615,17 +615,23 @@ class ForLoopContext:
             n = len(seq)
         else:
             n = 0
-
-        try:
-            return self._setup(seq, n)
-        finally:
-            self._forloop._pop()
-
-    def _setup(self, seq, n):
-        for i, x in enumerate(seq):
-            self._next(i+1, n)
-            yield x
-    
+            
+        self.index = 0
+        seq = iter(seq)
+        
+        # Pre python-2.5 does not support yield in try-except.
+        # This is a work-around to overcome that limitation.
+        def next(seq):
+            try:
+                return seq.next()
+            except:
+                self._forloop._pop()
+                raise
+        
+        while True:
+            self._next(self.index + 1, n)
+            yield next(seq)
+            
     def _next(self, i, n):
         self.index = i
         self.index0 = i - 1
@@ -655,6 +661,9 @@ class BaseTemplate:
             self.t = self._compile()
         
         out = self.t(*a, **kw)
+        return self._join_output(out)
+        
+    def _join_output(self, out):
         d = Stowage()
         for name, value in out:
             d.setdefault(name, []).append(value)
@@ -662,8 +671,9 @@ class BaseTemplate:
         for k in d.keys():
             d[k] = "".join(d[k])
             
-        d._str = d.main                
-        return d
+        d._str = d.main
+        del d.main
+        return d       
 
     def make_env(self, globals, builtins):
         return dict(globals, 
@@ -681,9 +691,9 @@ class BaseTemplate:
         if value is None: 
             value = ''
         elif isinstance(value, types.GeneratorType):
-            value = "".join(value)
-        else:
-            value = str(value)
+            value = self._join_output(value)
+            
+        value = safeunicode(value)
         if escape and self.filter:
             value = self.filter(value)
         return value
@@ -704,7 +714,7 @@ class Template(BaseTemplate):
         if not text.endswith('\n'):
             text += '\n'
         code = self.compile_template(text, filename)
-        
+                
         _, ext = os.path.splitext(filename)
         filter = filter and self.FILTERS.get(ext, None)
         self.content_type = self.CONTENT_TYPES.get(ext, None)
@@ -726,6 +736,7 @@ class Template(BaseTemplate):
         
         # generate python code from the parse tree
         code = rootnode.emit(indent="").strip()
+        code = safestr(code)
         
         # make sure code is safe
         ast = compiler.parse(code)
@@ -896,11 +907,27 @@ class SafeVisitor(object):
         self.errors.append(e)
 
 class Stowage(storage):
-    def __str__(self): 
-        return self.get('_str')
+    """Wrapper to storage.
+    
+        >>> d = Stowage(_str='hello, world', x="foo")
+        >>> d
+        <Stowage: {'x': u'foo', '_str': u'hello, wor...'}>
+        >>> print d
+        hello, world
+    """
+    def __unicode__(self): 
+        return self.get('_str', '')
+    
+    def __str__(self):
+        return self.__unicode__().encode('utf-8')
         
     def __repr__(self):
-        return "<Stowage: %s, %s>" % (self.keys(), repr(str(self)[:30]))
+        def saferepr(value, limit=10):
+            value = safeunicode(value)
+            if len(value) > limit:
+                value = value[:10] + '...'
+            return repr(value)
+        return "<Stowage: {%s}>" % ", ".join(["%s: %s" % (repr(k), saferepr(v)) for k, v in self.items()])
             
     #@@ edits in place
     def __add__(self, other):
@@ -919,4 +946,3 @@ class Stowage(storage):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-        

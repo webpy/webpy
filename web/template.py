@@ -27,10 +27,13 @@ Grammar:
     expr -> '$' pyexpr | '$(' pyexpr ')' | '${' pyexpr '}'
     pyexpr -> <python expression>
 
-TODOs:
-    * take care of unicode issues
-    * support for \$
 """
+
+__all__ = [
+    "Template",
+    "Render", "render", "frender",
+    "ParseError", "SecurityError"
+]
 
 import tokenize, compiler
 import os
@@ -39,6 +42,7 @@ import glob
 from utils import storage, safeunicode, safestr
 from webapi import config, debug
 from net import websafe
+
 
 DEBUG = False
 
@@ -667,7 +671,7 @@ class BaseTemplate:
         self.t = self._compile()
         
     def _compile(self):
-        env = self.make_env(self._globals or {}, self._builtins or TEMPLATE_BUILTINS)
+        env = self.make_env(self._globals or {}, self._builtins)
         exec(self.code, env)
         return env['__template__']
 
@@ -676,30 +680,18 @@ class BaseTemplate:
         return self._join_output(out)
         
     def _join_output(self, out):
-        d = Stowage()
+        d = TemplateResult()
         for name, value in out:
             d.setdefault(name, []).append(value)
             
         for k in d.keys():
             d[k] = "".join(d[k])
             
-        d._str = d.pop('main', '')
+        d.__body__ = d.pop('main', '')
         return d       
 
     def make_env(self, globals, builtins):
-        # layered dictioary to allow changing of globals after template is compiled.
-        class Env(dict):
-            def __init__(self, parent, *a, **kw):
-                self._parent = parent
-                dict.__init__(self, *a, **kw)
-            
-            def __getitem__(self, key):
-                try:
-                    return dict.__getitem__(self, key)
-                except:
-                    return self._parent[key]
-        
-        return Env(globals,
+        return dict(globals,
             __builtins__=builtins, 
             loop=ForLoop(),
             escape_=self._escape,
@@ -746,8 +738,11 @@ class Template(BaseTemplate):
         filter = filter and self.FILTERS.get(ext, None)
         self.content_type = self.CONTENT_TYPES.get(ext, None)
         
-        globals = globals or self.globals
-        
+        if globals is None:
+            globals = self.globals
+        if builtins is None:
+            builtins = TEMPLATE_BUILTINS
+                
         BaseTemplate.__init__(self, code=code, filename=filename, filter=filter, globals=globals, builtins=builtins)
         
     def __calll__(self, *a, **kw):
@@ -775,58 +770,77 @@ class Template(BaseTemplate):
         # compile the python code
         return compile(code, filename, 'exec')
                 
-def frender(filename, filter=None, globals=None):
-    text = open(filename).read()
-    if filter is None:
-        if filename.endswith('.html') or filename.endswith('.xml'):
-            filter = websafe
-    return Template(text, filename=filename, filter=filter)    
+class TemplateModule:
+    """TemplateModule is like python a module, but for templates.
+    TemplateModule is a collections of templates and sub template modules, 
+    accessible as attributes of the module.
     
-class render:
-    filters = {'html': websafe, 'xml': websafe}
-    
-    def __init__(self, loc='templates/', cache=None, base=None):
-        if cache is None:
-            cache = not config.get('debug', False)
+        render = TemplateModule('templates')
+        print render.hello('web.py')
+    """
+    def __init__(self, root, **keywords):
+        self._root = root
+        self._keywords = keywords
+        
+    def __getattr__(self, name):
+        path = os.path.join(self._root, name)
+        if os.path.isdir(path):
+            return TemplateModule(path, **self.keywords)
+        else:
+            path = self._findfile(path)
+            if path:
+                return Template(open(path).read(), filename=path, **self._keywords)
+            else:
+                raise AttributeError, "No template named " + name            
             
-        self._loc = loc
+    def _findfile(self, path_prefix): 
+        p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
+        return p and p[0]
+        
+class Render:
+    """Most preferred way of using templates.
+    
+        render = web.template.render('templates')
+        print render.foo()
+        
+    Optional parameter can be `base` can be used to pass output of 
+    every template through the base template.
+    
+        render = web.template.render('templates', base='layout')
+    """
+    def __init__(self, loc='templates', cache=None, base=None, **keywords):
         if cache:
             self._cache = {}
         else:
             self._cache = False
-
-        self._base = base
-        
-    def _get_filter(self, filename):
-        _, ext = os.path.splitext(filename)
-        ext = ext[1:] #strip .
-        return self.filters.get(ext, None)
-        
-    def _get_template(self, name, filter):
-        path = os.path.join(self._loc, name)
-        p = [f for f in glob.glob(path + '.*') if not f.endswith('~')] # skip backup files
-        if not p and os.path.isdir(path):
-            return render(path, cache=self._cache, base=self._base)
-        elif not p:
-            raise AttributeError, 'no template named ' + name
             
-        p = p[0]
-        filter = filter or self._get_filter(p)
-        return Template(open(p).read(), filter=filter, filename=p)
-
-    def _do(self, name, filter=None):
-        if self._cache and name not in self._cache:
-            t = self._get_template(name, filter)
-            self._cache[name] = t
+        self._base = base
+        self._module = TemplateModule(loc, **keywords)
+        
+    def _template(self, name):
+        if self._cache is not False:
+            if name not in self._cache:
+                self._cache[name] = getattr(self._module, name)
+            return self._cache[name]
         else:
-            t = self._get_template(name, filter)
-        return t
-    
-    def __getattr__(self, p):
+            return getattr(self._module, name)
+        
+    def __getattr__(self, name):
         if self._base:
-            return lambda *a, **kw: self._do(self._base)(self._do(p)(*a, **kw))
+            def template(*a, **kw):
+                base = self._template(self._base)
+                t = self._template(name)
+                return base(t(*a, **kw))                
+            return template
         else:
-            return self._do(p)
+            return self._template(name)
+        
+render = Render
+
+def frender(path, **keywords):
+    """Creates a template from the given file path.
+    """
+    return Template(open(path).read(), filename=path, **keywords)
 
 class ParseError(Exception):
     pass
@@ -936,43 +950,29 @@ class SafeVisitor(object):
         e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
         self.errors.append(e)
 
-class Stowage(storage):
-    """Wrapper to storage.
+class TemplateResult(storage):
+    """Dictionary like object for storing template output.
     
-        >>> d = Stowage(_str='hello, world', x="foo")
+    A template can specify key-value pairs in the output using 
+    `var` statements. Each `var` statement adds a new key to the 
+    template output and the main output is stored with key 
+    __body__.
+    
+        >>> d = TemplateResult(__body__='hello, world', x='foo')
         >>> d
-        <Stowage: {'x': u'foo', '_str': u'hello, wor...'}>
+        <TemplateResult: {'__body__': 'hello, world', 'x': 'foo'}>
         >>> print d
         hello, world
     """
     def __unicode__(self): 
-        return self.get('_str', '')
+        return safeunicode(self.get('__body__', ''))
     
     def __str__(self):
-        return self.__unicode__().encode('utf-8')
+        return safestr(self.get('__body__', ''))
         
     def __repr__(self):
-        def saferepr(value, limit=10):
-            value = safeunicode(value)
-            if len(value) > limit:
-                value = value[:10] + '...'
-            return repr(value)
-        return "<Stowage: {%s}>" % ", ".join(["%s: %s" % (repr(k), saferepr(v)) for k, v in self.items()])
-            
-    #@@ edits in place
-    def __add__(self, other):
-        if isinstance(other, (unicode, str)):
-            self._str += other
-            return self
-        else:
-            raise TypeError, 'cannot add'
-    def __radd__(self, other):
-        if isinstance(other, (unicode, str)):
-            self._str = other + self._str
-            return self
-        else:
-            raise TypeError, 'cannot add'
-
+        return "<TemplateResult: %s>" % dict.__repr__(self)
+    
 def test():
     r"""Doctest for testing template module.
 
@@ -1068,6 +1068,10 @@ def test():
         u"Stop, $money isn't evaluated.\n"
         >>> t("Stop, \$money isn't evaluated.")()
         u"Stop, $money isn't evaluated.\n"
+        >>> t("$for i in range(5):$loop.index, $loop.parity")()
+        u'1, odd\n2, even\n3, odd\n4, even\n5, odd\n'
+        >>> t("$for i in range(2):\n    $for j in range(2):$loop.parent.parity $loop.parity")()
+        u'odd odd\nodd even\neven odd\neven even\n'
     """
     pass
             

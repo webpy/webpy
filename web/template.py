@@ -32,7 +32,8 @@ Grammar:
 __all__ = [
     "Template",
     "Render", "render", "frender",
-    "ParseError", "SecurityError"
+    "ParseError", "SecurityError",
+    "test"
 ]
 
 import tokenize, compiler
@@ -83,9 +84,6 @@ class Parser:
         else:
             return '', text
     
-    def readlines(self, text):
-        pass
-        
     def read_section(self, text):
         r"""Reads one section from the given text.
         
@@ -161,7 +159,7 @@ class Parser:
             return TextNode('$'), text[2:]
         elif text.startswith('$#'): # comment
             line, text = splitline(text)
-            return TextNode(''), text
+            return TextNode('\n'), text
         elif text.startswith('$'):
             text = text[1:] # strip $
             if text.startswith(':'):
@@ -412,11 +410,14 @@ class PythonTokenizer:
             'for i in range(10):'
             >>> tok.text[tok.index:]
             ' hello $i'
-        """      
-        while True:
-            t = self.next()
-            if t.value == delim:
-                break
+        """
+        try:
+            while True:
+                t = self.next()
+                if t.value == delim:
+                    break
+        except:
+            raise ParseError, "Expected %s, found end of line." % repr(delim)
     
     def next(self):
         type, t, begin, end, line = self.tokens.next()
@@ -735,7 +736,7 @@ class Template(BaseTemplate):
         code = self.compile_template(text, filename)
                 
         _, ext = os.path.splitext(filename)
-        filter = filter and self.FILTERS.get(ext, None)
+        filter = filter or self.FILTERS.get(ext, None)
         self.content_type = self.CONTENT_TYPES.get(ext, None)
         
         if globals is None:
@@ -770,35 +771,8 @@ class Template(BaseTemplate):
         # compile the python code
         return compile(code, filename, 'exec')
                 
-class TemplateModule:
-    """TemplateModule is like python a module, but for templates.
-    TemplateModule is a collections of templates and sub template modules, 
-    accessible as attributes of the module.
-    
-        render = TemplateModule('templates')
-        print render.hello('web.py')
-    """
-    def __init__(self, root, **keywords):
-        self._root = root
-        self._keywords = keywords
-        
-    def __getattr__(self, name):
-        path = os.path.join(self._root, name)
-        if os.path.isdir(path):
-            return TemplateModule(path, **self.keywords)
-        else:
-            path = self._findfile(path)
-            if path:
-                return Template(open(path).read(), filename=path, **self._keywords)
-            else:
-                raise AttributeError, "No template named " + name            
-            
-    def _findfile(self, path_prefix): 
-        p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
-        return p and p[0]
-        
 class Render:
-    """Most preferred way of using templates.
+    """The most preferred way of using templates.
     
         render = web.template.render('templates')
         print render.foo()
@@ -809,21 +783,38 @@ class Render:
         render = web.template.render('templates', base='layout')
     """
     def __init__(self, loc='templates', cache=None, base=None, **keywords):
+        self._loc = loc
+        self._keywords = keywords
+        
         if cache:
             self._cache = {}
         else:
             self._cache = False
             
         self._base = base
-        self._module = TemplateModule(loc, **keywords)
         
+    def _load_template(self, name):
+        path = os.path.join(self._loc, name)
+        if os.path.isdir(path):
+            return Render(path, **self.keywords)
+        else:
+            path = self._findfile(path)
+            if path:
+                return Template(open(path).read(), filename=path, **self._keywords)
+            else:
+                raise AttributeError, "No template named " + name            
+
+    def _findfile(self, path_prefix): 
+        p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
+        return p and p[0]
+            
     def _template(self, name):
         if self._cache is not False:
             if name not in self._cache:
-                self._cache[name] = getattr(self._module, name)
+                self._cache[name] = self._load_template(name)
             return self._cache[name]
         else:
-            return getattr(self._module, name)
+            return self._load_template(name)
         
     def __getattr__(self, name):
         if self._base:
@@ -976,10 +967,15 @@ class TemplateResult(storage):
 def test():
     r"""Doctest for testing template module.
 
-        >>> def t(code):
-        ...     tmpl = Template(code)
+    Define a utility function to run template test.
+    
+        >>> def t(code, **keywords):
+        ...     tmpl = Template(code, **keywords)
         ...     return lambda *a, **kw: unicode(tmpl(*a, **kw))
         ...
+    
+    Simple tests.
+    
         >>> t('1')()
         u'1\n'
         >>> t('$def with ()\n1')()
@@ -990,6 +986,29 @@ def test():
         u'1\n'
         >>> t('$def with (a=0)\n$a')(a=1)
         u'1\n'
+    
+    Test complicated expressions.
+        
+        >>> t('$def with (x)\n$x.upper()')('hello')
+        u'HELLO\n'
+        >>> t('$(2 * 3 + 4 * 5)')()
+        u'26\n'
+        >>> t('${2 * 3 + 4 * 5}')()
+        u'26\n'
+        >>> t('$def with (limit)\nkeep $(limit)ing.')('go')
+        u'keep going.\n'
+        >>> t('$def with (a)\n$a.b[0]')(storage(b=[1]))
+        u'1\n'
+        
+    Test html escaping.
+    
+        >>> t('$def with (x)\n$x', filename='a.html')('<html>')
+        u'&lt;html&gt;\n'
+        >>> t('$def with (x)\n$x', filename='a.txt')('<html>')
+        u'<html>\n'
+                
+    Test if, for and while.
+    
         >>> t('$if 1: 1')()
         u' 1\n'
         >>> t('$if 1:\n    1')()
@@ -1004,23 +1023,23 @@ def test():
         u' 1\n'
         >>> t('$for x in [1, 2, 3]: $x')()
         u' 1\n 2\n 3\n'
-        >>> t('$def with (a)\n$while a and a.pop():1')([1, 2, 3])
-        u'1\n1\n1\n'
-        >>> t('$ a = 1\n$a')()
-        u'1\n'
-        >>> t('$# 0')()
-        u''
         >>> t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1})
         u' 1\n'
-        >>> t('$def with (a)\n$(a)')(1)
-        u'1\n'
-        >>> t('$def with (a)\n$a')(1)
-        u'1\n'
-        >>> t('$def with (a)\n$a.b')(storage(b=1))
-        u'1\n'
-        >>> t('$def with (a)\n$a[0]')([1])
-        u'1\n'
-        >>> t('${0 or 1}')()
+        >>> t('$for x in [1, 2, 3]:\n\t$x')()
+        u'    1\n    2\n    3\n'
+        >>> t('$def with (a)\n$while a and a.pop():1')([1, 2, 3])
+        u'1\n1\n1\n'
+    
+    Test loop.xxx.
+
+        >>> t("$for i in range(5):$loop.index, $loop.parity")()
+        u'1, odd\n2, even\n3, odd\n4, even\n5, odd\n'
+        >>> t("$for i in range(2):\n    $for j in range(2):$loop.parent.parity $loop.parity")()
+        u'odd odd\nodd even\neven odd\neven even\n'
+        
+    Test assignment.
+    
+        >>> t('$ a = 1\n$a')()
         u'1\n'
         >>> t('$ a = [1]\n$a[0]')()
         u'1\n'
@@ -1034,23 +1053,21 @@ def test():
         u'-1\n'
         >>> t('$ a = "1"\n$a')()
         u'1\n'
-        >>> t('$if 1 is 1: 1')()
-        u' 1\n'
-        >>> t('$if not 0: 1')()
-        u' 1\n'
-        >>> t('$if 1:\n    $if 1: 1')()
-        u' 1\n'
-        >>> t('$ a = 1\n$a')()
-        u'1\n'
-        >>> t('$ a = 1.\n$a')()
-        u'1.0\n'
-        >>> t('$({1: 1}.keys()[0])')()
-        u'1\n'
-        >>> t('$for x in [1, 2, 3]:\n\t$x')()
-        u'    1\n    2\n    3\n'
-        >>> t('$def with (a)\n$:a')(1)
-        u'1\n'
+
+    Test comments.
+    
+        >>> t('$# 0')()
+        u'\n'
+        >>> t('hello$#comment1\nhello$#comment2')()
+        u'hello\nhello\n'
+        >>> t('$#comment0\nhello$#comment1\nhello$#comment2')()
+        u'\nhello\nhello\n'
+        
+    Test unicode.
+    
         >>> t('$def with (a)\n$a')(u'\u203d')
+        u'\u203d\n'
+        >>> t('$def with (a)\n$a')(u'\u203d'.encode('utf-8'))
         u'\u203d\n'
         >>> t(u'$def with (a)\n$a $:a')(u'\u203d')
         u'\u203d \u203d\n'
@@ -1062,16 +1079,49 @@ def test():
         u'x\n'
         >>> t('$def with (f)\n$:f("x")')(f)
         u'x\n'
-        >>> t('$def with (limit)\nkeep $(limit)ing.')('go')
-        u'keep going.\n'
+    
+    Test dollar escaping.
+    
         >>> t("Stop, $$money isn't evaluated.")()
         u"Stop, $money isn't evaluated.\n"
         >>> t("Stop, \$money isn't evaluated.")()
         u"Stop, $money isn't evaluated.\n"
-        >>> t("$for i in range(5):$loop.index, $loop.parity")()
-        u'1, odd\n2, even\n3, odd\n4, even\n5, odd\n'
-        >>> t("$for i in range(2):\n    $for j in range(2):$loop.parent.parity $loop.parity")()
-        u'odd odd\nodd even\neven odd\neven even\n'
+        
+    Test space sensitivity.
+    
+        >>> t('$def with (x)\n$x')(1)
+        u'1\n'
+        >>> t('$def with(x ,y)\n$x')(1, 1)
+        u'1\n'
+        >>> t('$(1 + 2*3 + 4)')()
+        u'11\n'
+        
+    Make sure globals are working.
+            
+        >>> t('$x')()
+        Traceback (most recent call last):
+            ...
+        NameError: global name 'x' is not defined
+        >>> t('$x', globals={'x': 1})()
+        u'1\n'
+        
+    Can't change globals.
+    
+        >>> t('$ x = 2\n$x', globals={'x': 1})()
+        u'2\n'
+        >>> t('$ x = x + 1\n$x', globals={'x': 1})()
+        Traceback (most recent call last):
+            ...
+        UnboundLocalError: local variable 'x' referenced before assignment
+    
+    Make sure builtins are customizable.
+    
+        >>> t('$min(1, 2)')()
+        u'1\n'
+        >>> t('$min(1, 2)', builtins={})()
+        Traceback (most recent call last):
+            ...
+        NameError: global name 'min' is not defined
     """
     pass
             

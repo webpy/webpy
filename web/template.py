@@ -40,7 +40,7 @@ import tokenize, compiler
 import os
 import glob
 
-from utils import storage, safeunicode, safestr
+from utils import storage, safeunicode, safestr, re_compile
 from webapi import config, debug
 from net import websafe
 
@@ -369,6 +369,8 @@ class Parser:
             (<block: 'for i in range(10):', [<line: [t' hello ', $i, t'\n']>]>, 'foo')
             >>> read_block_section('for i in range(10):\n        hello $i\n    foo', begin_indent='    ')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, '    foo')
+            >>> read_block_section('for i in range(10):\n  hello $i\nfoo')
+            (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
         """
         line, text = splitline(text)
         stmt, line = self.read_statement(line)
@@ -383,7 +385,17 @@ class Parser:
         if line.strip():
             block = line
         else:
-            block, text = self.read_indented_block(text, begin_indent + INDENT)
+            def find_indent(text):
+                rx = re_compile('  +')
+                match = rx.match(text)    
+                first_indent = match and match.group(0)
+                return first_indent or ""
+
+            # find the indentation of the block by looking at the first line
+            first_indent = find_indent(text)[len(begin_indent):]
+            indent = begin_indent + min(first_indent, INDENT)
+            
+            block, text = self.read_indented_block(text, indent)
             
         return self.create_block_node(keyword, stmt, block, begin_indent), text
         

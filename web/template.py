@@ -428,8 +428,19 @@ class PythonTokenizer:
                 t = self.next()
                 if t.value == delim:
                     break
+
+                # if end of line is found, it is an exception.
+                # Since there is no easy way to report the line number,
+                # leave the error reporting to the python parser later  
+                #@@ This should be fixed.
+                if t.value == '\n':
+                    break
         except:
-            raise ParseError, "Expected %s, found end of line." % repr(delim)
+            #raise ParseError, "Expected %s, found end of line." % repr(delim)
+
+            # raising ParseError doesn't show the line number. 
+            # if this error is ignored, then it will be caught when compiling the python code.
+            return
     
     def next(self):
         type, t, begin, end, line = self.tokens.next()
@@ -772,6 +783,9 @@ class Template(BaseTemplate):
         # generate python code from the parse tree
         code = rootnode.emit(indent="").strip()
         code = safestr(code)
+    
+        # compile the code first to report the errors, if any, with the filename
+        compiled_code = compile(code, filename, 'exec')
         
         if DEBUG:
             print code
@@ -780,8 +794,7 @@ class Template(BaseTemplate):
         ast = compiler.parse(code)
         SafeVisitor().walk(ast, filename)
 
-        # compile the python code
-        return compile(code, filename, 'exec')
+        return compiled_code
                 
 class Render:
     """The most preferred way of using templates.

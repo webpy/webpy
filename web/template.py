@@ -821,7 +821,7 @@ class Render:
     def _load_template(self, name):
         path = os.path.join(self._loc, name)
         if os.path.isdir(path):
-            return Render(path, **self.keywords)
+            return Render(path, **self._keywords)
         else:
             path = self._findfile(path)
             if path:

@@ -172,8 +172,18 @@ def input(*requireds, **defaults):
     
     if _method.lower() in ['both', 'post']:
         if e['REQUEST_METHOD'] == 'POST':
-            a = cgi.FieldStorage(fp = StringIO(data()), environ=e, 
-              keep_blank_values=1)
+            if e.get('CONTENT_TYPE', '').lower().startswith('multipart/'):
+                # since wsgi.input is directly passed to cgi.FieldStorage, 
+                # it can not be called multiple times. Saving the FieldStorage
+                # object in ctx to allow calling web.input multiple times.
+                a = ctx.get('_fieldstorage')
+                if not a:
+                    fp = e['wsgi.input']
+                    a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
+                    ctx._fieldstorage = a
+            else:
+                fp = StringIO(data())
+                a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
             a = dictify(a)
 
     if _method.lower() in ['both', 'get']:

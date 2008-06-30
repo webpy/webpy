@@ -709,7 +709,7 @@ class BaseTemplate:
             d.setdefault(name, []).append(value)
             
         for k in d.keys():
-            d[k] = "".join(d[k])
+            d[k] = u"".join(d[k])
             
         d.__body__ = d.pop('main', '')
         return d       
@@ -723,7 +723,7 @@ class BaseTemplate:
         )
     
     def _join(self, *items):
-        return "".join(items)
+        return u"".join([safeunicode(item) for item in items])
         
     def _escape(self, value, escape=False):
         import types

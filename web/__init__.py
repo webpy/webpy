@@ -11,7 +11,7 @@ __contributors__ = "see http://webpy.org/changes"
 # todo:
 #   - some sort of accounts system
 
-import utils, db, net, wsgi, http, webapi, request, httpserver, debugerror
+import utils, db, net, wsgi, http, webapi, httpserver, debugerror
 import template, form
 
 import session
@@ -22,7 +22,6 @@ from net import *
 from wsgi import *
 from http import *
 from webapi import *
-from request import *
 from httpserver import *
 from debugerror import *
 from application import *
@@ -46,7 +45,6 @@ def main():
     doctest.testmod(wsgi)
     doctest.testmod(http)
     doctest.testmod(webapi)
-    doctest.testmod(request)
     
     try:
         doctest.testmod(cheetah)

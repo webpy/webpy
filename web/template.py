@@ -618,11 +618,11 @@ class ForLoop:
     
         >>> loop = ForLoop()
         >>> for x in loop.setup(['a', 'b', 'c']):
-        ...     print loop.index, loop.parity, x
+        ...     print loop.index, loop.revindex, loop.parity, x
         ...
-        1 odd a
-        2 even b
-        3 odd c
+        1 3 odd a
+        2 2 even b
+        3 1 odd c
         >>> loop.index
         Traceback (most recent call last):
             ...
@@ -684,6 +684,10 @@ class ForLoopContext:
         self.odd = (i % 2 == 1)
         self.even = (i % 2 == 0)
         self.parity = ['odd', 'even'][self.even]
+        if n:
+            self.length = n
+            self.revindex0 = n - i
+            self.revindex = self.revindex0 + 1
         
 class BaseTemplate:
     def __init__(self, code, filename, filter, globals, builtins):

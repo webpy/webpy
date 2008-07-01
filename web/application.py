@@ -540,6 +540,43 @@ def unloadhook(h):
             h()
             
     return processor
+
+def autodelegate(prefix=''):
+    """
+    Returns a method that takes one argument and calls the method named prefix+arg,
+    calling `notfound()` if there isn't one. Example:
+
+        urls = ('/prefs/(.*)', 'prefs')
+
+        class prefs:
+            GET = autodelegate('GET_')
+            def GET_password(self): pass
+            def GET_privacy(self): pass
+
+    `GET_password` would get called for `/prefs/password` while `GET_privacy` for 
+    `GET_privacy` gets called for `/prefs/privacy`.
+    
+    If a user visits `/prefs/password/change` then `GET_password(self, '/change')`
+    is called.
+    """
+    def internal(self, arg):
+        if '/' in arg:
+            first, rest = arg.split('/', 1)
+            func = prefix + first
+            args = ['/' + rest]
+        else:
+            func = prefix + arg
+            args = []
+        
+        if hasattr(self, func):
+            try:
+                return getattr(self, func)(*args)
+            except TypeError:
+                return web.notfound()
+        else:
+            return web.notfound()
+    return internal
+
     
 class Reloader:
     """Checks to see if any loaded modules have changed on disk and, 

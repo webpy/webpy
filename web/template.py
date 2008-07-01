@@ -103,6 +103,8 @@ class Parser:
             ahead = self.python_lookahead(text2)
             if ahead in STATEMENT_NODES:
                 return self.read_block_section(text2, begin_indent)
+            if ahead in KEYWORDS:
+                return self.read_keyword(text2)
             elif ahead.strip() == '':
                 # assignments starts with a space after $
                 # ex: $ a = b + 2
@@ -183,6 +185,10 @@ class Parser:
             return TextNode(text), ''
         else:
             return TextNode(text[:index]), text[index:]
+            
+    def read_keyword(self, text):
+        line, text = splitline(text)
+        return CodeNode(None, line.strip() + "\n"), text
 
     def read_expr(self, text, escape=True):
         """Reads a python expression from the text and returns the expression and remaining text.
@@ -601,7 +607,14 @@ STATEMENT_NODES = {
     'var': VarNode,
     'code': CodeNode
 }
-        
+
+KEYWORDS = [
+    "pass",
+    "break",
+    "continue",
+    "return"
+]
+
 TEMPLATE_BUILTIN_NAMES = [
     "dict", "enumerate", "float", "int", "bool", "list", "long", "reversed", 
     "set", "slice", "tuple", "xrange",

@@ -29,14 +29,14 @@ class Form:
         out += self.rendernote(self.note)
         out += '<table>\n'
         for i in self.inputs:
-            out += '   <tr><th><label for="%s">%s</label></th>' % (i.id, i.description)
+            out += '   <tr><th><label for="%s">%s</label></th>' % (i.id, net.websafe(i.description))
             out += "<td>"+i.pre+i.render()+i.post+"</td>"
             out += '<td id="note_%s">%s</td></tr>\n' % (i.id, self.rendernote(i.note))
         out += "</table>"
         return out
     
     def rendernote(self, note):
-        if note: return '<strong class="wrong">%s</strong>' % note
+        if note: return '<strong class="wrong">%s</strong>' % net.websafe(note)
         else: return ""
 
     def validates(self, source=None, _validate=True, **kw):

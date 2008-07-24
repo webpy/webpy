@@ -267,8 +267,10 @@ def sqllist(lst):
         'a, b'
         >>> sqllist('a')
         'a'
+        >>> sqllist(u'abc')
+        u'abc'
     """
-    if isinstance(lst, str): 
+    if isinstance(lst, basestring): 
         return lst
     else:
         return ', '.join(lst)

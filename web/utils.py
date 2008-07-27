@@ -143,7 +143,7 @@ try:
     iters.append(Set)
 except ImportError: 
     pass
-
+    
 class _hack(tuple): pass
 iters = _hack(iters)
 iters.__doc__ = """
@@ -760,7 +760,7 @@ def tryall(context, prefix=None):
     print 'results:'
     for (key, value) in results.iteritems():
         print ' '*2, str(key)+':', value
-
+        
 class ThreadedDict:
     """Thread local storage.
     
@@ -888,9 +888,11 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     
     def listify(x):
         if not isinstance(x, list):
-            return [x]
+            return [safestr(x)]
         else:
-            return x
+            return [safestr(a) for a in x]
+
+    from_address = safestr(from_address)
 
     to_address = listify(to_address)
     cc = listify(cc)
@@ -913,9 +915,9 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     import email.Utils
     from_address = email.Utils.parseaddr(from_address)[1]
     recipients = [email.Utils.parseaddr(r)[1] for r in recipients]
-    message = ('\n'.join(['%s: %s' % x for x in headers.iteritems()])
-      + "\n\n" +  message)
-    
+    message = ('\n'.join([safestr('%s: %s' % x) for x in headers.iteritems()])
+      + "\n\n" +  safestr(message))
+
     if webapi.config.get('smtp_server'):
         server = webapi.config.get('smtp_server')
         port = webapi.config.get('smtp_port', 0)

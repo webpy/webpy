@@ -778,7 +778,7 @@ class Template(BaseTemplate):
         _, ext = os.path.splitext(filename)
         filter = filter or self.FILTERS.get(ext, None)
         self.content_type = self.CONTENT_TYPES.get(ext, None)
-        
+
         if globals is None:
             globals = self.globals
         if builtins is None:
@@ -786,12 +786,12 @@ class Template(BaseTemplate):
                 
         BaseTemplate.__init__(self, code=code, filename=filename, filter=filter, globals=globals, builtins=builtins)
         
-    def __calll__(self, *a, **kw):
+    def __call__(self, *a, **kw):
         import webapi as web
         if 'headers' in web.ctx and self.content_type:
             web.header('Content-Type', self.content_type)
             
-        return BaseTemplate.__calll__(self, *a, **kw)
+        return BaseTemplate.__call__(self, *a, **kw)
         
     def compile_template(self, template_string, filename):
         # parse the template string

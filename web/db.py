@@ -971,6 +971,28 @@ class MSSQLDB(DB):
         self.dbname = "mssql"
         DB.__init__(self, db, keywords)
 
+class OracleDB(DB): 
+    def __init__(self, **keywords): 
+        import cx_Oracle as db 
+        if 'pw' in keywords: 
+            keywords['password'] = keywords.pop('pw') 
+
+        #@@ TODO: use db.makedsn if host, port is specified 
+        keywords['dsn'] = keywords.pop('db') 
+        self.dbname = 'oracle' 
+        db.paramstyle = 'numeric' 
+
+        # oracle doesn't support pooling 
+        keywords.pop('pooling', None) 
+        DB.__init__(self, db, keywords) 
+
+    def _process_insert_query(self, query, tablename, seqname): 
+        if seqname is None: 
+            # It is not possible to get seq name from table name in Oracle
+            return query
+        else:
+            return query + "; SELECT %s.currval FROM dual" % seqname 
+
 _databases = {}
 def database(dburl=None, **params):
     """Creates appropriate database using params.
@@ -1001,6 +1023,7 @@ register_database('postgres', PostgresDB)
 register_database('sqlite', SqliteDB)
 register_database('firebird', FirebirdDB)
 register_database('mssql', MSSQLDB)
+register_database('oracle', OracleDB)
 
 def _interpolate(format): 
     """

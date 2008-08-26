@@ -873,8 +873,8 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
 
     If `web.config.smtp_server` is set, it will send the message
     to that SMTP server. Otherwise it will look for 
-    `/usr/lib/sendmail`, the typical location for the sendmail-style
-    binary.
+    `/usr/sbin/sendmail`, the typical location for the sendmail-style
+    binary. To use sendmail from a different path, set `web.config.sendmail_path`.
     """
     try:
         import webapi
@@ -943,11 +943,13 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
         smtpserver.sendmail(from_address, recipients, message)
         smtpserver.quit()
     else:
+        sendmail = webapi.config.get('sendmail_path', '/usr/sbin/sendmail')
+        
         assert not from_address.startswith('-'), 'security'
         for r in recipients:
             assert not r.startswith('-'), 'security'
 
-        i, o = os.popen2(["/usr/lib/sendmail", '-f', from_address] + recipients)
+        i, o = os.popen2([sendmail, '-f', from_address] + recipients)
         i.write(message)
         i.close()
         o.close()

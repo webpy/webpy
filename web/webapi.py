@@ -170,8 +170,8 @@ def input(*requireds, **defaults):
     e = ctx.env.copy()
     a = b = {}
     
-    if _method.lower() in ['both', 'post']:
-        if e['REQUEST_METHOD'] == 'POST':
+    if _method.lower() in ['both', 'post', 'put']:
+        if e['REQUEST_METHOD'] in ['POST', 'PUT']:
             if e.get('CONTENT_TYPE', '').lower().startswith('multipart/'):
                 # since wsgi.input is directly passed to cgi.FieldStorage, 
                 # it can not be called multiple times. Saving the FieldStorage

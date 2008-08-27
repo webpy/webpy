@@ -211,8 +211,8 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
             #@@ BaseHTTPRequestHandler just for this method
             time = self.log_date_time_string()
 
-            print >> outfile, self.format % (host, time, protocol, 
-                                             method, req, status)
+            msg = self.format % (host, time, protocol, method, req, status)
+            print >> outfile, msg.encode('utf-8')
             
     func = WSGIWrapper(func)
     server = CherryPyWSGIServer(server_address, func, server_name="localhost")

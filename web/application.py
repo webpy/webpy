@@ -6,7 +6,7 @@ Web application
 import webapi as web
 import webapi, wsgi, utils
 import debugerror
-from utils import lstrips
+from utils import lstrips, safeunicode
 import sys
 
 import urllib
@@ -110,7 +110,7 @@ class application:
             >>> response.data
             'hello'
             >>> response.status
-            '200 OK'
+            u'200 OK'
             >>> response.headers['Content-Type']
             'text/plain'
 
@@ -282,7 +282,6 @@ class application:
     def load(self, env):
         """Initializes ctx using env."""
         ctx = web.ctx
-        
         ctx.status = '200 OK'
         ctx.headers = []
         ctx.output = ''
@@ -305,6 +304,10 @@ class application:
             ctx.query = ''
 
         ctx.fullpath = ctx.path + ctx.query
+        
+        for k, v in ctx.iteritems():
+            if isinstance(v, str):
+                ctx[k] = safeunicode(v)
 
     def _delegate(self, f, fvars, args=[]):
         def handle_class(cls):
@@ -324,7 +327,7 @@ class application:
             return f.handle()
         elif is_class(f):
             return handle_class(f)
-        elif isinstance(f, str):
+        elif isinstance(f, basestring):
             if f.startswith('redirect '):
                 url = f.split(' ', 1)[1]
                 if web.ctx.method == "GET":
@@ -357,7 +360,7 @@ class application:
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)
-            
+                
             if result: # it's a match
                 return what, [x and urllib.unquote(x) for x in result.groups()]
         return None, None

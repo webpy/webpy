@@ -102,13 +102,22 @@ def storify(mapping, *requireds, **defaults):
         <Storage {'value': 1}>
         >>> storify({}, a={}).a
         {}
+        
+    Optionally, keyword parameter `_unicode` can be passed to convert all values to unicode.
     
+        >>> storify({'x': 'a'}, _unicode=True)
+        <Storage {'x': u'a'}>
     """
+    _unicode = defaults.pop('_unicode', False)
+    def unicodify(s):
+        if _unicode and isinstance(s, str): return safeunicode(s)
+        else: return s
+        
     def getvalue(x):
         if hasattr(x, 'value'):
-            return x.value
+            return unicodify(x.value)
         else:
-            return x
+            return unicodify(x)
     
     stor = Storage()
     for key in requireds + tuple(mapping.keys()):

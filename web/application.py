@@ -25,7 +25,8 @@ __all__ = [
     "application", "auto_application",
     "subdir_application", "subdomain_application", 
     "combine_applications",
-    "loadhook", "unloadhook"
+    "loadhook", "unloadhook",
+    "autodelegate"
 ]
 
 class NotFound(Exception): 

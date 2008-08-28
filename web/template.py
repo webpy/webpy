@@ -832,13 +832,17 @@ class Render:
             self._cache = {}
         else:
             self._cache = False
-            
-        self._base = base
+        
+        if base and not hasattr(base, '__call__'):
+            # make base a function, so that it can be passed to sub-renders
+            self._base = lambda page: self._template(base)(page)
+        else:
+            self._base = base
         
     def _load_template(self, name):
         path = os.path.join(self._loc, name)
         if os.path.isdir(path):
-            return Render(path, **self._keywords)
+            return Render(path, cache=self._cache, base=self._base, **self._keywords)
         else:
             path = self._findfile(path)
             if path:
@@ -859,11 +863,10 @@ class Render:
             return self._load_template(name)
         
     def __getattr__(self, name):
-        if self._base:
+        t = self._template(name)
+        if self._base and isinstance(t, Template):
             def template(*a, **kw):
-                base = self._template(self._base)
-                t = self._template(name)
-                return base(t(*a, **kw))                
+                return self._base(t(*a, **kw))
             return template
         else:
             return self._template(name)

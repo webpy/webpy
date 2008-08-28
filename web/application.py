@@ -274,8 +274,8 @@ class application:
         wsgiapp = self.wsgifunc(*middleware)
 
         try:
-            import google.appengine.ext.utils
-            return google.appengine.ext.utils.run_wsgi_app(wsgiapp)
+            from google.appengine.ext.webapp.util import run_wsgi_app
+            return run_wsgi_app(wsgiapp)
         except ImportError:
             # we're not running from within Google App Engine
             return wsgiref.handlers.CGIHandler().run(wsgiapp)

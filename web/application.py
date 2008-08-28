@@ -110,7 +110,7 @@ class application:
             >>> response.data
             'hello'
             >>> response.status
-            u'200 OK'
+            '200 OK'
             >>> response.headers['Content-Type']
             'text/plain'
 
@@ -308,6 +308,9 @@ class application:
         for k, v in ctx.iteritems():
             if isinstance(v, str):
                 ctx[k] = safeunicode(v)
+
+        # status must always be str
+        ctx.status = '200 OK'
 
     def _delegate(self, f, fvars, args=[]):
         def handle_class(cls):

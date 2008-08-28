@@ -51,4 +51,6 @@ def runwsgi(func):
         else:
             return runscgi(func)
     
+    # When running the builtin-server, enable debug mode if not already set.
+    web.config.setdefault('debug', True)
     return httpserver.runsimple(func, validip(listget(sys.argv, 1, '')))

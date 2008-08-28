@@ -212,8 +212,8 @@ class application:
             except:
                 print >> web.debug, traceback.format_exc()
                 web.ctx.status = '500 Internal Server Error'
-                web.header('Content-Type', 'text/html')
                 result = self.internalerror()
+                web.ctx.headers = [('Content-Type', 'text/html')]
 
             if is_generator(result):
                 result = peep(result)

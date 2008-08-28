@@ -192,7 +192,8 @@ def input(*requireds, **defaults):
 
     out = dictadd(b, a)
     try:
-        defaults.setdefault('_unicode', True) # force unicode conversion by default.
+        #@@ disabled because this is causing failure on file uploads
+        #defaults.setdefault('_unicode', True) # force unicode conversion by default.
         return storify(out, *requireds, **defaults)
     except KeyError:
         badrequest()

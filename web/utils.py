@@ -230,7 +230,12 @@ def safestr(obj, encoding='utf-8'):
         >>> safestr(2)
         '2'
     """
-    return safeunicode(obj).encode(encoding)
+    if isinstance(object, unicode):
+        return obj.encode('utf-8')
+    elif isinstance(obj, str):
+        return obj
+    else:
+        return str(obj)
 
 # for backward-compatibility
 utf8 = safestr
@@ -651,6 +656,20 @@ def nthstr(n):
     assert n >= 0
     if n % 100 in [11, 12, 13]: return '%sth' % n
     return {1: '%sst', 2: '%snd', 3: '%srd'}.get(n % 10, '%sth') % n
+
+def cond(predicate, consequence, alternative=False):
+    """Function replacement for if-else to use in expressions.
+        
+        >>> x = 2
+        >>> cond(x % 2 == 0, "even", "odd")
+        'even'
+        >>> cond(x % 2 == 0, "even", "odd") + '_row'
+        'even_row'
+    """
+    if predicate:
+        return consequence
+    else:
+        return alternative
 
 class CaptureStdout:
     """

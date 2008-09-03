@@ -657,7 +657,7 @@ def nthstr(n):
     if n % 100 in [11, 12, 13]: return '%sth' % n
     return {1: '%sst', 2: '%snd', 3: '%srd'}.get(n % 10, '%sth') % n
 
-def cond(predicate, consequence, alternative=False):
+def cond(predicate, consequence, alternative=None):
     """Function replacement for if-else to use in expressions.
         
         >>> x = 2

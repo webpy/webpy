@@ -230,7 +230,7 @@ def safestr(obj, encoding='utf-8'):
         >>> safestr(2)
         '2'
     """
-    if isinstance(object, unicode):
+    if isinstance(obj, unicode):
         return obj.encode('utf-8')
     elif isinstance(obj, str):
         return obj

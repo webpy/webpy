@@ -93,9 +93,7 @@ class Session(utils.ThreadedDict):
     def _validate_ip(self):
         # check for change of IP
         if self.session_id and self.get('ip', None) != web.ctx.ip:
-            if self._config.ignore_change_ip:
-                self.session_id = None
-            else:
+            if not self._config.ignore_change_ip:
                return self.expired() 
     
     def _save(self):

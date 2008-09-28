@@ -100,6 +100,8 @@ class Parser:
             ahead = self.python_lookahead(text2)
             if ahead in STATEMENT_NODES:
                 return self.read_block_section(text2, begin_indent)
+            elif ahead == 'var':
+                return self.read_var(text2)
             if ahead in KEYWORDS:
                 return self.read_keyword(text2)
             elif ahead.strip() == '':
@@ -108,6 +110,35 @@ class Parser:
                 return self.read_assignment(text2)
         return self.readline(text)
         
+    def read_var(self, text):
+        r"""Reads a var statement.
+        
+            >>> read_var = Parser('').read_var
+            >>> read_var('var x=10\nfoo')
+            (<var: x = 10>, 'foo')
+            >>> read_var('var x: hello $name\nfoo')
+            (<var: x = join_('hello ', escape_(name, True))>, 'foo')
+        """
+        line, text = splitline(text)
+        tokens = self.python_tokens(line)
+        if len(tokens) < 4:
+            raise SyntaxError('Invalid var statement')
+            
+        name = tokens[1]
+        sep = tokens[2]
+        value = line.split(sep, 1)[1].strip()
+        
+        if sep == '=':
+            pass # no need to process value
+        elif sep == ':': 
+            #@@ Hack for backward-compatability
+            linenode, _ = self.readline(value)
+            parts = [node.emit('') for node in linenode.nodes]
+            value = "join_(%s)" % ", ".join(parts)
+        else:
+            raise SyntaxError('Invalid var statement')
+        return VarNode(name, value), text
+                    
     def read_suite(self, text):
         r"""Reads section by section till end of text.
         
@@ -335,6 +366,11 @@ class Parser:
         tokens = tokenize.generate_tokens(readline)
         return tokens.next()[1]
         
+    def python_tokens(self, text):
+        readline = iter([text]).next
+        tokens = tokenize.generate_tokens(readline)
+        return [t[1] for t in tokens]
+        
     def read_indented_block(self, text, indent):
         r"""Read a block of text. A block is what typically follows a for or it statement.
         It can be in the same line as that of the statement or an indented block.
@@ -345,6 +381,9 @@ class Parser:
             >>> read_indented_block('  a\n    b\n  c\nd', '  ')
             ('a\n  b\nc\n', 'd')
         """
+        if indent == '':
+            return '', text
+            
         block = ""
         while True:
             if text.startswith(indent):
@@ -378,11 +417,6 @@ class Parser:
         line, text = splitline(text)
         stmt, line = self.read_statement(line)
         keyword = self.python_lookahead(stmt)
-        
-        #@@ quick hack to support var
-        if keyword == 'var':
-            node, _ = self.readline(line)
-            return VarNode(stmt, node), text
         
         # if there is some thing left in the line
         if line.strip():
@@ -509,7 +543,7 @@ class LineNode:
     def __init__(self, nodes):
         self.nodes = nodes
         
-    def emit(self, indent, text_indent='', name='main'):
+    def emit(self, indent, text_indent='', name=''):
         text = [node.emit('') for node in self.nodes]
         if text_indent:
             text = [repr(text_indent)] + text
@@ -575,13 +609,15 @@ class DefNode(BlockNode):
     pass
 
 class VarNode:
-    def __init__(self, stmt, node):
-        stmt = stmt.strip(':')
-        _, self.name = stmt.split()
-        self.node = node
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
         
     def emit(self, indent, text_indent):
-        return self.node.emit(indent, text_indent, self.name)
+        return indent + 'yield %s, %s\n' % (repr(self.name), self.value)
+        
+    def __repr__(self):
+        return "<var: %s = %s>" % (self.name, self.value)
 
 class SuiteNode:
     """Suite is a list of sections."""
@@ -601,7 +637,6 @@ STATEMENT_NODES = {
     'elif': ElifNode,
     'else': ElseNode,
     'def': DefNode,
-    'var': VarNode,
     'code': CodeNode
 }
 
@@ -719,13 +754,15 @@ class BaseTemplate:
         
     def _join_output(self, out):
         d = TemplateResult()
+        data = []
+        
         for name, value in out:
-            d.setdefault(name, []).append(value)
-            
-        for k in d.keys():
-            d[k] = u"".join(d[k])
-            
-        d.__body__ = d.pop('main', '')
+            if name:
+                d[name] = value
+            else:
+                data.append(value)
+                            
+        d.__body__ = u"".join(data)
         return d       
 
     def make_env(self, globals, builtins):
@@ -769,7 +806,7 @@ class Template(BaseTemplate):
         
         # support fort \$ for backward-compatibility 
         text = text.replace(r'\$', '$$')
-                
+        
         code = self.compile_template(text, filename)
                 
         _, ext = os.path.splitext(filename)
@@ -790,16 +827,37 @@ class Template(BaseTemplate):
             
         return BaseTemplate.__call__(self, *a, **kw)
         
-    def compile_template(self, template_string, filename):
-        # parse the template string
-        rootnode = Parser(template_string, filename).parse()
-        
+    def generate_code(text, filename):
+        # parse the text
+        rootnode = Parser(text, filename).parse()
+                
         # generate python code from the parse tree
         code = rootnode.emit(indent="").strip()
-        code = safestr(code)
+        return safestr(code)
+        
+    generate_code = staticmethod(generate_code)
+        
+    def compile_template(self, template_string, filename):
+        code = Template.generate_code(template_string, filename)
     
-        # compile the code first to report the errors, if any, with the filename
-        compiled_code = compile(code, filename, 'exec')
+        def get_source_line(filename, lineno):
+            try:
+                lines = open(filename).read().splitlines()
+                return lines[lineno]
+            except:
+                return None
+        
+        try:
+            # compile the code first to report the errors, if any, with the filename
+            compiled_code = compile(code, filename, 'exec')
+        except SyntaxError, e:
+            # display template line that caused the error along with the traceback.
+            try:
+                e.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
+                    (repr(e.filename), e.lineno, get_source_line(e.filename, e.lineno-1))
+            except: 
+                pass
+            raise
         
         # make sure code is safe
         ast = compiler.parse(code)

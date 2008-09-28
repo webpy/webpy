@@ -96,7 +96,7 @@ class application:
         self.processors.append(processor)
 
     def request(self, localpart='/', method='GET', data=None,
-                host="0.0.0.0:8080", headers=None, https=False):
+                host="0.0.0.0:8080", headers=None, https=False, **kw):
         """Makes request to this application for the specified path and method.
         Response will be a storage object with data, status and headers.
 
@@ -146,7 +146,12 @@ class application:
         """
         path, maybe_query = urllib.splitquery(localpart)
         query = maybe_query or ""
-        env = dict(HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=https)
+        
+        if 'env' in kw:
+            env = kw['env']
+        else:
+            env = {}
+        env = dict(env, HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=https)
         headers = headers or {}
         for k, v in headers.items():
             env['HTTP_' + k.upper().replace('-', '_')] = v
@@ -292,6 +297,9 @@ class application:
         ctx.homedomain = ctx.protocol + '://' + env.get('HTTP_HOST', '[unknown]')
         ctx.homepath = os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', ''))
         ctx.home = ctx.homedomain + ctx.homepath
+        #@@ home is changed when the request is handled to a sub-application.
+        #@@ but the real home is required for doing absolute redirects.
+        ctx.realhome = ctx.home
         ctx.ip = env.get('REMOTE_ADDR')
         ctx.method = env.get('REQUEST_METHOD')
         ctx.path = env.get('PATH_INFO')

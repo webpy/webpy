@@ -97,6 +97,40 @@ class ApplicationTest(webtest.TestCase):
             return web.ctx.path + ":" + handler()
         app.add_processor(processor)
         self.assertEquals(app.request('/blog/foo').data, '/blog/foo:blog foo')
+        
+    def test_redirect(self):
+        urls = (
+            "/(.*)", "blog"
+        )
+        class blog:
+            def GET(self, path):
+                if path == 'foo':
+                    raise web.seeother('/login', absolute=True)
+                else:
+                    raise web.seeother('/bar')
+        app_blog = web.application(urls, locals())
+        
+        urls = (
+            "/blog", app_blog,
+            "/(.*)", "index"
+        )
+        class index:
+            def GET(self, path):
+                return "hello " + path
+        app = web.application(urls, locals())
+        
+        response = app.request('/blog/foo')
+        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/login')
+        
+        response = app.request('/blog/foo', env={'SCRIPT_NAME': '/x'})
+        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/x/login')
+
+        response = app.request('/blog/foo2')
+        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/blog/bar')
+        
+        response = app.request('/blog/foo2', env={'SCRIPT_NAME': '/x'})
+        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/x/blog/bar')
+
 
 if __name__ == '__main__':
     webtest.main()

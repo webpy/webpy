@@ -76,7 +76,7 @@ gone = Gone
 
 class Redirect(HTTPError):
     """A `301 Moved Permanently` redirect."""
-    def __init__(self, url, status='301 Moved Permanently'):
+    def __init__(self, url, status='301 Moved Permanently', absolute=False):
         """
         Returns a `status` redirect to the new URL. 
         `url` is joined with the base URL so that things like 
@@ -85,7 +85,11 @@ class Redirect(HTTPError):
         newloc = urlparse.urljoin(ctx.path, url)
 
         if newloc.startswith('/'):
-            newloc = ctx.home + newloc
+            if absolute:
+                home = ctx.realhome
+            else:
+                home = ctx.home
+            newloc = home + newloc
 
         headers = {
             'Content-Type': 'text/html',
@@ -97,22 +101,22 @@ redirect = Redirect
 
 class Found(Redirect):
     """A `302 Found` redirect."""
-    def __init__(self, url):
-        Redirect.__init__(self, url, '302 Found')
+    def __init__(self, url, absolute=False):
+        Redirect.__init__(self, url, '302 Found', absolute=absolute)
 
 found = Found
 
 class SeeOther(Redirect):
     """A `303 See Other` redirect."""
-    def __init__(self, url):
-        Redirect.__init__(self, url, '303 See Other')
+    def __init__(self, url, absolute=False):
+        Redirect.__init__(self, url, '303 See Other', absolute=absolute)
     
 seeother = SeeOther
 
 class TempRedirect(Redirect):
     """A `307 Temporary Redirect` redirect."""
-    def __init__(self, url):
-        Redirect.__init__(self, url, '307 Temporary Redirect')
+    def __init__(self, url, absolute=False):
+        Redirect.__init__(self, url, '307 Temporary Redirect', absolute=absolute)
 
 tempredirect = TempRedirect
 

@@ -41,11 +41,8 @@ import os
 import glob
 
 from utils import storage, safeunicode, safestr, re_compile
-from webapi import config, debug
+from webapi import config
 from net import websafe
-
-
-DEBUG = False
 
 def splitline(text):
     r"""Splits the given text at newline.
@@ -804,9 +801,6 @@ class Template(BaseTemplate):
         # compile the code first to report the errors, if any, with the filename
         compiled_code = compile(code, filename, 'exec')
         
-        if DEBUG:
-            print code
-        
         # make sure code is safe
         ast = compiler.parse(code)
         SafeVisitor().walk(ast, filename)
@@ -828,10 +822,10 @@ class Render:
         self._loc = loc
         self._keywords = keywords
         
-        if cache:
+        if cache or config.get('debug', False):
             self._cache = {}
         else:
-            self._cache = False
+            self._cache = None
         
         if base and not hasattr(base, '__call__'):
             # make base a function, so that it can be passed to sub-renders
@@ -842,7 +836,7 @@ class Render:
     def _load_template(self, name):
         path = os.path.join(self._loc, name)
         if os.path.isdir(path):
-            return Render(path, cache=self._cache, base=self._base, **self._keywords)
+            return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
         else:
             path = self._findfile(path)
             if path:
@@ -855,7 +849,7 @@ class Render:
         return p and p[0]
             
     def _template(self, name):
-        if self._cache is not False:
+        if self._cache is not None:
             if name not in self._cache:
                 self._cache[name] = self._load_template(name)
             return self._cache[name]

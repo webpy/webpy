@@ -74,7 +74,7 @@ class render_jinja:
     """Rendering interface to Jinja2 Templates
     
     Example:
-        render= render_jinja2('templates')
+        render= render_jinja('templates')
         render.hello(name='jinja2')
     """
     def __init__(self, *a, **kwargs):

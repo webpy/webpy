@@ -200,8 +200,7 @@ def input(*requireds, **defaults):
         #defaults.setdefault('_unicode', True) # force unicode conversion by default.
         return storify(out, *requireds, **defaults)
     except KeyError:
-        badrequest()
-        raise StopIteration
+        raise badrequest()
 
 def data():
     """Returns the data sent with the request."""
@@ -221,7 +220,7 @@ def setcookie(name, value, expires="", domain=None, secure=False):
         kargs['secure'] = secure
     # @@ should we limit cookies to a different path?
     cookie = Cookie.SimpleCookie()
-    cookie[name] = value
+    cookie[name] = urllib.quote(value)
     for key, val in kargs.iteritems(): 
         cookie[name][key] = val
     header('Set-Cookie', cookie.items()[0][1].OutputString())
@@ -234,7 +233,10 @@ def cookies(*requireds, **defaults):
     cookie = Cookie.SimpleCookie()
     cookie.load(ctx.env.get('HTTP_COOKIE', ''))
     try:
-        return storify(cookie, *requireds, **defaults)
+        d = storify(cookie, *requireds, **defaults)
+        for k, v in d.items():
+            d[k] = urllib.unquote(v)
+        return d
     except KeyError:
         badrequest()
         raise StopIteration

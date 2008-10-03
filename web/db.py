@@ -499,6 +499,8 @@ class DB:
         This exists specifically for a workaround in SqliteDB.
 
         """
+        if isinstance(val, unicode):
+            val = val.encode('UTF-8')
         return val
 
     def _db_execute(self, cur, sql_query): 

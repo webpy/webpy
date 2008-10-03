@@ -27,7 +27,7 @@ __all__ = [
   "sendmail"
 ]
 
-import re, sys, time, threading, os
+import re, sys, time, threading, subprocess
 try: import datetime
 except ImportError: pass
 
@@ -980,11 +980,10 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
         for r in recipients:
             assert not r.startswith('-'), 'security'
 
-        i, o = os.popen2([sendmail, '-f', from_address] + recipients)
-        i.write(message)
-        i.close()
-        o.close()
-        del i, o
+        p = subprocess.Popen(['/usr/sbin/sendmail', '-f', from_address] + recipients, stdin=subprocess.PIPE)
+        p.stdin.write(message)
+        p.stdin.close()
+        p.wait()
 
 if __name__ == "__main__":
     import doctest

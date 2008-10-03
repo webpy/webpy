@@ -127,7 +127,7 @@ class SQLQuery:
                 self.items[i] = item.value.v
 
     def __add__(self, other):
-        if isinstance(other, str):
+        if isinstance(other, basestring):
             items = [other]
         elif isinstance(other, SQLQuery):
             items = other.items
@@ -136,7 +136,7 @@ class SQLQuery:
         return SQLQuery(self.items + items)
 
     def __radd__(self, other):
-        if isinstance(other, str):
+        if isinstance(other, basestring):
             items = [other]
         else:
             return NotImplemented

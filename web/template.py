@@ -880,7 +880,7 @@ class Render:
         self._loc = loc
         self._keywords = keywords
         
-        if cache or config.get('debug', False):
+        if cache or not config.get('debug', False):
             self._cache = {}
         else:
             self._cache = None

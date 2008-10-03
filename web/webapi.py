@@ -17,7 +17,7 @@ __all__ = [
     "NoMethod", "nomethod",
 ]
 
-import sys, cgi, Cookie, pprint, urlparse
+import sys, cgi, Cookie, pprint, urlparse, urllib
 from utils import storage, storify, threadeddict, dictadd, intget, utf8
 
 config = storage()

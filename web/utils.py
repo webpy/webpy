@@ -147,11 +147,14 @@ iters = [list, tuple]
 import __builtin__
 if hasattr(__builtin__, 'set'):
     iters.append(set)
-try: 
-    from sets import Set
-    iters.append(Set)
-except ImportError: 
-    pass
+if hasattr(__builtin__, 'frozenset'):
+    iters.append(set)
+if sys.version_info < (2,6): # sets module deprecated in 2.6
+    try:
+        from sets import Set
+        iters.append(Set)
+    except ImportError: 
+        pass
     
 class _hack(tuple): pass
 iters = _hack(iters)

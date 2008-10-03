@@ -3,12 +3,7 @@ Session Management
 (from web.py)
 """
 
-import os
-import time
-import datetime
-import random
-import md5
-import base64
+import os, time, datetime, random, hashlib, base64
 try:
     import cPickle as pickle
 except ImportError:
@@ -112,7 +107,7 @@ class Session(utils.ThreadedDict):
             rand = random.random()
             now = time.time()
             secret_key = self._config.secret_key
-            session_id = md5.new("%s%s%s%s" %(rand, now, web.ctx.ip, secret_key))
+            session_id = hashlib.sha1("%s%s%s%s" %(rand, now, web.ctx.ip, secret_key))
             session_id = session_id.hexdigest()
             if session_id not in self.store:
                 break

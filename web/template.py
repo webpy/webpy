@@ -98,11 +98,12 @@ class Parser:
             index = text.index('$')
             begin_indent, text2 = text[:index], text[index+1:]
             ahead = self.python_lookahead(text2)
-            if ahead in STATEMENT_NODES:
-                return self.read_block_section(text2, begin_indent)
-            elif ahead == 'var':
+            
+            if ahead == 'var':
                 return self.read_var(text2)
-            if ahead in KEYWORDS:
+            elif ahead in STATEMENT_NODES:
+                return self.read_block_section(text2, begin_indent)
+            elif ahead in KEYWORDS:
                 return self.read_keyword(text2)
             elif ahead.strip() == '':
                 # assignments starts with a space after $
@@ -132,8 +133,17 @@ class Parser:
             pass # no need to process value
         elif sep == ':': 
             #@@ Hack for backward-compatability
-            linenode, _ = self.readline(value)
-            parts = [node.emit('') for node in linenode.nodes]
+            if tokens[3] == '\n': # multi-line var statement
+                block, text = self.read_indented_block(text, '    ')
+                lines = [self.readline(x)[0] for x in block.splitlines()]
+                nodes = []
+                for x in lines:
+                    nodes.extend(x.nodes)
+                    nodes.append(TextNode('\n'))         
+            else: # single-line var statement
+                linenode, _ = self.readline(value)
+                nodes = linenode.nodes                
+            parts = [node.emit('') for node in nodes]
             value = "join_(%s)" % ", ".join(parts)
         else:
             raise SyntaxError('Invalid var statement')
@@ -1066,9 +1076,12 @@ def test():
 
     Define a utility function to run template test.
     
+        >>> class TestResult(TemplateResult):
+        ...     def __repr__(self): return repr(unicode(self))
+        ...
         >>> def t(code, **keywords):
         ...     tmpl = Template(code, **keywords)
-        ...     return lambda *a, **kw: unicode(tmpl(*a, **kw))
+        ...     return lambda *a, **kw: TestResult(tmpl(*a, **kw))
         ...
     
     Simple tests.
@@ -1219,6 +1232,17 @@ def test():
         Traceback (most recent call last):
             ...
         NameError: global name 'min' is not defined
+        
+    Test vars.
+        >>> x = t('$var x: 1')()
+        >>> x.x
+        u'1'
+        >>> x = t('$var x = 1')()
+        >>> x.x
+        1
+        >>> x = t('$var x:  \n    foo\n    bar')()
+        >>> x.x
+        u'foo\nbar\n'
     """
     pass
             

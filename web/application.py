@@ -335,8 +335,6 @@ class application:
             
         if f is None:
             raise NotFound
-        elif isinstance(f, application):
-            return f.handle()
         elif is_class(f):
             return handle_class(f)
         elif isinstance(f, basestring):
@@ -390,7 +388,7 @@ class application:
             web.ctx.homepath += dir
             web.ctx.path = web.ctx.path[len(dir):]
             web.ctx.fullpath = web.ctx.fullpath[len(dir):]
-            return app.handle()
+            return app.handle_with_processors()
         finally:
             web.ctx.home = oldctx.home
             web.ctx.homepath = oldctx.homepath

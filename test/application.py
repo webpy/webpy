@@ -131,6 +131,37 @@ class ApplicationTest(webtest.TestCase):
         response = app.request('/blog/foo2', env={'SCRIPT_NAME': '/x'})
         self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/x/blog/bar')
 
+    def test_processors(self):
+        urls = (
+            "/(.*)", "blog"
+        )
+        class blog:
+            def GET(self, path):
+                return 'blog ' + path
+
+        state = web.storage(x=0, y=0)
+        def f():
+            state.x += 1
+
+        app_blog = web.application(urls, locals())
+        app_blog.add_processor(web.loadhook(f))
+        
+        urls = (
+            "/blog", app_blog,
+            "/(.*)", "index"
+        )
+        class index:
+            def GET(self, path):
+                return "hello " + path
+        app = web.application(urls, locals())
+        def g():
+            state.y += 1
+        app.add_processor(web.loadhook(g))
+
+        app.request('/blog/foo')
+        assert state.x == 1 and state.y == 1, repr(state)
+        app.request('/foo')
+        assert state.x == 1 and state.y == 2, repr(state)
 
 if __name__ == '__main__':
     webtest.main()

@@ -3,11 +3,17 @@ Session Management
 (from web.py)
 """
 
-import os, time, datetime, random, hashlib, base64
+import os, time, datetime, random, base64
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+try:
+    import hashlib
+    sha1 = hashlib.sha1
+except ImportError:
+    import sha
+    sha1 = sha.new
 
 import utils
 import webapi as web
@@ -107,7 +113,7 @@ class Session(utils.ThreadedDict):
             rand = random.random()
             now = time.time()
             secret_key = self._config.secret_key
-            session_id = hashlib.sha1("%s%s%s%s" %(rand, now, web.ctx.ip, secret_key))
+            session_id = sha1("%s%s%s%s" %(rand, now, web.ctx.ip, secret_key))
             session_id = session_id.hexdigest()
             if session_id not in self.store:
                 break

@@ -19,9 +19,6 @@ class Form:
         self.note = None
         self.validators = kw.pop('validators', [])
 
-        for i in inputs:
-            setattr(self, i.name, i)
-                    
     def __call__(self, x=None):
         o = copy.deepcopy(self)
         if x: o.validates(x)
@@ -71,10 +68,15 @@ class Form:
         for x in self.inputs:
             if x.name == i: return x
         raise KeyError, i
+
+    def __getattr__(self, name):
+        for x in self.inputs:
+            if x.name == name: return x
+        raise AttributeError, name
     
     def get(self, i, default=None):
         try:
-            return self.__getitem__(i)
+            return self[i]
         except KeyError:
             return default
             
@@ -98,7 +100,6 @@ class Input(object):
         self.value = value
         for v in self.validators:
             if not v.valid(value):
-                print '------', self.name, self.value
                 self.note = v.msg
                 return False
         return True

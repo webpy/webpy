@@ -27,7 +27,13 @@ __all__ = [
   "sendmail"
 ]
 
-import re, sys, time, threading, subprocess
+import re, sys, time, threading
+
+try:
+    import subprocess
+except ImportError: 
+    subprocess = None
+
 try: import datetime
 except ImportError: pass
 
@@ -979,11 +985,19 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
         assert not from_address.startswith('-'), 'security'
         for r in recipients:
             assert not r.startswith('-'), 'security'
+                
 
-        p = subprocess.Popen(['/usr/sbin/sendmail', '-f', from_address] + recipients, stdin=subprocess.PIPE)
-        p.stdin.write(message)
-        p.stdin.close()
-        p.wait()
+        if subprocess:
+            p = subprocess.Popen(['/usr/sbin/sendmail', '-f', from_address] + recipients, stdin=subprocess.PIPE)
+            p.stdin.write(message)
+            p.stdin.close()
+            p.wait()
+        else:
+            i, o = os.popen2(["/usr/lib/sendmail", '-f', from_address] + recipients)
+            i.write(message)
+            i.close()
+            o.close()
+            del i, o
 
 if __name__ == "__main__":
     import doctest

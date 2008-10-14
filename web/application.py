@@ -293,7 +293,11 @@ class application:
         ctx.output = ''
         ctx.environ = ctx.env = env
         ctx.host = env.get('HTTP_HOST')
-        ctx.protocol = env.get('HTTPS') and 'https' or 'http'
+
+        if env.get('HTTPS', '').lower() in ['on', 'true']:
+            ctx.protocol = 'https'
+        else:
+            ctx.protocol = 'http'
         ctx.homedomain = ctx.protocol + '://' + env.get('HTTP_HOST', '[unknown]')
         ctx.homepath = os.environ.get('REAL_SCRIPT_NAME', env.get('SCRIPT_NAME', ''))
         ctx.home = ctx.homedomain + ctx.homepath

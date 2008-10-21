@@ -8,7 +8,6 @@ def suite():
         "web.db", 
         "web.http", 
         "web.net", 
-        "web.request", 
         "web.session",
         "web.template",
         "web.utils", 

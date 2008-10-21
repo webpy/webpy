@@ -801,10 +801,12 @@ class BaseTemplate:
 class Template(BaseTemplate):
     CONTENT_TYPES = {
         '.html' : 'text/html; charset=utf-8',
+        '.xhtml' : 'text/html; charset=utf-8',
         '.txt' : 'text/plain',
     }
     FILTERS = {
         '.html': websafe,
+        '.xhtml': websafe,
         '.xml': websafe
     }
     globals = {}

@@ -123,9 +123,9 @@ class Session(utils.ThreadedDict):
         """Cleanup the stored sessions"""
         current_time = time.time()
         timeout = self._config.timeout
-        if self._last_cleanup_time + timeout > current_time:
+        if current_time - self._last_cleanup_time > timeout:
             self.store.cleanup(timeout)
-            self._last_cleanup_time = current_time
+            self.__dict__['_last_cleanup_time'] = current_time
 
     def expired(self):
         """Called when an expired session is atime"""

@@ -835,7 +835,7 @@ class Template(BaseTemplate):
     def __call__(self, *a, **kw):
         import webapi as web
         if 'headers' in web.ctx and self.content_type:
-            web.header('Content-Type', self.content_type)
+            web.header('Content-Type', self.content_type, unique=True)
             
         return BaseTemplate.__call__(self, *a, **kw)
         

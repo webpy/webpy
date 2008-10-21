@@ -110,7 +110,7 @@ class Session(utils.ThreadedDict):
         """Generate a random id for session"""
 
         while True:
-            rand = random.random()
+            rand = os.urandom(16)
             now = time.time()
             secret_key = self._config.secret_key
             session_id = sha1("%s%s%s%s" %(rand, now, web.ctx.ip, secret_key))

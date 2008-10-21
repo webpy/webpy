@@ -33,6 +33,10 @@ class Form:
             out += "<td>"+i.pre+i.render()+i.post+"</td>"
         out += "</table>"
         return out
+
+    def rendernote(self, note):
+        if note: return '<strong class="wrong">%s</strong>' % net.websafe(note)
+        else: return ""
     
     def validates(self, source=None, _validate=True, **kw):
         source = source or kw or web.input()

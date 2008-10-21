@@ -15,21 +15,40 @@ try: import datetime
 except ImportError: pass
 
 def validipaddr(address):
-    """returns True if `address` is a valid IPv4 address"""
+    """returns True if `address` is a valid IPv4 address.
+    
+        >>> validipaddr('192.168.1.1')
+        True
+        >>> validipaddr('192.168.1.800')
+        False
+        >>> validipaddr('192.168.1')
+        False
+    """
     try:
         octets = address.split('.')
-        assert len(octets) == 4
+        if len(octets) != 4:
+            return False
         for x in octets:
-            assert 0 <= int(x) <= 255
-    except (AssertionError, ValueError):
+            if not (0 <= int(x) <= 255):
+                return False
+    except ValueError:
         return False
     return True
 
 def validipport(port):
-    """returns True if `port` is a valid IPv4 port"""
+    """returns True if `port` is a valid IPv4 port.
+    
+        >>> validipport('9000')
+        True
+        >>> validipport('foo')
+        False
+        >>> validipport('1000000')
+        False
+    """
     try:
-        assert 0 <= int(port) <= 65535
-    except (AssertionError, ValueError):
+        if not (0 <= int(port) <= 65535):
+            return False
+    except ValueError:
         return False
     return True
 

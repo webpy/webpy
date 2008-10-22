@@ -801,7 +801,7 @@ class BaseTemplate:
 class Template(BaseTemplate):
     CONTENT_TYPES = {
         '.html' : 'text/html; charset=utf-8',
-        '.xhtml' : 'text/html; charset=utf-8',
+        '.xhtml' : 'application/xhtml+xml; charset=utf-8',
         '.txt' : 'text/plain',
     }
     FILTERS = {

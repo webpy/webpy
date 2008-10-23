@@ -44,12 +44,12 @@ def lastmodified(date_obj):
     web.header('Last-Modified', net.httpdate(date_obj))
 
 def modified(date=None, etag=None):
-    n = web.ctx.env.get('HTTP_IF_NONE_MATCH')
+    n = set(x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH').split(','))
     m = net.parsehttpdate(web.ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
     validate = False
     if etag:
-        raise NotImplementedError, "no etag support yet"
-        # should really be a warning
+        if '*' in n or etag in n:
+            validate = True
     if date and m:
         # we subtract a second because 
         # HTTP dates don't have sub-second precision

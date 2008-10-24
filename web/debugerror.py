@@ -225,7 +225,7 @@ $:dicttable(ctx.env)
 </html>
 """
 
-djangoerror_r = Template(djangoerror_t, filename=__file__, filter=websafe)
+djangoerror_r = None
 
 def djangoerror():
     def _get_lines_from_file(filename, lineno, context_lines):
@@ -278,6 +278,11 @@ def djangoerror():
             out = '[could not display: <' + e.__class__.__name__ + \
                   ': '+str(e)+'>]'
         return out
+        
+    global djangoerror_r
+    if djangoerror_r is None:
+        djangoerror_r = Template(djangoerror_t, filename=__file__, filter=websafe)
+        
     t = djangoerror_r
     globals = {'ctx': web.ctx, 'web':web, 'dict':dict, 'str':str, 'prettify': prettify}
     t.t.func_globals.update(globals)

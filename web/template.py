@@ -36,9 +36,10 @@ __all__ = [
     "test"
 ]
 
-import tokenize, compiler
+import tokenize
 import os
 import glob
+import re
 
 from utils import storage, safeunicode, safestr, re_compile
 from webapi import config
@@ -746,16 +747,18 @@ class ForLoopContext:
         
 class BaseTemplate:
     def __init__(self, code, filename, filter, globals, builtins):
-        self.code = code
         self.filename = filename
         self.filter = filter
         self._globals = globals
         self._builtins = builtins
-        self.t = self._compile()
+        if code:
+            self.t = self._compile(code)
+        else:
+            self.t = lambda: ''
         
-    def _compile(self):
+    def _compile(self, code):
         env = self.make_env(self._globals or {}, self._builtins)
-        exec(self.code, env)
+        exec(code, env)
         return env['__template__']
 
     def __call__(self, *a, **kw):
@@ -872,10 +875,22 @@ class Template(BaseTemplate):
             raise
         
         # make sure code is safe
+        import compiler
         ast = compiler.parse(code)
         SafeVisitor().walk(ast, filename)
 
         return compiled_code
+        
+class CompiledTemplate(Template):
+    def __init__(self, f, filename):
+        Template.__init__(self, '', filename)
+        self.t = f
+        
+    def compile_template(self, *a):
+        return None
+    
+    def _compile(self, *a):
+        return None
                 
 class Render:
     """The most preferred way of using templates.
@@ -902,17 +917,27 @@ class Render:
             self._base = lambda page: self._template(base)(page)
         else:
             self._base = base
-        
-    def _load_template(self, name):
+            
+    def _lookup(self, name):
         path = os.path.join(self._loc, name)
         if os.path.isdir(path):
-            return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
+            return 'dir', path
         else:
             path = self._findfile(path)
             if path:
-                return Template(open(path).read(), filename=path, **self._keywords)
+                return 'file', path
             else:
-                raise AttributeError, "No template named " + name            
+                return 'none', None
+        
+    def _load_template(self, name):
+        kind, path = self._lookup(name)
+        
+        if kind == 'dir':
+            return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
+        elif kind == 'file':
+            return Template(open(path).read(), filename=path, **self._keywords)
+        else:
+            raise AttributeError, "No template named " + name            
 
     def _findfile(self, path_prefix): 
         p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
@@ -934,14 +959,62 @@ class Render:
             return template
         else:
             return self._template(name)
-        
-render = Render
 
+render = Render
+# setup render for Google App Engine.
+try:
+    from google import appengine
+    def render(loc):
+        name = loc.rstrip('/').replace('/', '.')
+        return __import__(name, None, None, ['x'])        
+except ImportError:
+    pass
+        
 def frender(path, **keywords):
     """Creates a template from the given file path.
     """
     return Template(open(path).read(), filename=path, **keywords)
+    
+def compile_templates(root):
+    """Compiles templates to python code."""
+    re_start = re_compile('^', re.M)
+    
+    for dirpath, dirnames, filenames in os.walk(root):
+        filenames = [f for f in filenames if not f.startswith('.') and not f.endswith('~') and not f.startswith('__init__.py')]
+        
+        out = open(os.path.join(dirpath, '__init__.py'), 'w')
+        out.write('from web.template import CompiledTemplate, ForLoop\n\n')
+        
+        for f in filenames:
+            path = os.path.join(dirpath, f)
 
+            # create template to make sure it compiles
+            t = Template(open(path).read(), path)
+            
+            if '.' in f:
+                name, _ = f.split('.', 1)
+            else:
+                name = f
+            
+            code = Template.generate_code(open(path).read(), path)
+            code = re_start.sub('    ', code)
+                        
+            _gen = '' + \
+            '\ndef %s():' + \
+            '\n    loop = ForLoop()' + \
+            '\n    _dummy  = CompiledTemplate(lambda: None, "dummy")' + \
+            '\n    join_ = _dummy._join' + \
+            '\n    escape_ = _dummy._escape' + \
+            '\n' + \
+            '\n%s' + \
+            '\n    return __template__'
+            
+            gen_code = _gen % (name, code)
+            out.write(gen_code)
+            out.write('\n\n')
+            out.write('%s = CompiledTemplate(%s(), %s)\n\n' % (name, name, repr(path)))
+        out.close()
+                
 class ParseError(Exception):
     pass
     
@@ -1249,5 +1322,9 @@ def test():
     pass
             
 if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+    import sys
+    if '--compile' in sys.argv:
+        compile_templates(sys.argv[2])
+    else:
+        import doctest
+        doctest.testmod()

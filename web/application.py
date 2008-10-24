@@ -151,7 +151,7 @@ class application:
             env = kw['env']
         else:
             env = {}
-        env = dict(env, HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=https)
+        env = dict(env, HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=str(https))
         headers = headers or {}
         for k, v in headers.items():
             env['HTTP_' + k.upper().replace('-', '_')] = v
@@ -339,6 +339,8 @@ class application:
             
         if f is None:
             raise NotFound
+        elif isinstance(f, application):
+            return f.handle_with_processors()
         elif is_class(f):
             return handle_class(f)
         elif isinstance(f, basestring):

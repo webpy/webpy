@@ -235,7 +235,7 @@ def cookies(*requireds, **defaults):
     try:
         d = storify(cookie, *requireds, **defaults)
         for k, v in d.items():
-            d[k] = urllib.unquote(v)
+            d[k] = urllib.unquote(utf8(v))
         return d
     except KeyError:
         badrequest()

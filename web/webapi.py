@@ -220,7 +220,7 @@ def setcookie(name, value, expires="", domain=None, secure=False):
         kargs['secure'] = secure
     # @@ should we limit cookies to a different path?
     cookie = Cookie.SimpleCookie()
-    cookie[name] = urllib.quote(value)
+    cookie[name] = urllib.quote(utf8(value))
     for key, val in kargs.iteritems(): 
         cookie[name][key] = val
     header('Set-Cookie', cookie.items()[0][1].OutputString())
@@ -235,7 +235,7 @@ def cookies(*requireds, **defaults):
     try:
         d = storify(cookie, *requireds, **defaults)
         for k, v in d.items():
-            d[k] = urllib.unquote(utf8(v))
+            d[k] = urllib.unquote(v)
         return d
     except KeyError:
         badrequest()

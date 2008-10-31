@@ -890,10 +890,10 @@ class Render:
         self._loc = loc
         self._keywords = keywords
         
-        if cache or not config.get('debug', False):
-            self._cache = {}
-        else:
+        if not cache or config.get('debug', False):
             self._cache = None
+        else:
+            self._cache = {}
         
         if base and not hasattr(base, '__call__'):
             # make base a function, so that it can be passed to sub-renders

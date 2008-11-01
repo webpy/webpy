@@ -167,7 +167,12 @@ def input(*requireds, **defaults):
     See `storify` for how `requireds` and `defaults` work.
     """
     from cStringIO import StringIO
-    def dictify(fs): return dict([(k, fs[k]) for k in fs.keys()])
+    def dictify(fs): 
+        # hack to make web.input work with enctype='text/plain.
+        if fs.list is None:
+            fs.list = [] 
+
+        return dict([(k, fs[k]) for k in fs.keys()])
     
     _method = defaults.pop('_method', 'both')
     

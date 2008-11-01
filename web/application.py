@@ -24,14 +24,9 @@ except ImportError:
 __all__ = [
     "application", "auto_application",
     "subdir_application", "subdomain_application", 
-    "combine_applications",
     "loadhook", "unloadhook",
     "autodelegate"
 ]
-
-class NotFound(Exception): 
-    """Exception raised when an application can't handle a request."""
-    pass
 
 class application:
     """Application to delegate requests based on path.
@@ -182,8 +177,14 @@ class application:
             else:
                 return self.handle()
                 
-        # processors must be applied in the resvere order.
-        return process(self.processors)
+        try:
+            # processors must be applied in the resvere order. (??)
+            return process(self.processors)
+        except web.HTTPError:
+            raise
+        except:
+            print >> web.debug, traceback.format_exc()
+            raise web.internalerror()
                 
     def wsgifunc(self, *middleware):
         """Returns a WSGI-compatible function for this application."""
@@ -212,16 +213,8 @@ class application:
                     raise web.nomethod()
 
                 result = self.handle_with_processors()
-            except NotFound:
-                web.ctx.status = "404 Not Found"
-                result = self.notfound()
             except web.HTTPError, e:
                 result = e.data
-            except:
-                print >> web.debug, traceback.format_exc()
-                web.ctx.status = '500 Internal Server Error'
-                result = self.internalerror()
-                web.ctx.headers = [('Content-Type', 'text/html')]
 
             if is_generator(result):
                 result = peep(result)
@@ -248,18 +241,6 @@ class application:
 
         return wsgi
 
-    def internalerror(self):
-        """Message for `500 internal error`."""
-        
-        if web.config.get('debug'):
-            return debugerror.debugerror()
-        else:
-            return "internal server error"
-
-    def notfound(self):
-        """Message for `404 not found`."""
-        return "not found"
-        
     def run(self, *middleware):
         """
         Starts handling requests. If called in a CGI or FastCGI context, it will follow
@@ -341,7 +322,7 @@ class application:
         def is_class(o): return isinstance(o, (types.ClassType, type))
             
         if f is None:
-            raise NotFound
+            raise web.notfound()
         elif isinstance(f, application):
             return f.handle_with_processors()
         elif is_class(f):
@@ -439,30 +420,8 @@ class auto_application(application):
 
         self.page = page
 
-class subdir_application(application):
-    """Application to delegate requests based on directory.
-
-        >>> urls = ("/hello", "hello")
-        >>> app = application(urls, globals())
-        >>> class hello:
-        ...     def GET(self): return "hello"
-        >>>
-        >>> mapping = ("/foo", app)
-        >>> app2 = subdir_application(mapping)
-        >>> app2.request("/foo/hello").data
-        'hello'
-    """
-    def handle(self):
-        for dir, what in utils.group(self.mapping, 2):
-            if web.ctx.path.startswith(dir + '/'):
-                # change paths to make path relative to dir
-                web.ctx.home += dir
-                web.ctx.homepath += dir
-                web.ctx.path = web.ctx.path[len(dir):]
-                web.ctx.fullpath = web.ctx.fullpath[len(dir):]
-                return self._delegate(what, self.fvars)
-
-        raise NotFound
+# The application class already has the required functionality of subdir_application
+subdir_application = application
                 
 class subdomain_application(application):
     """Application to delegate requests based on the host.
@@ -497,41 +456,6 @@ class subdomain_application(application):
             if result: # it's a match
                 return what, [x and urllib.unquote(x) for x in result.groups()]
         return None, None
-        
-
-class combine_applications(application):
-    """Combines a list of applications into single application.
-    
-        >>> app1 = auto_application()
-        >>> class foo(app1.page):
-        ...     def GET(self): return "foo"
-        ...
-        >>> app2 = auto_application()
-        >>> class bar(app2.page):
-        ...     def GET(self): return "bar"
-        ...
-        >>> app = combine_applications(app1, app2)
-        >>> app.request('/foo').data
-        'foo'
-        >>> app.request('/bar').data
-        'bar'
-        >>> response = app.request("/hello")
-        >>> response.status
-        '404 Not Found'
-        >>> response.data
-        'not found'
-    """
-    def __init__(self, *apps):
-        self.apps = apps
-        application.__init__(self)
-        
-    def handle(self):
-        for a in self.apps:
-            try:
-                return a.handle()
-            except NotFound:
-                pass
-        raise NotFound
         
 def loadhook(h):
     """Converts a load hook into an application processor.

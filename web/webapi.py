@@ -10,7 +10,7 @@ __all__ = [
     "setcookie", "cookies",
     "ctx", 
     "HTTPError", 
-    "BadRequest", "NotFound", "Gone", 
+    "BadRequest", "NotFound", "Gone", "InternalError",
     "badrequest", "notfound", "gone", "internalerror",
     "Redirect", "Found", "SeeOther", "TempRedirect",
     "redirect", "found", "seeother", "tempredirect", 
@@ -46,31 +46,31 @@ class HTTPError(Exception):
 
 class BadRequest(HTTPError):
     """`400 Bad Request` error."""
+    message = "bad request"
     def __init__(self):
         status = "400 Bad Request"
         headers = {'Content-Type': 'text/html'}
-        data = 'bad request'
-        HTTPError.__init__(self, status, headers, data)
+        HTTPError.__init__(self, status, headers, self.message)
 
 badrequest = BadRequest
 
 class NotFound(HTTPError):
     """`404 Not Found` error."""
+    message = "not found"
     def __init__(self):
         status = '404 Not Found'
         headers = {'Content-Type': 'text/html'}
-        data = 'not found'
-        HTTPError.__init__(self, status, headers, data)
+        HTTPError.__init__(self, status, headers, self.message)
 
 notfound = NotFound
 
 class Gone(HTTPError):
     """`410 Gone` error."""
+    message = "gone"
     def __init__(self):
         status = '410 Gone'
         headers = {'Content-Type': 'text/html'}
-        data = 'gone'
-        HTTPError.__init__(self, status, headers, data)
+        HTTPError.__init__(self, status, headers, self.message)
 
 gone = Gone
 
@@ -137,11 +137,23 @@ class NoMethod(HTTPError):
         
 nomethod = NoMethod
 
-def internalerror():
-    """Returns a `500 Internal Server` error."""
-    ctx.status = "500 Internal Server Error"
-    ctx.headers = [('Content-Type', 'text/html')]
-    return "internal server error"
+class InternalError(HTTPError):
+    """500 Internal Server Error`."""
+    message = "internal server error"
+    
+    def __init__(self):
+        status = '500 Internal Server Error'
+        headers = {'Content-Type': 'text/html'}
+        HTTPError.__init__(self, status, headers, self.get_message())
+        
+    def get_message(self):
+        if config.get('debug'):
+            import debugerror
+            return debugerror.debugerror()
+        else:
+            return self.message
+    
+internalerror = InternalError
 
 def header(hdr, value, unique=False):
     """

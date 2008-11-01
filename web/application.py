@@ -158,7 +158,10 @@ class application:
         
         if data:
             import StringIO
-            q = urllib.urlencode(data)
+            if isinstance(data, dict):
+                q = urllib.urlencode(data)
+            else:
+                q = data
             env['wsgi.input'] = StringIO.StringIO(q)
         response = web.storage()
         def start_response(status, headers):

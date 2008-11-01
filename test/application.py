@@ -2,6 +2,7 @@ import webtest
 import time
 
 import web
+import urllib
 
 data = """
 import web
@@ -162,7 +163,34 @@ class ApplicationTest(webtest.TestCase):
         assert state.x == 1 and state.y == 1, repr(state)
         app.request('/foo')
         assert state.x == 1 and state.y == 2, repr(state)
+        
+    def testUnicodeInput(self):
+        urls = (
+            "/.*", "foo"
+        )
+        class foo:
+            def GET(self):
+                i = web.input(name='')
+                return repr(i.name)
+                
+            def POST(self):
+                return repr(web.data())
+                i = web.input(name={})
+                return repr(i)
+                
+        app = web.application(urls, locals())
+        
+        def f(name):
+            path = '/?' + urllib.urlencode({"name": name})
+            self.assertEquals(app.request(path).data, repr(name))
+            
+        f(u'\u1234')
+        f(u'foo')
+        
+        data = '--boundary\r\nContent-Disposition: form-data; name="name"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
+        headers = {'Content-Type': 'multipart/form-data; boundary=--boundary'}
+        response = app.request('/', method="POST", data=data, headers=headers)
+        print response.data
 
 if __name__ == '__main__':
     webtest.main()
-

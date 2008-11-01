@@ -113,6 +113,10 @@ def storify(mapping, *requireds, **defaults):
     
         >>> storify({'x': 'a'}, _unicode=True)
         <Storage {'x': u'a'}>
+        >>> storify({'x': storage(value='a')}, x={}, _unicode=True)
+        <Storage {'x': <Storage {'value': 'a'}>}>
+        >>> storify({'x': storage(value='a')}, _unicode=True)
+        <Storage {'x': u'a'}>
     """
     _unicode = defaults.pop('_unicode', False)
     def unicodify(s):

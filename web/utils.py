@@ -734,15 +734,17 @@ class Profile:
         stime = time.time() - stime
         prof.close()
 
-        def print_stats():
-            stats = hotshot.stats.load(temp.name)
-            stats.strip_dirs()
-            stats.sort_stats('time', 'calls')
-            stats.print_stats(40)
-            stats.print_callers()
-    
+        import cStringIO
+        out = cStringIO.StringIO()
+        stats = hotshot.stats.load(temp.name)
+        stats.stream = out
+        stats.strip_dirs()
+        stats.sort_stats('time', 'calls')
+        stats.print_stats(40)
+        stats.print_callers()
+
         x =  '\n\ntook '+ str(stime) + ' seconds\n'
-        x += capturestdout(print_stats)()
+        x += out.getvalue()
 
         return result, x
 

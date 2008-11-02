@@ -44,7 +44,7 @@ def lastmodified(date_obj):
     web.header('Last-Modified', net.httpdate(date_obj))
 
 def modified(date=None, etag=None):
-    n = set(x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH').split(','))
+    n = set(x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(','))
     m = net.parsehttpdate(web.ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
     validate = False
     if etag:

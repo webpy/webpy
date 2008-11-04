@@ -419,7 +419,7 @@ class Parser:
         r"""
             >>> read_block_section = Parser('').read_block_section
             >>> read_block_section('for i in range(10): hello $i\nfoo')
-            (<block: 'for i in range(10):', [<line: [t' hello ', $i, t'\n']>]>, 'foo')
+            (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
             >>> read_block_section('for i in range(10):\n        hello $i\n    foo', begin_indent='    ')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, '    foo')
             >>> read_block_section('for i in range(10):\n  hello $i\nfoo')
@@ -431,7 +431,7 @@ class Parser:
         
         # if there is some thing left in the line
         if line.strip():
-            block = line
+            block = line.lstrip()
         else:
             def find_indent(text):
                 rx = re_compile('  +')
@@ -1195,25 +1195,30 @@ def test():
     Test if, for and while.
     
         >>> t('$if 1: 1')()
-        u' 1\n'
+        u'1\n'
         >>> t('$if 1:\n    1')()
         u'1\n'
         >>> t('$if 1:\n    1\\')()
         u'1'
         >>> t('$if 0: 0\n$elif 1: 1')()
-        u' 1\n'
+        u'1\n'
         >>> t('$if 0: 0\n$elif None: 0\n$else: 1')()
-        u' 1\n'
+        u'1\n'
         >>> t('$if 0 < 1 and 1 < 2: 1')()
-        u' 1\n'
+        u'1\n'
         >>> t('$for x in [1, 2, 3]: $x')()
-        u' 1\n 2\n 3\n'
+        u'1\n2\n3\n'
         >>> t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1})
-        u' 1\n'
+        u'1\n'
         >>> t('$for x in [1, 2, 3]:\n\t$x')()
         u'    1\n    2\n    3\n'
         >>> t('$def with (a)\n$while a and a.pop():1')([1, 2, 3])
         u'1\n1\n1\n'
+
+    The space after : must be ignored.
+    
+        >>> t('$if True: foo')()
+        u'foo\n'
     
     Test loop.xxx.
 
@@ -1231,9 +1236,9 @@ def test():
         >>> t('$ a = {1: 1}\n$a.keys()[0]')()
         u'1\n'
         >>> t('$ a = []\n$if not a: 1')()
-        u' 1\n'
+        u'1\n'
         >>> t('$ a = {}\n$if not a: 1')()
-        u' 1\n'
+        u'1\n'
         >>> t('$ a = -1\n$a')()
         u'-1\n'
         >>> t('$ a = "1"\n$a')()

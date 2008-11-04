@@ -710,7 +710,7 @@ class FatalSSLAlert(Exception):
     """Exception raised when the SSL implementation signals a fatal alert."""
     pass
 
-if sys.version_info[:2] >= (2, 6):
+if sys.version_info[:3] >= (2, 5, 2):
     class CP_fileobject(socket._fileobject):
         """Faux file object attached to a socket object."""
 

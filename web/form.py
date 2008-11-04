@@ -75,7 +75,9 @@ class Form:
         raise KeyError, i
 
     def __getattr__(self, name):
-        for x in self.inputs:
+        # don't interfere with deepcopy
+        inputs = self.__dict__.get('inputs') or []
+        for x in inputs:
             if x.name == name: return x
         raise AttributeError, name
     

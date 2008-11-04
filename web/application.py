@@ -171,12 +171,15 @@ class application:
         
     def handle_with_processors(self):
         def process(processors):
-            if processors:
-                p, processors = processors[0], processors[1:]
-                return p(lambda: process(processors))
-            else:
-                return self.handle()
-                
+            try:
+                web.ctx.app_stack.append(self)
+                if processors:
+                    p, processors = processors[0], processors[1:]
+                    return p(lambda: process(processors))
+                else:
+                    return self.handle()
+            finally:
+                web.ctx.app_stack = web.ctx.app_stack[:-1]
         try:
             # processors must be applied in the resvere order. (??)
             return process(self.processors)
@@ -308,6 +311,8 @@ class application:
 
         # status must always be str
         ctx.status = '200 OK'
+        
+        ctx.app_stack = []
 
     def _delegate(self, f, fvars, args=[]):
         def handle_class(cls):
@@ -384,6 +389,20 @@ class application:
             web.ctx.homepath = oldctx.homepath
             web.ctx.path = oldctx.path
             web.ctx.fullpath = oldctx.fullpath
+            
+    def get_parent_app(self):
+        if self in web.ctx.app_stack:
+            index = web.ctx.app_stack.index(self)
+            if index > 0:
+                return web.ctx.app_stack[index-1]
+        
+    def notfound(self):
+        """Returns HTTPError with '404 not found' message"""
+        parent = self.get_parent_app()
+        if parent:
+            return parent.notfound()
+        else:
+            return web._NotFound()
 
 class auto_application(application):
     """Application similar to `application` but urls are constructed 
@@ -523,7 +542,6 @@ def autodelegate(prefix=''):
             return web.notfound()
     return internal
 
-    
 class Reloader:
     """Checks to see if any loaded modules have changed on disk and, 
     if so, reloads them.

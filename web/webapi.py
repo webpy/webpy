@@ -54,13 +54,21 @@ class BadRequest(HTTPError):
 
 badrequest = BadRequest
 
-class NotFound(HTTPError):
+class _NotFound(HTTPError):
     """`404 Not Found` error."""
     message = "not found"
     def __init__(self):
         status = '404 Not Found'
         headers = {'Content-Type': 'text/html'}
         HTTPError.__init__(self, status, headers, self.message)
+
+def NotFound():
+    """Returns HTTPError with '404 Not Found' error from the active application.
+    """
+    if ctx.get('app_stack'):
+        return ctx.app_stack[-1].notfound()
+    else:
+        return _NotFound()
 
 notfound = NotFound
 

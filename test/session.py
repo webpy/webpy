@@ -78,6 +78,14 @@ class SessionTest(webtest.TestCase):
             self.assertEquals(b1.open('/count'), str(i+1))
             self.assertEquals(b2.open('/count'), str(i))
 
+    def testBadSessionId(self):
+        b = Browser(self.app)
+        self.assertEquals(b.open('/count'), '1')
+        self.assertEquals(b.open('/count'), '2')
+
+        b.cookies['webpy_session_id'] = '/etc/password'
+        self.assertEquals(b.open('/count'), '1')
+
 class DBSessionTest(SessionTest):
     """Session test with db store."""
     def make_session(self, app):

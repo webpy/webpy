@@ -164,12 +164,9 @@ class _InternalError(HTTPError):
 def InternalError():
     """Returns HTTPError with '500 internal error' error from the active application.
     """
-    print 'InternalError 1'
     if ctx.get('app_stack'):
-        print 'InternalError 2'
         return ctx.app_stack[-1].internalerror()
     else:
-        print 'InternalError 3'
         return _InternalError()
 
 internalerror = InternalError

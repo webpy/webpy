@@ -30,12 +30,6 @@ try:
 except ImportError:
     pass # requires openid module
 
-try:
-    import cheetah
-    from cheetah import *
-except ImportError:
-    pass
-
 def main():
     import doctest
     
@@ -45,11 +39,6 @@ def main():
     doctest.testmod(wsgi)
     doctest.testmod(http)
     doctest.testmod(webapi)
-    
-    try:
-        doctest.testmod(cheetah)
-    except NameError:
-        pass
     
     template.test()
     

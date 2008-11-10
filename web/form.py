@@ -39,7 +39,18 @@ class Form:
             out += "<td>"+i.pre+i.render()+i.post+"</td></tr>\n"
         out += "</table>"
         return out
-
+        
+    def render_css(self): 
+        out = [] 
+        out.append(self.rendernote(self.note)) 
+        for i in self.inputs: 
+            out.append('<label for="%s">%s</label>' % (i.id, net.websafe(i.description))) 
+            out.append(i.pre) 
+            out.append(i.render()) 
+            out.append(i.post) 
+            out.append('\n') 
+        return ''.join(out) 
+        
     def rendernote(self, note):
         if note: return '<strong class="wrong">%s</strong>' % net.websafe(note)
         else: return ""

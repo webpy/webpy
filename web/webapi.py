@@ -145,7 +145,7 @@ class NoMethod(HTTPError):
         
 nomethod = NoMethod
 
-class InternalError(HTTPError):
+class _InternalError(HTTPError):
     """500 Internal Server Error`."""
     message = "internal server error"
     
@@ -161,6 +161,17 @@ class InternalError(HTTPError):
         else:
             return self.message
     
+def InternalError():
+    """Returns HTTPError with '500 internal error' error from the active application.
+    """
+    print 'InternalError 1'
+    if ctx.get('app_stack'):
+        print 'InternalError 2'
+        return ctx.app_stack[-1].internalerror()
+    else:
+        print 'InternalError 3'
+        return _InternalError()
+
 internalerror = InternalError
 
 def header(hdr, value, unique=False):

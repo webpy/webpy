@@ -178,17 +178,18 @@ class application:
                     return p(lambda: process(processors))
                 else:
                     return self.handle()
-            finally:
-                web.ctx.app_stack = web.ctx.app_stack[:-1]
+            except web.HTTPError:
+                raise
+            except:
+                print >> web.debug, traceback.format_exc()
+                raise self.internalerror()
+                    
         try:
             # processors must be applied in the resvere order. (??)
             return process(self.processors)
-        except web.HTTPError:
-            raise
-        except:
-            print >> web.debug, traceback.format_exc()
-            raise web.internalerror()
-                
+        finally:
+            web.ctx.app_stack = web.ctx.app_stack[:-1]
+                        
     def wsgifunc(self, *middleware):
         """Returns a WSGI-compatible function for this application."""
         def peep(iterator):
@@ -403,6 +404,14 @@ class application:
             return parent.notfound()
         else:
             return web._NotFound()
+            
+    def internalerror(self):
+        """Returns HTTPError with '500 internal error' message"""
+        parent = self.get_parent_app()
+        if parent:
+            return parent.internalerror()
+        else:
+            return web._InternalError()
 
 class auto_application(application):
     """Application similar to `application` but urls are constructed 

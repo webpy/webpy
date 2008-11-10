@@ -9,7 +9,7 @@ __all__ = [
   "write",
   "changequery", "url",
   "background", "backgrounder",
-  "Reloader", "reloader", "profiler",
+  "profiler",
 ]
 
 import sys, os, threading, urllib, urlparse
@@ -164,59 +164,6 @@ def backgrounder(func):
         else:
             return func(*a, **kw)
     return internal
-
-class Reloader:
-    """
-    Before every request, checks to see if any loaded modules have changed on 
-    disk and, if so, reloads them.
-    """
-    def __init__(self, func):
-        self.func = func
-        self.mtimes = {}
-        # cheetah:
-        # b = _compiletemplate.bases
-        # _compiletemplate = globals()['__compiletemplate']
-        # _compiletemplate.bases = b
-        
-        #web.loadhooks['reloader'] = self.check
-        # todo:
-        #  - replace relrcheck with a loadhook
-        #if reloader in middleware:
-        #    relr = reloader(None)
-        #    relrcheck = relr.check
-        #    middleware.remove(reloader)
-        #else:
-        #    relr = None
-        #    relrcheck = lambda: None
-        # if relr:
-        #     relr.func = wsgifunc
-        #     return wsgifunc
-        # 
-        
-    def check(self):
-        for mod in sys.modules.values():
-            try: 
-                mtime = os.stat(mod.__file__).st_mtime
-            except (AttributeError, OSError, IOError): 
-                continue
-            if mod.__file__.endswith('.pyc') and \
-               os.path.exists(mod.__file__[:-1]):
-                mtime = max(os.stat(mod.__file__[:-1]).st_mtime, mtime)
-            if mod not in self.mtimes:
-                self.mtimes[mod] = mtime
-            elif self.mtimes[mod] < mtime:
-                try: 
-                    reload(mod)
-                    self.mtimes[mod] = mtime
-                except ImportError: 
-                    pass
-        return True
-    
-    def __call__(self, e, o): 
-        self.check()
-        return self.func(e, o)
-
-reloader = Reloader
 
 def profiler(app):
     """Outputs basic profiling information at the bottom of each response."""

@@ -295,14 +295,14 @@ def sqlors(left, lst):
         lst = list(lst)
         ln = len(lst)
         if ln == 0:
-            return SQLQuery("2+2=5")
+            return SQLQuery("1=2")
         if ln == 1:
             lst = lst[0]
 
     if isinstance(lst, iters):
         return SQLQuery(['('] + 
           sum([[left, sqlparam(x), ' OR '] for x in lst], []) +
-          ['1=1)']
+          ['1=2)']
         )
     else:
         return left + sqlparam(lst)

@@ -284,13 +284,13 @@ def sqlors(left, lst):
     for each item in the lst.
 
         >>> sqlors('foo = ', [])
-        <sql: '2+2=5'>
+        <sql: '1=2'>
         >>> sqlors('foo = ', [1])
         <sql: 'foo = 1'>
         >>> sqlors('foo = ', 1)
         <sql: 'foo = 1'>
         >>> sqlors('foo = ', [1,2,3])
-        <sql: '(foo = 1 OR foo = 2 OR foo = 3)'>
+        <sql: '(foo = 1 OR foo = 2 OR foo = 3 OR 1=2)'>
     """
     if isinstance(lst, iters):
         lst = list(lst)

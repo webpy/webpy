@@ -8,6 +8,9 @@ sys.path.insert(0, '.')
 
 import web
 
+# reloader doesn't work when urls are local, which is the case with most tests.
+web.config.debug = False
+
 
 class TestCase(unittest.TestCase):
     def setUpAll(self):

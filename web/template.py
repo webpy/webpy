@@ -906,11 +906,14 @@ class Render:
     def __init__(self, loc='templates', cache=None, base=None, **keywords):
         self._loc = loc
         self._keywords = keywords
+
+        if cache is None:
+            cache = not config.get('debug', False)
         
-        if not cache or config.get('debug', False):
-            self._cache = None
-        else:
+        if cache:
             self._cache = {}
+        else:
+            self._cache = None
         
         if base and not hasattr(base, '__call__'):
             # make base a function, so that it can be passed to sub-renders

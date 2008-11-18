@@ -15,7 +15,8 @@ try: import datetime
 except ImportError: pass
 
 def validipaddr(address):
-    """returns True if `address` is a valid IPv4 address.
+    """
+    Returns True if `address` is a valid IPv4 address.
     
         >>> validipaddr('192.168.1.1')
         True
@@ -36,7 +37,8 @@ def validipaddr(address):
     return True
 
 def validipport(port):
-    """returns True if `port` is a valid IPv4 port.
+    """
+    Returns True if `port` is a valid IPv4 port.
     
         >>> validipport('9000')
         True
@@ -53,7 +55,7 @@ def validipport(port):
     return True
 
 def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
-    """returns `(ip_address, port)` from string `ip_addr_port`"""
+    """Returns `(ip_address, port)` from string `ip_addr_port`"""
     addr = defaultaddr
     port = defaultport
     
@@ -78,7 +80,7 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
 
 def validaddr(string_):
     """
-    returns either (ip_address, port) or "/path/to/socket" from string_
+    Returns either (ip_address, port) or "/path/to/socket" from string_
     
         >>> validaddr('/path/to/socket')
         '/path/to/socket'

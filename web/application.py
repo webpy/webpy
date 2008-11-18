@@ -29,8 +29,9 @@ __all__ = [
 ]
 
 class application:
-    """Application to delegate requests based on path.
-
+    """
+    Application to delegate requests based on path.
+    
         >>> urls = ("/hello", "hello")
         >>> app = application(urls, globals())
         >>> class hello:
@@ -75,7 +76,8 @@ class application:
         self.mapping += (pattern, classname)
         
     def add_processor(self, processor):
-        """Adds a processor to the application. 
+        """
+        Adds a processor to the application. 
         
             >>> urls = ("/(.*)", "echo")
             >>> app = application(urls, globals())
@@ -452,7 +454,8 @@ class auto_application(application):
 subdir_application = application
                 
 class subdomain_application(application):
-    """Application to delegate requests based on the host.
+    """
+    Application to delegate requests based on the host.
 
         >>> urls = ("/hello", "hello")
         >>> app = application(urls, globals())
@@ -486,7 +489,8 @@ class subdomain_application(application):
         return None, None
         
 def loadhook(h):
-    """Converts a load hook into an application processor.
+    """
+    Converts a load hook into an application processor.
     
         >>> app = auto_application()
         >>> def f(): "something done before handling request"
@@ -500,7 +504,8 @@ def loadhook(h):
     return processor
     
 def unloadhook(h):
-    """Converts an unload hook into an application processor.
+    """
+    Converts an unload hook into an application processor.
     
         >>> app = auto_application()
         >>> def f(): "something done after handling request"

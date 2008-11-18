@@ -171,7 +171,8 @@ class Store:
         return pickle.loads(pickled)
 
 class DiskStore(Store):
-    """Store for saving a session on disk
+    """
+    Store for saving a session on disk.
 
         >>> import tempfile
         >>> root = tempfile.mkdtemp()

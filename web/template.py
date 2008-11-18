@@ -46,7 +46,8 @@ from webapi import config
 from net import websafe
 
 def splitline(text):
-    r"""Splits the given text at newline.
+    r"""
+    Splits the given text at newline.
     
         >>> splitline('foo\nbar')
         ('foo\n', 'bar')
@@ -670,7 +671,8 @@ import __builtin__
 TEMPLATE_BUILTINS = dict([(name, getattr(__builtin__, name)) for name in TEMPLATE_BUILTIN_NAMES if name in __builtin__.__dict__])
 
 class ForLoop:
-    """Wrapper for expression in for stament to support loop.xxx helpers.
+    """
+    Wrapper for expression in for stament to support loop.xxx helpers.
     
         >>> loop = ForLoop()
         >>> for x in loop.setup(['a', 'b', 'c']):
@@ -1317,6 +1319,7 @@ def test():
         NameError: global name 'min' is not defined
         
     Test vars.
+    
         >>> x = t('$var x: 1')()
         >>> x.x
         u'1'

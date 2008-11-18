@@ -50,7 +50,8 @@ class UnknownParamstyle(Exception):
     pass
     
 class SQLParam:
-    """Parameter in SQLQuery.
+    """
+    Parameter in SQLQuery.
     
         >>> q = SQLQuery(["SELECT * FROM test WHERE name=", SQLParam("joe")])
         >>> q
@@ -1009,7 +1010,8 @@ def database(dburl=None, **params):
         raise UnknownDB, dbn
 
 def register_database(name, clazz):
-    """Register a database.
+    """
+    Register a database.
 
         >>> class LegacyDB(DB): 
         ...     def __init__(self, **params): 

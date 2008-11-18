@@ -13,7 +13,8 @@ def attrget(obj, attr, value=None):
     return value
 
 class Form:
-    r"""HTML form.
+    r"""
+    HTML form.
     
         >>> f = Form(Textbox("x"))
         >>> f.render()

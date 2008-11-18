@@ -230,6 +230,7 @@ class Hidden(Input):
     def render(self):
         x = '<input type="hidden" name="%s"' % net.websafe(self.name)
         if self.value: x += ' value="%s"' % net.websafe(self.value)
+        x += self.addatts()
         x += ' />'
         return x
 

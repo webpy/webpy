@@ -88,6 +88,9 @@ try:
     import cStringIO as StringIO
 except ImportError:
     import StringIO
+
+_fileobject_uses_str_type = isinstance(socket._fileobject(None)._rbuf, basestring)
+
 import sys
 import threading
 import time
@@ -332,7 +335,12 @@ class HTTPRequest(object):
         
         environ = self.environ
         
-        method, path, req_protocol = request_line.strip().split(" ", 2)
+        try:
+            method, path, req_protocol = request_line.strip().split(" ", 2)
+        except ValueError:
+            self.simple_response(400, "Malformed Request-Line")
+            return
+        
         environ["REQUEST_METHOD"] = method
         
         # path may be an abs_path (including "http://host.domain.tld");
@@ -401,13 +409,6 @@ class HTTPRequest(object):
         if mrbs and int(environ.get("CONTENT_LENGTH", 0)) > mrbs:
             self.simple_response("413 Request Entity Too Large")
             return
-        
-        # Set AUTH_TYPE, REMOTE_USER
-        creds = environ.get("HTTP_AUTHORIZATION", "").split(" ", 1)
-        environ["AUTH_TYPE"] = creds[0]
-        if creds[0].lower() == 'basic':
-            user, pw = base64.decodestring(creds[1]).split(":", 1)
-            environ["REMOTE_USER"] = user
         
         # Persistent connection support
         if self.response_protocol == "HTTP/1.1":
@@ -588,7 +589,12 @@ class HTTPRequest(object):
         buf.append("\r\n")
         if msg:
             buf.append(msg)
-        self.wfile.sendall("".join(buf))
+        
+        try:
+            self.wfile.sendall("".join(buf))
+        except socket.error, x:
+            if x.args[0] not in socket_errors_to_ignore:
+                raise
     
     def start_response(self, status, headers, exc_info = None):
         """WSGI callable to begin the HTTP response."""
@@ -646,7 +652,8 @@ class HTTPRequest(object):
             if status < 200 or status in (204, 205, 304):
                 pass
             else:
-                if self.response_protocol == 'HTTP/1.1':
+                if (self.response_protocol == 'HTTP/1.1'
+                    and self.environ["REQUEST_METHOD"] != 'HEAD'):
                     # Use the chunked transfer-coding
                     self.chunked_write = True
                     self.outheaders.append(("Transfer-Encoding", "chunked"))
@@ -710,7 +717,8 @@ class FatalSSLAlert(Exception):
     """Exception raised when the SSL implementation signals a fatal alert."""
     pass
 
-if sys.version_info[:3] >= (2, 5, 2):
+
+if not _fileobject_uses_str_type:
     class CP_fileobject(socket._fileobject):
         """Faux file object attached to a socket object."""
 
@@ -738,7 +746,8 @@ if sys.version_info[:3] >= (2, 5, 2):
                 try:
                     return self._sock.recv(size)
                 except socket.error, e:
-                    if e.args[0] not in socket_errors_nonblocking:
+                    if (e.args[0] not in socket_errors_nonblocking
+                        and e.args[0] not in socket_error_eintr):
                         raise
 
         def read(self, size=-1):
@@ -838,8 +847,8 @@ if sys.version_info[:3] >= (2, 5, 2):
                     nl = data.find('\n')
                     if nl >= 0:
                         nl += 1
-                        buf.write(buffer(data, 0, nl))
-                        self._rbuf.write(buffer(data, nl))
+                        buf.write(data[:nl])
+                        self._rbuf.write(data[nl:])
                         del data
                         break
                     buf.write(data)
@@ -865,9 +874,9 @@ if sys.version_info[:3] >= (2, 5, 2):
                     if nl >= 0:
                         nl += 1
                         # save the excess data to _rbuf
-                        self._rbuf.write(buffer(data, nl))
+                        self._rbuf.write(data[nl:])
                         if buf_len:
-                            buf.write(buffer(data, 0, nl))
+                            buf.write(data[:nl])
                             break
                         else:
                             # Shortcut.  Avoid data copy through buf when returning
@@ -879,8 +888,8 @@ if sys.version_info[:3] >= (2, 5, 2):
                         # returning exactly all of our first recv().
                         return data
                     if n >= left:
-                        buf.write(buffer(data, 0, left))
-                        self._rbuf.write(buffer(data, left))
+                        buf.write(data[:left])
+                        self._rbuf.write(data[left:])
                         break
                     buf.write(data)
                     buf_len += n
@@ -915,7 +924,8 @@ else:
                 try:
                     return self._sock.recv(size)
                 except socket.error, e:
-                    if e.args[0] not in socket_errors_nonblocking:
+                    if (e.args[0] not in socket_errors_nonblocking
+                        and e.args[0] not in socket_error_eintr):
                         raise
 
         def read(self, size=-1):
@@ -958,7 +968,7 @@ else:
                         buffers[-1] = data[:left]
                         break
                     buf_len += n
-            return "".join(buffers)
+                return "".join(buffers)
 
         def readline(self, size=-1):
             data = self._rbuf
@@ -1029,6 +1039,7 @@ else:
                         break
                     buf_len += n
                 return "".join(buffers)
+    
 
 class SSL_fileobject(CP_fileobject):
     """SSL file object attached to a socket object."""
@@ -1379,6 +1390,27 @@ class SSLConnection:
 """ % (f, f)
 
 
+try:
+    import fcntl
+except ImportError:
+    try:
+        from ctypes import windll, WinError
+    except ImportError:
+        def prevent_socket_inheritance(sock):
+            """Dummy function, since neither fcntl nor ctypes are available."""
+            pass
+    else:
+        def prevent_socket_inheritance(sock):
+            """Mark the given socket fd as non-inheritable (Windows)."""
+            if not windll.kernel32.SetHandleInformation(sock.fileno(), 1, 0):
+                raise WinError()
+else:
+    def prevent_socket_inheritance(sock):
+        """Mark the given socket fd as non-inheritable (POSIX)."""
+        fd = sock.fileno()
+        old_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+        fcntl.fcntl(fd, fcntl.F_SETFD, old_flags | fcntl.FD_CLOEXEC)
+
 
 class CherryPyWSGIServer(object):
     """An HTTP server for WSGI.
@@ -1572,6 +1604,7 @@ class CherryPyWSGIServer(object):
     def bind(self, family, type, proto=0):
         """Create (or recreate) the actual socket object."""
         self.socket = socket.socket(family, type, proto)
+        prevent_socket_inheritance(self.socket)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if self.nodelay:
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -1585,12 +1618,25 @@ class CherryPyWSGIServer(object):
             ctx.use_certificate_file(self.ssl_certificate)
             self.socket = SSLConnection(ctx, self.socket)
             self.populate_ssl_environ()
+            
+            # If listening on the IPV6 any address ('::' = IN6ADDR_ANY),
+            # activate dual-stack. See http://www.cherrypy.org/ticket/871.
+            if (not isinstance(self.bind_addr, basestring)
+                and self.bind_addr[0] == '::' and family == socket.AF_INET6):
+                try:
+                    self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+                except (AttributeError, socket.error):
+                    # Apparently, the socket option is not available in
+                    # this machine's TCP stack
+                    pass
+        
         self.socket.bind(self.bind_addr)
     
     def tick(self):
         """Accept a new connection and put it on the Queue."""
         try:
             s, addr = self.socket.accept()
+            prevent_socket_inheritance(s)
             if not self.ready:
                 return
             if hasattr(s, 'settimeout'):
@@ -1599,7 +1645,8 @@ class CherryPyWSGIServer(object):
             environ = self.environ.copy()
             # SERVER_SOFTWARE is common for IIS. It's also helpful for
             # us to pass a default value for the "Server" response header.
-            environ["SERVER_SOFTWARE"] = "%s WSGI Server" % self.version
+            if environ.get("SERVER_SOFTWARE") is None:
+                environ["SERVER_SOFTWARE"] = "%s WSGI Server" % self.version
             # set a non-standard environ entry so the WSGI app can know what
             # the *real* server protocol is (and what features to support).
             # See http://www.faqs.org/rfcs/rfc2145.html.
@@ -1733,4 +1780,3 @@ class CherryPyWSGIServer(object):
                     ssl_environ[wsgikey] = value
         
         self.environ.update(ssl_environ)
-

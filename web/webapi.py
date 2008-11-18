@@ -57,15 +57,17 @@ badrequest = BadRequest
 class _NotFound(HTTPError):
     """`404 Not Found` error."""
     message = "not found"
-    def __init__(self):
+    def __init__(self, message=None):
         status = '404 Not Found'
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
-def NotFound():
+def NotFound(message=None):
     """Returns HTTPError with '404 Not Found' error from the active application.
     """
-    if ctx.get('app_stack'):
+    if message:
+        return _NotFound(message)
+    elif ctx.get('app_stack'):
         return ctx.app_stack[-1].notfound()
     else:
         return _NotFound()
@@ -149,10 +151,10 @@ class _InternalError(HTTPError):
     """500 Internal Server Error`."""
     message = "internal server error"
     
-    def __init__(self):
+    def __init__(self, message=None):
         status = '500 Internal Server Error'
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.get_message())
+        HTTPError.__init__(self, status, headers, message or self.get_message())
         
     def get_message(self):
         if config.get('debug'):
@@ -161,10 +163,12 @@ class _InternalError(HTTPError):
         else:
             return self.message
     
-def InternalError():
+def InternalError(message=None):
     """Returns HTTPError with '500 internal error' error from the active application.
     """
-    if ctx.get('app_stack'):
+    if message:
+        return _InternalError(message)
+    elif ctx.get('app_stack'):
         return ctx.app_stack[-1].internalerror()
     else:
         return _InternalError()

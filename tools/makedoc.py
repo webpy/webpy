@@ -5,6 +5,7 @@ import inspect
 
 modules = [
     'web.application', 
+    'web.contrib.template',
     'web.db',
     'web.debugerror',
     'web.form', 

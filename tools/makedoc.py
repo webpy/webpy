@@ -65,7 +65,7 @@ def process_mod(name, mod):
 def print_css():
     print 
     print '<style type="text/css">'
-    print '    .content {margin-left: 20px;}'
+    print '    #content {margin-left: 20px;}'
     print '    .head {margin-left: -20px;}'
     print '    h2 {margin-left: -20px;}'
     print '</style>'

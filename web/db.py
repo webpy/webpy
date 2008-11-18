@@ -300,7 +300,10 @@ def sqlors(left, lst):
             lst = lst[0]
 
     if isinstance(lst, iters):
-        return '(' + SQLQuery.join([left + sqlparam(x) for x in lst], ' OR ') + ')'
+        return SQLQuery(['('] + 
+          sum([[left, sqlparam(x), ' OR '] for x in lst], []) +
+          ['1=1)']
+        )
     else:
         return left + sqlparam(lst)
         
@@ -506,7 +509,7 @@ class DB:
     def _db_execute(self, cur, sql_query): 
         """executes an sql query"""
         self.ctx.dbq_count += 1
-
+        
         try:
             a = time.time()
             paramstyle = getattr(self, 'paramstyle', 'pyformat')

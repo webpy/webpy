@@ -24,16 +24,8 @@ config = storage()
 config.__doc__ = """
 A configuration object for various aspects of web.py.
 
-`db_parameters`
-   : A dictionary containing the parameters to be passed to `connect`
-     when `load()` is called.
-`db_printing`
-   : Set to `True` if you would like SQL queries and timings to be
-     printed to the debug output.
-`session_parameters`
-   : A dictionary containing session parameters
-    cookie_name, cookie_domain, timeout, 
-    ignore_change_ip, ignore_expiry, expired_message
+`debug`
+   : when True, enables reloading, disabled template caching and sets internalerror to debugerror.
 """
 
 class HTTPError(Exception):

@@ -820,6 +820,11 @@ class Template(BaseTemplate):
         text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
         if not text.endswith('\n'):
             text += '\n'
+
+        # ignore BOM chars at the begining of template
+        BOM = '\xef\xbb\xbf'
+        if text.startswith(BOM):
+            text = text[len(BOM):]
         
         # support fort \$ for backward-compatibility 
         text = text.replace(r'\$', '$$')
@@ -1329,6 +1334,11 @@ def test():
         >>> x = t('$var x:  \n    foo\n    bar')()
         >>> x.x
         u'foo\nbar\n'
+
+    Test BOM chars.
+
+        >>> t('\xef\xbb\xbf$def with(x)\n$x')('foo')
+        u'foo\n'
     """
     pass
             

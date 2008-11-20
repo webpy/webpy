@@ -43,6 +43,23 @@ def lastmodified(date_obj):
     web.header('Last-Modified', net.httpdate(date_obj))
 
 def modified(date=None, etag=None):
+    """
+    Checks to see if the page has been modified since the version in the
+    requester's cache.
+    
+    When you publish pages, you can include `Last-Modified` and `ETag`
+    with the date the page was last modified and an opaque token for
+    the particular version, respectively. When readers reload the page, 
+    the browser sends along the modification date and etag value for
+    the version it has in its cache. If the page hasn't changed, 
+    the server can just return `304 Not Modified` and not have to 
+    send the whole page again.
+    
+    This function takes the last-modified date `date` and the ETag `etag`
+    and checks the headers to see if they match. If they do, it returns 
+    `True` and sets the response status to `304 Not Modified`. It also
+    sets `Last-Modified and `ETag` output headers.
+    """
     n = set(x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(','))
     m = net.parsehttpdate(web.ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
     validate = False
@@ -54,8 +71,10 @@ def modified(date=None, etag=None):
         # HTTP dates don't have sub-second precision
         if date-datetime.timedelta(seconds=1) <= m:
             validate = True
-
+    
     if validate: web.ctx.status = '304 Not Modified'
+    lastmodified(date)
+    web.header('ETag', '"' + etag + '"')
     return not validate
 
 def write(cgi_response):

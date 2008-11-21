@@ -71,8 +71,10 @@ class application:
             def reload_mapping():
                 """loadhook to reload mapping and fvars."""
                 mod = __import__(module_name)
-                self.fvars = mod.__dict__
-                self.mapping = getattr(mod, mapping_name)
+                mapping = getattr(mod, mapping_name, None)
+                if mapping:
+                    self.fvars = mod.__dict__
+                    self.mapping = mapping
 
             self.add_processor(loadhook(Reloader()))
             if mapping_name and module_name:

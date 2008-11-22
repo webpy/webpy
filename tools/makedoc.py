@@ -4,6 +4,7 @@ import web
 import inspect
 import cStringIO
 import markdown
+import re
 
 modules = [
     'web.application',
@@ -96,11 +97,20 @@ def print_css():
     print '</style>'
     print
 
+def pre_process(text):
+    new_text = ''
+    for line in text:
+        if line.startswith(' '*4) or line.startswith('\t'):
+            new_text += line
+            continue
+        new_text += line.replace('_', '\\_')
+    return text
+
 def post_process(text):
     """
     Processes the text into a properly formatted wiki page.
     """
-    text = text.replace(indent, '<div style="margin-left:40px;"')
+    text = text.replace(indent, '<div style="margin-left:40px;">')
     text = text.replace(uindent, '</div>')
     return text
 
@@ -118,7 +128,8 @@ def main():
         process_mod(name, mod)
     
     print_css()
-    text = markdown.Markdown(data.getvalue())
+    text = pre_process(data.getvalue())
+    text = markdown.Markdown(text)
     sys.stdout = sys.__stdout__
     print post_process(text)
 

@@ -126,7 +126,7 @@ def recurse_over(ob, name, indent_level=0):
     elif ts == 'classobj' or ts == 'type':
         if ts == 'classobj': ts = 'class'
         if hasattr(ob, '__init__'):
-            if type_string(ob.__init__) == 'instance_method':
+            if type_string(ob.__init__) == 'instancemethod':
                 argstr = arg_string(ob.__init__)
         else:
             argstr = '(self)'

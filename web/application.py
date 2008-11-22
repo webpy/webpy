@@ -48,13 +48,21 @@ class application:
         self.processors = []
 
         if autoreload:
+            def main_module_name():
+                mod = sys.modules['__main__']
+                file = getattr(mod, '__file__', None) # make sure this works even from python interpreter
+                return file and os.path.splitext(os.path.basename(file))[0]
+
             def modname(fvars):
                 """find name of the module name from fvars."""
-                file, name = fvars['__file__'], fvars['__name__']
+                file, name = fvars.get('__file__'), fvars.get('__name__')
+                if file is None or name is None:
+                    return None
+
                 if name == '__main__':
                     # Since the __main__ module can't be reloaded, the module has 
                     # to be imported using its file name.                    
-                    name = os.path.splitext(os.path.basename(file))[0]
+                    name = main_module_name()
                 return name
                 
             mapping_name = utils.dictfind(fvars, mapping)
@@ -63,15 +71,19 @@ class application:
             def reload_mapping():
                 """loadhook to reload mapping and fvars."""
                 mod = __import__(module_name)
-                self.fvars = mod.__dict__
-                self.mapping = getattr(mod, mapping_name)
-            
-            # to reload modified modules
-            self.add_processor(loadhook(Reloader()))
+                mapping = getattr(mod, mapping_name, None)
+                if mapping:
+                    self.fvars = mod.__dict__
+                    self.mapping = mapping
 
-            # to update mapping and fvars
-            self.add_processor(loadhook(reload_mapping))
-            
+            self.add_processor(loadhook(Reloader()))
+            if mapping_name and module_name:
+                self.add_processor(loadhook(reload_mapping))
+
+            # load __main__ module usings its filename, so that it can be reloaded.
+            if main_module_name():
+                __import__(main_module_name())
+
     def add_mapping(self, pattern, classname):
         self.mapping += (pattern, classname)
         

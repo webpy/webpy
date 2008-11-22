@@ -1,10 +1,12 @@
+"""
+Outputs web.py docs as html
+version 2.0: documents all code, and indents nicely.
+By Colin Rothwell (TheBoff)
+"""
 import sys
-sys.path.insert(0, '..')
-import web
 import inspect
-import cStringIO
 import markdown
-import re
+sys.path.insert(0, '..')
 
 modules = [
     'web.application',
@@ -23,115 +25,146 @@ modules = [
     'web.wsgi'
 ]
 
+item_start = '<code class="%s">'
+item_end = '</code>'
 
-qstart = '<code class="head">'
-qend = '</code>'
+indent_amount = 30
 
-indent = '<indent>' #This gets around the markdown bug of not working
-uindent = '</indent>'#between divs. At the cost of not-strictly-legal html.
+doc_these = ( #These are the types of object that should be docced
+    'module',
+    'classobj',
+    'instancemethod',
+    'function',
+    'type',
+    'property',    
+)
 
-tab_width = 20 #width for tabs in px
+not_these_names = ( #Any particular object names that shouldn't be doced
+    'fget',
+    'fset',
+    'fdel',
+    'storage', #These stop the lower case versions getting docced
+    'memoize',
+    'iterbetter',
+    'capturesstdout',
+    'profile',
+    'threadeddict',
+    'd', #Don't know what this is, but only only conclude it shouldn't be doc'd
+)
 
-def process_func(name, f, tablevel=1):
-    sys.stdout.write(qstart + name + inspect.formatargspec(*inspect.getargspec(f)) + qend)
-    doc = inspect.getdoc(f)
-    if not doc is None:
-        print ": "
-        print doc
-    print
-    print
+css = '''
+<style type="text/css">
+.module {
+    font-size: 130%;
+    font-weight: bold;
+}
+
+.function, .class, .type {
+    font-size: 120%;
+    font-weight: bold;
+}
+
+.method, .property {
+    font-size: 115%;
+    font-weight: bold;
+}
+
+.ts {
+    font-size: small;
+    font-weight: lighter;
+    color: grey;
+}
+
+#contents_link {
+    position: fixed;
+    top: 0;
+    right: 0;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+#contents_link a:hover {
+    font-weight: bold;
+}
+</style>
+'''
 
 
-def process_class(name, cls):
-    bases = [b.__name__ for b in cls.__bases__]
-    if bases:
-        name = name + '(' + ",".join(bases) + ')'
+indent_start = '<div style="margin-left:%dpx">'
+indent_end = '</div>'
+
+header = '''
+<div id="contents_link">
+<a href="#top">Back to contents</a>
+</div>
+'''
+
+def type_string(ob):
+    return str(type(ob)).split("'")[1]
     
-    sys.stdout.write(qstart + 'class ' + name + qend)
-    doc = inspect.getdoc(cls)
-    if not doc is None:
-        print ': '
-        print inspect.getdoc(cls)
-    print
-    methods = [(m, getattr(cls, m)) for m in dir(cls)
-				if not m.startswith('_') and inspect.ismethod(getattr(cls, m))]
-	#Possible todo: see if code is faster with the get method in the rendering
-	#loop.
-    print indent
-    for m in methods: process_func(m[0], m[1], 2)
-    print uindent
-
-def process_storage(name, d):
-    print qstart + name + qend + ': '
-    print d['__doc__']
-
-def process_mod(name, mod):
-    print '<a name="%s"></a>' % name
-    print '##', name
-    print '<a href="#top">Back to top</a>'
-    print
+def ts_css(text):
+    """applies nice css to the type string"""
+    return '<span class="ts">%s</span>' % text
     
-    all = getattr(mod, '__all__', None)
+def arg_string(func):
+    """Returns a nice argstring for a function or method"""
+    return inspect.formatargspec(*inspect.getargspec(func))
+
+def recurse_over(ob, name, indent_level=0):
+    ts = type_string(ob)    
+    if not ts in doc_these: return #stos what shouldn't be docced getting docced
+    if indent_level > 0 and ts == 'module': return #Stops it getting into the stdlib    
+    if name in not_these_names: return #Stops things we don't want getting docced
     
-    for k, v in inspect.getmembers(mod):
-        if k.startswith('_'):
-            continue
-        
-        if inspect.getmodule(v) == mod:
-            if inspect.isclass(v):
-                process_class(k, v)
-            elif inspect.isfunction(v):
-                process_func(k, v)
-        
-        # specical case for generating docs for web.ctx and web.config
-        elif all and k in all and isinstance(v, (web.storage, web.threadeddict)) and hasattr(v, '__doc__'):
-            process_storage(k, v)
-
-def print_css():
-    print
-    print '<style type="text/css">'
-    print '    #content {margin-left: %dpx;}'% (tab_width)
-    print '    .head {margin-left: -20px;}'
-    print '    h2 {margin-left: -20px;}'
-    print '    span * {margin-left: inherits;}'
-    print '</style>'
-    print
-
-def pre_process(text):
-    new_text = ''
-    for line in text:
-        if line.startswith(' '*4) or line.startswith('\t'):
-            new_text += line
-            continue
-        new_text += line.replace('_', '\\_')
-    return text
-
-def post_process(text):
-    """
-    Processes the text into a properly formatted wiki page.
-    """
-    text = text.replace(indent, '<div style="margin-left:40px;">')
-    text = text.replace(uindent, '</div>')
-    return text
+    indent = indent_level * indent_amount #Indents nicely
+    ds_indent = indent + (indent_amount / 2)
+    if indent_level > 0: print indent_start % indent
+    
+    argstr = ''
+    if ts.endswith(('function', 'method')):
+        argstr = arg_string(ob)
+    elif ts == 'classobj' or ts == 'type':
+        if ts == 'classobj': ts = 'class'
+        if hasattr(ob, '__init__'):
+            if type_string(ob.__init__) == 'instance_method':
+                argstr = arg_string(ob.__init__)
+        else:
+            argstr = '(self)'
+    if ts == 'instancemethod': ts = 'method' #looks much nicer
+    
+    ds = inspect.getdoc(ob)
+    if ds is None: ds = ''
+    ds = markdown.Markdown(ds)
+    
+    mlink = '<a name="%s">' % name if ts == 'module' else '' 
+    mend = '</a>' if ts == 'module' else ''
+                
+    print ''.join(('<p>', ts_css(ts), item_start % ts, ' ', mlink, name, argstr,
+            mend, item_end, '<br />'))
+    print ''.join((indent_start % ds_indent, ds, indent_end, '</p>'))
+    #Although ''.join looks wierd, it's alot faster is string addition    
+    members = ''
+    
+    if hasattr(ob, '__all__'): members = ob.__all__
+    else: members = [item for item in dir(ob) if not item.startswith('_')] 
+    
+    if not 'im_class' in members:    
+        for name in members:
+            recurse_over(getattr(ob, name), name, indent_level + 1)
+    if indent_level > 0: print indent_end
 
 def main():
-    data = cStringIO.StringIO()
-    sys.stdout = data #This is needed for post-processing
-    print '<a name="top"></a>'
-    print
+    print '<div>' #Stops markdown vandalising my html.
+    print css
+    print header
+    print '<ul>'
     for name in modules:
-        print '* <a href="#%s">%s</a>' %(name, name)
-    print
-    
+        print '<li><a href="#%(name)s">%(name)s</a></li>' % dict(name=name)
+    print '</ul>' 
     for name in modules:
         mod = __import__(name, {}, {}, 'x')
-        process_mod(name, mod)
-    
-    print_css()
-    text = pre_process(data.getvalue())
-    text = markdown.Markdown(text)
-    sys.stdout = sys.__stdout__
-    print post_process(text)
-
+        recurse_over(mod, name)
+    print '</div>'
+        
 if __name__ == '__main__':
     main()

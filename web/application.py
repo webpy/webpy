@@ -81,8 +81,11 @@ class application:
                 self.add_processor(loadhook(reload_mapping))
 
             # load __main__ module usings its filename, so that it can be reloaded.
-            if main_module_name():
-                __import__(main_module_name())
+            if main_module_name() and '__main__' in sys.argv:
+                try:
+                    __import__(main_module_name())
+                except ImportError:
+                    pass
 
     def add_mapping(self, pattern, classname):
         self.mapping += (pattern, classname)

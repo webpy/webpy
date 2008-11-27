@@ -970,13 +970,35 @@ class Render:
         else:
             return self._template(name)
 
+class GAE_Render(Render):
+    # Render gets over-written. make a copy here.
+    super = Render
+    def __init__(self, loc, *a, **kw):
+        GAE_Render.super.__init__(self, loc, *a, **kw)
+        
+        import types
+        if isinstance(loc, types.ModuleType):
+            self.mod = loc
+        else:
+            name = loc.rstrip('/').replace('/', '.')
+            self.mod = __import__(name, None, None, ['x'])
+
+        if 'globals' in kw:
+            self.mod.__dict__.update(kw['globals'])
+
+    def _load_template(self, name):
+        t = getattr(self.mod, name)
+        import types
+        if isinstance(t, types.ModuleType):
+            return GAE_Render(t, cache=self._cache is not None, base=self._base, **self._keywords)
+        else:
+            return t
+
 render = Render
 # setup render for Google App Engine.
 try:
     from google import appengine
-    def render(loc):
-        name = loc.rstrip('/').replace('/', '.')
-        return __import__(name, None, None, ['x'])        
+    render = Render = GAE_Render
 except ImportError:
     pass
         
@@ -994,7 +1016,9 @@ def compile_templates(root):
         
         out = open(os.path.join(dirpath, '__init__.py'), 'w')
         out.write('from web.template import CompiledTemplate, ForLoop\n\n')
-        
+        if dirnames:
+            out.write("import " + ", ".join(dirnames))
+
         for f in filenames:
             path = os.path.join(dirpath, f)
 

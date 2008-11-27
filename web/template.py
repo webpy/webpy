@@ -983,8 +983,9 @@ class GAE_Render(Render):
             name = loc.rstrip('/').replace('/', '.')
             self.mod = __import__(name, None, None, ['x'])
 
-        if 'globals' in kw:
-            self.mod.__dict__.update(kw['globals'])
+        self.mod.__dict__.update(kw.get('builtins', TEMPLATE_BUILTINS))
+        self.mod.__dict__.update(Template.globals)
+        self.mod.__dict__.update(kw.get('globals', {}))
 
     def _load_template(self, name):
         t = getattr(self.mod, name)

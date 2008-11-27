@@ -296,7 +296,7 @@ def debugerror():
     (Based on the beautiful 500 page from [Django](http://djangoproject.com/), 
     designed by [Wilson Miner](http://wilsonminer.com/).)
     """
-    return djangoerror()
+    return web.internalerror(djangoerror())
 
 def emailerrors(email_address, olderror):
     """
@@ -344,10 +344,12 @@ if __name__ == "__main__":
     urls = (
         '/', 'index'
     )
+    from application import application
+    app = application(urls, globals())
+    app.internalerror = debugerror
     
     class index:
         def GET(self):
             thisdoesnotexist
-    
-    web.internalerror = web.debugerror
-    web.run(urls)
+
+    app.run()

@@ -146,15 +146,8 @@ class _InternalError(HTTPError):
     def __init__(self, message=None):
         status = '500 Internal Server Error'
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, message or self.get_message())
+        HTTPError.__init__(self, status, headers, message or self.message)
         
-    def get_message(self):
-        if config.get('debug'):
-            import debugerror
-            return debugerror.debugerror()
-        else:
-            return self.message
-    
 def InternalError(message=None):
     """Returns HTTPError with '500 internal error' error from the active application.
     """
@@ -162,6 +155,9 @@ def InternalError(message=None):
         return _InternalError(message)
     elif ctx.get('app_stack'):
         return ctx.app_stack[-1].internalerror()
+    elif config.get('debug'):
+        import debugerror
+        return debugerror.debugerror()
     else:
         return _InternalError()
 

@@ -87,6 +87,12 @@ class DBTest(webtest.TestCase):
         assert db.select("person", where="name='a'")
         assert db.select("person", where="name='b'")
 
+    def testUnicode(self):
+        db = webtest.setup_database(self.dbname)
+        self.db.insert('person', False, name='user')
+        name = db.select('person')[0].name
+        self.assertEquals(type(name), unicode)
+
 class SqliteTest(DBTest):
     dbname = "sqlite"
     

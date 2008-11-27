@@ -419,7 +419,7 @@ class DB:
             self.has_pooling = False
             
         # Pooling can be disabled by passing pooling=False in the keywords.
-        self.has_pooling = self.has_pooling and self.keywords.pop('pooling', True)        
+        self.has_pooling = self.keywords.pop('pooling', True) and self.has_pooling
             
     def _getctx(self): 
         if not self._ctx.get('db'):

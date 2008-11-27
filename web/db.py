@@ -878,6 +878,8 @@ class MySQLDB(DB):
         if 'pw' in keywords:
             keywords['passwd'] = keywords['pw']
             del keywords['pw']
+        if 'charset' not in keywords:
+            keywords['charset'] = 'utf8'
         self.paramstyle = db.paramstyle = 'pyformat' # it's both, like psycopg
         self.dbname = "mysql"
         self.supports_multiple_insert = True

@@ -427,6 +427,9 @@ class application:
         parent = self.get_parent_app()
         if parent:
             return parent.internalerror()
+        elif web.config.get('debug'):
+            import debugerror
+            return debugerror.debugerror()
         else:
             return web._InternalError()
 

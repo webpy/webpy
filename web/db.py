@@ -21,10 +21,11 @@ from utils import threadeddict, storage, iters, iterbetter
 
 try:
     # db module can work independent of web.py
-    from webapi import debug
+    from webapi import debug, config
 except:
     import sys
     debug = sys.stderr
+    config = storage()
 
 class UnknownDB(Exception):
     """raised for unsupported dbms"""
@@ -408,7 +409,7 @@ class DB:
         
         self._ctx = threadeddict()
         # flag to enable/disable printing queries
-        self.printing = False
+        self.printing = config.get('debug', False)
         self.supports_multiple_insert = False
         
         try:

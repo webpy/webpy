@@ -4,7 +4,10 @@
 from __future__ import generators
 
 __version__ = "0.3"
-__author__ = "Aaron Swartz <me@aaronsw.com>"
+__author__ = [
+    "Aaron Swartz <me@aaronsw.com>",
+    "Anand Chitipothu <anandology@gmail.com>"
+]
 __license__ = "public domain"
 __contributors__ = "see http://webpy.org/changes"
 

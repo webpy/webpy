@@ -165,9 +165,16 @@ class application:
             env = {}
         env = dict(env, HTTP_HOST=host, REQUEST_METHOD=method, PATH_INFO=path, QUERY_STRING=query, HTTPS=str(https))
         headers = headers or {}
+
         for k, v in headers.items():
             env['HTTP_' + k.upper().replace('-', '_')] = v
-        
+
+        if 'HTTP_CONTENT_LENGTH' in env:
+            env['CONTENT_LENGTH'] = env.pop('HTTP_CONTENT_LENGTH')
+
+        if 'HTTP_CONTENT_TYPE' in env:
+            env['CONTENT_TYPE'] = env.pop('HTTP_CONTENT_TYPE')
+
         if data:
             import StringIO
             if isinstance(data, dict):
@@ -175,6 +182,8 @@ class application:
             else:
                 q = data
             env['wsgi.input'] = StringIO.StringIO(q)
+            if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
+                env['CONTENT_LENGTH'] = len(q)
         response = web.storage()
         def start_response(status, headers):
             response.status = status

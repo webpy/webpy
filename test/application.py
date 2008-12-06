@@ -190,17 +190,20 @@ class ApplicationTest(webtest.TestCase):
         
     def testUnicodeInput(self):
         urls = (
-            "/.*", "foo"
+            "(/.*)", "foo"
         )
         class foo:
-            def GET(self):
+            def GET(self, path):
                 i = web.input(name='')
                 return repr(i.name)
                 
-            def POST(self):
-                return repr(web.data())
-                i = web.input(name={})
-                return repr(i)
+            def POST(self, path):
+                if path == '/multipart':
+                    i = web.input(file={})
+                    return i.file.value
+                else:
+                    i = web.input()
+                    return repr(dict(i))
                 
         app = web.application(urls, locals())
         
@@ -210,11 +213,14 @@ class ApplicationTest(webtest.TestCase):
             
         f(u'\u1234')
         f(u'foo')
+
+        response = app.request('/', method='POST', data=dict(name='foo'))
+        self.assertEquals(response.data, "{'name': u'foo'}")
         
-        data = '--boundary\r\nContent-Disposition: form-data; name="name"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
-        headers = {'Content-Type': 'multipart/form-data; boundary=--boundary'}
-        response = app.request('/', method="POST", data=data, headers=headers)
-        #self.assertEquals(response.data, 'a')
+        data = '--boundary\r\nContent-Disposition: form-data; name="x"\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
+        headers = {'Content-Type': 'multipart/form-data; boundary=boundary'}
+        response = app.request('/multipart', method="POST", data=data, headers=headers)
+        self.assertEquals(response.data, 'a')
         
     def testCustomNotFound(self):
         urls_a = ("/", "a")
@@ -242,6 +248,6 @@ class ApplicationTest(webtest.TestCase):
         app.notfound = lambda: web.HTTPError("404 Not Found", {}, "not found 2")
         assert_notfound("/a/foo", "not found 1")
         assert_notfound("/b/foo", "not found 2")
-    
+
 if __name__ == '__main__':
     webtest.main()

@@ -145,6 +145,16 @@ class SQLQuery:
             
         return SQLQuery(items + self.items)
 
+    def __iadd__(self, other):
+        if isinstance(other, basestring):
+            items = [other]
+        elif isinstance(other, SQLQuery):
+            items = other.items
+        else:
+            return NotImplemented
+        self.items.extend(items)
+        return self
+
     def __len__(self):
         return len(self.query())
         
@@ -182,11 +192,11 @@ class SQLQuery:
         """
         if len(items) == 0:
             return SQLQuery("")
-            
+
         q = SQLQuery(items[0])
-        for i in items[1:]:
-            q = q + sep + i
-        
+        for item in items[1:]:
+            q += sep
+            q += item
         return q
     
     join = staticmethod(join)

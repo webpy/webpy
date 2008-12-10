@@ -293,7 +293,7 @@ class ShelfStore:
 
     def __getitem__(self, key):
         atime, v = self.shelf[key]
-        self[k] = v # update atime
+        self[key] = v # update atime
         return v
 
     def __setitem__(self, key, value):

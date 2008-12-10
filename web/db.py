@@ -852,9 +852,8 @@ class PostgresDB(DB):
         keywords['database'] = keywords.pop('db')
         self.dbname = "postgres"
         self.paramstyle = db_module.paramstyle
-        self.supports_multiple_insert = True
-
         DB.__init__(self, db_module, keywords)
+        self.supports_multiple_insert = True
         
     def get_db_module(self):
         try: 
@@ -897,8 +896,8 @@ class MySQLDB(DB):
 
         self.paramstyle = db.paramstyle = 'pyformat' # it's both, like psycopg
         self.dbname = "mysql"
-        self.supports_multiple_insert = True
         DB.__init__(self, db, keywords)
+        self.supports_multiple_insert = True
         
     def _process_insert_query(self, query, tablename, seqname):
         return query, SQLQuery('SELECT last_insert_id();')

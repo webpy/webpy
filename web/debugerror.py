@@ -296,7 +296,7 @@ def debugerror():
     (Based on the beautiful 500 page from [Django](http://djangoproject.com/), 
     designed by [Wilson Miner](http://wilsonminer.com/).)
     """
-    return web.internalerror(djangoerror())
+    return web._InternalError(djangoerror())
 
 def emailerrors(email_address, olderror):
     """

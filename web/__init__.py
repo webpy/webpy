@@ -25,6 +25,7 @@ from webapi import *
 from httpserver import *
 from debugerror import *
 from application import *
+from browser import *
 try:
     import webopenid as openid
 except ImportError:

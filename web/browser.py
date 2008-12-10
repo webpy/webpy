@@ -187,8 +187,8 @@ class AppBrowser(Browser):
         b['password'] = 'secret'
         b.submit()
 
-        assert b.url == '/'
-        assert 'Welcome joe' in b.data
+        assert b.path == '/'
+        assert 'Welcome joe' in b.get_text()
     """
     def __init__(self, app):
         Browser.__init__(self)

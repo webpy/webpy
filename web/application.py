@@ -314,7 +314,9 @@ class application:
         ctx.environ = ctx.env = env
         ctx.host = env.get('HTTP_HOST')
 
-        if env.get('HTTPS', '').lower() in ['on', 'true']:
+        if env['wsgi.url_scheme'] in ['http', 'https']:
+            ctx.protocol = env['wsgi.url_scheme']
+        elif env.get('HTTPS', '').lower() in ['on', 'true']:
             ctx.protocol = 'https'
         else:
             ctx.protocol = 'http'

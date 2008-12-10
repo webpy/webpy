@@ -199,6 +199,8 @@ class AppBrowser(Browser):
 
 class AppHandler(urllib2.HTTPHandler):
     """urllib2 handler to handle requests using web.py application."""
+    handler_order = 100
+
     def __init__(self, app):
         self.app = app
 
@@ -212,6 +214,11 @@ class AppHandler(urllib2.HTTPHandler):
             https=req.get_type() == "https"
         )
         return self._make_response(result, req.get_full_url())
+
+    def https_open(self, req):
+        return self.http_open(req)
+
+    https_request = urllib2.HTTPHandler.do_request_
 
     def _make_response(self, result, url):
         data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.headers.items()])

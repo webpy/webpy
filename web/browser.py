@@ -92,7 +92,7 @@ class Browser:
         e = e or self.get_soup()
         return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, unicode)])
         
-    def links(self, predicate=None):
+    def get_links(self, predicate=None):
         """Returns all links in the document."""
         soup = self.get_soup()
         predicate = predicate or (lambda x: True)
@@ -100,7 +100,7 @@ class Browser:
 
     def follow_link(self, link=None, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
         if link is None:
-            links = self._filter_links(self.links(),
+            links = self._filter_links(self.get_links(),
                 text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
             link = links and links[0]
             
@@ -110,7 +110,7 @@ class Browser:
             raise BrowserError("No link found")
             
     def find_link(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
-        links = self._filter_links(self.links(), 
+        links = self._filter_links(self.get_links(), 
             text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
         return links and links[0] or None
             

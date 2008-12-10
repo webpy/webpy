@@ -221,7 +221,7 @@ class AppHandler(urllib2.HTTPHandler):
     https_request = urllib2.HTTPHandler.do_request_
 
     def _make_response(self, result, url):
-        data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.headers.items()])
+        data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
         headers = httplib.HTTPMessage(StringIO(data))
         response = urllib.addinfourl(StringIO(result.data), headers, url)
         code, msg = result.status.split(None, 1)

@@ -188,6 +188,7 @@ class application:
         def start_response(status, headers):
             response.status = status
             response.headers = dict(headers)
+            response.header_items = headers
         response.data = "".join(self.wsgifunc(cleanup_threadlocal=False)(env, start_response))
         return response
 

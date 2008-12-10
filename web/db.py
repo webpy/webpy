@@ -1003,6 +1003,7 @@ class OracleDB(DB):
         keywords['dsn'] = keywords.pop('db') 
         self.dbname = 'oracle' 
         db.paramstyle = 'numeric' 
+        self.paramstyle = db.paramstyle
 
         # oracle doesn't support pooling 
         keywords.pop('pooling', None) 

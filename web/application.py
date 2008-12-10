@@ -188,8 +188,12 @@ class application:
         def start_response(status, headers):
             response.status = status
             response.headers = dict(headers)
-        response.data = "".join(self.wsgifunc()(env, start_response))
+        response.data = "".join(self.wsgifunc(cleanup_threadlocal=False)(env, start_response))
         return response
+
+    def browser(self):
+        import browser
+        return browser.AppBrowser(self)
 
     def handle(self):
         fn, args = self._match(self.mapping, web.ctx.path)
@@ -216,7 +220,7 @@ class application:
         finally:
             web.ctx.app_stack = web.ctx.app_stack[:-1]
                         
-    def wsgifunc(self, *middleware):
+    def wsgifunc(self, *middleware, **kw):
         """Returns a WSGI-compatible function for this application."""
         def peep(iterator):
             """Peeps into an iterator by doing an iteration
@@ -261,7 +265,7 @@ class application:
             # see utils.ThreadedDict for details
             import threading
             t = threading.currentThread()
-            if hasattr(t, '_d'):
+            if kw.get('cleanup_threadlocal', True) and hasattr(t, '_d'):
                 del t._d
         
             return result
@@ -302,6 +306,7 @@ class application:
     def load(self, env):
         """Initializes ctx using env."""
         ctx = web.ctx
+        ctx.clear()
         ctx.status = '200 OK'
         ctx.headers = []
         ctx.output = ''

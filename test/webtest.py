@@ -8,10 +8,6 @@ sys.path.insert(0, '.')
 
 import web
 
-# reloader doesn't work when urls are local, which is the case with most tests.
-web.config.debug = False
-
-
 class TestCase(unittest.TestCase):
     def setUpAll(self):
         pass
@@ -127,7 +123,6 @@ def setup_database(dbname, pooling=False):
         db = web.database(dbn=dbname, db='webpy.db', pooling=pooling)
     else:
         db = web.database(dbn=dbname, db='webpy', user='scott', pw='tiger', pooling=pooling)
-        
-    if '-v' in sys.argv:
-        db.printing = True
+
+    db.printing = '-v' in sys.argv
     return db

@@ -91,12 +91,15 @@ class Browser:
         """Returns content of e or the current document as plain text."""
         e = e or self.get_soup()
         return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, unicode)])
-        
-    def get_links(self, predicate=None):
-        """Returns all links in the document."""
+
+    def _get_links(self):
         soup = self.get_soup()
-        predicate = predicate or (lambda x: True)
-        return [a for a in soup.findAll(name='a') if predicate(a)]
+        return [a for a in soup.findAll(name='a')]
+        
+    def get_links(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
+        """Returns all links in the document."""
+        return self._filter_links(self._get_links(),
+            text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
 
     def follow_link(self, link=None, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
         if link is None:

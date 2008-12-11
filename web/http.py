@@ -73,8 +73,8 @@ def modified(date=None, etag=None):
             validate = True
     
     if validate: web.ctx.status = '304 Not Modified'
-    lastmodified(date)
-    web.header('ETag', '"' + etag + '"')
+    if date: lastmodified(date)
+    if etag: web.header('ETag', '"' + etag + '"')
     return not validate
 
 def write(cgi_response):

@@ -16,6 +16,18 @@ class %(classname)s:
 
 """
 
+urls = (
+    "/iter", "do_iter",
+)
+app = web.application(urls, globals())
+
+class do_iter:
+    def GET(self):
+        yield 'hello, '
+        yield web.input(name='world').name
+
+    POST = GET
+
 def write(filename, data):
     f = open(filename, 'w')
     f.write(data)
@@ -248,6 +260,13 @@ class ApplicationTest(webtest.TestCase):
         app.notfound = lambda: web.HTTPError("404 Not Found", {}, "not found 2")
         assert_notfound("/a/foo", "not found 1")
         assert_notfound("/b/foo", "not found 2")
+
+    def testIter(self):
+        self.assertEquals(app.request('/iter').data, 'hello, world')
+        self.assertEquals(app.request('/iter?name=web').data, 'hello, web')
+
+        self.assertEquals(app.request('/iter', method='POST').data, 'hello, world')
+        self.assertEquals(app.request('/iter', method='POST', data='name=web').data, 'hello, web')
 
 if __name__ == '__main__':
     webtest.main()

@@ -252,7 +252,7 @@ class application:
                 result = e.data
 
             if is_generator(result):
-                result = peep(result)
+                result = utils.utf8(peep(result))
             else:
                 result = [utils.utf8(result)]
 
@@ -497,7 +497,7 @@ class subdomain_application(application):
         >>> class hello:
         ...     def GET(self): return "hello"
         >>>
-        >>> mapping = ("hello.example.com", app)
+        >>> mapping = (r"hello\.example\.com", app)
         >>> app2 = subdomain_application(mapping)
         >>> app2.request("/hello", host="hello.example.com").data
         'hello'

@@ -27,7 +27,7 @@ __all__ = [
   "sendmail"
 ]
 
-import re, sys, time, threading
+import re, sys, time, threading, itertools
 
 try:
     import subprocess
@@ -250,6 +250,8 @@ def safestr(obj, encoding='utf-8'):
         return obj.encode('utf-8')
     elif isinstance(obj, str):
         return obj
+    elif hasattr(obj, 'next'): # iterator
+        return itertools.imap(safestr, obj)
     else:
         return str(obj)
 

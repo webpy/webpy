@@ -823,7 +823,7 @@ class Template(BaseTemplate):
 
         # ignore BOM chars at the begining of template
         BOM = '\xef\xbb\xbf'
-        if text.startswith(BOM):
+        if isinstance(text, str) and text.startswith(BOM):
             text = text[len(BOM):]
         
         # support fort \$ for backward-compatibility 

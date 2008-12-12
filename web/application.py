@@ -571,12 +571,17 @@ def unloadhook(h):
             return result
             
     def wrap(result):
-        try:
-            for x in result:
-                yield x
-        finally:
-            # make sure hook is called even in case of exceptions.
-            h()    
+        def next():
+            try:
+                return result.next()
+            except:
+                # call the hook at the and of iterator
+                h()    
+                raise
+
+        result = iter(result)
+        while True:
+            yield next()
             
     return processor
 

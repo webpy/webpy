@@ -15,6 +15,7 @@ import itertools
 import os
 import re
 import types
+from exceptions import SystemExit
 
 try:
     import wsgiref.handlers
@@ -243,6 +244,8 @@ class application:
                 else:
                     return self.handle()
             except web.HTTPError:
+                raise
+            except (KeyboardInterrupt, SystemExit):
                 raise
             except:
                 print >> web.debug, traceback.format_exc()

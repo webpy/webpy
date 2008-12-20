@@ -148,17 +148,17 @@ class Store:
     """Base class for session stores"""
 
     def __contains__(self, key):
-        raise NotImplemented
+        raise NotImplementedError
 
     def __getitem__(self, key):
-        raise NotImplemented
+        raise NotImplementedError
 
     def __setitem__(self, key, value):
-        raise NotImplemented
+        raise NotImplementedError
 
     def cleanup(self, timeout):
         """removes all the expired sessions"""
-        raise NotImplemented
+        raise NotImplementedError
 
     def encode(self, session_dict):
         """encodes session dict as a string"""

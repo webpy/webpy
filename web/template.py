@@ -1014,6 +1014,7 @@ def compile_templates(root):
     
     for dirpath, dirnames, filenames in os.walk(root):
         filenames = [f for f in filenames if not f.startswith('.') and not f.endswith('~') and not f.startswith('__init__.py')]
+        dirnames = [d for d in dirnames if not d.startswith('.')]
         
         out = open(os.path.join(dirpath, '__init__.py'), 'w')
         out.write('from web.template import CompiledTemplate, ForLoop\n\n')

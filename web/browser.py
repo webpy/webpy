@@ -5,7 +5,6 @@ from utils import re_compile
 from net import htmlunquote
 
 import httplib, urllib, urllib2
-import cookielib
 import copy
 from StringIO import StringIO
 
@@ -22,6 +21,7 @@ class BrowserError(Exception):
 
 class Browser:
     def __init__(self):
+        import cookielib
         self.cookiejar = cookielib.CookieJar()
         self._cookie_processor = urllib2.HTTPCookieProcessor(self.cookiejar)
         self.form = None

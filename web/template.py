@@ -817,18 +817,7 @@ class Template(BaseTemplate):
     globals = {}
     
     def __init__(self, text, filename='<template>', filter=None, globals=None, builtins=None):
-        text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
-        if not text.endswith('\n'):
-            text += '\n'
-
-        # ignore BOM chars at the begining of template
-        BOM = '\xef\xbb\xbf'
-        if isinstance(text, str) and text.startswith(BOM):
-            text = text[len(BOM):]
-        
-        # support fort \$ for backward-compatibility 
-        text = text.replace(r'\$', '$$')
-        
+        text = Template.normalize_text(text)
         code = self.compile_template(text, filename)
                 
         _, ext = os.path.splitext(filename)
@@ -842,6 +831,22 @@ class Template(BaseTemplate):
                 
         BaseTemplate.__init__(self, code=code, filename=filename, filter=filter, globals=globals, builtins=builtins)
         
+    def normalize_text(text):
+        """Normalizes template text by correcting \r\n, tabs and BOM chars."""
+        text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
+        if not text.endswith('\n'):
+            text += '\n'
+
+        # ignore BOM chars at the begining of template
+        BOM = '\xef\xbb\xbf'
+        if isinstance(text, str) and text.startswith(BOM):
+            text = text[len(BOM):]
+        
+        # support fort \$ for backward-compatibility 
+        text = text.replace(r'\$', '$$')
+        return text
+    normalize_text = staticmethod(normalize_text)
+                
     def __call__(self, *a, **kw):
         import webapi as web
         if 'headers' in web.ctx and self.content_type:
@@ -1018,7 +1023,7 @@ def compile_templates(root):
         for d in dirnames[:]:
             if d.startswith('.'):
                 dirnames.remove(d) # don't visit this dir
-         
+
         out = open(os.path.join(dirpath, '__init__.py'), 'w')
         out.write('from web.template import CompiledTemplate, ForLoop\n\n')
         if dirnames:
@@ -1027,15 +1032,13 @@ def compile_templates(root):
         for f in filenames:
             path = os.path.join(dirpath, f)
 
-            # create template to make sure it compiles
-            t = Template(open(path).read(), path)
-            
             if '.' in f:
                 name, _ = f.split('.', 1)
             else:
                 name = f
-            
-            code = Template.generate_code(open(path).read(), path)
+                
+            text = Template.normalize_text(text)
+            code = Template.generate_code(text, path)
             code = re_start.sub('    ', code)
                         
             _gen = '' + \
@@ -1052,6 +1055,9 @@ def compile_templates(root):
             out.write(gen_code)
             out.write('\n\n')
             out.write('%s = CompiledTemplate(%s(), %s)\n\n' % (name, name, repr(path)))
+
+            # create template to make sure it compiles
+            t = Template(open(path).read(), path)
         out.close()
                 
 class ParseError(Exception):
@@ -1368,6 +1374,7 @@ def test():
 
         >>> t('\xef\xbb\xbf$def with(x)\n$x')('foo')
         u'foo\n'
+
     """
     pass
             

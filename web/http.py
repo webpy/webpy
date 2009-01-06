@@ -60,7 +60,13 @@ def modified(date=None, etag=None):
     `True` and sets the response status to `304 Not Modified`. It also
     sets `Last-Modified and `ETag` output headers.
     """
-    n = set(x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(','))
+    try:
+        from __builtin__ import set
+    except ImportError:
+        # for python 2.3
+        from sets import Set as set
+
+    n = set([x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(',')])
     m = net.parsehttpdate(web.ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
     validate = False
     if etag:

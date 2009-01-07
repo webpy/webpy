@@ -1037,6 +1037,7 @@ def compile_templates(root):
             else:
                 name = f
                 
+            text = open(path).read()
             text = Template.normalize_text(text)
             code = Template.generate_code(text, path)
             code = re_start.sub('    ', code)

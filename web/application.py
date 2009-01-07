@@ -50,7 +50,7 @@ class application:
         
         self.add_processor(loadhook(self._load))
         self.add_processor(unloadhook(self._unload))
-
+        
         if autoreload:
             def main_module_name():
                 mod = sys.modules['__main__']
@@ -97,10 +97,7 @@ class application:
     def _unload(self):
         web.ctx.app_stack = web.ctx.app_stack[:-1]
         
-        if not web.ctx.app_stack:
-            # this is the top-most application
-            self._cleanup_threadlocal()
-        else:
+        if web.ctx.app_stack:
             # this is a sub-application, revert ctx to earlier state.
             oldctx = web.ctx.get('_oldctx')
             if oldctx:
@@ -108,8 +105,8 @@ class application:
                 web.ctx.homepath = oldctx.homepath
                 web.ctx.path = oldctx.path
                 web.ctx.fullpath = oldctx.fullpath
-                    
-    def _cleanup_threadlocal(self):
+                
+    def _cleanup(self):
         #@@@
         # Since the CherryPy Webserver uses thread pool, the thread-local state is never cleared.
         # This interferes with the other requests. 
@@ -290,7 +287,12 @@ class application:
 
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)
-            return result
+            
+            def cleanup():
+                self._cleanup()
+                yield '' # force this function to be a generator
+                            
+            return itertools.chain(result, cleanup())
 
         for m in middleware: 
             wsgi = m(wsgi)
@@ -578,7 +580,7 @@ def unloadhook(h):
                 return result.next()
             except:
                 # call the hook at the and of iterator
-                h()    
+                h()
                 raise
 
         result = iter(result)

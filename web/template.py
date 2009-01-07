@@ -477,6 +477,12 @@ class PythonTokenizer:
                 t = self.next()
                 if t.value == delim:
                     break
+                elif t.value == '(':
+                    self.consume_till(')')
+                elif t.value == '[':
+                    self.consume_till(']')
+                elif t.value == '{':
+                    self.consume_till('}')
 
                 # if end of line is found, it is an exception.
                 # Since there is no easy way to report the line number,
@@ -1376,6 +1382,16 @@ def test():
         >>> t('\xef\xbb\xbf$def with(x)\n$x')('foo')
         u'foo\n'
 
+    Test for with weird cases.
+
+        >>> t('$for i in range(10)[1:5]:\n    $i')()
+        u'1\n2\n3\n4\n'
+        >>> t("$for k, v in {'a': 1, 'b': 2}.items():\n    $k $v")()
+        u'a 1\nb 2\n'
+        >>> t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
+        Traceback (most recent call last):
+            ...
+        SyntaxError: invalid syntax
     """
     pass
             

@@ -988,7 +988,7 @@ class MSSQLDB(DB):
     def __init__(self, **keywords):
         import pymssql as db    
         if 'pw' in keywords:
-            keywords['password'] = keywords.pop('kw')
+            keywords['password'] = keywords.pop('pw')
         keywords['database'] = keywords.pop('db')
         self.dbname = "mssql"
         DB.__init__(self, db, keywords)

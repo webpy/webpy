@@ -110,7 +110,6 @@ class application:
                 web.ctx.fullpath = oldctx.fullpath
                     
     def _cleanup_threadlocal(self):
-        return
         #@@@
         # Since the CherryPy Webserver uses thread pool, the thread-local state is never cleared.
         # This interferes with the other requests. 

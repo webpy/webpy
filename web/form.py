@@ -174,7 +174,7 @@ class Dropdown(Input):
     def render(self):
         x = '<select name="%s"%s>\n' % (net.websafe(self.name), self.addatts())
         for arg in self.args:
-            if type(arg) == tuple:
+            if isinstance(arg, (tuple, list)):
                 value, desc= arg
             else:
                 value, desc = arg, arg 

@@ -1008,6 +1008,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             p.stdin.close()
             p.wait()
         else:
+            import os
             i, o = os.popen2(["/usr/lib/sendmail", '-f', from_address] + recipients)
             i.write(message)
             i.close()

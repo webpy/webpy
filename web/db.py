@@ -227,6 +227,20 @@ class SQLLiteral:
 
 sqlliteral = SQLLiteral
 
+def _sqllist(values):
+    """
+        >>> _sqllist([1, 2, 3])
+        <sql: '(1, 2, 3)'>
+    """
+    items = []
+    items.append('(')
+    for i, v in enumerate(values):
+        if i != 0:
+            items.append(', ')
+        items.append(sqlparam(v))
+    items.append(')')
+    return SQLQuery(items)
+
 def reparam(string_, dictionary): 
     """
     Takes a string and a dictionary and interpolates the string
@@ -234,6 +248,8 @@ def reparam(string_, dictionary):
 
         >>> reparam("s = $s", dict(s=True))
         <sql: "s = 't'">
+        >>> reparam("s IN $s", dict(s=[1, 2]))
+        <sql: 's IN (1, 2)'>
     """
     dictionary = dictionary.copy() # eval mucks with it
     vals = []
@@ -241,7 +257,7 @@ def reparam(string_, dictionary):
     for live, chunk in _interpolate(string_):
         if live:
             v = eval(chunk, dictionary)
-            result.append(sqlparam(v))
+            result.append(sqlquote(v))
         else: 
             result.append(chunk)
     return SQLQuery.join(result, '')
@@ -338,8 +354,13 @@ def sqlquote(a):
 
         >>> 'WHERE x = ' + sqlquote(True) + ' AND y = ' + sqlquote(3)
         <sql: "WHERE x = 't' AND y = 3">
+        >>> 'WHERE x = ' + sqlquote(True) + ' AND y IN ' + sqlquote([2, 3])
+        <sql: "WHERE x = 't' AND y IN (2, 3)">
     """
-    return sqlparam(a).sqlquery()
+    if isinstance(a, list):
+        return _sqllist(a)
+    else:
+        return sqlparam(a).sqlquery()
 
 class Transaction:
     """Database transaction."""

@@ -155,7 +155,7 @@ def profiler(app):
     from utils import profile
     def profile_internal(e, o):
         out, result = profile(app)(e, o)
-        return out + ['<pre>' + net.websafe(result) + '</pre>']
+        return list(out) + ['<pre>' + net.websafe(result) + '</pre>']
     return profile_internal
 
 if __name__ == "__main__":

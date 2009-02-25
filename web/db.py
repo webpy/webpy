@@ -1014,6 +1014,30 @@ class MSSQLDB(DB):
         self.dbname = "mssql"
         DB.__init__(self, db, keywords)
 
+    def sql_clauses(self, what, tables, where, group, order, limit, offset): 
+        return (
+            ('SELECT', what),
+            ('TOP', limit),
+            ('FROM', sqllist(tables)),
+            ('WHERE', where),
+            ('GROUP BY', group),
+            ('ORDER BY', order),
+            ('OFFSET', offset))
+            
+    def _test(self):
+        """Test LIMIT.
+
+            Fake presence of pymssql module for running tests.
+            >>> import sys
+            >>> sys.modules['pymssql'] = sys.modules['sys']
+            
+            MSSQL has TOP clause instead of LIMIT clause.
+            >>> db = MSSQLDB(db='test', user='joe', pw='secret')
+            >>> db.select('foo', limit=4, _test=True)
+            <sql: 'SELECT * TOP 4 FROM foo'>
+        """
+        pass
+
 class OracleDB(DB): 
     def __init__(self, **keywords): 
         import cx_Oracle as db 

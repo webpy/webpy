@@ -355,6 +355,9 @@ class application:
         # http://trac.lighttpd.net/trac/ticket/406 requires:
         if env.get('SERVER_SOFTWARE', '').startswith('lighttpd/'):
             ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], ctx.homepath)
+            # Apache and CherryPy webservers unquote the url but lighttpd doesn't. 
+            # unquote explicitly for lighttpd to make ctx.path uniform across all servers.
+            ctx.path = urllib.unquote(ctx.path)
 
         if env.get('QUERY_STRING'):
             ctx.query = '?' + env.get('QUERY_STRING', '')
@@ -425,7 +428,7 @@ class application:
                 result = utils.re_compile('^' + pat + '$').match(value)
                 
             if result: # it's a match
-                return what, [x and urllib.unquote(x) for x in result.groups()]
+                return what, [x for x in result.groups()]
         return None, None
         
     def _delegate_sub_application(self, dir, app):
@@ -537,7 +540,7 @@ class subdomain_application(application):
                 result = utils.re_compile('^' + pat + '$').match(value)
 
             if result: # it's a match
-                return what, [x and urllib.unquote(x) for x in result.groups()]
+                return what, [x for x in result.groups()]
         return None, None
         
 def loadhook(h):

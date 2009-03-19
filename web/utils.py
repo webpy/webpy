@@ -12,7 +12,7 @@ __all__ = [
   "TimeoutError", "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
-  "group",
+  "group", "uniq", "iterview",
   "IterBetter", "iterbetter",
   "dictreverse", "dictfind", "dictfindall", "dictincr", "dictadd",
   "listget", "intget", "datestr",
@@ -378,6 +378,69 @@ def group(seq, size):
         seq = iter(seq)
     while True: 
         yield [seq.next() for i in xrange(size)]
+
+def uniq(seq):
+   """
+   Removes duplicate elements from a list.
+
+       >>> uniq([1,2,3,1,4,5,6])
+       [1,2,3,4,5,6]
+   """
+   seen = set()
+   result = []
+   for item in seq:
+       if item in seen: continue
+       seen.add(item)
+       result.append(item)
+   return result
+
+def iterview(x):
+   """
+   Takes an iterable `x` and returns an iterator over it
+   which prints its progress to stderr as it iterates through.
+   """
+   WIDTH = 70
+
+   def plainformat(n, lenx):
+       return '%5.1f%% (%*d/%d)' % ((float(n)/lenx)*100, len(str(lenx)), n, lenx)
+
+   def bars(size, n, lenx):
+       val = int((float(n)*size)/lenx + 0.5)
+       if size - val:
+           spacing = ">" + (" "*(size-val))[1:]
+       else:
+           spacing = ""
+       return "[%s%s]" % ("="*val, spacing)
+
+   def eta(elapsed, n, lenx):
+       if n == 0:
+           return '--:--:--'
+       if n == lenx:
+           secs = int(elapsed)
+       else:
+           secs = int((elapsed/n) * (lenx-n))
+       mins, secs = divmod(secs, 60)
+       hrs, mins = divmod(mins, 60)
+
+       return '%02d:%02d:%02d' % (hrs, mins, secs)
+
+   def format(starttime, n, lenx):
+       out = plainformat(n, lenx) + ' '
+       if n == lenx:
+           end = '     '
+       else:
+           end = ' ETA '
+       end += eta(time.time() - starttime, n, lenx)
+       out += bars(WIDTH - len(out) - len(end), n, lenx)
+       out += end
+       return out
+
+   starttime = time.time()
+   lenx = len(x)
+   for n, y in enumerate(x):
+       sys.stderr.write('\r' + format(starttime, n, lenx))
+       yield y
+   sys.stderr.write('\r' + format(starttime, n+1, lenx) + '\n')
 
 class IterBetter:
     """

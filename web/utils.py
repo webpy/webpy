@@ -384,7 +384,7 @@ def uniq(seq):
    Removes duplicate elements from a list.
 
        >>> uniq([1,2,3,1,4,5,6])
-       [1,2,3,4,5,6]
+       [1, 2, 3, 4, 5, 6]
    """
    seen = set()
    result = []

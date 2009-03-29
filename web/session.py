@@ -137,6 +137,8 @@ class Session(utils.ThreadedDict):
 
     def expired(self):
         """Called when an expired session is atime"""
+        self._killed = True
+        self._save()
         raise SessionExpired(self._config.expired_message)
  
     def kill(self):

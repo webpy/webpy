@@ -2,42 +2,6 @@ import webtest
 import web
 import tempfile
 
-class Browser:
-    """Browser simulation.
-    Stores cookies across requests.
-    """
-    def __init__(self, app):
-        self.app = app
-        self.cookies = {}
-        self.response = None
-
-    def open(self, path):
-        headers = {}
-        if self.cookies:
-            headers['cookie'] = self.cookie_header()
-        self.response = self.app.request(path, headers=headers)
-        if 'Set-Cookie' in self.response.headers:
-            self.read_cookie(self.response.headers['Set-Cookie'])
-        return self.response.data
-        
-    def cookie_header(self):
-        return "; ".join(["%s=%s" % (k, v) for k, v in self.cookies.items()])
-        
-    def read_cookie(self, header):
-        tokens = header.split('; ')
-        d = {}
-        name, value = tokens[0].split("=")
-        for t in tokens[1:]:
-            k, v = t.split("=")
-            d[k.lower()] = v
-            
-        #@@ fix this
-        if 'expires' in d:
-            d.pop('name', None)
-            return
-        
-        self.cookies[name] = value
-            
 class SessionTest(webtest.TestCase):
     def setUp(self):
         app = web.auto_application()
@@ -61,30 +25,31 @@ class SessionTest(webtest.TestCase):
         return web.session.Session(app, store, {'count': 0})
         
     def testSession(self):
-        b = Browser(self.app)
-        self.assertEquals(b.open('/count'), '1')
-        self.assertEquals(b.open('/count'), '2')
-        self.assertEquals(b.open('/count'), '3')
+        b = self.app.browser() 
+        self.assertEquals(b.open('/count').read(), '1')
+        self.assertEquals(b.open('/count').read(), '2')
+        self.assertEquals(b.open('/count').read(), '3')
         b.open('/reset')
-        self.assertEquals(b.open('/count'), '1')
+        self.assertEquals(b.open('/count').read(), '1')
 
     def testParallelSessions(self):
-        b1 = Browser(self.app)
-        b2 = Browser(self.app)
+        b1 = self.app.browser()
+        b2 = self.app.browser()
         
         b1.open('/count')
         
         for i in range(1, 10):
-            self.assertEquals(b1.open('/count'), str(i+1))
-            self.assertEquals(b2.open('/count'), str(i))
+            self.assertEquals(b1.open('/count').read(), str(i+1))
+            self.assertEquals(b2.open('/count').read(), str(i))
 
     def testBadSessionId(self):
-        b = Browser(self.app)
-        self.assertEquals(b.open('/count'), '1')
-        self.assertEquals(b.open('/count'), '2')
-
-        b.cookies['webpy_session_id'] = '/etc/password'
-        self.assertEquals(b.open('/count'), '1')
+        b = self.app.browser()
+        self.assertEquals(b.open('/count').read(), '1')
+        self.assertEquals(b.open('/count').read(), '2')
+        
+        cookie = b.cookiejar._cookies['0.0.0.0']['/']['webpy_session_id']
+        cookie.value = '/etc/password'
+        self.assertEquals(b.open('/count').read(), '1')
 
 class DBSessionTest(SessionTest):
     """Session test with db store."""

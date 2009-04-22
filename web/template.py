@@ -670,7 +670,8 @@ TEMPLATE_BUILTIN_NAMES = [
     "set", "slice", "tuple", "xrange",
     "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex", 
     "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
-    "True", "False"
+    "True", "False",
+    "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
 import __builtin__
@@ -1392,6 +1393,12 @@ def test():
         Traceback (most recent call last):
             ...
         SyntaxError: invalid syntax
+
+    Test datetime.
+
+        >>> import datetime
+        >>> t("$def with (date)\n$date.strftime('%m %Y')")(datetime.datetime(2009, 1, 1))
+        u'01 2009\n'
     """
     pass
             

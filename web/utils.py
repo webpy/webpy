@@ -608,6 +608,8 @@ def datestr(then, now=None):
         'January  1, 1969'
         >>> datestr(datetime(1970, 6, 1), now=d)
         'June  1, 1970'
+        >>> datestr(None)
+        ''
     """
     def agohence(n, what, divisor=None):
         if divisor: n = n // divisor
@@ -623,6 +625,7 @@ def datestr(then, now=None):
 
     oneday = 24 * 60 * 60
 
+    if not then: return ""
     if not now: now = datetime.datetime.utcnow()
     if type(now).__name__ == "DateTime":
         now = datetime.datetime.fromtimestamp(now)

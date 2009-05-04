@@ -165,11 +165,11 @@ class Browser:
         else:
             raise BrowserError("No form selected.")
         
-    def submit(self):
+    def submit(self, **kw):
         """submits the currently selected form."""
         if self.form is None:
             raise BrowserError("No form selected.")
-        req = self.form.click()
+        req = self.form.click(**kw)
         return self.do_request(req)
 
     def __getitem__(self, key):

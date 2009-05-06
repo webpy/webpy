@@ -568,8 +568,13 @@ def unloadhook(h):
         >>> app.add_processor(unloadhook(f))    
     """
     def processor(handler):
-        result = handler()
-        is_generator = result and hasattr(result, 'next')
+        try:
+            result = handler()
+            is_generator = result and hasattr(result, 'next')
+        except:
+            # run the hook even when handler raises some exception
+            h()
+            raise
 
         if is_generator:
             return wrap(result)

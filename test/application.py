@@ -268,5 +268,30 @@ class ApplicationTest(webtest.TestCase):
         self.assertEquals(app.request('/iter', method='POST').data, 'hello, world')
         self.assertEquals(app.request('/iter', method='POST', data='name=web').data, 'hello, web')
 
+    def testUnload(self):
+        x = web.storage(a=0)
+
+        urls = (
+            "/foo", "foo",
+            "/bar", "bar"
+        )
+        class foo:
+            def GET(self):
+                return "foo"
+        class bar:
+            def GET(self):
+                raise web.notfound()
+
+        app = web.application(urls, locals())
+        def unload():
+            x.a += 1
+        app.add_processor(web.unloadhook(unload))
+
+        app.request('/foo')
+        self.assertEquals(x.a, 1)
+
+        app.request('/bar')
+        self.assertEquals(x.a, 2)
+
 if __name__ == '__main__':
     webtest.main()

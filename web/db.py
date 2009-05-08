@@ -931,7 +931,7 @@ def import_driver(drivers, preferred=None):
             return __import__(d, None, None, ['x'])
         except ImportError:
             pass
-    raise ImportError("Unable to import " + "or ".join(drivers))
+    raise ImportError("Unable to import " + " or ".join(drivers))
 
 class SqliteDB(DB): 
     def __init__(self, **keywords):

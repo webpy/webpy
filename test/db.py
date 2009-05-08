@@ -8,7 +8,7 @@ class DBTest(webtest.TestCase):
     
     def setUp(self):
         self.db = webtest.setup_database(self.dbname, driver=self.driver)
-        self.db.query("CREATE TABLE person (name text, email text)")
+        self.db.query("CREATE TABLE person (name text, email text, active boolean)")
 
     def tearDown(self):
         # there might be some error with the current connection, delete from a new connection
@@ -94,6 +94,15 @@ class DBTest(webtest.TestCase):
         name = db.select('person')[0].name
         self.assertEquals(type(name), unicode)
 
+    def testBoolean(self):
+        def t(active):
+            name ='name-%s' % active
+            self.db.insert('person', False, name=name, active=active)
+            a = self.db.select('person', where='name=$name', vars=locals())[0].active
+            self.assertEquals(a, active)
+        t(False)
+        t(True)
+
 class PostgresTest(DBTest):
     dbname = "postgres"
     driver = "psycopg2"
@@ -122,6 +131,10 @@ class MySQLTest(DBTest):
         self.db = webtest.setup_database(self.dbname)
         # In mysql, transactions are supported only with INNODB engine.
         self.db.query("CREATE TABLE person (name text, email text) ENGINE=INNODB")
+
+    def testBoolean(self):
+        # boolean datatype is not suppoted in MySQL (at least until v5.0)
+        pass
 
 del DBTest
 

@@ -4,26 +4,27 @@ import web
 
 class DBTest(webtest.TestCase):
     dbname = 'postgres'
+    driver = None
     
     def setUp(self):
-        self.db = webtest.setup_database(self.dbname)
+        self.db = webtest.setup_database(self.dbname, driver=self.driver)
         self.db.query("CREATE TABLE person (name text, email text)")
 
     def tearDown(self):
         # there might be some error with the current connection, delete from a new connection
-        self.db = webtest.setup_database(self.dbname)
+        self.db = webtest.setup_database(self.dbname, driver=self.driver)
         self.db.query('DROP TABLE person')
         
     def _testable(self):
         try:
-            webtest.setup_database(self.dbname)
+            webtest.setup_database(self.dbname, driver=self.driver)
             return True
         except ImportError, e:
-            print >> web.debug, str(e), "(ignoring the %s tests)" % self.dbname
+            print >> web.debug, str(e), "(ignoring %s)" % self.__class__.__name__
             return False
     
     def testUnicode(self):
-        """Bug#177265: unicode queries throw errors"""
+        # Bug#177265: unicode queries throw errors
         self.db.select('person', where='name=$name', vars={'name': u'\xf4'})
     
     def assertRows(self, n):
@@ -87,19 +88,33 @@ class DBTest(webtest.TestCase):
         assert db.select("person", where="name='a'")
         assert db.select("person", where="name='b'")
 
-    def testUnicode(self):
+    def test_result_is_unicode(self):
         db = webtest.setup_database(self.dbname)
         self.db.insert('person', False, name='user')
         name = db.select('person')[0].name
         self.assertEquals(type(name), unicode)
 
+class PostgresTest(DBTest):
+    dbname = "postgres"
+    driver = "psycopg2"
+
+class PostgresTest_psycopg(PostgresTest):
+    driver = "psycopg"
+
+class PostgresTest_pgdb(PostgresTest):
+    driver = "pgdb"
+
 class SqliteTest(DBTest):
     dbname = "sqlite"
+    driver = "sqlite3"
     
     def testNestedTransactions(self):
         #nested transactions does not work with sqlite
         pass
-    
+
+class SqliteTest_pysqlite2(SqliteTest):
+    driver = "pysqlite2.dbapi2"
+
 class MySQLTest(DBTest):
     dbname = "mysql"
     
@@ -108,12 +123,18 @@ class MySQLTest(DBTest):
         # In mysql, transactions are supported only with INNODB engine.
         self.db.query("CREATE TABLE person (name text, email text) ENGINE=INNODB")
 
+del DBTest
+
+def is_test(cls):
+    import inspect
+    return inspect.isclass(cls) and webtest.TestCase in inspect.getmro(cls)
 
 # ignore db tests when the required db adapter is not found.
-for t in [DBTest, MySQLTest, SqliteTest]:
-    if not t('_testable')._testable():
+for t in globals().values():
+    if is_test(t) and not t('_testable')._testable():
         del globals()[t.__name__]
-        pass
+
+del t
 
 if __name__ == '__main__':
     webtest.main()

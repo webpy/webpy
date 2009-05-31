@@ -77,6 +77,11 @@ class DBTest(webtest.TestCase):
         self.assertRows(2)
         
     def testPooling(self):
+        # can't test pooling if DBUtils is not installed
+        try:
+            import DBUtils
+        except ImportError:
+            return
         db = webtest.setup_database(self.dbname, pooling=True)
         self.assertEquals(db.ctx.db.__class__.__module__, 'DBUtils.PooledDB')
         db.select('person', limit=1)
@@ -146,8 +151,12 @@ def is_test(cls):
 for t in globals().values():
     if is_test(t) and not t('_testable')._testable():
         del globals()[t.__name__]
-
 del t
+
+try:
+    import DBUtils
+except ImportError, e:
+    print >> web.debug, str(e) + "(ignoring testPooling)"
 
 if __name__ == '__main__':
     webtest.main()

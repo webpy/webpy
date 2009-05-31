@@ -131,6 +131,7 @@ class application:
             ...
             >>>
             >>> def hello(handler): return "hello, " +  handler()
+            ...
             >>> app.add_processor(hello)
             >>> app.request("/web.py").data
             'hello, web.py'

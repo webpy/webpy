@@ -11,8 +11,8 @@ def suite():
         "web.session",
         "web.template",
         "web.utils", 
-        "web.webapi", 
-        "web.wsgi", 
+#        "web.webapi", 
+#        "web.wsgi", 
     ]
     return webtest.doctest_suite(modules)
     

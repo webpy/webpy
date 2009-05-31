@@ -671,6 +671,7 @@ TEMPLATE_BUILTIN_NAMES = [
     "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex", 
     "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
     "True", "False",
+    "None",
     "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 

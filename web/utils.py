@@ -37,6 +37,10 @@ except ImportError:
 try: import datetime
 except ImportError: pass
 
+try: set
+except NameError:
+    from sets import Set as set
+
 class Storage(dict):
     """
     A Storage object is like a dictionary except `obj.foo` can be used
@@ -725,7 +729,7 @@ def commify(n):
         dollars, cents = n, None
 
     r = []
-    for i, c in enumerate(reversed(str(dollars))):
+    for i, c in enumerate(str(dollars)[::-1]):
         if i and (not (i % 3)):
             r.insert(0, ',')
         r.insert(0, c)
@@ -908,6 +912,7 @@ class ThreadedDict:
         1
         >>> import threading
         >>> def f(): d.x = 2
+        ...
         >>> t = threading.Thread(target=f)
         >>> t.start()
         >>> t.join()

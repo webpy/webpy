@@ -220,8 +220,12 @@ class AppHandler(urllib2.HTTPHandler):
 
     def https_open(self, req):
         return self.http_open(req)
-
-    https_request = urllib2.HTTPHandler.do_request_
+    
+    try:
+        https_request = urllib2.HTTPHandler.do_request_
+    except AttributeError:
+        # for python 2.3
+        pass
 
     def _make_response(self, result, url):
         data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])

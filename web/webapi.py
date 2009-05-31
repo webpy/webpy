@@ -57,7 +57,7 @@ def _status_code(status, data=None, classname=None, docstring=None):
         HTTPError.__init__(self, status, headers, data)
         
     # trick to create class dynamically with dynamic docstring.
-    return type(classname, (HTTPError,), {
+    return type(classname, (HTTPError, object), {
         '__doc__': docstring,
         '__init__': __init__
     })

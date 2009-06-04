@@ -57,7 +57,8 @@ def _is_dev_mode():
     # quick hack to check if the program is running in dev mode.
     if os.environ.has_key('SERVER_SOFTWARE') \
         or os.environ.has_key('PHP_FCGI_CHILDREN') \
-        or 'fcgi' in sys.argv or 'fastcgi' in sys.argv:
+        or 'fcgi' in sys.argv or 'fastcgi' in sys.argv \
+        or 'mod_wsgi' in sys.argv:
             return False
     return True
 

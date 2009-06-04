@@ -298,15 +298,17 @@ def debugerror():
     """
     return web._InternalError(djangoerror())
 
-def emailerrors(email_address, olderror):
+def emailerrors(to_address, olderror, from_address=None):
     """
     Wraps the old `internalerror` handler (pass as `olderror`) to 
-    additionally email all errors to `email_address`, to aid in 
+    additionally email all errors to `to_address`, to aid in
     debugging production websites.
     
     Emails contain a normal text traceback as well as an
     attachment containing the nice `debugerror` page.
     """
+    from_address = from_address or to_address
+
     def emailerrors_internal():
         error = olderror()
         tb = sys.exc_info()
@@ -314,8 +316,7 @@ def emailerrors(email_address, olderror):
         error_value = tb[1]
         tb_txt = ''.join(traceback.format_exception(*tb))
         path = web.ctx.path
-        request = web.ctx.method+' '+web.ctx.home+web.ctx.fullpath
-        eaddr = email_address
+        request = web.ctx.method + ' ' + web.ctx.home + web.ctx.fullpath
         text = ("""\
 ------here----
 Content-Type: text/plain
@@ -331,8 +332,8 @@ Content-Disposition: attachment; filename="bug.html"
 
 """ % locals()) + str(djangoerror())
         sendmail(
-          "your buggy site <%s>" % eaddr,
-          "the bugfixer <%s>" % eaddr,
+          "your buggy site <%s>" % from_address,
+          "the bugfixer <%s>" % to_address,
           "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
           text, 
           headers={'Content-Type': 'multipart/mixed; boundary="----here----"'})

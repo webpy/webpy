@@ -1092,15 +1092,16 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
         for r in recipients:
             assert not r.startswith('-'), 'security'
                 
+        cmd = [sendmail, '-f', from_address] + recipients
 
         if subprocess:
-            p = subprocess.Popen(['/usr/sbin/sendmail', '-f', from_address] + recipients, stdin=subprocess.PIPE)
+            p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
             p.stdin.write(message)
             p.stdin.close()
             p.wait()
         else:
             import os
-            i, o = os.popen2(["/usr/lib/sendmail", '-f', from_address] + recipients)
+            i, o = os.popen2(cmd)
             i.write(message)
             i.close()
             o.close()

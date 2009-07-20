@@ -315,32 +315,72 @@ def timelimit(timeout):
 class Memoize:
     """
     'Memoizes' a function, caching its return values for each input.
+    If `expires` is specified, values are recalculated after `expires` seconds.
+    If `background` is specified, values are recalculated in a separate thread.
     
+        >>> calls = 0
+        >>> def howmanytimeshaveibeencalled():
+        ...     global calls
+        ...     calls += 1
+        ...     return calls
+        >>> fastcalls = memoize(howmanytimeshaveibeencalled)
+        >>> howmanytimeshaveibeencalled()
+        1
+        >>> howmanytimeshaveibeencalled()
+        2
+        >>> fastcalls()
+        3
+        >>> fastcalls()
+        3
         >>> import time
-        >>> def meaningoflife():
-        ...     time.sleep(.2)
-        ...     return 42
-        >>> fastlife = memoize(meaningoflife)
-        >>> meaningoflife()
-        42
-        >>> timelimit(.1)(meaningoflife)()
-        Traceback (most recent call last):
-            ...
-        TimeoutError: took too long
-        >>> fastlife()
-        42
-        >>> timelimit(.1)(fastlife)()
-        42
-    
+        >>> fastcalls = memoize(howmanytimeshaveibeencalled, .1)
+        >>> fastcalls()
+        4
+        >>> fastcalls()
+        4
+        >>> time.sleep(.15)
+        >>> fastcalls()
+        5
+        >>> def slowfunc():
+        ...     time.sleep(.1)
+        ...     return howmanytimeshaveibeencalled()
+        >>> fastcalls = memoize(slowfunc, .2, background=True)
+        >>> fastcalls()
+        6
+        >>> timelimit(.05)(fastcalls)()
+        6
+        >>> time.sleep(.2)
+        >>> timelimit(.05)(fastcalls)()
+        6
+        >>> timelimit(.05)(fastcalls)()
+        6
+        >>> time.sleep(.2)
+        >>> timelimit(.05)(fastcalls)()
+        7
     """
-    def __init__(self, func): 
+    def __init__(self, func, expires=None, background=True): 
         self.func = func
         self.cache = {}
+        self.expires = expires
+        self.background = background
+        self.running = {}
+    
     def __call__(self, *args, **keywords):
         key = (args, tuple(keywords.items()))
+        def update():
+            if key not in self.running:
+                self.running[key] = True
+                self.cache[key] = (self.func(*args, **keywords), time.time())
+                del self.running[key]
+        
         if key not in self.cache: 
-            self.cache[key] = self.func(*args, **keywords)
-        return self.cache[key]
+            update()
+        elif self.expires and (time.time() - self.cache[key][1]) > self.expires:
+            if self.background:
+                threading.Thread(target=update).start()
+            else:
+                update()
+        return self.cache[key][0]
 
 memoize = Memoize
 

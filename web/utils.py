@@ -338,7 +338,7 @@ class Memoize:
         4
         >>> fastcalls()
         4
-        >>> time.sleep(.15)
+        >>> time.sleep(.2)
         >>> fastcalls()
         5
         >>> def slowfunc():
@@ -367,11 +367,14 @@ class Memoize:
     
     def __call__(self, *args, **keywords):
         key = (args, tuple(keywords.items()))
+        if not self.running.get(key):
+            self.running[key] = threading.Lock()
         def update():
-            if key not in self.running:
-                self.running[key] = True
-                self.cache[key] = (self.func(*args, **keywords), time.time())
-                del self.running[key]
+            if self.running[key].acquire(False):
+                try:
+                    self.cache[key] = (self.func(*args, **keywords), time.time())
+                finally:
+                    self.running[key].release()
         
         if key not in self.cache: 
             update()

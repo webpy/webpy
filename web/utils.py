@@ -333,7 +333,7 @@ class Memoize:
         >>> fastcalls()
         3
         >>> import time
-        >>> fastcalls = memoize(howmanytimeshaveibeencalled, .1)
+        >>> fastcalls = memoize(howmanytimeshaveibeencalled, .1, background=False)
         >>> fastcalls()
         4
         >>> fastcalls()
@@ -357,6 +357,11 @@ class Memoize:
         >>> time.sleep(.2)
         >>> timelimit(.05)(fastcalls)()
         7
+        >>> fastcalls = memoize(slowfunc, None, background=True)
+        >>> threading.Thread(target=fastcalls).start()
+        >>> time.sleep(.01)
+        >>> fastcalls()
+        9
     """
     def __init__(self, func, expires=None, background=True): 
         self.func = func
@@ -369,15 +374,15 @@ class Memoize:
         key = (args, tuple(keywords.items()))
         if not self.running.get(key):
             self.running[key] = threading.Lock()
-        def update():
-            if self.running[key].acquire(False):
+        def update(block=False):
+            if self.running[key].acquire(block):
                 try:
                     self.cache[key] = (self.func(*args, **keywords), time.time())
                 finally:
                     self.running[key].release()
         
         if key not in self.cache: 
-            update()
+            update(block=True)
         elif self.expires and (time.time() - self.cache[key][1]) > self.expires:
             if self.background:
                 threading.Thread(target=update).start()

@@ -392,17 +392,22 @@ class Parser:
             ('a\nb\n', 'c')
             >>> read_indented_block('  a\n    b\n  c\nd', '  ')
             ('a\n  b\nc\n', 'd')
+            >>> read_indented_block('  a\n\n    b\nc', '  ')
+            ('a\n\n  b\n', 'c')
         """
         if indent == '':
             return '', text
             
         block = ""
-        while True:
-            if text.startswith(indent):
-                line, text = splitline(text)
+        while text:
+            line, text2 = splitline(text)
+            if line.strip() == "":
+                block += '\n'
+            elif line.startswith(indent):
                 block += line[len(indent):]
             else:
                 break
+            text = text2
         return block, text
 
     def read_statement(self, text):
@@ -526,7 +531,7 @@ class TextNode:
         
     def __repr__(self):
         return 't' + repr(self.value)
-        
+
 class ExpressionNode:
     def __init__(self, value, escape=True):
         self.value = value.strip()

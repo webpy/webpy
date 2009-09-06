@@ -18,7 +18,7 @@ class Form:
     
         >>> f = Form(Textbox("x"))
         >>> f.render()
-        '<table>\n    <tr><th><label for="x">x</label></th><td><input type="text" name="x" id="x" /></td></tr>\n</table>'
+        '<table>\n    <tr><th><label for="x">x</label></th><td><input type="text" id="x" name="x"/></td></tr>\n</table>'
     """
     def __init__(self, *inputs, **kw):
         self.inputs = inputs
@@ -35,21 +35,27 @@ class Form:
         out = ''
         out += self.rendernote(self.note)
         out += '<table>\n'
+        
         for i in self.inputs:
-            out += '    <tr><th><label for="%s">%s</label></th>' % (i.id, net.websafe(i.description))
-            out += "<td>"+i.pre+i.render()+i.post+"</td></tr>\n"
+            html = i.pre + i.render() + self.rendernote(i.note) + i.post
+            if i.is_hidden():
+                out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (html)
+            else:
+                out += '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n' % (i.id, net.websafe(i.description), html)
         out += "</table>"
         return out
         
     def render_css(self): 
         out = [] 
         out.append(self.rendernote(self.note)) 
-        for i in self.inputs: 
-            out.append('<label for="%s">%s</label>' % (i.id, net.websafe(i.description))) 
-            out.append(i.pre) 
+        for i in self.inputs:
+            if not i.is_hidden():
+                out.append('<label for="%s">%s</label>' % (i.id, net.websafe(i.description))) 
+            out.append(i.pre)
             out.append(i.render()) 
+            out.append(self.rendernote(i.note))
             out.append(i.post) 
-            out.append('\n') 
+            out.append('\n')
         return ''.join(out) 
         
     def rendernote(self, note):
@@ -114,6 +120,13 @@ class Input(object):
             attrs['class'] = attrs['class_']
             del attrs['class_']
         self.name, self.validators, self.attrs, self.note = name, validators, attrs, None
+        self.attrs = AttributeList(self.attrs)
+        
+    def is_hidden(self):
+        return False
+        
+    def get_type(self):
+        raise NotImplementedError
 
     def validate(self, value):
         self.value = value
@@ -123,56 +136,86 @@ class Input(object):
                 return False
         return True
 
-    def render(self): raise NotImplementedError
+    def render(self):
+        attrs = self.attrs.copy()
+        attrs['type'] = self.get_type()
+        if self.value:
+            attrs['value'] = self.value
+        attrs['name'] = self.name
+        return '<input %s/>' % attrs
 
     def rendernote(self, note):
         if note: return '<strong class="wrong">%s</strong>' % net.websafe(note)
         else: return ""
         
     def addatts(self):
-        str = ""
-        for (n, v) in self.attrs.items():
-            str += ' %s="%s"' % (n, net.websafe(v))
-        return str
+        return str(self.attrs)
+
+class AttributeList(dict):
+    """List of atributes of input.
     
-#@@ quoting
+    >>> a = AttributeList(type='text', name='x', value=20)
+    >>> a
+    <attrs: 'type="text" name="x" value="20"'>
+    """
+    def copy(self):
+        return AttributeList(self)
+        
+    def __str__(self):
+        return " ".join('%s="%s"' % (k, net.websafe(v)) for k, v in self.items())
+        
+    def __repr__(self):
+        return '<attrs: %s>' % repr(str(self))
 
 class Textbox(Input):
-    def render(self, shownote=True):
-        x = '<input type="text" name="%s"' % net.websafe(self.name)
-        if self.value: x += ' value="%s"' % net.websafe(self.value)
-        x += self.addatts()
-        x += ' />'
-        if shownote:
-            x += self.rendernote(self.note)
-        return x
+    """Textbox input.
+    
+        >>> Textbox(name='foo', value='bar').render()
+        '<input type="text" id="foo" value="bar" name="foo"/>'
+    """        
+    def get_type(self):
+        return 'text'
 
 class Password(Input):
-    def render(self):
-        x = '<input type="password" name="%s"' % net.websafe(self.name)
-        if self.value: x += ' value="%s"' % net.websafe(self.value)
-        x += self.addatts()
-        x += ' />'
-        x += self.rendernote(self.note)
-        return x
+    """Password input.
+
+        >>> Password(name='password', value='secret').render()
+        '<input type="password" id="password" value="secret" name="password"/>'
+    """
+    
+    def get_type(self):
+        return 'password'
 
 class Textarea(Input):
+    """Textarea input.
+    
+        >>> Textarea(name='foo', value='bar').render()
+        '<textarea id="foo" name="foo">bar</textarea>'
+    """
     def render(self):
-        x = '<textarea name="%s"' % net.websafe(self.name)
-        x += self.addatts()
-        x += '>'
-        if self.value is not None: x += net.websafe(self.value)
-        x += '</textarea>'
-        x += self.rendernote(self.note)
-        return x
+        attrs = self.attrs.copy()
+        attrs['name'] = self.name
+        value = net.websafe(self.value or '')
+        return '<textarea %s>%s</textarea>' % (attrs, value)
 
 class Dropdown(Input):
+    r"""Dropdown/select input.
+    
+        >>> Dropdown(name='foo', args=['a', 'b', 'c'], value='b').render()
+        '<select id="foo" name="foo">\n  <option value="a">a</option>\n  <option selected="selected" value="b">b</option>\n  <option value="c">c</option>\n</select>\n'
+        >>> Dropdown(name='foo', args=[('a', 'aa'), ('b', 'bb'), ('c', 'cc')], value='b').render()
+        '<select id="foo" name="foo">\n  <option value="a">aa</option>\n  <option selected="selected" value="b">bb</option>\n  <option value="c">cc</option>\n</select>\n'
+    """
     def __init__(self, name, args, *validators, **attrs):
         self.args = args
         super(Dropdown, self).__init__(name, *validators, **attrs)
 
     def render(self):
-        x = '<select name="%s"%s>\n' % (net.websafe(self.name), self.addatts())
+        attrs = self.attrs.copy()
+        attrs['name'] = self.name
+        
+        x = '<select %s>\n' % attrs
+        
         for arg in self.args:
             if isinstance(arg, (tuple, list)):
                 value, desc= arg
@@ -181,9 +224,9 @@ class Dropdown(Input):
 
             if self.value == value: select_p = ' selected="selected"'
             else: select_p = ''
-            x += '  <option %s value="%s">%s</option>\n' % (select_p, net.websafe(value), net.websafe(desc))
+            x += '  <option%s value="%s">%s</option>\n' % (select_p, net.websafe(value), net.websafe(desc))
+            
         x += '</select>\n'
-        x += self.rendernote(self.note)
         return x
 
 class Radio(Input):
@@ -194,21 +237,27 @@ class Radio(Input):
     def render(self):
         x = '<span>'
         for arg in self.args:
-            if self.value == arg: select_p = ' checked="checked"'
-            else: select_p = ''
-            x += '<input type="radio" name="%s" value="%s"%s%s /> %s ' % (net.websafe(self.name), net.websafe(arg), select_p, self.addatts(), net.websafe(arg))
-            x += '</span>'
-            x += self.rendernote(self.note)    
+            if isinstance(arg, (tuple, list)):
+                value, desc= arg
+            else:
+                value, desc = arg, arg 
+            attrs = self.attrs.copy()
+            attrs['name'] = self.name
+            attrs['type'] = 'radio'
+            attrs['value'] = arg
+            if self.value == arg:
+                attrs['checked'] = 'checked'
+            x += '<input %s/> %s' % (attrs, net.websafe(desc))
+        x += '</span>'
         return x
 
 class Checkbox(Input):
     def render(self):
-        x = '<input name="%s" type="checkbox"' % net.websafe(self.name)
-        if self.value: x += ' checked="checked"'
-        x += self.addatts()
-        x += ' />'
-        x += self.rendernote(self.note)
-        return x
+        attrs = self.attrs.copy()
+        attrs['name'] = self.name
+        if self.value:
+            attrs['checked'] = 'checked'            
+        return '<input %s/>' % self.attrs
 
 class Button(Input):
     def __init__(self, name, *validators, **attrs):
@@ -216,31 +265,30 @@ class Button(Input):
         self.description = ""
 
     def render(self):
-        safename = net.websafe(self.name)
-        x = '<button name="%s"%s>%s</button>' % (safename, self.addatts(), safename)
-        x += self.rendernote(self.note)
-        return x
+        attrs = self.attrs.copy()
+        attrs['name'] = self.name
+        return '<button %s>%s</button>' % (attrs, self.description)
 
 class Hidden(Input):
-    def __init__(self, name, *validators, **attrs):
-        super(Hidden, self).__init__(name, *validators, **attrs)
-        # it doesnt make sence for a hidden field to have description
-        self.description = ""
-
-    def render(self):
-        x = '<input type="hidden" name="%s"' % net.websafe(self.name)
-        if self.value: x += ' value="%s"' % net.websafe(self.value)
-        x += self.addatts()
-        x += ' />'
-        return x
+    """Hidden Input.
+    
+        >>> Hidden(name='foo', value='bar').render()
+        '<input type="hidden" id="foo" value="bar" name="foo"/>'
+    """
+    def is_hidden(self):
+        return True
+        
+    def get_type(self):
+        return 'hidden'
 
 class File(Input):
-    def render(self):
-        x = '<input type="file" name="%s"' % net.websafe(self.name)
-        x += self.addatts()
-        x += ' />'
-        x += self.rendernote(self.note)
-        return x
+    """File input.
+    
+        >>> File(name='f').render()
+        '<input type="file" id="f" name="f"/>'
+    """
+    def get_type(self):
+        return 'file'
     
 class Validator:
     def __deepcopy__(self, memo): return copy.copy(self)

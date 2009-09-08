@@ -4,6 +4,7 @@ import sys, os
 import webapi as web
 import net
 import utils
+from SimpleHTTPServer import SimpleHTTPRequestHandler
 
 def runbasic(func, server_address=("0.0.0.0", 8080)):
     """
@@ -134,88 +135,10 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
 
     [cp]: http://www.cherrypy.org
     """
+    func = StaticMiddleware(func)
+    func = LogMiddleware(func)
+    
     from wsgiserver import CherryPyWSGIServer
-    from SimpleHTTPServer import SimpleHTTPRequestHandler
-    from BaseHTTPServer import BaseHTTPRequestHandler
-
-    class StaticApp(SimpleHTTPRequestHandler):
-        """WSGI application for serving static files."""
-        def __init__(self, environ, start_response):
-            self.headers = []
-            self.environ = environ
-            self.start_response = start_response
-
-        def send_response(self, status, msg=""):
-            self.status = str(status) + " " + msg
-
-        def send_header(self, name, value):
-            self.headers.append((name, value))
-
-        def end_headers(self):
-            pass
-
-        def log_message(*a): pass
-
-        def __iter__(self):
-            environ = self.environ
-
-            self.path = environ.get('PATH_INFO', '')
-            self.client_address = environ.get('REMOTE_ADDR','-'), \
-                                  environ.get('REMOTE_PORT','-')
-            self.command = environ.get('REQUEST_METHOD', '-')
-
-            from cStringIO import StringIO
-            self.wfile = StringIO() # for capturing error
-
-            f = self.send_head()
-            self.start_response(self.status, self.headers)
-
-            if f:
-                block_size = 16 * 1024
-                while True:
-                    buf = f.read(block_size)
-                    if not buf:
-                        break
-                    yield buf
-                f.close()
-            else:
-                value = self.wfile.getvalue()
-                yield value
-                    
-    class WSGIWrapper(BaseHTTPRequestHandler):
-        """WSGI wrapper for logging the status and serving static files."""
-        def __init__(self, app):
-            self.app = app
-            self.format = '%s - - [%s] "%s %s %s" - %s'
-
-        def __call__(self, environ, start_response):
-            def xstart_response(status, response_headers, *args):
-                write = start_response(status, response_headers, *args)
-                self.log(status, environ)
-                return write
-
-            path = environ.get('PATH_INFO', '')
-            if path.startswith('/static/'):
-                return StaticApp(environ, xstart_response)
-            else:
-                return self.app(environ, xstart_response)
-
-        def log(self, status, environ):
-            outfile = environ.get('wsgi.errors', web.debug)
-            req = environ.get('PATH_INFO', '_')
-            protocol = environ.get('ACTUAL_SERVER_PROTOCOL', '-')
-            method = environ.get('REQUEST_METHOD', '-')
-            host = "%s:%s" % (environ.get('REMOTE_ADDR','-'), 
-                              environ.get('REMOTE_PORT','-'))
-
-            #@@ It is really bad to extend from 
-            #@@ BaseHTTPRequestHandler just for this method
-            time = self.log_date_time_string()
-
-            msg = self.format % (host, time, protocol, method, req, status)
-            print >> outfile, utils.safestr(msg)
-            
-    func = WSGIWrapper(func)
     server = CherryPyWSGIServer(server_address, func, server_name="localhost")
 
     print "http://%s:%d/" % server_address
@@ -223,3 +146,98 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
         server.start()
     except KeyboardInterrupt:
         server.stop()
+
+class StaticApp(SimpleHTTPRequestHandler):
+    """WSGI application for serving static files."""
+    def __init__(self, environ, start_response):
+        self.headers = []
+        self.environ = environ
+        self.start_response = start_response
+
+    def send_response(self, status, msg=""):
+        self.status = str(status) + " " + msg
+
+    def send_header(self, name, value):
+        self.headers.append((name, value))
+
+    def end_headers(self):
+        pass
+
+    def log_message(*a): pass
+
+    def __iter__(self):
+        environ = self.environ
+
+        self.path = environ.get('PATH_INFO', '')
+        self.client_address = environ.get('REMOTE_ADDR','-'), \
+                              environ.get('REMOTE_PORT','-')
+        self.command = environ.get('REQUEST_METHOD', '-')
+
+        from cStringIO import StringIO
+        self.wfile = StringIO() # for capturing error
+
+        f = self.send_head()
+        self.start_response(self.status, self.headers)
+
+        if f:
+            block_size = 16 * 1024
+            while True:
+                buf = f.read(block_size)
+                if not buf:
+                    break
+                yield buf
+            f.close()
+        else:
+            value = self.wfile.getvalue()
+            yield value
+
+class StaticMiddleware:
+    """WSGI middleware for serving static files."""
+    def __init__(self, app, prefix='/static/'):
+        self.app = app
+        self.prefix = prefix
+        
+    def __call__(self, environ, start_response):
+        path = environ.get('PATH_INFO', '')
+        if path.startswith(self.prefix):
+            return StaticApp(environ, start_response)
+        else:
+            return self.app(environ, start_response)
+    
+class LogMiddleware:
+    """WSGI middleware for logging the status."""
+    def __init__(self, app):
+        self.app = app
+        self.format = '%s - - [%s] "%s %s %s" - %s'
+    
+        from BaseHTTPServer import BaseHTTPRequestHandler
+        import StringIO
+        f = StringIO.StringIO()
+        
+        class FakeSocket:
+            def makefile(self, *a):
+                return f
+        
+        # take log_date_time_string method from BaseHTTPRequestHandler
+        self.log_date_time_string = BaseHTTPRequestHandler(FakeSocket(), None, None).log_date_time_string
+        
+    def __call__(self, environ, start_response):
+        def xstart_response(status, response_headers, *args):
+            out = start_response(status, response_headers, *args)
+            self.log(status, environ)
+            return out
+
+        return self.app(environ, xstart_response)
+             
+    def log(self, status, environ):
+        outfile = environ.get('wsgi.errors', web.debug)
+        req = environ.get('PATH_INFO', '_')
+        protocol = environ.get('ACTUAL_SERVER_PROTOCOL', '-')
+        method = environ.get('REQUEST_METHOD', '-')
+        host = "%s:%s" % (environ.get('REMOTE_ADDR','-'), 
+                          environ.get('REMOTE_PORT','-'))
+
+        time = self.log_date_time_string()
+
+        msg = self.format % (host, time, protocol, method, req, status)
+        print >> outfile, utils.safestr(msg)

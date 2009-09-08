@@ -129,12 +129,16 @@ class Input(object):
         raise NotImplementedError
 
     def validate(self, value):
-        self.value = value
+        self.set_value(value)
+
         for v in self.validators:
             if not v.valid(value):
                 self.note = v.msg
                 return False
         return True
+
+    def set_value(self, value):
+        self.value = value
 
     def render(self):
         attrs = self.attrs.copy()
@@ -252,12 +256,34 @@ class Radio(Input):
         return x
 
 class Checkbox(Input):
+    """Checkbox input.
+
+    >>> Checkbox('foo', value='bar', checked=True).render()
+    '<input checked="checked" type="checkbox" id="foo" name="foo"/>'
+    >>> Checkbox('foo', value='bar').render()
+    '<input type="checkbox" id="foo" name="foo"/>'
+    >>> c = Checkbox('foo', value='bar')
+    >>> c.validate('on')
+    True
+    >>> c.render()
+    '<input checked="checked" type="checkbox" id="foo" name="foo"/>'
+    """
+    def __init__(self, *a, **kw):
+        Input.__init__(self, *a, **kw)
+        self.checked = self.attrs.pop('checked', False)
+
     def render(self):
         attrs = self.attrs.copy()
         attrs['name'] = self.name
-        if self.value:
+        attrs['type'] = 'checkbox'
+
+        if self.checked:
             attrs['checked'] = 'checked'            
-        return '<input %s/>' % self.attrs
+        return '<input %s/>' % attrs
+
+    def set_value(self, value):
+        if value:
+            self.checked = True
 
 class Button(Input):
     def __init__(self, name, *validators, **attrs):

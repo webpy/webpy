@@ -111,22 +111,30 @@ class Form:
 
 class Input(object):
     def __init__(self, name, *validators, **attrs):
+        self.name = name
+        self.validators = validators
+        self.attrs = attrs = AttributeList(attrs)
+        
         self.description = attrs.pop('description', name)
         self.value = attrs.pop('value', None)
         self.pre = attrs.pop('pre', "")
         self.post = attrs.pop('post', "")
-        self.id = attrs.setdefault('id', name)
+        self.note = None
+        
+        self.id = attrs.setdefault('id', self.get_default_id())
+        
         if 'class_' in attrs:
             attrs['class'] = attrs['class_']
             del attrs['class_']
-        self.name, self.validators, self.attrs, self.note = name, validators, attrs, None
-        self.attrs = AttributeList(self.attrs)
         
     def is_hidden(self):
         return False
         
     def get_type(self):
         raise NotImplementedError
+        
+    def get_default_id(self):
+        return self.name
 
     def validate(self, value):
         self.set_value(value)
@@ -259,18 +267,21 @@ class Checkbox(Input):
     """Checkbox input.
 
     >>> Checkbox('foo', value='bar', checked=True).render()
-    '<input checked="checked" type="checkbox" id="foo" name="foo"/>'
+    '<input checked="checked" type="checkbox" id="foo_bar" name="foo"/>'
     >>> Checkbox('foo', value='bar').render()
-    '<input type="checkbox" id="foo" name="foo"/>'
+    '<input type="checkbox" id="foo_bar" name="foo"/>'
     >>> c = Checkbox('foo', value='bar')
     >>> c.validate('on')
     True
     >>> c.render()
-    '<input checked="checked" type="checkbox" id="foo" name="foo"/>'
+    '<input checked="checked" type="checkbox" id="foo_bar" name="foo"/>'
     """
-    def __init__(self, *a, **kw):
-        Input.__init__(self, *a, **kw)
-        self.checked = self.attrs.pop('checked', False)
+    def __init__(self, name, *validators, **attrs):
+        self.checked = attrs.pop('checked', False)
+        Input.__init__(self, name, *validators, **attrs)
+        
+    def get_default_id(self):
+        return self.name + '_' + self.value.replace(' ', '_')
 
     def render(self):
         attrs = self.attrs.copy()

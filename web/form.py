@@ -267,14 +267,14 @@ class Checkbox(Input):
     """Checkbox input.
 
     >>> Checkbox('foo', value='bar', checked=True).render()
-    '<input checked="checked" type="checkbox" id="foo_bar" name="foo"/>'
+    '<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
     >>> Checkbox('foo', value='bar').render()
-    '<input type="checkbox" id="foo_bar" name="foo"/>'
+    '<input type="checkbox" id="foo_bar" value="bar" name="foo"/>'
     >>> c = Checkbox('foo', value='bar')
     >>> c.validate('on')
     True
     >>> c.render()
-    '<input checked="checked" type="checkbox" id="foo_bar" name="foo"/>'
+    '<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
     """
     def __init__(self, name, *validators, **attrs):
         self.checked = attrs.pop('checked', False)
@@ -285,8 +285,9 @@ class Checkbox(Input):
 
     def render(self):
         attrs = self.attrs.copy()
-        attrs['name'] = self.name
         attrs['type'] = 'checkbox'
+        attrs['name'] = self.name
+        attrs['value'] = self.value
 
         if self.checked:
             attrs['checked'] = 'checked'            

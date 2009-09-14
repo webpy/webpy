@@ -106,7 +106,7 @@ class Form:
             return default
             
     def _get_d(self): #@@ should really be form.attr, no?
-        return utils.storage([(i.name, i.value) for i in self.inputs])
+        return utils.storage([(i.name, i.get_value()) for i in self.inputs])
     d = property(_get_d)
 
 class Input(object):
@@ -147,6 +147,9 @@ class Input(object):
 
     def set_value(self, value):
         self.value = value
+
+    def get_value(self):
+        return self.value
 
     def render(self):
         attrs = self.attrs.copy()
@@ -281,7 +284,8 @@ class Checkbox(Input):
         Input.__init__(self, name, *validators, **attrs)
         
     def get_default_id(self):
-        return self.name + '_' + self.value.replace(' ', '_')
+        value = self.value or ""
+        return self.name + '_' + value.replace(' ', '_')
 
     def render(self):
         attrs = self.attrs.copy()
@@ -296,6 +300,9 @@ class Checkbox(Input):
     def set_value(self, value):
         if value:
             self.checked = True
+
+    def get_value(self):
+        return self.checked
 
 class Button(Input):
     def __init__(self, name, *validators, **attrs):

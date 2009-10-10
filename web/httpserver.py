@@ -1,10 +1,12 @@
 __all__ = ["runsimple"]
 
 import sys, os
+from SimpleHTTPServer import SimpleHTTPRequestHandler
+
 import webapi as web
 import net
 import utils
-from SimpleHTTPServer import SimpleHTTPRequestHandler
+from wsgiserver import CherryPyWSGIServer
 
 def runbasic(func, server_address=("0.0.0.0", 8080)):
     """
@@ -138,7 +140,6 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     func = StaticMiddleware(func)
     func = LogMiddleware(func)
     
-    from wsgiserver import CherryPyWSGIServer
     server = CherryPyWSGIServer(server_address, func, server_name="localhost")
 
     print "http://%s:%d/" % server_address

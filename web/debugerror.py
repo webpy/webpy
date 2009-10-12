@@ -201,7 +201,7 @@ $if ctx.output or ctx.headers:
 <h2>Request information</h2>
 
 <h3>INPUT</h3>
-$:dicttable(web.input())
+$:dicttable(web.input(_unicode=False))
 
 <h3 id="cookie-info">COOKIES</h3>
 $:dicttable(web.cookies())

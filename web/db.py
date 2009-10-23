@@ -17,6 +17,10 @@ try:
 except ImportError:
     datetime = None
 
+try: set
+except NameError:
+    from sets import Set as set
+    
 from utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
 
 try:
@@ -880,11 +884,26 @@ class PostgresDB(DB):
         self.paramstyle = db_module.paramstyle
         DB.__init__(self, db_module, keywords)
         self.supports_multiple_insert = True
+        self._sequences = None
         
     def _process_insert_query(self, query, tablename, seqname):
-        if seqname is None: 
+        if seqname is None:
+            # when seqname is not provided guess the seqname and make sure it exists
             seqname = tablename + "_id_seq"
-        return query + "; SELECT currval('%s')" % seqname
+            if seqname not in self._get_all_sequences():
+                seqname = None
+        
+        if seqname:
+            query += "; SELECT currval('%s')" % seqname
+            
+        return query
+    
+    def _get_all_sequences(self):
+        """Query postgres to find names of all sequences used in this database."""
+        if self._sequences is None:
+            q = "SELECT c.relname FROM pg_class c WHERE c.relkind = 'S'"
+            self._sequences = set([c.relname for c in self.query(q)])
+        return self._sequences
 
     def _connect(self, keywords):
         conn = DB._connect(self, keywords)
@@ -948,9 +967,10 @@ class SqliteDB(DB):
         out = DB.query(self, *a, **kw)
         if isinstance(out, iterbetter):
             # rowcount is not provided by sqlite
-            def _len(): 
+            def _nonzero(): 
                 raise self.db_module.NotSupportedError("rowcount is not supported by sqlite")
-            out.__len__ = _len
+            del out.__len__
+            out.__nonzero__ = _nonzero
         return out
 
 class FirebirdDB(DB):

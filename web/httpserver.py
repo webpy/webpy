@@ -6,7 +6,6 @@ from SimpleHTTPServer import SimpleHTTPRequestHandler
 import webapi as web
 import net
 import utils
-from wsgiserver import CherryPyWSGIServer
 
 def runbasic(func, server_address=("0.0.0.0", 8080)):
     """
@@ -140,13 +139,20 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     func = StaticMiddleware(func)
     func = LogMiddleware(func)
     
-    server = CherryPyWSGIServer(server_address, func, server_name="localhost")
+    server = WSGIServer(server_address, func)
 
     print "http://%s:%d/" % server_address
     try:
         server.start()
     except KeyboardInterrupt:
         server.stop()
+
+def WSGIServer(server_address, wsgi_app):
+    """Creates CherryPy WSGI server listening at `server_address` to serve `wsgi_app`.
+    This function can be overwritten to customize the webserver or use a different webserver.
+    """
+    from wsgiserver import CherryPyWSGIServer
+    return CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
 
 class StaticApp(SimpleHTTPRequestHandler):
     """WSGI application for serving static files."""

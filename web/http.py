@@ -6,7 +6,6 @@ HTTP Utilities
 __all__ = [
   "expires", "lastmodified", 
   "prefixurl", "modified", 
-  "write",
   "changequery", "url",
   "profiler",
 ]
@@ -82,28 +81,6 @@ def modified(date=None, etag=None):
     if date: lastmodified(date)
     if etag: web.header('ETag', '"' + etag + '"')
     return not validate
-
-def write(cgi_response):
-    """
-    Converts a standard CGI-style string response into `header` and 
-    `output` calls.
-    """
-    cgi_response = str(cgi_response)
-    cgi_response.replace('\r\n', '\n')
-    head, body = cgi_response.split('\n\n', 1)
-    lines = head.split('\n')
-
-    for line in lines:
-        if line.isspace(): 
-            continue
-        hdr, value = line.split(":", 1)
-        value = value.strip()
-        if hdr.lower() == "status": 
-            web.ctx.status = value
-        else: 
-            web.header(hdr, value)
-
-    web.output(body)
 
 def urlencode(query, doseq=0):
     """

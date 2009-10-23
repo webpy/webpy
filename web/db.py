@@ -865,15 +865,17 @@ class PostgresDB(DB):
     """Postgres driver."""
     def __init__(self, **keywords):
         if 'pw' in keywords:
-            keywords['password'] = keywords['pw']
-            del keywords['pw']
+            keywords['password'] = keywords.pop('pw')
             
         db_module = import_driver(["psycopg2", "psycopg", "pgdb"], preferred=keywords.pop('driver', None))
         if db_module.__name__ == "psycopg2":
             import psycopg2.extensions
             psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 
-        keywords['database'] = keywords.pop('db')
+        # if db is not provided postgres driver will take it from PGDATABASE environment variable
+        if 'db' in keywords:
+            keywords['database'] = keywords.pop('db')
+        
         self.dbname = "postgres"
         self.paramstyle = db_module.paramstyle
         DB.__init__(self, db_module, keywords)

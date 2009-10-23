@@ -220,13 +220,13 @@ def header(hdr, value, unique=False):
             if h.lower() == hdr.lower(): return
     
     ctx.headers.append((hdr, value))
-
-def input(*requireds, **defaults):
+    
+def rawinput(method=None):
+    """Returns storage object with GET or POST arguments.
     """
-    Returns a `storage` object with the GET and POST arguments. 
-    See `storify` for how `requireds` and `defaults` work.
-    """
+    method = method or "both"
     from cStringIO import StringIO
+
     def dictify(fs): 
         # hack to make web.input work with enctype='text/plain.
         if fs.list is None:
@@ -234,12 +234,10 @@ def input(*requireds, **defaults):
 
         return dict([(k, fs[k]) for k in fs.keys()])
     
-    _method = defaults.pop('_method', 'both')
-    
     e = ctx.env.copy()
     a = b = {}
     
-    if _method.lower() in ['both', 'post', 'put']:
+    if method.lower() in ['both', 'post', 'put']:
         if e['REQUEST_METHOD'] in ['POST', 'PUT']:
             if e.get('CONTENT_TYPE', '').lower().startswith('multipart/'):
                 # since wsgi.input is directly passed to cgi.FieldStorage, 
@@ -255,11 +253,27 @@ def input(*requireds, **defaults):
                 a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
             a = dictify(a)
 
-    if _method.lower() in ['both', 'get']:
+    if method.lower() in ['both', 'get']:
         e['REQUEST_METHOD'] = 'GET'
         b = dictify(cgi.FieldStorage(environ=e, keep_blank_values=1))
 
-    out = dictadd(b, a)
+    def process_fieldstorage(fs):
+        if isinstance(fs, list):
+            return [process_fieldstorage(x) for x in fs]
+        elif fs.filename is None:
+            return fs.value
+        else:
+            return fs
+
+    return storage([(k, process_fieldstorage(v)) for k, v in dictadd(b, a).items()])
+
+def input(*requireds, **defaults):
+    """
+    Returns a `storage` object with the GET and POST arguments. 
+    See `storify` for how `requireds` and `defaults` work.
+    """
+    _method = defaults.pop('_method', 'both')
+    out = rawinput(_method)
     try:
         defaults.setdefault('_unicode', True) # force unicode conversion by default.
         return storify(out, *requireds, **defaults)

@@ -292,6 +292,21 @@ class ApplicationTest(webtest.TestCase):
 
         app.request('/bar')
         self.assertEquals(x.a, 2)
+        
+    def test_changequery(self):
+        urls = (
+            '/', 'index',
+        )
+        class index:
+            def GET(self):
+                return web.changequery(x=1)
+        app = web.application(urls, locals())
+                
+        def f(path):
+            return app.request(path).data
+                
+        self.assertEquals(f('/?x=2'), '/?x=1')
+        self.assertEquals(f('/?y=1&y=2&x=2'), '/?y=1&y=2&x=1')
 
 if __name__ == '__main__':
     webtest.main()

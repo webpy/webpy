@@ -105,15 +105,23 @@ def write(cgi_response):
 
     web.output(body)
 
-def urlencode(query):
+def urlencode(query, doseq=0):
     """
     Same as urllib.urlencode, but supports unicode strings.
     
         >>> urlencode({'text':'foo bar'})
         'text=foo+bar'
+        >>> urlencode({'x': [1, 2]}, doseq=True)
+        'x=1&x=2'
     """
-    query = dict([(k, utils.utf8(v)) for k, v in query.items()])
-    return urllib.urlencode(query)
+    def convert(value, doseq=False):
+        if doseq and isinstance(value, list):
+            return [convert(v) for v in value]
+        else:
+            return utils.utf8(value)
+        
+    query = dict([(k, convert(v, doseq)) for k, v in query.items()])
+    return urllib.urlencode(query, doseq=doseq)
 
 def changequery(query=None, **kw):
     """
@@ -122,7 +130,7 @@ def changequery(query=None, **kw):
     changed.
     """
     if query is None:
-        query = web.input(_method='get')
+        query = web.rawinput(method='get')
     for k, v in kw.iteritems():
         if v is None:
             query.pop(k, None)
@@ -130,7 +138,7 @@ def changequery(query=None, **kw):
             query[k] = v
     out = web.ctx.path
     if query:
-        out += '?' + urlencode(query)
+        out += '?' + urlencode(query, doseq=True)
     return out
 
 def url(path=None, **kw):

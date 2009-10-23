@@ -885,9 +885,11 @@ class Profile:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args): ##, **kw):   kw unused
-        import hotshot, hotshot.stats, tempfile ##, time already imported
-        temp = tempfile.NamedTemporaryFile()
-        prof = hotshot.Profile(temp.name)
+        import hotshot, hotshot.stats, os, tempfile ##, time already imported
+        f, filename = tempfile.mkstemp()
+        os.close(f)
+        
+        prof = hotshot.Profile(filename)
 
         stime = time.time()
         result = prof.runcall(self.func, *args)
@@ -896,7 +898,7 @@ class Profile:
 
         import cStringIO
         out = cStringIO.StringIO()
-        stats = hotshot.stats.load(temp.name)
+        stats = hotshot.stats.load(filename)
         stats.stream = out
         stats.strip_dirs()
         stats.sort_stats('time', 'calls')
@@ -906,6 +908,12 @@ class Profile:
         x =  '\n\ntook '+ str(stime) + ' seconds\n'
         x += out.getvalue()
 
+        # remove the tempfile
+        try:
+            os.remove(filename)
+        except IOError:
+            pass
+            
         return result, x
 
 profile = Profile

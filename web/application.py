@@ -629,9 +629,9 @@ def autodelegate(prefix=''):
             try:
                 return getattr(self, func)(*args)
             except TypeError:
-                return web.notfound()
+                raise web.notfound()
         else:
-            return web.notfound()
+            raise web.notfound()
     return internal
 
 class Reloader:

@@ -17,7 +17,7 @@ try:
 except ImportError:
     datetime = None
 
-from utils import threadeddict, storage, iters, iterbetter
+from utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
 
 try:
     # db module can work independent of web.py
@@ -102,7 +102,7 @@ class SQLQuery:
     """
     # tested in sqlquote's docstring
     def __init__(self, items=[]):
-        """Creates a new SQLQuery.
+        r"""Creates a new SQLQuery.
         
             >>> SQLQuery("x")
             <sql: 'x'>
@@ -121,7 +121,7 @@ class SQLQuery:
         elif isinstance(items, SQLQuery):
             self.items = list(items.items)
         else:
-            self.items = [str(items)]
+            self.items = [items]
             
         # Take care of SQLLiterals
         for i, item in enumerate(self.items):
@@ -171,7 +171,7 @@ class SQLQuery:
         for x in self.items:
             if isinstance(x, SQLParam):
                 x = x.get_marker(paramstyle)
-            s += x
+            s += safestr(x)
         return s
     
     def values(self):
@@ -200,12 +200,18 @@ class SQLQuery:
         return q
     
     join = staticmethod(join)
-
-    def __str__(self):
+    
+    def _str(self):
         try:
-            return self.query() % tuple([sqlify(x) for x in self.values()])
+            return self.query() % tuple([sqlify(x) for x in self.values()])            
         except (ValueError, TypeError):
             return self.query()
+        
+    def __str__(self):
+        return safestr(self._str())
+        
+    def __unicode__(self):
+        return safeunicode(self._str())
 
     def __repr__(self):
         return '<sql: %s>' % repr(str(self))

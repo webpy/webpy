@@ -948,7 +948,9 @@ class SqliteDB(DB):
         out = DB.query(self, *a, **kw)
         if isinstance(out, iterbetter):
             # rowcount is not provided by sqlite
-            del out.__len__
+            def _len(): 
+                raise self.db_module.NotSupportedError("rowcount is not supported by sqlite")
+            out.__len__ = _len
         return out
 
 class FirebirdDB(DB):

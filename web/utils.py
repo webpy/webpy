@@ -541,6 +541,10 @@ class IterBetter:
             return self.i.next()
         except StopIteration: 
             raise IndexError, str(i)
+            
+    def __nonzero__(self):
+        return len(self) != 0
+        
 iterbetter = IterBetter
 
 def dictreverse(mapping):

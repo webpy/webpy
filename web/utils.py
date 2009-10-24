@@ -128,7 +128,9 @@ def storify(mapping, *requireds, **defaults):
         else: return s
         
     def getvalue(x):
-        if hasattr(x, 'value'):
+        if hasattr(x, 'file') and hasattr(x, 'value'):
+            return x.value
+        elif hasattr(x, 'value'):
             return unicodify(x.value)
         else:
             return unicodify(x)

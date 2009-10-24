@@ -90,8 +90,8 @@ class DBTest(webtest.TestCase):
         db = webtest.setup_database(self.dbname)
         db.multiple_insert('person', [dict(name='a'), dict(name='b')], seqname=False)
 
-        assert db.select("person", where="name='a'")
-        assert db.select("person", where="name='b'")
+        assert db.select("person", where="name='a'").list()
+        assert db.select("person", where="name='b'").list()
 
     def test_result_is_unicode(self):
         db = webtest.setup_database(self.dbname)

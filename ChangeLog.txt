@@ -1,5 +1,27 @@
 # web.py changelog
 
+## 2009-10-28 0.33
+
+* form.Button takes optional argument `html`
+* remove obsolete write function in http.py (tx Justin) (Bug#315337)
+* refactor httpserver.runsimple code
+* improve form.py for customizability
+* new: add background updating to memoize
+* fix: use sendmail from web.config.sendmail_path (tx Daniel Schwartz)
+* fix: make web.profiler work on Windows (tx asmo) (Bug#325139)
+* fix changequery to make it work correctly even when the input has multi-valued fields (Bug#118229)
+* fix: make sure sequence exists before queying for currval(seqname) when executing postgres insert query (Bug#268705)
+* fix: raise web.notfound() instead of return in autodelegate (tx SeC) 
+* fix: raise NotSupportedError when len or bool is used on sqlite result (Bug#179644)
+* fix: make db paramater optional for creating postgres DB to allow taking it from environ. (Bug#153491)
+* fix unicode errors in db module
+* fix: convert unicode strings to UTF8 before printing SQL queries
+* fix unicode error in debugerror
+* fix: don't convert file upload data to unicode even when file={} is not passed to web.input
+* fix checkbox value/checked confusion (Bug#128233)
+* fix: consider empty lines as part of the indented block in templetor
+* fix: fix a bug in web.group
+
 ## 2009-06-04 0.32
 
 * optional from_address to web.emailerrors

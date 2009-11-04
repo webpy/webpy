@@ -99,6 +99,11 @@ class DBTest(webtest.TestCase):
         name = db.select('person')[0].name
         self.assertEquals(type(name), unicode)
 
+    def test_result_is_true(self):
+        db = webtest.setup_database(self.dbname)
+        self.db.insert('person', False, name='user')
+        self.assertEquals(bool(db.select('person')), True)
+
     def testBoolean(self):
         def t(active):
             name ='name-%s' % active

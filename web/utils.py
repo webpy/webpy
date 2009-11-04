@@ -523,13 +523,31 @@ class IterBetter:
         Traceback (most recent call last):
             ...
         IndexError: already passed 3
+
+    For boolean test, IterBetter peeps at first value in the itertor without effecting the iteration.
+
+        >>> c = iterbetter(iter(range(5)))
+        >>> bool(c)
+        True
+        >>> list(c)
+        [0, 1, 2, 3, 4]
+        >>> c = iterbetter(iter([]))
+        >>> bool(c)
+        False
+        >>> list(c)
+        []
     """
     def __init__(self, iterator): 
         self.i, self.c = iterator, 0
+
     def __iter__(self): 
+        if hasattr(self, "_head"):
+            yield self._head
+
         while 1:    
             yield self.i.next()
             self.c += 1
+
     def __getitem__(self, i):
         #todo: slices
         if i < self.c: 
@@ -545,7 +563,18 @@ class IterBetter:
             raise IndexError, str(i)
             
     def __nonzero__(self):
-        return len(self) != 0
+        if hasattr(self, "__len__"):
+            return len(self) != 0
+        elif hasattr(self, "_head"):
+            return True
+        else:
+            try:
+                self._head = self.i.next()
+            except StopIteration:
+                return False
+            else:
+                return True
+            
         
 iterbetter = IterBetter
 

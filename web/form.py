@@ -177,7 +177,7 @@ class AttributeList(dict):
         return AttributeList(self)
         
     def __str__(self):
-        return " ".join('%s="%s"' % (k, net.websafe(v)) for k, v in self.items())
+        return " ".join(['%s="%s"' % (k, net.websafe(v)) for k, v in self.items()])
         
     def __repr__(self):
         return '<attrs: %s>' % repr(str(self))

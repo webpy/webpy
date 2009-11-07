@@ -774,10 +774,11 @@ class BaseTemplate:
     def _compile(self, code):
         env = self.make_env(self._globals or {}, self._builtins)
         exec(code, env)
-        return env['__template__']
+        return env['wrapper']
 
     def __call__(self, *a, **kw):
-        out = self.t(*a, **kw)
+        t = self.t()
+        out = t(*a, **kw)
         return self._join_output(out)
         
     def _join_output(self, out):
@@ -796,7 +797,7 @@ class BaseTemplate:
     def make_env(self, globals, builtins):
         return dict(globals,
             __builtins__=builtins, 
-            loop=ForLoop(),
+            ForLoop=ForLoop,
             escape_=self._escape,
             join_=self._join
         )
@@ -879,6 +880,11 @@ class Template(BaseTemplate):
         
     def compile_template(self, template_string, filename):
         code = Template.generate_code(template_string, filename)
+        code = "def wrapper():\n" + \
+               "    loop=ForLoop()\n" + \
+               re.compile('^', re.M).sub('    ', code) + \
+               "\n" + \
+               "    return __template__"
     
         def get_source_line(filename, lineno):
             try:
@@ -1068,7 +1074,7 @@ def compile_templates(root):
             gen_code = _gen % (name, code)
             out.write(gen_code)
             out.write('\n\n')
-            out.write('%s = CompiledTemplate(%s(), %s)\n\n' % (name, name, repr(path)))
+            out.write('%s = CompiledTemplate(%s, %s)\n\n' % (name, name, repr(path)))
 
             # create template to make sure it compiles
             t = Template(open(path).read(), path)

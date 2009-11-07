@@ -254,6 +254,11 @@ def djangoerror():
         filename = tback.tb_frame.f_code.co_filename
         function = tback.tb_frame.f_code.co_name
         lineno = tback.tb_lineno - 1
+
+        # hack to get correct line number for templates
+        if function == "__template__":
+            lineno -= 2
+        
         pre_context_lineno, pre_context, context_line, post_context = \
             _get_lines_from_file(filename, lineno, 7)
 

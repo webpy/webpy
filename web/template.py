@@ -777,11 +777,13 @@ class BaseTemplate:
         return env['wrapper']
 
     def __call__(self, *a, **kw):
+        __hidetraceback__ = True
         t = self.t()
         out = t(*a, **kw)
         return self._join_output(out)
         
     def _join_output(self, out):
+        __hidetraceback__ = True
         d = TemplateResult()
         data = []
         
@@ -862,6 +864,7 @@ class Template(BaseTemplate):
     normalize_text = staticmethod(normalize_text)
                 
     def __call__(self, *a, **kw):
+        __hidetraceback__ = True
         import webapi as web
         if 'headers' in web.ctx and self.content_type:
             web.header('Content-Type', self.content_type, unique=True)

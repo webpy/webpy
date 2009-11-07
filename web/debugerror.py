@@ -162,7 +162,7 @@ $def dicttable_items(items, kls='req', id=None):
 $for frame in frames:
     <li class="frame">
     <code>$frame.filename</code> in <code>$frame.function</code>
-    $if frame.context_line:
+    $if frame.context_line is not None:
         <div class="context" id="c$frame.id">
         $if frame.pre_context:
             <ol start="$frame.pre_context_lineno" class="pre-context" id="pre$frame.id">
@@ -245,7 +245,7 @@ def djangoerror():
                 [line.strip('\n') for line in source[lineno + 1:upper_bound]]
 
             return lower_bound, pre_context, context_line, post_context
-        except (OSError, IOError):
+        except (OSError, IOError, IndexError):
             return None, [], None, []    
     
     exception_type, exception_value, tback = sys.exc_info()
@@ -256,18 +256,20 @@ def djangoerror():
         lineno = tback.tb_lineno - 1
         pre_context_lineno, pre_context, context_line, post_context = \
             _get_lines_from_file(filename, lineno, 7)
-        frames.append(web.storage({
-            'tback': tback,
-            'filename': filename,
-            'function': function,
-            'lineno': lineno,
-            'vars': tback.tb_frame.f_locals,
-            'id': id(tback),
-            'pre_context': pre_context,
-            'context_line': context_line,
-            'post_context': post_context,
-            'pre_context_lineno': pre_context_lineno,
-        }))
+
+        if '__hidetraceback__' not in tback.tb_frame.f_locals:
+            frames.append(web.storage({
+                'tback': tback,
+                'filename': filename,
+                'function': function,
+                'lineno': lineno,
+                'vars': tback.tb_frame.f_locals,
+                'id': id(tback),
+                'pre_context': pre_context,
+                'context_line': context_line,
+                'post_context': post_context,
+                'pre_context_lineno': pre_context_lineno,
+            }))
         tback = tback.tb_next
     frames.reverse()
     urljoin = urlparse.urljoin

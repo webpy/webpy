@@ -285,7 +285,7 @@ class Checkbox(Input):
         Input.__init__(self, name, *validators, **attrs)
         
     def get_default_id(self):
-        value = self.value or ""
+        value = utils.safestr(self.value or "")
         return self.name + '_' + value.replace(' ', '_')
 
     def render(self):

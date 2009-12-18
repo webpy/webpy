@@ -299,8 +299,7 @@ class Checkbox(Input):
         return '<input %s/>' % attrs
 
     def set_value(self, value):
-        if value:
-            self.checked = True
+        self.checked = bool(value)
 
     def get_value(self):
         return self.checked

@@ -164,7 +164,8 @@ class Input(object):
         else: return ""
         
     def addatts(self):
-        return str(self.attrs)
+        # add leading space for backward-compatibility
+        return " " + str(self.attrs)
 
 class AttributeList(dict):
     """List of atributes of input.

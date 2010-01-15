@@ -3,7 +3,7 @@ Session Management
 (from web.py)
 """
 
-import os, time, datetime, random, base64
+import os, time, datetime, random, base64, sys
 try:
     import cPickle as pickle
 except ImportError:
@@ -14,6 +14,12 @@ try:
 except ImportError:
     import sha
     sha1 = sha.new
+
+try:
+    from BeautifulSoup import BeautifulSoup, Tag
+    from urlparse import urlsplit, urlunsplit
+except ImportError:
+    pass
 
 import utils
 import webapi as web
@@ -31,6 +37,7 @@ web.config.session_parameters = utils.storage({
     'ignore_change_ip': True,
     'secret_key': 'fLjUfxqXtfNoIldA0A0J',
     'expired_message': 'Session expired',
+    'cookieless': False,
 })
 
 class SessionExpired(web.HTTPError): 
@@ -56,15 +63,23 @@ class Session(utils.ThreadedDict):
         self._load()
 
         try:
-            return handler()
+            response = handler()
         finally:
             self._save()
+
+        if self._config.cookieless:
+            response = self._add_session(response)
+
+        return response
 
     def _load(self):
         """Load the session from the store, by the id from cookie"""
         cookie_name = self._config.cookie_name
         cookie_domain = self._config.cookie_domain
         self.session_id = web.cookies().get(cookie_name)
+
+        if self._config.cookieless and not self.session_id:
+            self.session_id = web.input().get(cookie_name)
 
         # protection against session_id tampering
         if self.session_id and not self._valid_session_id(self.session_id):
@@ -109,6 +124,36 @@ class Session(utils.ThreadedDict):
             self.store[self.session_id] = dict(self)
         else:
             web.setcookie(cookie_name, self.session_id, expires=-1, domain=cookie_domain)
+
+    def _is_relative(self, url):
+        if url is None: return True
+        split = urlsplit(url)
+        return split[0] == '' and split[1] == ''
+    
+    def _add_session(self, response):
+        cookie_name = self._config.cookie_name
+
+        # Only process response if client didn't provide a session cookie
+        if not web.cookies().get(cookie_name) and 'BeautifulSoup' in sys.modules:
+            soup = BeautifulSoup(str(response))
+
+            # Add hidden input fields to forms
+            for form in soup.findAll('form', action=lambda(x): self._is_relative(x)):
+                input = Tag(soup, "input", [("type", "hidden"), ("name", cookie_name), ("id", cookie_name), ("value", self.session_id)])
+                form.insert(0, input)
+
+            # Add query parameters to relative links
+            param = cookie_name + '=' + self.session_id
+            for a in soup.findAll('a', href=lambda(x): self._is_relative(x)):
+                parts = list(urlsplit(a['href']))
+                if len(parts[3]) == 0:
+                    parts[3] = param
+                else:
+                    parts[3] += '&' + param
+                a['href'] = urlunsplit(parts)
+                
+            return str(soup)
+        return response
     
     def _generate_session_id(self):
         """Generate a random id for session"""

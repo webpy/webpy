@@ -4,6 +4,7 @@ Session Management
 """
 
 import os, time, datetime, random, base64, sys
+from urlparse import urlsplit, urlunsplit
 try:
     import cPickle as pickle
 except ImportError:
@@ -14,9 +15,6 @@ try:
 except ImportError:
     import sha
     sha1 = sha.new
-
-from lxml import html, etree
-from urlparse import urlsplit, urlunsplit
 
 import utils
 import webapi as web
@@ -128,6 +126,8 @@ class Session(utils.ThreadedDict):
         return split[0] == '' and split[1] == ''
     
     def _add_session(self, response):
+        from lxml import html, etree
+
         cookie_name = self._config.cookie_name
 
         # Only process response if client didn't provide a session cookie

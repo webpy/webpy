@@ -121,7 +121,6 @@ class Session(utils.ThreadedDict):
             web.setcookie(cookie_name, self.session_id, expires=-1, domain=cookie_domain)
 
     def _is_relative(self, url):
-        if url is None: return True
         split = urlsplit(url)
         return split[0] == '' and split[1] == ''
     
@@ -136,7 +135,7 @@ class Session(utils.ThreadedDict):
 
             # Add hidden input fields to forms
             for form in doc.iterfind('.//form'):
-                if self._is_relative(form.attrib.get('action', None)):
+                if 'action' not in form.attrib or self._is_relative(form.attrib['action']):
                     input = etree.Element('input', type='hidden', name=cookie_name, id=cookie_name, value=self.session_id)
                     form.append(input)
 

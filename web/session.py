@@ -15,11 +15,8 @@ except ImportError:
     import sha
     sha1 = sha.new
 
-try:
-    from BeautifulSoup import BeautifulSoup, Tag
-    from urlparse import urlsplit, urlunsplit
-except ImportError:
-    pass
+from lxml import html, etree
+from urlparse import urlsplit, urlunsplit
 
 import utils
 import webapi as web
@@ -134,25 +131,27 @@ class Session(utils.ThreadedDict):
         cookie_name = self._config.cookie_name
 
         # Only process response if client didn't provide a session cookie
-        if not web.cookies().get(cookie_name) and 'BeautifulSoup' in sys.modules:
-            soup = BeautifulSoup(str(response))
+        if not web.cookies().get(cookie_name):
+            doc = html.document_fromstring(str(response))
 
             # Add hidden input fields to forms
-            for form in soup.findAll('form', action=lambda(x): self._is_relative(x)):
-                input = Tag(soup, "input", [("type", "hidden"), ("name", cookie_name), ("id", cookie_name), ("value", self.session_id)])
-                form.insert(0, input)
+            for form in doc.iterfind('.//form'):
+                if self._is_relative(form.attrib.get('action', None)):
+                    input = etree.Element('input', type='hidden', name=cookie_name, id=cookie_name, value=self.session_id)
+                    form.append(input)
 
             # Add query parameters to relative links
             param = cookie_name + '=' + self.session_id
-            for a in soup.findAll('a', href=lambda(x): self._is_relative(x)):
-                parts = list(urlsplit(a['href']))
-                if len(parts[3]) == 0:
-                    parts[3] = param
-                else:
-                    parts[3] += '&' + param
-                a['href'] = urlunsplit(parts)
+            for a in doc.iterfind('.//a'):
+                if 'href' in a.attrib and self._is_relative(a.attrib['href']):
+                    parts = list(urlsplit(a.attrib['href']))
+                    if len(parts[3]) == 0:
+                        parts[3] = param
+                    else:
+                        parts[3] += '&' + param
+                    a.attrib['href'] = urlunsplit(parts)
                 
-            return str(soup)
+            return html.tostring(doc)
         return response
     
     def _generate_session_id(self):

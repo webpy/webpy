@@ -154,7 +154,7 @@ class Input(object):
     def render(self):
         attrs = self.attrs.copy()
         attrs['type'] = self.get_type()
-        if self.value:
+        if self.value is not None:
             attrs['value'] = self.value
         attrs['name'] = self.name
         return '<input %s/>' % attrs
@@ -188,6 +188,8 @@ class Textbox(Input):
     
         >>> Textbox(name='foo', value='bar').render()
         '<input type="text" id="foo" value="bar" name="foo"/>'
+        >>> Textbox(name='foo', value=0).render()
+        '<input type="text" id="foo" value="0" name="foo"/>'
     """        
     def get_type(self):
         return 'text'

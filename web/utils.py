@@ -6,6 +6,7 @@ General Utilities
 
 __all__ = [
   "Storage", "storage", "storify", 
+  "Counter", "counter",
   "iters", 
   "rstrips", "lstrips", "strips", 
   "safeunicode", "safestr", "utf8",
@@ -14,10 +15,12 @@ __all__ = [
   "re_compile", "re_subm",
   "group", "uniq", "iterview",
   "IterBetter", "iterbetter",
+  "safeiter", "safewrite",
   "dictreverse", "dictfind", "dictfindall", "dictincr", "dictadd",
+  "requeue", "restack",
   "listget", "intget", "datestr",
   "numify", "denumify", "commify", "dateify",
-  "nthstr",
+  "nthstr", "cond",
   "CaptureStdout", "capturestdout", "Profile", "profile",
   "tryall",
   "ThreadedDict", "threadeddict",
@@ -27,7 +30,7 @@ __all__ = [
   "sendmail"
 ]
 
-import re, sys, time, threading, itertools
+import re, sys, time, threading, itertools, traceback, os
 
 try:
     import subprocess
@@ -158,6 +161,76 @@ def storify(mapping, *requireds, **defaults):
         setattr(stor, key, result)
     
     return stor
+
+class Counter(storage):
+    """Keeps count of how many times something is added.
+        
+        >>> c = counter()
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('y')
+        >>> c
+        <Counter {'y': 1, 'x': 5}>
+        >>> c.most()
+        ['x']
+    """
+    def add(self, n):
+        self.setdefault(n, 0)
+        self[n] += 1
+    
+    def most(self):
+        """Returns the keys with maximum count."""
+        m = max(self.itervalues())
+        return [k for k, v in self.iteritems() if v == m]
+        
+    def least(self):
+        """Returns the keys with mininum count."""
+        m = min(self.itervalues())
+        return [k for k, v in self.iteritems() if v == m]
+             
+    def sorted_keys(self):
+        """Returns keys sorted by value.
+             
+             >>> c = counter()
+             >>> c.add('x')
+             >>> c.add('x')
+             >>> c.add('y')
+             >>> c.sorted_keys()
+             ['x', 'y']
+        """
+        return sorted(self.keys(), key=lambda k: self[k], reverse=True)
+    
+    def sorted_values(self):
+        """Returns values sorted by value.
+            
+            >>> c = counter()
+            >>> c.add('x')
+            >>> c.add('x')
+            >>> c.add('y')
+            >>> c.sorted_values()
+            [2, 1]
+        """
+        return [self[k] for k in self.sorted_keys()]
+    
+    def sorted_items(self):
+        """Returns items sorted by value.
+            
+            >>> c = counter()
+            >>> c.add('x')
+            >>> c.add('x')
+            >>> c.add('y')
+            >>> c.sorted_items()
+            [('x', 2), ('y', 1)]
+        """
+        return [(k, self[k]) for k in self.sorted_keys()]
+    
+    def __repr__(self):
+        return '<Counter ' + dict.__repr__(self) + '>'
+       
+counter = Counter
 
 iters = [list, tuple]
 import __builtin__
@@ -574,9 +647,33 @@ class IterBetter:
                 return False
             else:
                 return True
-            
-        
+
 iterbetter = IterBetter
+
+def safeiter(it, cleanup=None, ignore_errors=True):
+    """Makes an iterator safe by ignoring the exceptions occured during the iteration.
+    """
+    def next():
+        while True:
+            try:
+                return it.next()
+            except StopIteration:
+                raise
+            except:
+                traceback.print_exc()
+
+    it = iter(it)
+    while True:
+        yield next()
+
+def safewrite(filename, content):
+    """Writes the content to a temp file and then moves the temp file to 
+    given filename to avoid overwriting the existing file in case of errors.
+    """
+    f = file(filename + '.tmp', 'w')
+    f.write(content)
+    f.close()
+    os.rename(f.name, path)
 
 def dictreverse(mapping):
     """
@@ -649,6 +746,32 @@ def dictadd(*dicts):
     for dct in dicts:
         result.update(dct)
     return result
+
+def requeue(queue, index=-1):
+    """Returns the element at index after moving it to the beginning of the queue.
+
+        >>> x = [1, 2, 3, 4]
+        >>> requeue(x)
+        4
+        >>> x
+        [4, 1, 2, 3]
+    """
+    x = queue.pop(index)
+    queue.insert(0, x)
+    return x
+
+def restack(stack, index=0):
+    """Returns the element at index after moving it to the top of stack.
+
+           >>> x = [1, 2, 3, 4]
+           >>> restack(x)
+           1
+           >>> x
+           [2, 3, 4, 1]
+    """
+    x = stack.pop(index)
+    stack.append(x)
+    return x
 
 def listget(lst, ind, default=None):
     """

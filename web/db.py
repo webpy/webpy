@@ -171,12 +171,20 @@ class SQLQuery:
             >>> q.query(paramstyle='qmark')
             'SELECT * FROM test WHERE name=?'
         """
-        s = ''
+        s = []
         for x in self.items:
             if isinstance(x, SQLParam):
                 x = x.get_marker(paramstyle)
-            s += safestr(x)
-        return s
+                s.append(safestr(x))
+            else:
+                x = safestr(x)
+                # automatically escape % characters in the query
+                # For backward compatability, ignore escaping when the query looks already escaped
+                if paramstyle in ['format', 'pyformat']:
+                    if '%' in x and '%%' not in x:
+                        x = x.replace('%', '%%')
+                s.append(x)
+        return "".join(s)
     
     def values(self):
         """

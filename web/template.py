@@ -527,7 +527,7 @@ class TextNode:
         self.value = value
 
     def emit(self, indent):
-        return repr(self.value)
+        return repr(safeunicode(self.value))
         
     def __repr__(self):
         return 't' + repr(self.value)
@@ -805,7 +805,7 @@ class BaseTemplate:
         )
     
     def _join(self, *items):
-        return u"".join([safeunicode(item) for item in items])
+        return u"".join(items)
         
     def _escape(self, value, escape=False):
         import types
@@ -817,7 +817,7 @@ class BaseTemplate:
         value = safeunicode(value)
         if escape and self.filter:
             value = self.filter(value)
-        return value
+        return safeunicode(value)
 
 class Template(BaseTemplate):
     CONTENT_TYPES = {

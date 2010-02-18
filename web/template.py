@@ -983,6 +983,7 @@ class Render:
 
     def _findfile(self, path_prefix): 
         p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
+        p.sort() # sort the matches for deterministic order
         return p and p[0]
             
     def _template(self, name):

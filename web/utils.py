@@ -190,6 +190,21 @@ class Counter(storage):
         """Returns the keys with mininum count."""
         m = min(self.itervalues())
         return [k for k, v in self.iteritems() if v == m]
+
+    def percent(self, key):
+       """Returns what percentage a certain key is of all entries.
+
+           >>> c = counter()
+           >>> c.add('x')
+           >>> c.add('x')
+           >>> c.add('x')
+           >>> c.add('y')
+           >>> c.percent('x')
+           0.75
+           >>> c.percent('y')
+           0.25
+       """
+       return float(self[key])/sum(self.values())
              
     def sorted_keys(self):
         """Returns keys sorted by value.

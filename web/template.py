@@ -512,8 +512,12 @@ class DefwithNode:
     def __init__(self, defwith, suite):
         if defwith:
             self.defwith = defwith.replace('with', '__template__') + ':'
+            # offset 2 lines for wrapper, one line for __lineoffset__
+            self.defwith += "\n    __lineoffset__ = -3"
         else:
             self.defwith = 'def __template__():'
+            # offset 2 lines for wrapper, one line for `def __template__()` and one line for __lineoffset__
+            self.defwith += "\n    __lineoffset__ = -4"
         self.suite = suite
 
     def emit(self, indent):
@@ -609,7 +613,8 @@ class ForNode(BlockNode):
 
 class CodeNode:
     def __init__(self, stmt, block, begin_indent=''):
-        self.code = block
+        # compensate one line for $code:
+        self.code = "\n" + block
         
     def emit(self, indent, text_indent=''):
         import re
@@ -888,7 +893,7 @@ class Template(BaseTemplate):
                re.compile('^', re.M).sub('    ', code) + \
                "\n" + \
                "    return __template__"
-    
+
         def get_source_line(filename, lineno):
             try:
                 lines = open(filename).read().splitlines()

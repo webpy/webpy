@@ -56,7 +56,7 @@ def modified(date=None, etag=None):
     
     This function takes the last-modified date `date` and the ETag `etag`
     and checks the headers to see if they match. If they do, it returns 
-    `True` otherwise it raises NotModified error. It also sets 
+    `True`, or otherwise it raises NotModified error. It also sets 
     `Last-Modified` and `ETag` output headers.
     """
     try:

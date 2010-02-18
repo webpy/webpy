@@ -56,8 +56,8 @@ def modified(date=None, etag=None):
     
     This function takes the last-modified date `date` and the ETag `etag`
     and checks the headers to see if they match. If they do, it returns 
-    `True` and sets the response status to `304 Not Modified`. It also
-    sets `Last-Modified and `ETag` output headers.
+    `True` otherwise it raises NotModified error. It also sets 
+    `Last-Modified` and `ETag` output headers.
     """
     try:
         from __builtin__ import set
@@ -77,10 +77,12 @@ def modified(date=None, etag=None):
         if date-datetime.timedelta(seconds=1) <= m:
             validate = True
     
-    if validate: web.ctx.status = '304 Not Modified'
     if date: lastmodified(date)
     if etag: web.header('ETag', '"' + etag + '"')
-    return not validate
+    if validate:
+        raise web.notmodified()
+    else:
+        return True
 
 def urlencode(query, doseq=0):
     """

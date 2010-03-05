@@ -270,6 +270,9 @@ class application:
         def is_generator(x): return x and hasattr(x, 'next')
         
         def wsgi(env, start_resp):
+            # clear threadlocal to avoid inteference of previous requests
+            self._cleanup()
+
             self.load(env)
             try:
                 # allow uppercase methods only

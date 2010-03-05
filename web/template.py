@@ -65,12 +65,14 @@ def splitline(text):
 class Parser:
     """Parser Base.
     """
-    def __init__(self, text, name="<template>"):
+    def __init__(self):
+        self.statement_nodes = STATEMENT_NODES
+        self.keywords = KEYWORDS
+
+    def parse(self, text, name="<template>"):
         self.text = text
         self.name = name
-
-    def parse(self):
-        text = self.text
+        
         defwith, text = self.read_defwith(text)
         suite = self.read_suite(text)
         return DefwithNode(defwith, suite)
@@ -88,7 +90,7 @@ class Parser:
         
         section -> block | assignment | line
         
-            >>> read_section = Parser('').read_section
+            >>> read_section = Parser().read_section
             >>> read_section('foo\nbar\n')
             (<line: [t'foo\n']>, 'bar\n')
             >>> read_section('$ a = b + 1\nfoo\n')
@@ -103,9 +105,9 @@ class Parser:
             
             if ahead == 'var':
                 return self.read_var(text2)
-            elif ahead in STATEMENT_NODES:
+            elif ahead in self.statement_nodes:
                 return self.read_block_section(text2, begin_indent)
-            elif ahead in KEYWORDS:
+            elif ahead in self.keywords:
                 return self.read_keyword(text2)
             elif ahead.strip() == '':
                 # assignments starts with a space after $
@@ -116,7 +118,7 @@ class Parser:
     def read_var(self, text):
         r"""Reads a var statement.
         
-            >>> read_var = Parser('').read_var
+            >>> read_var = Parser().read_var
             >>> read_var('var x=10\nfoo')
             (<var: x = 10>, 'foo')
             >>> read_var('var x: hello $name\nfoo')
@@ -154,7 +156,7 @@ class Parser:
     def read_suite(self, text):
         r"""Reads section by section till end of text.
         
-            >>> read_suite = Parser('').read_suite
+            >>> read_suite = Parser().read_suite
             >>> read_suite('hello $name\nfoo\n')
             [<line: [t'hello ', $name, t'\n']>, <line: [t'foo\n']>]
         """
@@ -167,7 +169,7 @@ class Parser:
     def readline(self, text):
         r"""Reads one line from the text. Newline is supressed if the line ends with \.
         
-            >>> readline = Parser('').readline
+            >>> readline = Parser().readline
             >>> readline('hello $name!\nbye!')
             (<line: [t'hello ', $name, t'!\n']>, 'bye!')
             >>> readline('hello $name!\\\nbye!')
@@ -191,7 +193,7 @@ class Parser:
     def read_node(self, text):
         r"""Reads a node from the given text and returns the node and remaining text.
 
-            >>> read_node = Parser('').read_node
+            >>> read_node = Parser().read_node
             >>> read_node('hello $name')
             (t'hello ', '$name')
             >>> read_node('$name')
@@ -216,7 +218,7 @@ class Parser:
     def read_text(self, text):
         r"""Reads a text node from the given text.
         
-            >>> read_text = Parser('').read_text
+            >>> read_text = Parser().read_text
             >>> read_text('hello $name')
             (t'hello ', '$name')
         """
@@ -239,7 +241,7 @@ class Parser:
         attr_access -> dot id extended_expr
         paren_expr -> [ tokens ] | ( tokens ) | { tokens }
      
-            >>> read_expr = Parser('').read_expr
+            >>> read_expr = Parser().read_expr
             >>> read_expr("name")
             ($name, '')
             >>> read_expr("a.b and c")
@@ -356,7 +358,7 @@ class Parser:
     def read_assignment(self, text):
         r"""Reads assignment statement from text.
     
-            >>> read_assignment = Parser('').read_assignment
+            >>> read_assignment = Parser().read_assignment
             >>> read_assignment('a = b + 1\nfoo')
             (<assignment: 'a = b + 1'>, 'foo')
         """
@@ -366,7 +368,7 @@ class Parser:
     def python_lookahead(self, text):
         """Returns the first python token from the given text.
         
-            >>> python_lookahead = Parser('').python_lookahead
+            >>> python_lookahead = Parser().python_lookahead
             >>> python_lookahead('for i in range(10):')
             'for'
             >>> python_lookahead('else:')
@@ -387,7 +389,7 @@ class Parser:
         r"""Read a block of text. A block is what typically follows a for or it statement.
         It can be in the same line as that of the statement or an indented block.
 
-            >>> read_indented_block = Parser('').read_indented_block
+            >>> read_indented_block = Parser().read_indented_block
             >>> read_indented_block('  a\n  b\nc', '  ')
             ('a\nb\n', 'c')
             >>> read_indented_block('  a\n    b\n  c\nd', '  ')
@@ -413,7 +415,7 @@ class Parser:
     def read_statement(self, text):
         r"""Reads a python statement.
         
-            >>> read_statement = Parser('').read_statement
+            >>> read_statement = Parser().read_statement
             >>> read_statement('for i in range(10): hello $name')
             ('for i in range(10):', ' hello $name')
         """
@@ -423,7 +425,7 @@ class Parser:
         
     def read_block_section(self, text, begin_indent=''):
         r"""
-            >>> read_block_section = Parser('').read_block_section
+            >>> read_block_section = Parser().read_block_section
             >>> read_block_section('for i in range(10): hello $i\nfoo')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
             >>> read_block_section('for i in range(10):\n        hello $i\n    foo', begin_indent='    ')
@@ -454,8 +456,8 @@ class Parser:
         return self.create_block_node(keyword, stmt, block, begin_indent), text
         
     def create_block_node(self, keyword, stmt, block, begin_indent):
-        if keyword in STATEMENT_NODES:
-            return STATEMENT_NODES[keyword](stmt, block, begin_indent)
+        if keyword in self.statement_nodes:
+            return self.statement_nodes[keyword](stmt, block, begin_indent)
         else:
             raise ParseError, 'Unknown statement: %s' % repr(keyword)
         
@@ -588,7 +590,7 @@ INDENT = '    ' # 4 spaces
 class BlockNode:
     def __init__(self, stmt, block, begin_indent=''):
         self.stmt = stmt
-        self.suite = Parser('').read_suite(block)
+        self.suite = Parser().read_suite(block)
         self.begin_indent = begin_indent
 
     def emit(self, indent, text_indent=''):
@@ -609,7 +611,6 @@ class ForNode(BlockNode):
         tok.consume_till('in')
         a = stmt[:tok.index] # for i in
         b = stmt[tok.index:-1] # rest of for stmt excluding :
-        self._expr = b.strip()
         stmt = a + ' loop.setup(' + b.strip() + '):'
         BlockNode.__init__(self, stmt, block, begin_indent)
         
@@ -856,7 +857,8 @@ class Template(BaseTemplate):
     }
     globals = {}
     
-    def __init__(self, text, filename='<template>', filter=None, globals=None, builtins=None):
+    def __init__(self, text, filename='<template>', filter=None, globals=None, builtins=None, extensions=None):
+        self.extensions = extensions or []
         text = Template.normalize_text(text)
         code = self.compile_template(text, filename)
                 
@@ -895,18 +897,25 @@ class Template(BaseTemplate):
             
         return BaseTemplate.__call__(self, *a, **kw)
         
-    def generate_code(text, filename):
+    def generate_code(text, filename, parser=None):
         # parse the text
-        rootnode = Parser(text, filename).parse()
+        parser = parser or Parser()
+        rootnode = parser.parse(text, filename)
                 
         # generate python code from the parse tree
         code = rootnode.emit(indent="").strip()
         return safestr(code)
         
     generate_code = staticmethod(generate_code)
-        
+    
+    def create_parser(self):
+        p = Parser()
+        for ext in self.extensions:
+            p = ext(p)
+        return p
+                
     def compile_template(self, template_string, filename):
-        code = Template.generate_code(template_string, filename)
+        code = Template.generate_code(template_string, filename, parser=self.create_parser())
 
         def get_source_line(filename, lineno):
             try:
@@ -1257,7 +1266,7 @@ def test():
     
         >>> class TestResult:
         ...     def __init__(self, t): self.t = t
-        ...     def __getattr__(self, name): return self.t[name]
+        ...     def __getattr__(self, name): return getattr(self.t, name)
         ...     def __repr__(self): return repr(unicode(self))
         ...
         >>> def t(code, **keywords):

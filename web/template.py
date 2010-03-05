@@ -230,7 +230,7 @@ class Parser:
             
     def read_keyword(self, text):
         line, text = splitline(text)
-        return CodeNode(None, line.strip() + "\n"), text
+        return StatementNode(line.strip() + "\n"), text
 
     def read_expr(self, text, escape=True):
         """Reads a python expression from the text and returns the expression and remaining text.
@@ -602,7 +602,7 @@ class BlockNode:
         return '${' + self.stmt + '}' + "".join([node.text(indent) for node in self.nodes])
         
     def __repr__(self):
-        return "<block: %s, %s>" % (repr(self.stmt), repr(self.nodelist))
+        return "<block: %s, %s>" % (repr(self.stmt), repr(self.suite))
 
 class ForNode(BlockNode):
     def __init__(self, stmt, block, begin_indent=''):
@@ -629,6 +629,16 @@ class CodeNode:
         
     def __repr__(self):
         return "<code: %s>" % repr(self.code)
+        
+class StatementNode:
+    def __init__(self, stmt):
+        self.stmt = stmt
+        
+    def emit(self, indent):
+        return indent + self.stmt
+        
+    def __repr__(self):
+        return "<stmt: %s>" % repr(self.stmt)
         
 class IfNode(BlockNode):
     pass

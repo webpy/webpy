@@ -120,7 +120,7 @@ class Parser:
             >>> read_var('var x=10\nfoo')
             (<var: x = 10>, 'foo')
             >>> read_var('var x: hello $name\nfoo')
-            (<var: x = join_('hello ', escape_(name, True))>, 'foo')
+            (<var: x = join_(u'hello ', escape_(name, True))>, 'foo')
         """
         line, text = splitline(text)
         tokens = self.python_tokens(line)
@@ -512,16 +512,20 @@ class DefwithNode:
     def __init__(self, defwith, suite):
         if defwith:
             self.defwith = defwith.replace('with', '__template__') + ':'
-            # offset 2 lines for wrapper, one line for __lineoffset__
+            # offset 3 lines. for __lineoffset__, loop and self.
             self.defwith += "\n    __lineoffset__ = -3"
         else:
             self.defwith = 'def __template__():'
-            # offset 2 lines for wrapper, one line for `def __template__()` and one line for __lineoffset__
+            # offset 4 lines for __template__, __lineoffset__, loop and self.
             self.defwith += "\n    __lineoffset__ = -4"
+
+        self.defwith += "\n    loop = ForLoop()"
+        self.defwith += "\n    self = TemplateResult()"
         self.suite = suite
+        self.end = "\n    return self"
 
     def emit(self, indent):
-        return self.defwith + self.suite.emit(indent + INDENT)
+        return self.defwith + self.suite.emit(indent + INDENT) + self.end
 
     def __repr__(self):
         return "<defwith: %s, %s>" % (self.defwith, self.nodes)
@@ -574,7 +578,7 @@ class LineNode:
         text = [node.emit('') for node in self.nodes]
         if text_indent:
             text = [repr(text_indent)] + text
-        return indent + 'yield %s, join_(%s)\n' % (repr(name), ', '.join(text))
+        return indent + "self.extend([%s])\n" % ", ".join(text)
     
     def __repr__(self):
         return "<line: %s>" % repr(self.nodes)
@@ -605,6 +609,7 @@ class ForNode(BlockNode):
         tok.consume_till('in')
         a = stmt[:tok.index] # for i in
         b = stmt[tok.index:-1] # rest of for stmt excluding :
+        self._expr = b.strip()
         stmt = a + ' loop.setup(' + b.strip() + '):'
         BlockNode.__init__(self, stmt, block, begin_indent)
         
@@ -634,7 +639,21 @@ class ElifNode(BlockNode):
     pass
 
 class DefNode(BlockNode):
-    pass
+    def __init__(self, *a, **kw):
+        BlockNode.__init__(self, *a, **kw)
+
+        code = CodeNode("", "")
+        code.code = "self = TemplateResult()\n"
+        self.suite.sections.insert(0, code)
+
+        code = CodeNode("", "")
+        code.code = "return self\n"
+        self.suite.sections.append(code)
+        
+    def emit(self, indent, text_indent=''):
+        text_indent = self.begin_indent + text_indent
+        out = indent + self.stmt + self.suite.emit(indent + INDENT, text_indent)
+        return indent + "__lineoffset__ -= 3\n" + out
 
 class VarNode:
     def __init__(self, name, value):
@@ -642,7 +661,7 @@ class VarNode:
         self.value = value
         
     def emit(self, indent, text_indent):
-        return indent + 'yield %s, %s\n' % (repr(self.name), self.value)
+        return indent + "self[%s] = %s\n" % (repr(self.name), self.value)
         
     def __repr__(self):
         return "<var: %s = %s>" % (self.name, self.value)
@@ -779,12 +798,11 @@ class BaseTemplate:
     def _compile(self, code):
         env = self.make_env(self._globals or {}, self._builtins)
         exec(code, env)
-        return env['wrapper']
+        return env['__template__']
 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        t = self.t()
-        out = t(*a, **kw)
+        return self.t(*a, **kw)
         return self._join_output(out)
         
     def _join_output(self, out):
@@ -797,7 +815,7 @@ class BaseTemplate:
                 d[name] = value
             else:
                 data.append(value)
-                            
+
         d.__body__ = u"".join(data)
         return d       
 
@@ -805,6 +823,7 @@ class BaseTemplate:
         return dict(globals,
             __builtins__=builtins, 
             ForLoop=ForLoop,
+            TemplateResult=TemplateResult,
             escape_=self._escape,
             join_=self._join
         )
@@ -888,11 +907,6 @@ class Template(BaseTemplate):
         
     def compile_template(self, template_string, filename):
         code = Template.generate_code(template_string, filename)
-        code = "def wrapper():\n" + \
-               "    loop=ForLoop()\n" + \
-               re.compile('^', re.M).sub('    ', code) + \
-               "\n" + \
-               "    return __template__"
 
         def get_source_line(filename, lineno):
             try:
@@ -1053,9 +1067,14 @@ def compile_templates(root):
                 dirnames.remove(d) # don't visit this dir
 
         out = open(os.path.join(dirpath, '__init__.py'), 'w')
-        out.write('from web.template import CompiledTemplate, ForLoop\n\n')
+        out.write('from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n')
         if dirnames:
             out.write("import " + ", ".join(dirnames))
+    
+        out.write("_dummy = CompiledTemplate(lambda: None, 'dummy')\n")
+        out.write("join_ = _dummy._join\n")
+        out.write("escape_ = _dummy._escape\n")
+        out.write("\n")
 
         for f in filenames:
             path = os.path.join(dirpath, f)
@@ -1068,20 +1087,11 @@ def compile_templates(root):
             text = open(path).read()
             text = Template.normalize_text(text)
             code = Template.generate_code(text, path)
-            code = re_start.sub('    ', code)
-                        
-            _gen = '' + \
-            '\ndef %s():' + \
-            '\n    loop = ForLoop()' + \
-            '\n    _dummy  = CompiledTemplate(lambda: None, "dummy")' + \
-            '\n    join_ = _dummy._join' + \
-            '\n    escape_ = _dummy._escape' + \
-            '\n' + \
-            '\n%s' + \
-            '\n    return __template__'
-            
-            gen_code = _gen % (name, code)
-            out.write(gen_code)
+
+            code = code.replace("__template__", name, 1)
+
+            out.write(code)
+
             out.write('\n\n')
             out.write('%s = CompiledTemplate(%s, %s)\n\n' % (name, name, repr(path)))
 
@@ -1210,22 +1220,44 @@ class TemplateResult(storage):
         <TemplateResult: {'__body__': 'hello, world', 'x': 'foo'}>
         >>> print d
         hello, world
+        >>> d = TemplateResult()
+        >>> d.extend([u'hello', u'world'])
+        >>> d
+        <TemplateResult: {'__body__': u'helloworld'}>
     """
+    def __init__(self, *a, **kw):
+        storage.__init__(self, *a, **kw)
+        self.setdefault("__body__", None)
+
+        # avoiding self._data because add it as self["_data"]
+        self.__dict__["_data"] = []
+
+    def extend(self, values):
+        self._data.extend(values)
+
+    def __getitem__(self, name):
+        if name == "__body__" and storage.__getitem__(self, '__body__') is None:
+            self["__body__"] = u"".join(self._data)
+        return storage.__getitem__(self, name)
+
     def __unicode__(self): 
-        return safeunicode(self.get('__body__', ''))
+        return self["__body__"]
     
     def __str__(self):
-        return safestr(self.get('__body__', ''))
+        return self["__body__"].encode('utf-8')
         
     def __repr__(self):
+        self["__body__"] # initialize __body__ if not already initialized
         return "<TemplateResult: %s>" % dict.__repr__(self)
-    
+
 def test():
     r"""Doctest for testing template module.
 
     Define a utility function to run template test.
     
-        >>> class TestResult(TemplateResult):
+        >>> class TestResult:
+        ...     def __init__(self, t): self.t = t
+        ...     def __getattr__(self, name): return self.t[name]
         ...     def __repr__(self): return repr(unicode(self))
         ...
         >>> def t(code, **keywords):

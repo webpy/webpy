@@ -1270,7 +1270,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
         elif hasattr(a, 'read'): # file
             filename = getattr(a, "name", "")
             content_type = getattr(a, 'content_type', None)
-            mail.attah(filename, a.read(), content_type)
+            mail.attach(filename, a.read(), content_type)
         else:
             raise ValueError, "Invalid attachment: %s" % repr(a)
             

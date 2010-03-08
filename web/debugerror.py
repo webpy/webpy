@@ -13,7 +13,7 @@ __all__ = ["debugerror", "djangoerror", "emailerrors"]
 import sys, urlparse, pprint, traceback
 from net import websafe
 from template import Template
-from utils import sendmail
+from utils import sendmail, safestr
 import webapi as web
 
 import os, os.path
@@ -323,26 +323,18 @@ def emailerrors(to_address, olderror, from_address=None):
         tb_txt = ''.join(traceback.format_exception(*tb))
         path = web.ctx.path
         request = web.ctx.method + ' ' + web.ctx.home + web.ctx.fullpath
-        text = ("""\
-------here----
-Content-Type: text/plain
-Content-Disposition: inline
-
-%(request)s
-
-%(tb_txt)s
-
-------here----
-Content-Type: text/html; name="bug.html"
-Content-Disposition: attachment; filename="bug.html"
-
-""" % locals()) + str(djangoerror())
+        
+        message = "\n%s\n\n%s\n\n" % (request, tb_txt)
+        
         sendmail(
-          "your buggy site <%s>" % from_address,
-          "the bugfixer <%s>" % to_address,
-          "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
-          text, 
-          headers={'Content-Type': 'multipart/mixed; boundary="----here----"'})
+            "your buggy site <%s>" % from_address,
+            "the bugfixer <%s>" % to_address,
+            "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
+            message,
+            attachments=[
+                dict(filename="bug.html", payload=safestr(djangoerror()))
+            ],
+        )
         return error
     
     return emailerrors_internal

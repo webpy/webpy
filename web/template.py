@@ -26,7 +26,6 @@ Grammar:
     text -> <any characters other than $>
     expr -> '$' pyexpr | '$(' pyexpr ')' | '${' pyexpr '}'
     pyexpr -> <python expression>
-
 """
 
 __all__ = [
@@ -522,7 +521,7 @@ class DefwithNode:
             self.defwith += "\n    __lineoffset__ = -4"
 
         self.defwith += "\n    loop = ForLoop()"
-        self.defwith += "\n    self = TemplateResult()"
+        self.defwith += "\n    self = TemplateResult(); extend_ = self.extend"
         self.suite = suite
         self.end = "\n    return self"
 
@@ -580,12 +579,13 @@ class LineNode:
         text = [node.emit('') for node in self.nodes]
         if text_indent:
             text = [repr(text_indent)] + text
-        return indent + "self.extend([%s])\n" % ", ".join(text)
+
+        return indent + "extend_([%s])\n" % ", ".join(text)        
     
     def __repr__(self):
         return "<line: %s>" % repr(self.nodes)
 
-INDENT = '    ' # 4 spaces
+INDENT = u'    ' # 4 spaces
         
 class BlockNode:
     def __init__(self, stmt, block, begin_indent=''):
@@ -654,7 +654,7 @@ class DefNode(BlockNode):
         BlockNode.__init__(self, *a, **kw)
 
         code = CodeNode("", "")
-        code.code = "self = TemplateResult()\n"
+        code.code = "self = TemplateResult(); extend_ = self.extend\n"
         self.suite.sections.insert(0, code)
 
         code = CodeNode("", "")
@@ -761,14 +761,14 @@ class ForLoopContext:
         self.parent = parent
         
     def setup(self, seq):
-        if hasattr(seq, '__len__'):
-            n = len(seq)
-        else:
-            n = 0
-            
+        try:
+            self.length = len(seq)
+        except:
+            self.length = 0
+
         self.index = 0
         seq = iter(seq)
-        
+                
         # Pre python-2.5 does not support yield in try-except.
         # This is a work-around to overcome that limitation.
         def next(seq):
@@ -777,23 +777,19 @@ class ForLoopContext:
             except:
                 self._forloop._pop()
                 raise
-        
+                
         while True:
-            self._next(self.index + 1, n)
+            self.index += 1
             yield next(seq)
             
-    def _next(self, i, n):
-        self.index = i
-        self.index0 = i - 1
-        self.first = (i == 1)
-        self.last = (i == n)
-        self.odd = (i % 2 == 1)
-        self.even = (i % 2 == 0)
-        self.parity = ['odd', 'even'][self.even]
-        if n:
-            self.length = n
-            self.revindex0 = n - i
-            self.revindex = self.revindex0 + 1
+    index0 = property(lambda self: self.index-1)
+    first = property(lambda self: self.index == 1)
+    last = property(lambda self: self.index == self.length)
+    odd = property(lambda self: self.index % 2 == 1)
+    even = property(lambda self: self.index % 2 == 0)
+    parity = property(lambda self: ['odd', 'even'][self.even])
+    revindex0 = property(lambda self: self.length - self.index)
+    revindex = property(lambda self: self.length - self.index + 1)
         
 class BaseTemplate:
     def __init__(self, code, filename, filter, globals, builtins):
@@ -814,21 +810,6 @@ class BaseTemplate:
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
         return self.t(*a, **kw)
-        return self._join_output(out)
-        
-    def _join_output(self, out):
-        __hidetraceback__ = True
-        d = TemplateResult()
-        data = []
-        
-        for name, value in out:
-            if name:
-                d[name] = value
-            else:
-                data.append(value)
-
-        d.__body__ = u"".join(data)
-        return d       
 
     def make_env(self, globals, builtins):
         return dict(globals,
@@ -838,21 +819,38 @@ class BaseTemplate:
             escape_=self._escape,
             join_=self._join
         )
-    
     def _join(self, *items):
         return u"".join(items)
-        
+            
     def _escape(self, value, escape=False):
-        import types
         if value is None: 
             value = ''
-        elif isinstance(value, types.GeneratorType):
-            value = self._join_output(value)
             
         value = safeunicode(value)
         if escape and self.filter:
             value = self.filter(value)
-        return safeunicode(value)
+        return value
+
+_htmlquote_re = re.compile(r'[&<>"\']')
+_htmlquote_d = {
+    u"&": u"&amp;",
+    u"<": u"&lt;",
+    u">": u"&gt;",
+    u"'": u"&#39;",
+    u'"': u"&quot;",
+}
+        
+def websafe(text):
+    r"""
+    Encodes `text` for raw use in HTML.
+
+        >>> websafe(u"<'&\">")
+        u'&lt;&#39;&amp;&quot;&gt;'
+        
+    Unlike the websafe function in utils.py, this works with unicode text.
+    """
+    return _htmlquote_re.sub(lambda m: _htmlquote_d[m.group(0)], text)
+    
 
 class Template(BaseTemplate):
     CONTENT_TYPES = {
@@ -1250,9 +1248,7 @@ class TemplateResult(storage):
 
         # avoiding self._data because add it as self["_data"]
         self.__dict__["_data"] = []
-
-    def extend(self, values):
-        self._data.extend(values)
+        self.__dict__["extend"] = self._data.extend
 
     def __getitem__(self, name):
         if name == "__body__" and storage.__getitem__(self, '__body__') is None:

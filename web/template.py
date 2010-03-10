@@ -530,7 +530,7 @@ class DefwithNode:
         return self.defwith + self.suite.emit(indent + INDENT) + self.end
 
     def __repr__(self):
-        return "<defwith: %s, %s>" % (self.defwith, self.nodes)
+        return "<defwith: %s, %s>" % (self.defwith, self.suite)
 
 class TextNode:
     def __init__(self, value):

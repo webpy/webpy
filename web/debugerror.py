@@ -332,7 +332,7 @@ def emailerrors(to_address, olderror, from_address=None):
             "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
             message,
             attachments=[
-                dict(filename="bug.html", payload=safestr(djangoerror()))
+                dict(filename="bug.html", content=safestr(djangoerror()))
             ],
         )
         return error

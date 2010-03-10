@@ -1254,8 +1254,8 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     `headers.
     
     Optionally cc, bcc and attachments can be specified as keyword arguments.
-    Attachments must be a list and each attachment can be either a file object
-    or a dictionary with filename, payload and optionally content_type keys.
+    Attachments must be an iterable and each attachment can be either a file object
+    or a dictionary with filename, content and optionally content_type keys.
 
     If `web.config.smtp_server` is set, it will send the message
     to that SMTP server. Otherwise it will look for 
@@ -1266,7 +1266,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     
     for a in attachments or []:
         if isinstance(a, dict):
-            mail.attach(a['filename'], a['payload'], a.get('content_type'))
+            mail.attach(a['filename'], a['content'], a.get('content_type'))
         elif hasattr(a, 'read'): # file
             filename = getattr(a, "name", "")
             content_type = getattr(a, 'content_type', None)
@@ -1321,11 +1321,11 @@ class _EmailMessage:
         
         return Message()
         
-    def attach(self, filename, payload, content_type=None):
+    def attach(self, filename, content, content_type=None):
         if not self.multipart:
             msg = self.new_message()
             msg.add_header("Content-Type", "multipart/mixed")
-            msg.attach(self.message)            
+            msg.attach(self.message)
             self.message = msg
             self.multipart = True
                         
@@ -1338,7 +1338,7 @@ class _EmailMessage:
         content_type = content_type or mimetypes.guess_type(filename)[0] or "applcation/octet-stream"
         
         msg = self.new_message()
-        msg.set_payload(payload)
+        msg.set_payload(content)
         msg.add_header('Content-Type', content_type)
         msg.add_header('Content-Disposition', 'attachment', filename=filename)
         

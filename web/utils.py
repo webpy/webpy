@@ -319,10 +319,13 @@ def safeunicode(obj, encoding='utf-8'):
         >>> safeunicode('\xe1\x88\xb4')
         u'\u1234'
     """
-    if isinstance(obj, unicode):
+    t = type(obj)
+    if t is unicode:
         return obj
-    elif isinstance(obj, str):
+    elif t is str:
         return obj.decode(encoding)
+    elif t in [int, float, bool]:
+        return unicode(obj)
     else:
         if hasattr(obj, '__unicode__'):
             return unicode(obj)

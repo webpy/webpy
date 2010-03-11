@@ -767,20 +767,10 @@ class ForLoopContext:
             self.length = 0
 
         self.index = 0
-        seq = iter(seq)
-                
-        # Pre python-2.5 does not support yield in try-except.
-        # This is a work-around to overcome that limitation.
-        def next(seq):
-            try:
-                return seq.next()
-            except:
-                self._forloop._pop()
-                raise
-                
-        while True:
+        for a in seq:
             self.index += 1
-            yield next(seq)
+            yield a
+        self._forloop._pop()
             
     index0 = property(lambda self: self.index-1)
     first = property(lambda self: self.index == 1)

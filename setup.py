@@ -5,7 +5,7 @@
 from distutils.core import setup
 
 setup(name='web.py',
-      version='0.33',
+      version='0.34',
       description='web.py: makes web apps',
       author='Aaron Swartz',
       author_email='me@aaronsw.com',

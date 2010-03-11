@@ -1265,9 +1265,10 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     `/usr/sbin/sendmail`, the typical location for the sendmail-style
     binary. To use sendmail from a different path, set `web.config.sendmail_path`.
     """
+    attachments = kw.pop("attachments", [])
     mail = _EmailMessage(from_address, to_address, subject, message, headers, **kw)
-    
-    for a in attachments or []:
+
+    for a in attachments:
         if isinstance(a, dict):
             mail.attach(a['filename'], a['content'], a.get('content_type'))
         elif hasattr(a, 'read'): # file
@@ -1388,8 +1389,8 @@ class _EmailMessage:
         else:
             sendmail = webapi.config.get('sendmail_path', '/usr/sbin/sendmail')
         
-            assert not from_address.startswith('-'), 'security'
-            for r in recipients:
+            assert not self.from_address.startswith('-'), 'security'
+            for r in self.recipients:
                 assert not r.startswith('-'), 'security'
                 
             cmd = [sendmail, '-f', self.from_address] + self.recipients

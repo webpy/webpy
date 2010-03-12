@@ -598,9 +598,6 @@ class BlockNode:
         out = indent + self.stmt + self.suite.emit(indent + INDENT, text_indent)
         return out
         
-    def text(self):
-        return '${' + self.stmt + '}' + "".join([node.text(indent) for node in self.nodes])
-        
     def __repr__(self):
         return "<block: %s, %s>" % (repr(self.stmt), repr(self.suite))
 

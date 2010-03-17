@@ -448,7 +448,12 @@ class Parser:
 
             # find the indentation of the block by looking at the first line
             first_indent = find_indent(text)[len(begin_indent):]
-            indent = begin_indent + min(first_indent, INDENT)
+
+            #TODO: fix this special case
+            if keyword == "code":
+                indent = begin_indent + first_indent
+            else:
+                indent = begin_indent + min(first_indent, INDENT)
             
             block, text = self.read_indented_block(text, indent)
             

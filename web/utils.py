@@ -1257,8 +1257,9 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     `headers.
     
     Optionally cc, bcc and attachments can be specified as keyword arguments.
-    Attachments must be an iterable and each attachment can be either a file object
-    or a dictionary with filename, content and optionally content_type keys.
+    Attachments must be an iterable and each attachment can be either a 
+    filename or a file object or a dictionary with filename, content and 
+    optionally content_type keys.
 
     If `web.config.smtp_server` is set, it will send the message
     to that SMTP server. Otherwise it will look for 
@@ -1272,9 +1273,15 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
         if isinstance(a, dict):
             mail.attach(a['filename'], a['content'], a.get('content_type'))
         elif hasattr(a, 'read'): # file
-            filename = getattr(a, "name", "")
+            filename = os.path.basename(getattr(a, "name", ""))
             content_type = getattr(a, 'content_type', None)
             mail.attach(filename, a.read(), content_type)
+        elif isinstance(a, basestring):
+            f = open(a, 'rb')
+            content = f.read()
+            f.close()
+            filename = os.path.basename(a)
+            mail.attach(filename, content, None)
         else:
             raise ValueError, "Invalid attachment: %s" % repr(a)
             

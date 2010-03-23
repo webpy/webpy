@@ -15,7 +15,7 @@ __all__ = [
     "OK", "Created", "Accepted",    
     "ok", "created", "accepted",
     
-    # 301, 302, 303, 304, 407
+    # 301, 302, 303, 304, 307
     "Redirect", "Found", "SeeOther", "NotModified", "TempRedirect", 
     "redirect", "found", "seeother", "notmodified", "tempredirect",
 

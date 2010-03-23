@@ -20,8 +20,8 @@ __all__ = [
     "redirect", "found", "seeother", "notmodified", "tempredirect",
 
     # 400, 401, 403, 404, 405, 406, 409, 410, 412
-    "BadRequest", "Unauthorized", "Forbidden", "NoMethod", "NotFound", "NotAcceptable", "Conflict", "Gone", "PreconditionFailed",
-    "badrequest", "unauthorized", "forbidden", "nomethod", "notfound", "notacceptable", "conflict", "gone", "preconditionfailed",
+    "BadRequest", "Unauthorized", "Forbidden", "NotFound", "NoMethod", "NotAcceptable", "Conflict", "Gone", "PreconditionFailed",
+    "badrequest", "unauthorized", "forbidden", "notfound", "nomethod", "notacceptable", "conflict", "gone", "preconditionfailed",
 
     # 500
     "InternalError", 

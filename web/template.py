@@ -968,7 +968,6 @@ class Render:
     def __init__(self, loc='templates', cache=None, base=None, **keywords):
         self._loc = loc
         self._keywords = keywords
-        if 'globals' not in self._keywords: self._keywords['globals'] = {}
 
         if cache is None:
             cache = not config.get('debug', False)
@@ -986,6 +985,7 @@ class Render:
     
     def _add_global(self, obj, name=None):
         """Add a global to this rendering instance."""
+        if 'globals' not in self._keywords: self._keywords['globals'] = {}
         if not name:
             name = obj.__name__
         self._keywords['globals'][name] = obj

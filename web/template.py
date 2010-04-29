@@ -982,7 +982,14 @@ class Render:
             self._base = lambda page: self._template(base)(page)
         else:
             self._base = base
-            
+    
+    def _add_global(self, obj, name=None):
+        """Add a global to this rendering instance."""
+        if 'globals' not in self._keywords: self._keywords['globals'] = {}
+        if not name:
+            name = obj.__name__
+        self._keywords['globals'][name] = obj
+    
     def _lookup(self, name):
         path = os.path.join(self._loc, name)
         if os.path.isdir(path):

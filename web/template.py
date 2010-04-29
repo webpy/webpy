@@ -39,6 +39,7 @@ import tokenize
 import os
 import glob
 import re
+from UserDict import DictMixin
 
 from utils import storage, safeunicode, safestr, re_compile
 from webapi import config
@@ -1223,7 +1224,7 @@ class SafeVisitor(object):
         e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
         self.errors.append(e)
 
-class TemplateResult(storage):
+class TemplateResult(storage, DictMixin):
     """Dictionary like object for storing template output.
     
     A template can specify key-value pairs in the output using 
@@ -1245,7 +1246,7 @@ class TemplateResult(storage):
         storage.__init__(self, *a, **kw)
         self.setdefault("__body__", None)
 
-        # avoiding self._data because add it as self["_data"]
+        # avoiding self._data because it adds as item instead of attr.
         self.__dict__["_data"] = []
         self.__dict__["extend"] = self._data.extend
 

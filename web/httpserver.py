@@ -183,6 +183,19 @@ class StaticApp(SimpleHTTPRequestHandler):
         from cStringIO import StringIO
         self.wfile = StringIO() # for capturing error
 
+        try:
+            path = self.translate_path(self.path)
+            etag = '"%s"' % os.path.getmtime(path)
+            print "etag", path, etag
+            client_etag = environ.get('HTTP_IF_NONE_MATCH')
+            self.send_header('ETag', etag)
+            if etag == client_etag:
+                self.send_response(304, "Not Modified")
+                self.start_response(self.status, self.headers)
+                raise StopIteration
+        except OSError:
+            pass # Probably a 404
+
         f = self.send_head()
         self.start_response(self.status, self.headers)
 

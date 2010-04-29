@@ -186,7 +186,6 @@ class StaticApp(SimpleHTTPRequestHandler):
         try:
             path = self.translate_path(self.path)
             etag = '"%s"' % os.path.getmtime(path)
-            print "etag", path, etag
             client_etag = environ.get('HTTP_IF_NONE_MATCH')
             self.send_header('ETag', etag)
             if etag == client_etag:

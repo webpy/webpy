@@ -120,7 +120,7 @@ def changequery(query=None, **kw):
         out += '?' + urlencode(query, doseq=True)
     return out
 
-def url(path=None, **kw):
+def url(path=None, doseq=False, **kw):
     """
     Makes url by concatinating web.ctx.homepath and path and the 
     query string created using the arguments.
@@ -133,7 +133,7 @@ def url(path=None, **kw):
         out = path
 
     if kw:
-        out += '?' + urlencode(kw)
+        out += '?' + urlencode(kw, doseq=doseq)
     
     return out
 

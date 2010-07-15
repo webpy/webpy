@@ -1353,16 +1353,23 @@ class _EmailMessage:
             encoders.encode_base64(msg)
             
         self.message.attach(msg)
-    
+
+    def prepare_message(self):
+        for k, v in self.headers.iteritems():
+            if k.lower() == "content-type":
+                self.message.set_type(v)
+            else:
+                self.message.add_header(k, v)
+
+        self.headers = {}
+
     def send(self):
         try:
             import webapi
         except ImportError:
             webapi = Storage(config=Storage())
-            
-        for k, v in self.headers.iteritems():
-            self.message.add_header(k, v)
-            
+
+        self.prepare_message()
         message_text = self.message.as_string()
     
         if webapi.config.get('smtp_server'):

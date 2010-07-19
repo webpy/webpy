@@ -70,7 +70,7 @@ class Form:
             if _validate:
                 out = i.validate(v) and out
             else:
-                i.value = v
+                i.set_value(v)
         if _validate:
             out = out and self._validate(source)
             self.valid = out

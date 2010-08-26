@@ -962,6 +962,10 @@ class SqliteDB(DB):
 
         if db.__name__ in ["sqlite3", "pysqlite2.dbapi2"]:
             db.paramstyle = 'qmark'
+            
+        # sqlite driver doesn't create datatime objects for timestamp columns unless `detect_types` option is passed.
+        # It seems to be supported in sqlite3 and pysqlite2 drivers, not surte about sqlite.
+        keywords.setdefault('detect_types', db.PARSE_DECLTYPES)
 
         self.paramstyle = db.paramstyle
         keywords['database'] = keywords.pop('db')

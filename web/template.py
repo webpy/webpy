@@ -1087,10 +1087,6 @@ def compile_templates(root):
         out.write('from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n')
         if dirnames:
             out.write("import " + ", ".join(dirnames))
-    
-        out.write("_dummy = CompiledTemplate(lambda: None, 'dummy')\n")
-        out.write("join_ = _dummy._join\n")
-        out.write("escape_ = _dummy._escape\n")
         out.write("\n")
 
         for f in filenames:
@@ -1106,6 +1102,10 @@ def compile_templates(root):
             code = Template.generate_code(text, path)
 
             code = code.replace("__template__", name, 1)
+            
+            # inject "join_ = ..; escape_ = .." into the code. 
+            # That is required to make escape functionality work correctly.
+            code = code.replace("\n", "\n    join_ = %s._join; escape_ = %s._escape\n" % (name, name), 1)
 
             out.write(code)
 

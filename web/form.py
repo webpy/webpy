@@ -262,8 +262,8 @@ class Radio(Input):
             attrs = self.attrs.copy()
             attrs['name'] = self.name
             attrs['type'] = 'radio'
-            attrs['value'] = arg
-            if self.value == arg:
+            attrs['value'] = value
+            if self.value == value:
                 attrs['checked'] = 'checked'
             x += '<input %s/> %s' % (attrs, net.websafe(desc))
         x += '</span>'

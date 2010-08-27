@@ -591,7 +591,7 @@ class LineNode:
     def __repr__(self):
         return "<line: %s>" % repr(self.nodes)
 
-INDENT = u'    ' # 4 spaces
+INDENT = '    ' # 4 spaces
         
 class BlockNode:
     def __init__(self, stmt, block, begin_indent=''):

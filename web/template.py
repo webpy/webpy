@@ -519,12 +519,12 @@ class DefwithNode:
     def __init__(self, defwith, suite):
         if defwith:
             self.defwith = defwith.replace('with', '__template__') + ':'
-            # offset 3 lines. for __lineoffset__, loop and self.
-            self.defwith += "\n    __lineoffset__ = -3"
+            # offset 4 lines. for encoding, __lineoffset__, loop and self.
+            self.defwith += "\n    __lineoffset__ = -4"
         else:
             self.defwith = 'def __template__():'
-            # offset 4 lines for __template__, __lineoffset__, loop and self.
-            self.defwith += "\n    __lineoffset__ = -4"
+            # offset 4 lines for encoding, __template__, __lineoffset__, loop and self.
+            self.defwith += "\n    __lineoffset__ = -5"
 
         self.defwith += "\n    loop = ForLoop()"
         self.defwith += "\n    self = TemplateResult(); extend_ = self.extend"
@@ -532,7 +532,8 @@ class DefwithNode:
         self.end = "\n    return self"
 
     def emit(self, indent):
-        return self.defwith + self.suite.emit(indent + INDENT) + self.end
+        encoding = "# encoding: utf-8\n"
+        return encoding + self.defwith + self.suite.emit(indent + INDENT) + self.end
 
     def __repr__(self):
         return "<defwith: %s, %s>" % (self.defwith, self.suite)

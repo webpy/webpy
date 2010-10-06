@@ -532,7 +532,7 @@ class DefwithNode:
         self.end = "\n    return self"
 
     def emit(self, indent):
-        encoding = "# encoding: utf-8\n"
+        encoding = "# coding: utf-8\n"
         return encoding + self.defwith + self.suite.emit(indent + INDENT) + self.end
 
     def __repr__(self):
@@ -1104,14 +1104,11 @@ def compile_templates(root):
 
             code = code.replace("__template__", name, 1)
             
-            # inject "join_ = ..; escape_ = .." into the code. 
-            # That is required to make escape functionality work correctly.
-            code = code.replace("\n", "\n    join_ = %s._join; escape_ = %s._escape\n" % (name, name), 1)
-
             out.write(code)
 
             out.write('\n\n')
-            out.write('%s = CompiledTemplate(%s, %s)\n\n' % (name, name, repr(path)))
+            out.write('%s = CompiledTemplate(%s, %s)\n' % (name, name, repr(path)))
+            out.write("join_ = %s._join; escape_ = %s._escape\n\n" % (name, name))
 
             # create template to make sure it compiles
             t = Template(open(path).read(), path)

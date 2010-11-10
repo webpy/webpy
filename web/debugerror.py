@@ -11,8 +11,8 @@ http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 __all__ = ["debugerror", "djangoerror", "emailerrors"]
 
 import sys, urlparse, pprint, traceback
-from net import websafe
 from template import Template
+from template import websafe as uwebsafe
 from utils import sendmail, safestr
 import webapi as web
 
@@ -287,7 +287,7 @@ def djangoerror():
         
     global djangoerror_r
     if djangoerror_r is None:
-        djangoerror_r = Template(djangoerror_t, filename=__file__, filter=websafe)
+        djangoerror_r = Template(djangoerror_t, filename=__file__, filter=uwebsafe)
         
     t = djangoerror_r
     globals = {'ctx': web.ctx, 'web':web, 'dict':dict, 'str':str, 'prettify': prettify}

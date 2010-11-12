@@ -825,27 +825,6 @@ class BaseTemplate:
             value = self.filter(value)
         return value
 
-_htmlquote_re = re.compile(r'[&<>"\']')
-_htmlquote_d = {
-    u"&": u"&amp;",
-    u"<": u"&lt;",
-    u">": u"&gt;",
-    u"'": u"&#39;",
-    u'"': u"&quot;",
-}
-        
-def websafe(text):
-    r"""
-    Encodes `text` for raw use in HTML.
-
-        >>> websafe(u"<'&\">")
-        u'&lt;&#39;&amp;&quot;&gt;'
-        
-    Unlike the websafe function in utils.py, this works with unicode text.
-    """
-    return _htmlquote_re.sub(lambda m: _htmlquote_d[m.group(0)], text)
-    
-
 class Template(BaseTemplate):
     CONTENT_TYPES = {
         '.html' : 'text/html; charset=utf-8',

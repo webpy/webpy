@@ -37,7 +37,7 @@ class Form:
         out += '<table>\n'
         
         for i in self.inputs:
-            html = i.pre + i.render() + self.rendernote(i.note) + i.post
+            html = utils.safeunicode(i.pre) + i.render() + self.rendernote(i.note) + utils.safeunicode(i.post)
             if i.is_hidden():
                 out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (html)
             else:

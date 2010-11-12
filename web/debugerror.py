@@ -12,7 +12,7 @@ __all__ = ["debugerror", "djangoerror", "emailerrors"]
 
 import sys, urlparse, pprint, traceback
 from template import Template
-from template import websafe as uwebsafe
+from net import websafe
 from utils import sendmail, safestr
 import webapi as web
 
@@ -287,7 +287,7 @@ def djangoerror():
         
     global djangoerror_r
     if djangoerror_r is None:
-        djangoerror_r = Template(djangoerror_t, filename=__file__, filter=uwebsafe)
+        djangoerror_r = Template(djangoerror_t, filename=__file__, filter=websafe)
         
     t = djangoerror_r
     globals = {'ctx': web.ctx, 'web':web, 'dict':dict, 'str':str, 'prettify': prettify}

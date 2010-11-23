@@ -287,7 +287,7 @@ def data():
         ctx.data = ctx.env['wsgi.input'].read(cl)
     return ctx.data
 
-def setcookie(name, value, expires="", domain=None, secure=False):
+def setcookie(name, value, expires="", domain=None, secure=False, httponly=False):
     """Sets a cookie."""
     if expires < 0: 
         expires = -1000000000 
@@ -301,7 +301,11 @@ def setcookie(name, value, expires="", domain=None, secure=False):
     cookie[name] = urllib.quote(utf8(value))
     for key, val in kargs.iteritems(): 
         cookie[name][key] = val
-    header('Set-Cookie', cookie.items()[0][1].OutputString())
+
+    value = cookie.items()[0][1].OutputString()
+    if httponly:
+        value += '; httponly'
+    header('Set-Cookie', value)
 
 def cookies(*requireds, **defaults):
     """

@@ -11,15 +11,27 @@ from utils import listget
 from net import validaddr, validip
 import httpserver
     
+def _is_dev_mode():
+    # quick hack to check if the program is running in dev mode.
+    if os.environ.has_key('SERVER_SOFTWARE') \
+        or os.environ.has_key('PHP_FCGI_CHILDREN') \
+        or 'fcgi' in sys.argv or 'fastcgi' in sys.argv \
+        or 'mod_wsgi' in sys.argv:
+            return False
+    return True
+
+# When running the builtin-server, enable debug mode if not already set.
+web.config.setdefault('debug', _is_dev_mode())
+    
 def runfcgi(func, addr=('localhost', 8000)):
     """Runs a WSGI function as a FastCGI server."""
     import flup.server.fcgi as flups
-    return flups.WSGIServer(func, multiplexed=True, bindAddress=addr).run()
+    return flups.WSGIServer(func, multiplexed=True, bindAddress=addr, debug=web.config.debug).run()
 
 def runscgi(func, addr=('localhost', 4000)):
     """Runs a WSGI function as an SCGI server."""
     import flup.server.scgi as flups
-    return flups.WSGIServer(func, bindAddress=addr).run()
+    return flups.WSGIServer(func, bindAddress=addr, debug=web.config.debug).run()
 
 def runwsgi(func):
     """
@@ -52,15 +64,3 @@ def runwsgi(func):
             return runscgi(func)
     
     return httpserver.runsimple(func, validip(listget(sys.argv, 1, '')))
-    
-def _is_dev_mode():
-    # quick hack to check if the program is running in dev mode.
-    if os.environ.has_key('SERVER_SOFTWARE') \
-        or os.environ.has_key('PHP_FCGI_CHILDREN') \
-        or 'fcgi' in sys.argv or 'fastcgi' in sys.argv \
-        or 'mod_wsgi' in sys.argv:
-            return False
-    return True
-
-# When running the builtin-server, enable debug mode if not already set.
-web.config.setdefault('debug', _is_dev_mode())

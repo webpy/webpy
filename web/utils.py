@@ -541,13 +541,7 @@ def uniq(seq):
        >>> uniq([1,2,3,1,4,5,6])
        [1, 2, 3, 4, 5, 6]
    """
-   seen = set()
-   result = []
-   for item in seq:
-       if item in seen: continue
-       seen.add(item)
-       result.append(item)
-   return result
+   return list(set(seq))
 
 def iterview(x):
    """

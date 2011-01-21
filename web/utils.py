@@ -534,20 +534,29 @@ def group(seq, size):
         else:
             break
 
-def uniq(seq):
-   """
-   Removes duplicate elements from a list.
+def uniq(seq, key=None):
+    """
+    Removes duplicate elements from a list.
 
-       >>> uniq([1,2,3,1,4,5,6])
-       [1, 2, 3, 4, 5, 6]
-   """
-   seen = set()
-   result = []
-   for item in seq:
-       if item in seen: continue
-       seen.add(item)
-       result.append(item)
-   return result
+        >>> uniq([1,2,3,1,4,5,6])
+        [1, 2, 3, 4, 5, 6]
+
+        The value of the optional `key` parameter should be a function that
+        takes a single argument and returns a key to test the uniqueness.
+
+        >>> uniq(["Foo", "foo", "bar"], key=lambda s: s.lower())
+        ['Foo', 'bar']
+    """
+    key = key or (lambda x: x)
+    seen = set()
+    result = []
+    for v in seq:
+        k = key(v)
+        if k in seen:
+            continue
+        seen.add(k)
+        result.append(v)
+    return result
 
 def iterview(x):
    """

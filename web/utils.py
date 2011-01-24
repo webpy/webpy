@@ -536,13 +536,13 @@ def group(seq, size):
 
 def uniq(seq, key=None):
     """
-    Removes duplicate elements from a list.
+    Removes duplicate elements from a list while preserving the order of the rest.
 
-        >>> uniq([1,2,3,1,4,5,6])
-        [1, 2, 3, 4, 5, 6]
+        >>> uniq([9,0,2,1,0])
+        [9, 0, 2, 1]
 
-        The value of the optional `key` parameter should be a function that
-        takes a single argument and returns a key to test the uniqueness.
+    The value of the optional `key` parameter should be a function that
+    takes a single argument and returns a key to test the uniqueness.
 
         >>> uniq(["Foo", "foo", "bar"], key=lambda s: s.lower())
         ['Foo', 'bar']

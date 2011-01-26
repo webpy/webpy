@@ -1295,7 +1295,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             raise ValueError, "Invalid attachment: %s" % repr(a)
             
     mail.send()
-        
+
 class _EmailMessage:
     def __init__(self, from_address, to_address, subject, message, headers=None, **kw):
         def listify(x):
@@ -1405,6 +1405,12 @@ class _EmailMessage:
 
             smtpserver.sendmail(self.from_address, self.recipients, message_text)
             smtpserver.quit()
+        elif webapi.config.get('aws_access_key_id'):
+            import boto.ses
+            c = boto.ses.SESConnection(
+              aws_access_key_id=webapi.config.aws_access_key_id,
+              aws_secret_access_key=web.api.config.get('aws_secret_access_key'))
+              c.send_raw_email(self.recipients, message_text, self.from_address)
         else:
             sendmail = webapi.config.get('sendmail_path', '/usr/sbin/sendmail')
         

@@ -1405,10 +1405,10 @@ class _EmailMessage:
 
             smtpserver.sendmail(self.from_address, self.recipients, message_text)
             smtpserver.quit()
-        elif webapi.config.get('aws_access_key_id'):
+        elif webapi.config.get('email_engine') == 'aws':
             import boto.ses
             c = boto.ses.SESConnection(
-              aws_access_key_id=webapi.config.aws_access_key_id,
+              aws_access_key_id=webapi.config.get('aws_access_key_id'),
               aws_secret_access_key=web.api.config.get('aws_secret_access_key'))
               c.send_raw_email(self.recipients, message_text, self.from_address)
         else:

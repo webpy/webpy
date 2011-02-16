@@ -43,6 +43,11 @@ except ImportError: pass
 try: set
 except NameError:
     from sets import Set as set
+    
+try:
+    from threading import local as threadlocal
+except ImportError:
+    from python23 import threadlocal
 
 class Storage(dict):
     """
@@ -1153,7 +1158,7 @@ def tryall(context, prefix=None):
     for (key, value) in results.iteritems():
         print ' '*2, str(key)+':', value
         
-class ThreadedDict:
+class ThreadedDict(threadlocal):
     """
     Thread local storage.
     
@@ -1170,30 +1175,87 @@ class ThreadedDict:
         >>> d.x
         1
     """
-    def __getattr__(self, key):
-        return getattr(self._getd(), key)
-
-    def __setattr__(self, key, value):
-        return setattr(self._getd(), key, value)
-
-    def __delattr__(self, key):
-        return delattr(self._getd(), key)
-
-    def __hash__(self): 
+    _instances = set()
+    
+    def __init__(self):
+        ThreadedDict._instances.add(self)
+        
+    def __del__(self):
+        ThreadedDict._instances.remove(self)
+        
+    def __hash__(self):
         return id(self)
+    
+    def clear_all():
+        """Clears all ThreadedDict instances.
+        """
+        for t in ThreadedDict._instances:
+            t.clear()
+    clear_all = staticmethod(clear_all)
+    
+    # Define all these methods to more or less fully emulate dict -- attribute access
+    # is built into threading.local.
 
-    def _getd(self):
-        t = threading.currentThread()
-        if not hasattr(t, '_d'):
-            # using __dict__ of thread as thread local storage
-            t._d = {}
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
-        # there could be multiple instances of ThreadedDict.
-        # use self as key
-        if self not in t._d:
-            t._d[self] = storage()
-        return t._d[self]
+    def __setitem__(self, key, value):
+        self.__dict__[key] = value
 
+    def __delitem__(self, key):
+        del self.__dict__[key]
+
+    def __contains__(self, key):
+        return key in self.__dict__
+
+    has_key = __contains__
+        
+    def clear(self):
+        self.__dict__.clear()
+
+    def copy(self):
+        return self.__dict__.copy()
+
+    def get(self, key, default=None):
+        return self.__dict__.get(key, default)
+
+    def items(self):
+        return self.__dict__.items()
+
+    def iteritems(self):
+        return self.__dict__.iteritems()
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def iterkeys(self):
+        return self.__dict__.iterkeys()
+
+    iter = iterkeys
+
+    def values(self):
+        return self.__dict__.values()
+
+    def itervalues(self):
+        return self.__dict__.itervalues()
+
+    def pop(self, key, *args):
+        return self.__dict__.pop(key, *args)
+
+    def popitem(self):
+        return self.__dict__.popitem()
+
+    def setdefault(self, key, default=None):
+        return self.__dict__.setdefault(key, default)
+
+    def update(self, *args, **kwargs):
+        self.__dict__.update(*args, **kwargs)
+
+    def __repr__(self):
+        return '<ThreadedDict %r>' % self.__dict__
+
+    __str__ = __repr__
+    
 threadeddict = ThreadedDict
 
 def autoassign(self, locals):

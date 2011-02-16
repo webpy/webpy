@@ -107,15 +107,9 @@ class application:
                 web.ctx.fullpath = oldctx.fullpath
                 
     def _cleanup(self):
-        #@@@
-        # Since the CherryPy Webserver uses thread pool, the thread-local state is never cleared.
-        # This interferes with the other requests. 
-        # clearing the thread-local storage to avoid that.
-        # see utils.ThreadedDict for details
-        import threading
-        t = threading.currentThread()
-        if hasattr(t, '_d'):
-            del t._d
+        # Threads can be recycled by WSGI servers.
+        # Clearing up all thread-local state to avoid interefereing with subsequent requests.
+        utils.ThreadedDict.clear_all()
     
     def add_mapping(self, pattern, classname):
         self.mapping += (pattern, classname)

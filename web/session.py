@@ -41,12 +41,13 @@ class SessionExpired(web.HTTPError):
 class Session(utils.ThreadedDict):
     """Session management for web.py
     """
+    __slots__ = ["store", "_initializer", "_last_cleanup_time", "_config"]
 
     def __init__(self, app, store, initializer=None):
-        self.__dict__['store'] = store
-        self.__dict__['_initializer'] = initializer
-        self.__dict__['_last_cleanup_time'] = 0
-        self.__dict__['_config'] = utils.storage(web.config.session_parameters)
+        self.store = store
+        self._initializer = initializer
+        self._last_cleanup_time = 0
+        self._config = utils.storage(web.config.session_parameters)
 
         if app:
             app.add_processor(self._processor)
@@ -137,7 +138,7 @@ class Session(utils.ThreadedDict):
         timeout = self._config.timeout
         if current_time - self._last_cleanup_time > timeout:
             self.store.cleanup(timeout)
-            self.__dict__['_last_cleanup_time'] = current_time
+            self._last_cleanup_time = current_time
 
     def expired(self):
         """Called when an expired session is atime"""

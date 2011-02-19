@@ -331,11 +331,10 @@ def safeunicode(obj, encoding='utf-8'):
         return obj.decode(encoding)
     elif t in [int, float, bool]:
         return unicode(obj)
+    elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
+        return unicode(obj)
     else:
-        if hasattr(obj, '__unicode__'):
-            return unicode(obj)
-        else:
-            return str(obj).decode(encoding)
+        return str(obj).decode(encoding)
     
 def safestr(obj, encoding='utf-8'):
     r"""

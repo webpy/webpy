@@ -38,19 +38,39 @@ class SessionExpired(web.HTTPError):
     def __init__(self, message):
         web.HTTPError.__init__(self, '200 OK', {}, data=message)
 
-class Session(utils.ThreadedDict):
+class Session(object):
     """Session management for web.py
     """
-    __slots__ = ["store", "_initializer", "_last_cleanup_time", "_config"]
+    __slots__ = [
+        "store", "_initializer", "_last_cleanup_time", "_config", "_data", 
+        "__getitem__", "__setitem__", "__delitem__"
+    ]
 
     def __init__(self, app, store, initializer=None):
         self.store = store
         self._initializer = initializer
         self._last_cleanup_time = 0
         self._config = utils.storage(web.config.session_parameters)
+        self._data = utils.threadeddict()
+        
+        self.__getitem__ = self._data.__getitem__
+        self.__setitem__ = self._data.__setitem__
+        self.__delitem__ = self._data.__delitem__
 
         if app:
             app.add_processor(self._processor)
+            
+    def __getattr__(self, name):
+        return getattr(self._data, name)
+    
+    def __setattr__(self, name, value):
+        if name in self.__slots__:
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._data, name, value)
+        
+    def __delattr__(self, name):
+        delattr(self._data, name)
 
     def _processor(self, handler):
         """Application processor to setup session for every request"""
@@ -111,7 +131,7 @@ class Session(utils.ThreadedDict):
 
         if not self.get('_killed'):
             web.setcookie(cookie_name, self.session_id, domain=cookie_domain, httponly=httponly)
-            self.store[self.session_id] = dict(self)
+            self.store[self.session_id] = dict(self._data)
         else:
             web.setcookie(cookie_name, self.session_id, expires=-1, domain=cookie_domain, httponly=httponly)
     

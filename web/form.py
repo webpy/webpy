@@ -240,7 +240,8 @@ class Dropdown(Input):
             else:
                 value, desc = arg, arg 
 
-            if self.value == value: select_p = ' selected="selected"'
+            if self.value == value or (isinstance(self.value, list) and value in self.value):
+                select_p = ' selected="selected"'
             else: select_p = ''
             x += '  <option%s value="%s">%s</option>\n' % (select_p, net.websafe(value), net.websafe(desc))
             

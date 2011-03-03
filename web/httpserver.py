@@ -2,6 +2,8 @@ __all__ = ["runsimple"]
 
 import sys, os
 from SimpleHTTPServer import SimpleHTTPRequestHandler
+import urllib
+import posixpath
 
 import webapi as web
 import net
@@ -218,10 +220,19 @@ class StaticMiddleware:
         
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO', '')
+        path = self.normpath(path)
+
         if path.startswith(self.prefix):
             return StaticApp(environ, start_response)
         else:
             return self.app(environ, start_response)
+
+    def normpath(self, path):
+        path2 = posixpath.normpath(urllib.unquote(path))
+        if path.endswith("/"):
+            path2 += "/"
+        return path2
+
     
 class LogMiddleware:
     """WSGI middleware for logging the status."""

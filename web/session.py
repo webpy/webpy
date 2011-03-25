@@ -4,6 +4,7 @@ Session Management
 """
 
 import os, time, datetime, random, base64
+import os.path
 try:
     import cPickle as pickle
 except ImportError:
@@ -217,7 +218,9 @@ class DiskStore(Store):
     def __init__(self, root):
         # if the storage root doesn't exists, create it.
         if not os.path.exists(root):
-            os.mkdir(root)
+            os.makedirs(
+                    os.path.abspath(root)
+                    )
         self.root = root
 
     def _get_path(self, key):

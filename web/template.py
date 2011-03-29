@@ -542,7 +542,7 @@ class TextNode:
     def __init__(self, value):
         self.value = value
 
-    def emit(self, indent):
+    def emit(self, indent, begin_indent=''):
         return repr(safeunicode(self.value))
         
     def __repr__(self):
@@ -558,7 +558,7 @@ class ExpressionNode:
             
         self.escape = escape
 
-    def emit(self, indent):
+    def emit(self, indent, begin_indent=''):
         return 'escape_(%s, %s)' % (self.value, bool(self.escape))
         
     def __repr__(self):
@@ -638,7 +638,7 @@ class StatementNode:
     def __init__(self, stmt):
         self.stmt = stmt
         
-    def emit(self, indent):
+    def emit(self, indent, begin_indent=''):
         return indent + self.stmt
         
     def __repr__(self):

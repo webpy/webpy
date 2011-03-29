@@ -776,13 +776,23 @@ class DB:
             if v.keys() != keys:
                 raise ValueError, 'Bad data'
 
-        sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys))) 
+        sql_query = ['INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys))]
 
         data = []
+        first1 = True
         for row in values:
-            d = SQLQuery.join([SQLParam(row[k]) for k in keys], ', ')
-            data.append('(' + d + ')')
-        sql_query += SQLQuery.join(data, ', ')
+            if first1: first1 = False
+            else: sql_query.append(', ')
+            
+            sql_query.append('(')
+            first2 = True
+            for k in keys:
+                if first2: first2 = False
+                else: sql_query.append(', ')
+                sql_query.append(SQLParam(row[k]))
+            sql_query.append(')')
+        
+        sql_query = SQLQuery(sql_query)
 
         if _test: return sql_query
 

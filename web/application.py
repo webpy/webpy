@@ -133,7 +133,7 @@ class application:
         self.processors.append(processor)
 
     def request(self, localpart='/', method='GET', data=None,
-                host="127.0.0.1:8080", headers=None, https=False, **kw):
+                host="0.0.0.0:8080", headers=None, https=False, **kw):
         """Makes request to this application for the specified path and method.
         Response will be a storage object with data, status and headers.
 
@@ -161,10 +161,10 @@ class application:
             ...
             >>> response = app.request("/redirect")
             >>> response.headers['Location']
-            'http://127.0.0.1:8080/foo'
+            'http://0.0.0.0:8080/foo'
             >>> response = app.request("/redirect", https=True)
             >>> response.headers['Location']
-            'https://127.0.0.1:8080/foo'
+            'https://0.0.0.0:8080/foo'
 
         The headers argument specifies HTTP headers as a mapping object
         such as a dict.

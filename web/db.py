@@ -54,7 +54,7 @@ class UnknownParamstyle(Exception):
     """
     pass
     
-class SQLParam:
+class SQLParam(object):
     """
     Parameter in SQLQuery.
     
@@ -66,6 +66,8 @@ class SQLParam:
         >>> q.values()
         ['joe']
     """
+    __slots__ = ["value"]
+
     def __init__(self, value):
         self.value = value
         
@@ -95,7 +97,7 @@ class SQLParam:
 
 sqlparam =  SQLParam
 
-class SQLQuery:
+class SQLQuery(object):
     """
     You can pass this sort of thing as a clause in any db function.
     Otherwise, you can pass a dictionary to the keyword argument `vars`
@@ -104,8 +106,10 @@ class SQLQuery:
     Internally, consists of `items`, which is a list of strings and
     SQLParams, which get concatenated to produce the actual query.
     """
+    __slots__ = ["items"]
+
     # tested in sqlquote's docstring
-    def __init__(self, items=[]):
+    def __init__(self, items=None):
         r"""Creates a new SQLQuery.
         
             >>> SQLQuery("x")
@@ -118,7 +122,9 @@ class SQLQuery:
             >>> SQLQuery(SQLParam(1))
             <sql: '1'>
         """
-        if isinstance(items, list):
+        if items is None:
+            self.items = []
+        elif isinstance(items, list):
             self.items = items
         elif isinstance(items, SQLParam):
             self.items = [items]
@@ -131,6 +137,9 @@ class SQLQuery:
         for i, item in enumerate(self.items):
             if isinstance(item, SQLParam) and isinstance(item.value, SQLLiteral):
                 self.items[i] = item.value.v
+
+    def append(self, value):
+        self.items.append(value)
 
     def __add__(self, other):
         if isinstance(other, basestring):
@@ -150,13 +159,12 @@ class SQLQuery:
         return SQLQuery(items + self.items)
 
     def __iadd__(self, other):
-        if isinstance(other, basestring):
-            items = [other]
+        if isinstance(other, (basestring, SQLParam)):
+            self.items.append(other)
         elif isinstance(other, SQLQuery):
-            items = other.items
+            self.items.extend(other.items)
         else:
             return NotImplemented
-        self.items.extend(items)
         return self
 
     def __len__(self):
@@ -195,21 +203,39 @@ class SQLQuery:
         """
         return [i.value for i in self.items if isinstance(i, SQLParam)]
         
-    def join(items, sep=' '):
+    def join(items, sep=' ', prefix=None, suffix=None, target=None):
         """
         Joins multiple queries.
         
         >>> SQLQuery.join(['a', 'b'], ', ')
         <sql: 'a, b'>
-        """
-        if len(items) == 0:
-            return SQLQuery("")
 
-        q = SQLQuery(items[0])
-        for item in items[1:]:
-            q += sep
-            q += item
-        return q
+        Optinally, prefix and suffix arguments can be provided.
+
+        >>> SQLQuery.join(['a', 'b'], ', ', prefix='(', suffix=')')
+        <sql: '(a, b)'>
+
+        If target argument is provided, the items are appended to target instead of creating a new SQLQuery.
+        """
+        if target is None:
+            target = SQLQuery()
+
+        target_items = target.items
+
+        if prefix:
+            target_items.append(prefix)
+
+        for i, item in enumerate(items):
+            if i != 0:
+                target_items.append(sep)
+            if isinstance(item, SQLQuery):
+                target_items.extend(item.items)
+            else:
+                target_items.append(item)
+
+        if suffix:
+            target_items.append(suffix)
+        return target
     
     join = staticmethod(join)
     
@@ -743,7 +769,7 @@ class DB:
         if not self.ctx.transactions: 
             self.ctx.commit()
         return out
-        
+
     def multiple_insert(self, tablename, values, seqname=None, _test=False):
         """
         Inserts multiple rows into `tablename`. The `values` must be a list of dictioanries, 
@@ -776,24 +802,13 @@ class DB:
             if v.keys() != keys:
                 raise ValueError, 'Bad data'
 
-        sql_query = ['INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys))]
+        sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
 
-        data = []
-        first1 = True
-        for row in values:
-            if first1: first1 = False
-            else: sql_query.append(', ')
-            
-            sql_query.append('(')
-            first2 = True
-            for k in keys:
-                if first2: first2 = False
-                else: sql_query.append(', ')
-                sql_query.append(SQLParam(row[k]))
-            sql_query.append(')')
+        for i, row in enumerate(values):
+            if i != 0:
+                sql_query.append(", ")
+            SQLQuery.join([SQLParam(row[k]) for k in keys], sep=", ", target=sql_query, prefix="(", suffix=")")
         
-        sql_query = SQLQuery(sql_query)
-
         if _test: return sql_query
 
         db_cursor = self._db_cursor()

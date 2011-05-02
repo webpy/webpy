@@ -112,6 +112,10 @@ class DBTest(webtest.TestCase):
             self.assertEquals(a, active)
         t(False)
         t(True)
+        
+    def test_insert_default_values(self):
+        db = webtest.setup_database(self.dbname)
+        db.insert("person")
 
 class PostgresTest(DBTest):
     dbname = "postgres"

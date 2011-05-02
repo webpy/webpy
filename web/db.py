@@ -487,7 +487,6 @@ class DB:
         self.db_module = db_module
         self.keywords = keywords
 
-        
         self._ctx = threadeddict()
         # flag to enable/disable printing queries
         self.printing = config.get('debug_sql', config.get('debug', False))
@@ -744,7 +743,7 @@ class DB:
             _values = SQLQuery.join([sqlparam(v) for v in values.values()], ', ')
             sql_query = "INSERT INTO %s " % tablename + q(_keys) + ' VALUES ' + q(_values)
         else:
-            sql_query = SQLQuery("INSERT INTO %s DEFAULT VALUES" % tablename)
+            sql_query = SQLQuery(self._get_insert_default_values_query(tablename))
 
         if _test: return sql_query
         
@@ -769,6 +768,9 @@ class DB:
         if not self.ctx.transactions: 
             self.ctx.commit()
         return out
+        
+    def _get_insert_default_values_query(self, table):
+        return "INSERT INTO %s DEFAULT VALUES" % table
 
     def multiple_insert(self, tablename, values, seqname=None, _test=False):
         """
@@ -971,6 +973,9 @@ class MySQLDB(DB):
         
     def _process_insert_query(self, query, tablename, seqname):
         return query, SQLQuery('SELECT last_insert_id();')
+        
+    def _get_insert_default_values_query(self, table):
+        return "INSERT INTO %s () VALUES()" % table
 
 def import_driver(drivers, preferred=None):
     """Import the first available driver or preferred driver.

@@ -12,7 +12,7 @@ def attrget(obj, attr, value=None):
     if hasattr(obj, attr): return getattr(obj, attr)
     return value
 
-class Form:
+class Form(object):
     r"""
     HTML form.
     

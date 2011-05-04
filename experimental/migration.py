@@ -72,7 +72,7 @@ class _outputter:
 
 def output(string_):
     """Appends `string_` to the response."""
-    string_ = web.utf8(string_)
+    string_ = web.safestr(string_)
     if web.ctx.get('flush'):
         web.ctx._write(string_)
     else:

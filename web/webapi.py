@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 import sys, cgi, Cookie, pprint, urlparse, urllib
-from utils import storage, storify, threadeddict, dictadd, intget, utf8
+from utils import storage, storify, threadeddict, dictadd, intget, safestr
 
 config = storage()
 config.__doc__ = """
@@ -210,7 +210,7 @@ def header(hdr, value, unique=False):
     If `unique` is True and a header with that name already exists,
     it doesn't add a new one. 
     """
-    hdr, value = utf8(hdr), utf8(value)
+    hdr, value = safestr(hdr), safestr(value)
     # protection against HTTP response splitting attack
     if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
         raise ValueError, 'invalid characters in header'
@@ -298,7 +298,7 @@ def setcookie(name, value, expires="", domain=None, secure=False, httponly=False
         kargs['secure'] = secure
     # @@ should we limit cookies to a different path?
     cookie = Cookie.SimpleCookie()
-    cookie[name] = urllib.quote(utf8(value))
+    cookie[name] = urllib.quote(safestr(value))
     for key, val in kargs.iteritems(): 
         cookie[name][key] = val
 

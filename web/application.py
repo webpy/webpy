@@ -281,7 +281,7 @@ class application:
             except web.HTTPError, e:
                 result = [e.data]
 
-            result = web.utf8(iter(result))
+            result = web.safestr(iter(result))
 
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)

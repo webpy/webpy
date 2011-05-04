@@ -97,7 +97,7 @@ def urlencode(query, doseq=0):
         if doseq and isinstance(value, list):
             return [convert(v) for v in value]
         else:
-            return utils.utf8(value)
+            return utils.safestr(value)
         
     query = dict([(k, convert(v, doseq)) for k, v in query.items()])
     return urllib.urlencode(query, doseq=doseq)

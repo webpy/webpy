@@ -633,16 +633,29 @@ def autodelegate(prefix=''):
 
 class Reloader:
     """Checks to see if any loaded modules have changed on disk and, 
-    if so, reloads them.
+    if so, reloads all user modules.
     """
     def __init__(self):
         self.mtimes = {}
 
     def __call__(self):
+        changed = False
         for mod in sys.modules.values():
-            self.check(mod)
+            changed = changed or self.check(mod)
+        if changed:
+            for modName, mod in sys.modules.items():
+                if not hasattr(mod, '__file__') or \
+                mod.__file__.startswith(sys.prefix) or \
+                modName.startswith('web.'):
+                    continue
+                try:
+                    reload(mod)
+                except ImportError, msg:
+                    pass
             
     def check(self, mod):
+        changed = False
+
         try: 
             mtime = os.stat(mod.__file__).st_mtime
         except (AttributeError, OSError, IOError):
@@ -653,12 +666,10 @@ class Reloader:
         if mod not in self.mtimes:
             self.mtimes[mod] = mtime
         elif self.mtimes[mod] < mtime:
-            try: 
-                reload(mod)
-                self.mtimes[mod] = mtime
-            except ImportError: 
-                pass
-                
+            changed = True
+            self.mtimes[mod] = mtime
+        return changed
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

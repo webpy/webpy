@@ -60,7 +60,10 @@ class Session(object):
 
         if app:
             app.add_processor(self._processor)
-            
+
+    def __contains__(self, name):
+        return name in self._data
+
     def __getattr__(self, name):
         return getattr(self._data, name)
     

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 General Utilities
 (part of web.py)
@@ -409,12 +408,12 @@ def timelimit(timeout):
         return _2
     return _1
 
-class Memoize:
+def Memoize(func, expires=None, background=True):
     """
     'Memoizes' a function, caching its return values for each input.
     If `expires` is specified, values are recalculated after `expires` seconds.
     If `background` is specified, values are recalculated in a separate thread.
-    
+
         >>> calls = 0
         >>> def howmanytimeshaveibeencalled():
         ...     global calls
@@ -460,32 +459,39 @@ class Memoize:
         >>> fastcalls()
         9
     """
-    def __init__(self, func, expires=None, background=True): 
-        self.func = func
-        self.cache = {}
-        self.expires = expires
-        self.background = background
-        self.running = {}
-    
-    def __call__(self, *args, **keywords):
-        key = (args, tuple(keywords.items()))
-        if not self.running.get(key):
-            self.running[key] = threading.Lock()
-        def update(block=False):
-            if self.running[key].acquire(block):
+    cache = {}
+    if not expires:
+        def memoize(*args, **kwargs):
+            key = args + tuple(kwargs.items())
+            if key not in cache:
+                cache[key] = func(*args, **kwargs)
+            return cache[key]
+
+    elif not background:
+        def memoize(*args, **kwargs):
+            key = args + tuple(kwargs.items())
+            if key not in cache or (time.time()-cache[key][1]) > expires:
+                cache[key] = func(*args, **kwargs), time.time()
+            return cache[key][0]
+
+    else:
+        running = {}
+        def update(key, args, kwargs):
+            if running[key].acquire(False):
                 try:
-                    self.cache[key] = (self.func(*args, **keywords), time.time())
+                    cache[key] = func(*args, **kwargs), time.time()
                 finally:
-                    self.running[key].release()
-        
-        if key not in self.cache: 
-            update(block=True)
-        elif self.expires and (time.time() - self.cache[key][1]) > self.expires:
-            if self.background:
-                threading.Thread(target=update).start()
-            else:
-                update()
-        return self.cache[key][0]
+                    running[key].release()
+        def memoize(*args, **kwargs):
+            key = args + tuple(kwargs.items())
+            if key not in cache:
+                running[key] = threading.Lock()
+                cache[key] = func(*args, **kwargs), time.time()
+            elif (time.time() - cache[key][1]) > expires:
+                threading.Thread(target=update, args=(key,args,kwargs)).start()
+            return cache[key][0]
+
+    return memoize
 
 memoize = Memoize
 

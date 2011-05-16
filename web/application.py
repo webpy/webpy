@@ -666,6 +666,10 @@ class Reloader:
         if mod not in self.mtimes:
             self.mtimes[mod] = mtime
         elif self.mtimes[mod] < mtime:
+            try:
+                reload(mod)
+            except ImportError, msg:
+                pass
             changed = True
             self.mtimes[mod] = mtime
         return changed

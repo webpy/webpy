@@ -94,12 +94,18 @@ class Session(object):
         if self.session_id and not self._valid_session_id(self.session_id):
             self.session_id = None
 
-        self._check_expiry()
+        # fetch session from store and check expiry
         if self.session_id:
-            d = self.store[self.session_id]
-            self.update(d)
-            self._validate_ip()
-        
+            try:
+                d = self.store[self.session_id]
+                self.update(d)
+                self._validate_ip()
+            except KeyError:
+                if self._config.ignore_expiry:
+                    self.session_id = None
+                else:
+                    return self.expired()
+
         if not self.session_id:
             self.session_id = self._generate_session_id()
 
@@ -111,13 +117,6 @@ class Session(object):
  
         self.ip = web.ctx.ip
 
-    def _check_expiry(self):
-        # check for expiry
-        if self.session_id and self.session_id not in self.store:
-            if self._config.ignore_expiry:
-                self.session_id = None
-            else:
-                return self.expired()
 
     def _validate_ip(self):
         # check for change of IP

@@ -37,6 +37,7 @@ __all__ = [
 
 import tokenize
 import os
+import sys
 import glob
 import re
 from UserDict import DictMixin
@@ -917,10 +918,11 @@ class Template(BaseTemplate):
                 pass
             raise
         
-        # make sure code is safe
-        import compiler
-        ast = compiler.parse(code)
-        SafeVisitor().walk(ast, filename)
+        # make sure code is safe - but not with jython, it doesn't have a working compiler module
+        if not sys.platform.startswith('java'):
+            import compiler
+            ast = compiler.parse(code)
+            SafeVisitor().walk(ast, filename)
 
         return compiled_code
         

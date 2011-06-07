@@ -273,6 +273,11 @@ of lists, tuples, sets, and Sets are available in this version of Python.
 """
 
 def _strips(direction, text, remove):
+    if isinstance(remove, iters):
+        for subr in remove:
+            text = _strips(direction, text, subr)
+        return text
+    
     if direction == 'l': 
         if text.startswith(remove): 
             return text[len(remove):]
@@ -299,6 +304,12 @@ def lstrips(text, remove):
     
         >>> lstrips("foobar", "foo")
         'bar'
+        >>> lstrips('http://foo.org/', ['http://', 'https://'])
+        'foo.org/'
+        >>> lstrips('FOOBARBAZ', ['FOO', 'BAR'])
+        'BAZ'
+        >>> lstrips('FOOBARBAZ', ['BAR', 'FOO'])
+        'BARBAZ'
     
     """
     return _strips('l', text, remove)

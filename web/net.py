@@ -167,24 +167,22 @@ def htmlunquote(text):
     text = text.replace(u"&amp;", u"&") # Must be done last!
     return text
     
-def websafe(val):
+def websafe(val=u''):
     r"""Converts `val` so that it is safe for use in Unicode HTML.
 
         >>> websafe("<'&\">")
         u'&lt;&#39;&amp;&quot;&gt;'
-        >>> websafe(None)
+        >>> websafe()
         u''
         >>> websafe(u'\u203d')
         u'\u203d'
         >>> websafe('\xe2\x80\xbd')
         u'\u203d'
     """
-    if val is None:
-        return u''
-    elif isinstance(val, str):
+    if isinstance(val, str):
         val = val.decode('utf-8')
-    elif not isinstance(val, unicode):
-        val = unicode(val)
+    if not isinstance(val, unicode):
+        raise ValueError("Cravenly refusing to autoconvert to unicode")
         
     return htmlquote(val)
 

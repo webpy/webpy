@@ -923,6 +923,9 @@ class Template(BaseTemplate):
             import compiler
             ast = compiler.parse(code)
             SafeVisitor().walk(ast, filename)
+        else:
+            import warnings
+            warnings.warn("SECURITY ISSUE: You are using Jython, which does not support checking templates for safety. Your templates can execute arbitrary code.")
 
         return compiled_code
         

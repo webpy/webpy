@@ -604,7 +604,7 @@ class DB:
         """
         paramstyle = getattr(self, 'paramstyle', 'pyformat')
         query = sql_query.query(paramstyle)
-        params = sql_query.values())
+        params = sql_query.values()
         return query, params
     
     def _where(self, where, vars): 
@@ -1080,7 +1080,7 @@ class MSSQLDB(DB):
         # Overwriting the default implementation to convert params to tuple.
         paramstyle = getattr(self, 'paramstyle', 'pyformat')
         query = sql_query.query(paramstyle)
-        params = sql_query.values())
+        params = sql_query.values()
         return query, tuple(params)
 
     def sql_clauses(self, what, tables, where, group, order, limit, offset): 

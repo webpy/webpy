@@ -583,8 +583,8 @@ class DB:
         
         try:
             a = time.time()
-            paramstyle = getattr(self, 'paramstyle', 'pyformat')
-            out = cur.execute(sql_query.query(paramstyle), sql_query.values())
+            query, params = self._process_query(sql_query)
+            out = cur.execute(query, params)
             b = time.time()
         except:
             if self.printing:
@@ -598,6 +598,14 @@ class DB:
         if self.printing:
             print >> debug, '%s (%s): %s' % (round(b-a, 2), self.ctx.dbq_count, str(sql_query))
         return out
+
+    def _process_query(self, sql_query):
+        """Takes the SQLQuery object and returns query string and parameters.
+        """
+        paramstyle = getattr(self, 'paramstyle', 'pyformat')
+        query = sql_query.query(paramstyle)
+        params = sql_query.values())
+        return query, params
     
     def _where(self, where, vars): 
         if isinstance(where, (int, long)):
@@ -1064,6 +1072,16 @@ class MSSQLDB(DB):
         keywords['database'] = keywords.pop('db')
         self.dbname = "mssql"
         DB.__init__(self, db, keywords)
+
+    def _process_query(self, sql_query):
+        """Takes the SQLQuery object and returns query string and parameters.
+        """
+        # MSSQLDB expects params to be a tuple. 
+        # Overwriting the default implementation to convert params to tuple.
+        paramstyle = getattr(self, 'paramstyle', 'pyformat')
+        query = sql_query.query(paramstyle)
+        params = sql_query.values())
+        return query, tuple(params)
 
     def sql_clauses(self, what, tables, where, group, order, limit, offset): 
         return (

@@ -32,7 +32,8 @@ web.config.session_parameters = utils.storage({
     'ignore_change_ip': True,
     'secret_key': 'fLjUfxqXtfNoIldA0A0J',
     'expired_message': 'Session expired',
-    'httponly': True
+    'httponly': True,
+    'secure': False
 })
 
 class SessionExpired(web.HTTPError): 
@@ -129,15 +130,18 @@ class Session(object):
                return self.expired() 
     
     def _save(self):
+        if not self.get('_killed'):
+            self._setcookie(self.session_id)
+            self.store[self.session_id] = dict(self._data)
+        else:
+            self._setcookie(self.session_id, expires=-1)
+            
+    def _setcookie(self, session_id, expires='', **kw):
         cookie_name = self._config.cookie_name
         cookie_domain = self._config.cookie_domain
         httponly = self._config.httponly
-
-        if not self.get('_killed'):
-            web.setcookie(cookie_name, self.session_id, domain=cookie_domain, httponly=httponly)
-            self.store[self.session_id] = dict(self._data)
-        else:
-            web.setcookie(cookie_name, self.session_id, expires=-1, domain=cookie_domain, httponly=httponly)
+        secure = self._config.secure
+        web.setcookie(cookie_name, session_id, expires=expires, domain=cookie_domain, httponly=httponly, secure=secure)
     
     def _generate_session_id(self):
         """Generate a random id for session"""

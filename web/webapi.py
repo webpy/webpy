@@ -287,22 +287,21 @@ def data():
         ctx.data = ctx.env['wsgi.input'].read(cl)
     return ctx.data
 
-def setcookie(name, value, expires="", domain=None, secure=False, httponly=False):
+def setcookie(name, value, expires='', domain=None,
+              secure=False, httponly=False, path=None):
     """Sets a cookie."""
-    if expires < 0: 
-        expires = -1000000000 
-    kargs = {'expires': expires, 'path':'/'}
-    if domain: 
-        kargs['domain'] = domain
+    morsel = Cookie.Morsel()
+    name, value = safestr(name), safestr(value)
+    morsel.set(name, value, urllib.quote(value))
+    if expires < 0:
+        expires = -1000000000
+    morsel['expires'] = expires
+    morsel['path'] = path or ctx.homepath+'/'
+    if domain:
+        morsel['domain'] = domain
     if secure:
-        kargs['secure'] = secure
-    # @@ should we limit cookies to a different path?
-    cookie = Cookie.SimpleCookie()
-    cookie[name] = urllib.quote(safestr(value))
-    for key, val in kargs.iteritems(): 
-        cookie[name][key] = val
-
-    value = cookie.items()[0][1].OutputString()
+        morsel['secure'] = secure
+    value = morsel.OutputString()
     if httponly:
         value += '; httponly'
     header('Set-Cookie', value)

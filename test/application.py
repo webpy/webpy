@@ -307,6 +307,22 @@ class ApplicationTest(webtest.TestCase):
                 
         self.assertEquals(f('/?x=2'), '/?x=1')
         self.assertEquals(f('/?y=1&y=2&x=2'), '/?y=1&y=2&x=1')
+        
+    def test_setcookie(self):
+        urls = (
+            '/', 'index',
+        )
+        class index:
+            def GET(self):
+                web.setcookie("foo", "bar")
+                return "hello"
+        app = web.application(urls, locals())
+        def f(script_name=""):
+            response = app.request("/", env={"SCRIPT_NAME": script_name})
+            return response.headers['Set-Cookie']
+        
+        self.assertEquals(f(''), 'foo=bar; Path=/')
+        self.assertEquals(f('/admin'), 'foo=bar; Path=/admin/')
 
 if __name__ == '__main__':
     webtest.main()

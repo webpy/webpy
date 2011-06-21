@@ -362,7 +362,7 @@ def safestr(obj, encoding='utf-8'):
         return obj.encode(encoding)
     elif isinstance(obj, str):
         return obj
-    elif hasattr(obj, 'next') and hasattr(obj, '__iter__'): # iterator
+    elif hasattr(obj, 'next'): # iterator
         return itertools.imap(safestr, obj)
     else:
         return str(obj)

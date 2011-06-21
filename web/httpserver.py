@@ -162,7 +162,9 @@ def WSGIServer(server_address, wsgi_app):
         'pyopenssl': 'web.wsgiserver.ssl_pyopenssl.pyOpenSSLAdapter',
     }
     
-    return wsgiserver.CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
+    server = wsgiserver.CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
+    server.nodelay = not sys.platform.startswith('java') # TCP_NODELAY isn't supported on the JVM
+    return server
 
 class StaticApp(SimpleHTTPRequestHandler):
     """WSGI application for serving static files."""

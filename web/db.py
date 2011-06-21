@@ -882,8 +882,8 @@ class DB:
         where = self._where(where, vars)
 
         q = 'DELETE FROM ' + table
-        if where: q += ' WHERE ' + where
         if using: q += ' USING ' + sqllist(using)
+        if where: q += ' WHERE ' + where
 
         if _test: return q
 

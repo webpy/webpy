@@ -683,13 +683,21 @@ class DB:
             <sql: 'SELECT * FROM foo WHERE bar_id = 3'>
             >>> db.where('foo', source=2, crust='dewey', _test=True)
             <sql: "SELECT * FROM foo WHERE source = 2 AND crust = 'dewey'">
+            >>> db.where('foo', _test=True)
+            <sql: 'SELECT * FROM foo'>
         """
-        where = []
+        where_clauses = []
         for k, v in kwargs.iteritems():
-            where.append(k + ' = ' + sqlquote(v))
+            where_clauses.append(k + ' = ' + sqlquote(v))
+            
+        if where_clauses:
+            where = SQLQuery.join(where_clauses, " AND ")
+        else:
+            where = None
+            
         return self.select(table, what=what, order=order, 
                group=group, limit=limit, offset=offset, _test=_test, 
-               where=SQLQuery.join(where, ' AND '))
+               where=where)
     
     def sql_clauses(self, what, tables, where, group, order, limit, offset): 
         return (

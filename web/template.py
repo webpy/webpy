@@ -1206,46 +1206,97 @@ class SafeVisitor(object):
         e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
         self.errors.append(e)
 
-class TemplateResult(storage, DictMixin):
+class TemplateResult(object, DictMixin):
     """Dictionary like object for storing template output.
     
-    A template can specify key-value pairs in the output using 
-    `var` statements. Each `var` statement adds a new key to the 
-    template output and the main output is stored with key 
-    __body__.
+    The result of a template execution is usally a string, but sometimes it
+    contains attributes set using $var. This class provides a simple
+    dictionary like interface for storing the output of the template and the
+    attributes. The output is stored with a special key __body__. Convering
+    the the TemplateResult to string or unicode returns the value of __body__.
+    
+    When the template is in execution, the output is generated part by part
+    and those parts are combined at the end. Parts are added to the
+    TemplateResult by calling the `extend` method and the parts are combined
+    seemlessly when __body__ is accessed.
     
         >>> d = TemplateResult(__body__='hello, world', x='foo')
         >>> d
         <TemplateResult: {'__body__': 'hello, world', 'x': 'foo'}>
         >>> print d
         hello, world
+        >>> d.x
+        'foo'
         >>> d = TemplateResult()
         >>> d.extend([u'hello', u'world'])
         >>> d
         <TemplateResult: {'__body__': u'helloworld'}>
     """
     def __init__(self, *a, **kw):
-        storage.__init__(self, *a, **kw)
-        self.setdefault("__body__", None)
-
-        # avoiding self._data because it adds as item instead of attr.
-        self.__dict__["_data"] = []
-        self.__dict__["extend"] = self._data.extend
-
+        self.__dict__["_d"] = dict(*a, **kw)
+        self._d.setdefault("__body__", u'')
+        
+        self.__dict__['_parts'] = []
+        self.__dict__["extend"] = self._parts.extend
+        
+        self._d.setdefault("__body__", None)
+    
+    def keys(self):
+        return self._d.keys()
+        
+    def _prepare_body(self):
+        """Prepare value of __body__ by joining parts.
+        """
+        if self._parts:
+            value = u"".join(self._parts)
+            self._parts[:] = []
+            body = self._d.get('__body__')
+            if body:
+                self._d['__body__'] = body + value
+            else:
+                self._d['__body__'] = value
+                
     def __getitem__(self, name):
-        if name == "__body__" and storage.__getitem__(self, '__body__') is None:
-            self["__body__"] = u"".join(self._data)
-        return storage.__getitem__(self, name)
+        if name == "__body__":
+            self._prepare_body()
+        return self._d[name]
+        
+    def __setitem__(self, name, value):
+        if name == "__body__":
+            self._prepare_body()
+        return self._d.__setitem__(name, value)
+        
+    def __delitem__(self, name):
+        if name == "__body__":
+            self._prepare_body()
+        return self._d.__delitem__(name)
 
-    def __unicode__(self): 
+    def __getattr__(self, key): 
+        try:
+            return self[key]
+        except KeyError, k:
+            raise AttributeError, k
+
+    def __setattr__(self, key, value): 
+        self[key] = value
+
+    def __delattr__(self, key):
+        try:
+            del self[key]
+        except KeyError, k:
+            raise AttributeError, k
+        
+    def __unicode__(self):
+        self._prepare_body()
         return self["__body__"]
     
     def __str__(self):
+        self._prepare_body()
         return self["__body__"].encode('utf-8')
         
     def __repr__(self):
-        self["__body__"] # initialize __body__ if not already initialized
-        return "<TemplateResult: %s>" % dict.__repr__(self)
+        self._prepare_body()
+        return "<TemplateResult: %s>" % self._d
 
 def test():
     r"""Doctest for testing template module.

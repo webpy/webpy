@@ -7,14 +7,14 @@ class threadlocal(object):
     def __getattribute__(self, name):
         if name == "__dict__":
             return threadlocal._getd(self)
-        elif name.startswith("__"):
-            # for handling special atrributes like __class__ etc.
-            return object.__getattribute__(self, name)
         else:
             try:
-                return self.__dict__[name]
-            except KeyError:
-                raise AttributeError, name
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                try:
+                    return self.__dict__[name]
+                except KeyError:
+                    raise AttributeError, name
             
     def __setattr__(self, name, value):
         self.__dict__[name] = value

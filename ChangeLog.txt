@@ -1,5 +1,19 @@
 # web.py changelog
 
+## 2011-07-04 0.36
+
+* Upgraded to CherryPy WSGIServer 3.2.0. -- #66
+* Various Jython compatibility fixes (tx Ben Noordhuis)
+* allow strips to accept lists -- #69
+* Improvements to setcookie (tx lovelylain) -- #65
+* Added __contains__ method to Session. (tx lovelylain) #65
+* Added secure option to session. -- #38
+* Fixed db.delete error with `using` clause (tx berndtj) -- #28
+* Fixed the case of no where-clauses in db.where
+* Fixed threadlocal error in python2.3 -- #77
+* Fixed TemplateResult inconsistant behavior -- #78
+* Fixed query execution issues with MSSQL -- #71
+
 ## 2011-05-15 0.35
 
 * Better ThreaedDict implementation using threadlocal (tx Ben Hoyt)

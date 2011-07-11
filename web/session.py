@@ -166,14 +166,15 @@ class Session(object):
             content_type = None
             for header, value in web.ctx.get('headers', []):
                 if header.lower() == 'content-type':
-                    content_type = value.lower().split(';')[0]
+                    content_type = value.split(';')[0].lower()
+                    content_type_params = dict((k.lower().strip(), v) for k,v in (part.split('=', 1) for part in value.split(';')[1:]))
 
             if content_type not in types:
                 return response
 
             tree = types[content_type]
             doc = tree.parse(StringIO(str(response)))
-            tostring_kwargs = {'encoding': 'utf-8'}
+            tostring_kwargs = {'encoding': content_type_params.get('charset', 'utf-8')}
             if None in doc.getroot().nsmap:
                 ns = '{%s}' % doc.getroot().nsmap[None]
                 tostring_kwargs['xml_declaration'] = True

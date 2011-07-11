@@ -115,6 +115,11 @@ class render_mako:
 
 class render_tempita:
     """Rendering interface to Tempita templates.
+
+    Example:
+
+        render = render_tempita(['templates'])
+        render.hello(name='tempita')
     """
 
     extensions = {

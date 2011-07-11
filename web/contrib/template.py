@@ -141,10 +141,17 @@ class render_tempita:
                     from_template = getattr(tempita, self.extensions[extension][0])
                 if os.path.exists(filename):
                     template = from_template.from_filename(filename, get_template=self._get_template)
+                    template.content_type = self.extensions[extension][1]
                     return template
 
     def __getattr__(self, name):
-        return self._get_template(name).substitute
+        template = self._get_template(name)
+        def render(*args, **kwargs):
+            import web
+            if 'headers' in web.ctx and template.content_type:
+                web.header('Content-Type', template.content_type, unique=True)
+            return template.substitute(*args, **kwargs)
+        return render
 
 class cache:
     """Cache for any rendering interface.

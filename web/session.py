@@ -5,6 +5,7 @@ Session Management
 
 import os, time, datetime, random, base64
 import os.path
+from cStringIO import StringIO
 from urlparse import urlsplit, urlunsplit
 try:
     import cPickle as pickle
@@ -164,14 +165,13 @@ class Session(object):
 
             if content_type == 'text/html':
                 tree = html
-                doc = html.document_fromstring(str(response))
-                ns = ''
             elif content_type in ('application/xhtml+xml', 'application/xml'):
                 tree = etree
-                doc = etree.fromstring(str(response))
-                ns = '{%s}' % doc.nsmap[None]
             else:
                 return response
+
+            doc = tree.parse(StringIO(str(response)))
+            ns = None in doc.getroot().nsmap and '{%s}' % doc.getroot().nsmap[None] or ''
 
             # Add hidden input fields to forms
             for form in doc.iterfind('.//%sform' % ns):

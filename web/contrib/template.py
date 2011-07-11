@@ -146,6 +146,8 @@ class render_tempita:
 
     def __getattr__(self, name):
         template = self._get_template(name)
+        if not template:
+            raise AttributeError('Template "%s" not found.' % name)
         def render(*args, **kwargs):
             import web
             if 'headers' in web.ctx and template.content_type:

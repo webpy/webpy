@@ -217,7 +217,7 @@ $:dicttable(ctx.env)
 <div id="explanation">
   <p>
     You're seeing this error because you have <code>web.config.debug</code>
-    set to <code>True</code>. Set that to <code>False</code> if you don't to see this.
+    set to <code>True</code>. Set that to <code>False</code> if you don't want to see this.
   </p>
 </div>
 

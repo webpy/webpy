@@ -15,13 +15,13 @@ __all__ = [
     "OK", "Created", "Accepted",    
     "ok", "created", "accepted",
     
-    # 301, 302, 303, 304, 407
+    # 301, 302, 303, 304, 307
     "Redirect", "Found", "SeeOther", "NotModified", "TempRedirect", 
     "redirect", "found", "seeother", "notmodified", "tempredirect",
 
     # 400, 401, 403, 404, 405, 406, 409, 410, 412
-    "BadRequest", "Unauthorized", "Forbidden", "NoMethod", "NotFound", "NotAcceptable", "Conflict", "Gone", "PreconditionFailed",
-    "badrequest", "unauthorized", "forbidden", "nomethod", "notfound", "notacceptable", "conflict", "gone", "preconditionfailed",
+    "BadRequest", "Unauthorized", "Forbidden", "NotFound", "NoMethod", "NotAcceptable", "Conflict", "Gone", "PreconditionFailed",
+    "badrequest", "unauthorized", "forbidden", "notfound", "nomethod", "notacceptable", "conflict", "gone", "preconditionfailed",
 
     # 500
     "InternalError", 
@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 import sys, cgi, Cookie, pprint, urlparse, urllib
-from utils import storage, storify, threadeddict, dictadd, intget, utf8
+from utils import storage, storify, threadeddict, dictadd, intget, safestr
 
 config = storage()
 config.__doc__ = """
@@ -210,7 +210,7 @@ def header(hdr, value, unique=False):
     If `unique` is True and a header with that name already exists,
     it doesn't add a new one. 
     """
-    hdr, value = utf8(hdr), utf8(value)
+    hdr, value = safestr(hdr), safestr(value)
     # protection against HTTP response splitting attack
     if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
         raise ValueError, 'invalid characters in header'
@@ -287,21 +287,24 @@ def data():
         ctx.data = ctx.env['wsgi.input'].read(cl)
     return ctx.data
 
-def setcookie(name, value, expires="", domain=None, secure=False):
+def setcookie(name, value, expires='', domain=None,
+              secure=False, httponly=False, path=None):
     """Sets a cookie."""
-    if expires < 0: 
-        expires = -1000000000 
-    kargs = {'expires': expires, 'path':'/'}
-    if domain: 
-        kargs['domain'] = domain
+    morsel = Cookie.Morsel()
+    name, value = safestr(name), safestr(value)
+    morsel.set(name, value, urllib.quote(value))
+    if expires < 0:
+        expires = -1000000000
+    morsel['expires'] = expires
+    morsel['path'] = path or ctx.homepath+'/'
+    if domain:
+        morsel['domain'] = domain
     if secure:
-        kargs['secure'] = secure
-    # @@ should we limit cookies to a different path?
-    cookie = Cookie.SimpleCookie()
-    cookie[name] = urllib.quote(utf8(value))
-    for key, val in kargs.iteritems(): 
-        cookie[name][key] = val
-    header('Set-Cookie', cookie.items()[0][1].OutputString())
+        morsel['secure'] = secure
+    value = morsel.OutputString()
+    if httponly:
+        value += '; httponly'
+    header('Set-Cookie', value)
 
 def cookies(*requireds, **defaults):
     """

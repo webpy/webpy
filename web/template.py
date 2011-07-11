@@ -26,7 +26,6 @@ Grammar:
     text -> <any characters other than $>
     expr -> '$' pyexpr | '$(' pyexpr ')' | '${' pyexpr '}'
     pyexpr -> <python expression>
-
 """
 
 __all__ = [
@@ -38,8 +37,10 @@ __all__ = [
 
 import tokenize
 import os
+import sys
 import glob
 import re
+from UserDict import DictMixin
 
 from utils import storage, safeunicode, safestr, re_compile
 from webapi import config
@@ -65,12 +66,14 @@ def splitline(text):
 class Parser:
     """Parser Base.
     """
-    def __init__(self, text, name="<template>"):
+    def __init__(self):
+        self.statement_nodes = STATEMENT_NODES
+        self.keywords = KEYWORDS
+
+    def parse(self, text, name="<template>"):
         self.text = text
         self.name = name
-
-    def parse(self):
-        text = self.text
+        
         defwith, text = self.read_defwith(text)
         suite = self.read_suite(text)
         return DefwithNode(defwith, suite)
@@ -88,7 +91,7 @@ class Parser:
         
         section -> block | assignment | line
         
-            >>> read_section = Parser('').read_section
+            >>> read_section = Parser().read_section
             >>> read_section('foo\nbar\n')
             (<line: [t'foo\n']>, 'bar\n')
             >>> read_section('$ a = b + 1\nfoo\n')
@@ -103,9 +106,9 @@ class Parser:
             
             if ahead == 'var':
                 return self.read_var(text2)
-            elif ahead in STATEMENT_NODES:
+            elif ahead in self.statement_nodes:
                 return self.read_block_section(text2, begin_indent)
-            elif ahead in KEYWORDS:
+            elif ahead in self.keywords:
                 return self.read_keyword(text2)
             elif ahead.strip() == '':
                 # assignments starts with a space after $
@@ -116,11 +119,11 @@ class Parser:
     def read_var(self, text):
         r"""Reads a var statement.
         
-            >>> read_var = Parser('').read_var
+            >>> read_var = Parser().read_var
             >>> read_var('var x=10\nfoo')
             (<var: x = 10>, 'foo')
             >>> read_var('var x: hello $name\nfoo')
-            (<var: x = join_('hello ', escape_(name, True))>, 'foo')
+            (<var: x = join_(u'hello ', escape_(name, True))>, 'foo')
         """
         line, text = splitline(text)
         tokens = self.python_tokens(line)
@@ -154,7 +157,7 @@ class Parser:
     def read_suite(self, text):
         r"""Reads section by section till end of text.
         
-            >>> read_suite = Parser('').read_suite
+            >>> read_suite = Parser().read_suite
             >>> read_suite('hello $name\nfoo\n')
             [<line: [t'hello ', $name, t'\n']>, <line: [t'foo\n']>]
         """
@@ -167,7 +170,7 @@ class Parser:
     def readline(self, text):
         r"""Reads one line from the text. Newline is supressed if the line ends with \.
         
-            >>> readline = Parser('').readline
+            >>> readline = Parser().readline
             >>> readline('hello $name!\nbye!')
             (<line: [t'hello ', $name, t'!\n']>, 'bye!')
             >>> readline('hello $name!\\\nbye!')
@@ -191,7 +194,7 @@ class Parser:
     def read_node(self, text):
         r"""Reads a node from the given text and returns the node and remaining text.
 
-            >>> read_node = Parser('').read_node
+            >>> read_node = Parser().read_node
             >>> read_node('hello $name')
             (t'hello ', '$name')
             >>> read_node('$name')
@@ -216,7 +219,7 @@ class Parser:
     def read_text(self, text):
         r"""Reads a text node from the given text.
         
-            >>> read_text = Parser('').read_text
+            >>> read_text = Parser().read_text
             >>> read_text('hello $name')
             (t'hello ', '$name')
         """
@@ -228,7 +231,7 @@ class Parser:
             
     def read_keyword(self, text):
         line, text = splitline(text)
-        return CodeNode(None, line.strip() + "\n"), text
+        return StatementNode(line.strip() + "\n"), text
 
     def read_expr(self, text, escape=True):
         """Reads a python expression from the text and returns the expression and remaining text.
@@ -239,7 +242,7 @@ class Parser:
         attr_access -> dot id extended_expr
         paren_expr -> [ tokens ] | ( tokens ) | { tokens }
      
-            >>> read_expr = Parser('').read_expr
+            >>> read_expr = Parser().read_expr
             >>> read_expr("name")
             ($name, '')
             >>> read_expr("a.b and c")
@@ -356,7 +359,7 @@ class Parser:
     def read_assignment(self, text):
         r"""Reads assignment statement from text.
     
-            >>> read_assignment = Parser('').read_assignment
+            >>> read_assignment = Parser().read_assignment
             >>> read_assignment('a = b + 1\nfoo')
             (<assignment: 'a = b + 1'>, 'foo')
         """
@@ -366,7 +369,7 @@ class Parser:
     def python_lookahead(self, text):
         """Returns the first python token from the given text.
         
-            >>> python_lookahead = Parser('').python_lookahead
+            >>> python_lookahead = Parser().python_lookahead
             >>> python_lookahead('for i in range(10):')
             'for'
             >>> python_lookahead('else:')
@@ -387,7 +390,7 @@ class Parser:
         r"""Read a block of text. A block is what typically follows a for or it statement.
         It can be in the same line as that of the statement or an indented block.
 
-            >>> read_indented_block = Parser('').read_indented_block
+            >>> read_indented_block = Parser().read_indented_block
             >>> read_indented_block('  a\n  b\nc', '  ')
             ('a\nb\n', 'c')
             >>> read_indented_block('  a\n    b\n  c\nd', '  ')
@@ -413,7 +416,7 @@ class Parser:
     def read_statement(self, text):
         r"""Reads a python statement.
         
-            >>> read_statement = Parser('').read_statement
+            >>> read_statement = Parser().read_statement
             >>> read_statement('for i in range(10): hello $name')
             ('for i in range(10):', ' hello $name')
         """
@@ -423,7 +426,7 @@ class Parser:
         
     def read_block_section(self, text, begin_indent=''):
         r"""
-            >>> read_block_section = Parser('').read_block_section
+            >>> read_block_section = Parser().read_block_section
             >>> read_block_section('for i in range(10): hello $i\nfoo')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
             >>> read_block_section('for i in range(10):\n        hello $i\n    foo', begin_indent='    ')
@@ -447,15 +450,20 @@ class Parser:
 
             # find the indentation of the block by looking at the first line
             first_indent = find_indent(text)[len(begin_indent):]
-            indent = begin_indent + min(first_indent, INDENT)
+
+            #TODO: fix this special case
+            if keyword == "code":
+                indent = begin_indent + first_indent
+            else:
+                indent = begin_indent + min(first_indent, INDENT)
             
             block, text = self.read_indented_block(text, indent)
             
         return self.create_block_node(keyword, stmt, block, begin_indent), text
         
     def create_block_node(self, keyword, stmt, block, begin_indent):
-        if keyword in STATEMENT_NODES:
-            return STATEMENT_NODES[keyword](stmt, block, begin_indent)
+        if keyword in self.statement_nodes:
+            return self.statement_nodes[keyword](stmt, block, begin_indent)
         else:
             raise ParseError, 'Unknown statement: %s' % repr(keyword)
         
@@ -512,22 +520,31 @@ class DefwithNode:
     def __init__(self, defwith, suite):
         if defwith:
             self.defwith = defwith.replace('with', '__template__') + ':'
+            # offset 4 lines. for encoding, __lineoffset__, loop and self.
+            self.defwith += "\n    __lineoffset__ = -4"
         else:
             self.defwith = 'def __template__():'
+            # offset 4 lines for encoding, __template__, __lineoffset__, loop and self.
+            self.defwith += "\n    __lineoffset__ = -5"
+
+        self.defwith += "\n    loop = ForLoop()"
+        self.defwith += "\n    self = TemplateResult(); extend_ = self.extend"
         self.suite = suite
+        self.end = "\n    return self"
 
     def emit(self, indent):
-        return self.defwith + self.suite.emit(indent + INDENT)
+        encoding = "# coding: utf-8\n"
+        return encoding + self.defwith + self.suite.emit(indent + INDENT) + self.end
 
     def __repr__(self):
-        return "<defwith: %s, %s>" % (self.defwith, self.nodes)
+        return "<defwith: %s, %s>" % (self.defwith, self.suite)
 
 class TextNode:
     def __init__(self, value):
         self.value = value
 
-    def emit(self, indent):
-        return repr(self.value)
+    def emit(self, indent, begin_indent=''):
+        return repr(safeunicode(self.value))
         
     def __repr__(self):
         return 't' + repr(self.value)
@@ -542,7 +559,7 @@ class ExpressionNode:
             
         self.escape = escape
 
-    def emit(self, indent):
+    def emit(self, indent, begin_indent=''):
         return 'escape_(%s, %s)' % (self.value, bool(self.escape))
         
     def __repr__(self):
@@ -570,7 +587,8 @@ class LineNode:
         text = [node.emit('') for node in self.nodes]
         if text_indent:
             text = [repr(text_indent)] + text
-        return indent + 'yield %s, join_(%s)\n' % (repr(name), ', '.join(text))
+
+        return indent + "extend_([%s])\n" % ", ".join(text)        
     
     def __repr__(self):
         return "<line: %s>" % repr(self.nodes)
@@ -580,7 +598,7 @@ INDENT = '    ' # 4 spaces
 class BlockNode:
     def __init__(self, stmt, block, begin_indent=''):
         self.stmt = stmt
-        self.suite = Parser('').read_suite(block)
+        self.suite = Parser().read_suite(block)
         self.begin_indent = begin_indent
 
     def emit(self, indent, text_indent=''):
@@ -588,11 +606,8 @@ class BlockNode:
         out = indent + self.stmt + self.suite.emit(indent + INDENT, text_indent)
         return out
         
-    def text(self):
-        return '${' + self.stmt + '}' + "".join([node.text(indent) for node in self.nodes])
-        
     def __repr__(self):
-        return "<block: %s, %s>" % (repr(self.stmt), repr(self.nodelist))
+        return "<block: %s, %s>" % (repr(self.stmt), repr(self.suite))
 
 class ForNode(BlockNode):
     def __init__(self, stmt, block, begin_indent=''):
@@ -609,7 +624,8 @@ class ForNode(BlockNode):
 
 class CodeNode:
     def __init__(self, stmt, block, begin_indent=''):
-        self.code = block
+        # compensate one line for $code:
+        self.code = "\n" + block
         
     def emit(self, indent, text_indent=''):
         import re
@@ -618,6 +634,16 @@ class CodeNode:
         
     def __repr__(self):
         return "<code: %s>" % repr(self.code)
+        
+class StatementNode:
+    def __init__(self, stmt):
+        self.stmt = stmt
+        
+    def emit(self, indent, begin_indent=''):
+        return indent + self.stmt
+        
+    def __repr__(self):
+        return "<stmt: %s>" % repr(self.stmt)
         
 class IfNode(BlockNode):
     pass
@@ -629,7 +655,21 @@ class ElifNode(BlockNode):
     pass
 
 class DefNode(BlockNode):
-    pass
+    def __init__(self, *a, **kw):
+        BlockNode.__init__(self, *a, **kw)
+
+        code = CodeNode("", "")
+        code.code = "self = TemplateResult(); extend_ = self.extend\n"
+        self.suite.sections.insert(0, code)
+
+        code = CodeNode("", "")
+        code.code = "return self\n"
+        self.suite.sections.append(code)
+        
+    def emit(self, indent, text_indent=''):
+        text_indent = self.begin_indent + text_indent
+        out = indent + self.stmt + self.suite.emit(indent + INDENT, text_indent)
+        return indent + "__lineoffset__ -= 3\n" + out
 
 class VarNode:
     def __init__(self, name, value):
@@ -637,7 +677,7 @@ class VarNode:
         self.value = value
         
     def emit(self, indent, text_indent):
-        return indent + 'yield %s, %s\n' % (repr(self.name), self.value)
+        return indent + "self[%s] = %s\n" % (repr(self.name), self.value)
         
     def __repr__(self):
         return "<var: %s = %s>" % (self.name, self.value)
@@ -726,39 +766,25 @@ class ForLoopContext:
         self.parent = parent
         
     def setup(self, seq):
-        if hasattr(seq, '__len__'):
-            n = len(seq)
-        else:
-            n = 0
-            
+        try:
+            self.length = len(seq)
+        except:
+            self.length = 0
+
         self.index = 0
-        seq = iter(seq)
-        
-        # Pre python-2.5 does not support yield in try-except.
-        # This is a work-around to overcome that limitation.
-        def next(seq):
-            try:
-                return seq.next()
-            except:
-                self._forloop._pop()
-                raise
-        
-        while True:
-            self._next(self.index + 1, n)
-            yield next(seq)
+        for a in seq:
+            self.index += 1
+            yield a
+        self._forloop._pop()
             
-    def _next(self, i, n):
-        self.index = i
-        self.index0 = i - 1
-        self.first = (i == 1)
-        self.last = (i == n)
-        self.odd = (i % 2 == 1)
-        self.even = (i % 2 == 0)
-        self.parity = ['odd', 'even'][self.even]
-        if n:
-            self.length = n
-            self.revindex0 = n - i
-            self.revindex = self.revindex0 + 1
+    index0 = property(lambda self: self.index-1)
+    first = property(lambda self: self.index == 1)
+    last = property(lambda self: self.index == self.length)
+    odd = property(lambda self: self.index % 2 == 1)
+    even = property(lambda self: self.index % 2 == 0)
+    parity = property(lambda self: ['odd', 'even'][self.even])
+    revindex0 = property(lambda self: self.length - self.index)
+    revindex = property(lambda self: self.length - self.index + 1)
         
 class BaseTemplate:
     def __init__(self, code, filename, filter, globals, builtins):
@@ -774,45 +800,26 @@ class BaseTemplate:
     def _compile(self, code):
         env = self.make_env(self._globals or {}, self._builtins)
         exec(code, env)
-        return env['wrapper']
+        return env['__template__']
 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        t = self.t()
-        out = t(*a, **kw)
-        return self._join_output(out)
-        
-    def _join_output(self, out):
-        __hidetraceback__ = True
-        d = TemplateResult()
-        data = []
-        
-        for name, value in out:
-            if name:
-                d[name] = value
-            else:
-                data.append(value)
-                            
-        d.__body__ = u"".join(data)
-        return d       
+        return self.t(*a, **kw)
 
     def make_env(self, globals, builtins):
         return dict(globals,
             __builtins__=builtins, 
             ForLoop=ForLoop,
+            TemplateResult=TemplateResult,
             escape_=self._escape,
             join_=self._join
         )
-    
     def _join(self, *items):
-        return u"".join([safeunicode(item) for item in items])
-        
+        return u"".join(items)
+            
     def _escape(self, value, escape=False):
-        import types
         if value is None: 
             value = ''
-        elif isinstance(value, types.GeneratorType):
-            value = self._join_output(value)
             
         value = safeunicode(value)
         if escape and self.filter:
@@ -832,7 +839,8 @@ class Template(BaseTemplate):
     }
     globals = {}
     
-    def __init__(self, text, filename='<template>', filter=None, globals=None, builtins=None):
+    def __init__(self, text, filename='<template>', filter=None, globals=None, builtins=None, extensions=None):
+        self.extensions = extensions or []
         text = Template.normalize_text(text)
         code = self.compile_template(text, filename)
                 
@@ -871,24 +879,26 @@ class Template(BaseTemplate):
             
         return BaseTemplate.__call__(self, *a, **kw)
         
-    def generate_code(text, filename):
+    def generate_code(text, filename, parser=None):
         # parse the text
-        rootnode = Parser(text, filename).parse()
+        parser = parser or Parser()
+        rootnode = parser.parse(text, filename)
                 
         # generate python code from the parse tree
         code = rootnode.emit(indent="").strip()
         return safestr(code)
         
     generate_code = staticmethod(generate_code)
-        
-    def compile_template(self, template_string, filename):
-        code = Template.generate_code(template_string, filename)
-        code = "def wrapper():\n" + \
-               "    loop=ForLoop()\n" + \
-               re.compile('^', re.M).sub('    ', code) + \
-               "\n" + \
-               "    return __template__"
     
+    def create_parser(self):
+        p = Parser()
+        for ext in self.extensions:
+            p = ext(p)
+        return p
+                
+    def compile_template(self, template_string, filename):
+        code = Template.generate_code(template_string, filename, parser=self.create_parser())
+
         def get_source_line(filename, lineno):
             try:
                 lines = open(filename).read().splitlines()
@@ -908,10 +918,14 @@ class Template(BaseTemplate):
                 pass
             raise
         
-        # make sure code is safe
-        import compiler
-        ast = compiler.parse(code)
-        SafeVisitor().walk(ast, filename)
+        # make sure code is safe - but not with jython, it doesn't have a working compiler module
+        if not sys.platform.startswith('java'):
+            import compiler
+            ast = compiler.parse(code)
+            SafeVisitor().walk(ast, filename)
+        else:
+            import warnings
+            warnings.warn("SECURITY ISSUE: You are using Jython, which does not support checking templates for safety. Your templates can execute arbitrary code.")
 
         return compiled_code
         
@@ -954,7 +968,14 @@ class Render:
             self._base = lambda page: self._template(base)(page)
         else:
             self._base = base
-            
+    
+    def _add_global(self, obj, name=None):
+        """Add a global to this rendering instance."""
+        if 'globals' not in self._keywords: self._keywords['globals'] = {}
+        if not name:
+            name = obj.__name__
+        self._keywords['globals'][name] = obj
+    
     def _lookup(self, name):
         path = os.path.join(self._loc, name)
         if os.path.isdir(path):
@@ -978,6 +999,7 @@ class Render:
 
     def _findfile(self, path_prefix): 
         p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
+        p.sort() # sort the matches for deterministic order
         return p and p[0]
             
     def _template(self, name):
@@ -1047,9 +1069,10 @@ def compile_templates(root):
                 dirnames.remove(d) # don't visit this dir
 
         out = open(os.path.join(dirpath, '__init__.py'), 'w')
-        out.write('from web.template import CompiledTemplate, ForLoop\n\n')
+        out.write('from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n')
         if dirnames:
             out.write("import " + ", ".join(dirnames))
+        out.write("\n")
 
         for f in filenames:
             path = os.path.join(dirpath, f)
@@ -1062,22 +1085,14 @@ def compile_templates(root):
             text = open(path).read()
             text = Template.normalize_text(text)
             code = Template.generate_code(text, path)
-            code = re_start.sub('    ', code)
-                        
-            _gen = '' + \
-            '\ndef %s():' + \
-            '\n    loop = ForLoop()' + \
-            '\n    _dummy  = CompiledTemplate(lambda: None, "dummy")' + \
-            '\n    join_ = _dummy._join' + \
-            '\n    escape_ = _dummy._escape' + \
-            '\n' + \
-            '\n%s' + \
-            '\n    return __template__'
+
+            code = code.replace("__template__", name, 1)
             
-            gen_code = _gen % (name, code)
-            out.write(gen_code)
+            out.write(code)
+
             out.write('\n\n')
-            out.write('%s = CompiledTemplate(%s, %s)\n\n' % (name, name, repr(path)))
+            out.write('%s = CompiledTemplate(%s, %s)\n' % (name, name, repr(path)))
+            out.write("join_ = %s._join; escape_ = %s._escape\n\n" % (name, name))
 
             # create template to make sure it compiles
             t = Template(open(path).read(), path)
@@ -1191,35 +1206,106 @@ class SafeVisitor(object):
         e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
         self.errors.append(e)
 
-class TemplateResult(storage):
+class TemplateResult(object, DictMixin):
     """Dictionary like object for storing template output.
     
-    A template can specify key-value pairs in the output using 
-    `var` statements. Each `var` statement adds a new key to the 
-    template output and the main output is stored with key 
-    __body__.
+    The result of a template execution is usally a string, but sometimes it
+    contains attributes set using $var. This class provides a simple
+    dictionary like interface for storing the output of the template and the
+    attributes. The output is stored with a special key __body__. Convering
+    the the TemplateResult to string or unicode returns the value of __body__.
+    
+    When the template is in execution, the output is generated part by part
+    and those parts are combined at the end. Parts are added to the
+    TemplateResult by calling the `extend` method and the parts are combined
+    seemlessly when __body__ is accessed.
     
         >>> d = TemplateResult(__body__='hello, world', x='foo')
         >>> d
         <TemplateResult: {'__body__': 'hello, world', 'x': 'foo'}>
         >>> print d
         hello, world
+        >>> d.x
+        'foo'
+        >>> d = TemplateResult()
+        >>> d.extend([u'hello', u'world'])
+        >>> d
+        <TemplateResult: {'__body__': u'helloworld'}>
     """
-    def __unicode__(self): 
-        return safeunicode(self.get('__body__', ''))
+    def __init__(self, *a, **kw):
+        self.__dict__["_d"] = dict(*a, **kw)
+        self._d.setdefault("__body__", u'')
+        
+        self.__dict__['_parts'] = []
+        self.__dict__["extend"] = self._parts.extend
+        
+        self._d.setdefault("__body__", None)
+    
+    def keys(self):
+        return self._d.keys()
+        
+    def _prepare_body(self):
+        """Prepare value of __body__ by joining parts.
+        """
+        if self._parts:
+            value = u"".join(self._parts)
+            self._parts[:] = []
+            body = self._d.get('__body__')
+            if body:
+                self._d['__body__'] = body + value
+            else:
+                self._d['__body__'] = value
+                
+    def __getitem__(self, name):
+        if name == "__body__":
+            self._prepare_body()
+        return self._d[name]
+        
+    def __setitem__(self, name, value):
+        if name == "__body__":
+            self._prepare_body()
+        return self._d.__setitem__(name, value)
+        
+    def __delitem__(self, name):
+        if name == "__body__":
+            self._prepare_body()
+        return self._d.__delitem__(name)
+
+    def __getattr__(self, key): 
+        try:
+            return self[key]
+        except KeyError, k:
+            raise AttributeError, k
+
+    def __setattr__(self, key, value): 
+        self[key] = value
+
+    def __delattr__(self, key):
+        try:
+            del self[key]
+        except KeyError, k:
+            raise AttributeError, k
+        
+    def __unicode__(self):
+        self._prepare_body()
+        return self["__body__"]
     
     def __str__(self):
-        return safestr(self.get('__body__', ''))
+        self._prepare_body()
+        return self["__body__"].encode('utf-8')
         
     def __repr__(self):
-        return "<TemplateResult: %s>" % dict.__repr__(self)
-    
+        self._prepare_body()
+        return "<TemplateResult: %s>" % self._d
+
 def test():
     r"""Doctest for testing template module.
 
     Define a utility function to run template test.
     
-        >>> class TestResult(TemplateResult):
+        >>> class TestResult:
+        ...     def __init__(self, t): self.t = t
+        ...     def __getattr__(self, name): return getattr(self.t, name)
         ...     def __repr__(self): return repr(unicode(self))
         ...
         >>> def t(code, **keywords):

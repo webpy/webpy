@@ -11,9 +11,9 @@ http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 __all__ = ["debugerror", "djangoerror", "emailerrors"]
 
 import sys, urlparse, pprint, traceback
-from net import websafe
 from template import Template
-from utils import sendmail
+from net import websafe
+from utils import sendmail, safestr
 import webapi as web
 
 import os, os.path
@@ -217,7 +217,7 @@ $:dicttable(ctx.env)
 <div id="explanation">
   <p>
     You're seeing this error because you have <code>web.config.debug</code>
-    set to <code>True</code>. Set that to <code>False</code> if you don't to see this.
+    set to <code>True</code>. Set that to <code>False</code> if you don't want to see this.
   </p>
 </div>
 
@@ -256,8 +256,7 @@ def djangoerror():
         lineno = tback.tb_lineno - 1
 
         # hack to get correct line number for templates
-        if function == "__template__":
-            lineno -= 2
+        lineno += tback.tb_frame.f_locals.get("__lineoffset__", 0)
         
         pre_context_lineno, pre_context, context_line, post_context = \
             _get_lines_from_file(filename, lineno, 7)
@@ -324,26 +323,18 @@ def emailerrors(to_address, olderror, from_address=None):
         tb_txt = ''.join(traceback.format_exception(*tb))
         path = web.ctx.path
         request = web.ctx.method + ' ' + web.ctx.home + web.ctx.fullpath
-        text = ("""\
-------here----
-Content-Type: text/plain
-Content-Disposition: inline
-
-%(request)s
-
-%(tb_txt)s
-
-------here----
-Content-Type: text/html; name="bug.html"
-Content-Disposition: attachment; filename="bug.html"
-
-""" % locals()) + str(djangoerror())
+        
+        message = "\n%s\n\n%s\n\n" % (request, tb_txt)
+        
         sendmail(
-          "your buggy site <%s>" % from_address,
-          "the bugfixer <%s>" % to_address,
-          "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
-          text, 
-          headers={'Content-Type': 'multipart/mixed; boundary="----here----"'})
+            "your buggy site <%s>" % from_address,
+            "the bugfixer <%s>" % to_address,
+            "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
+            message,
+            attachments=[
+                dict(filename="bug.html", content=safestr(djangoerror()))
+            ],
+        )
         return error
     
     return emailerrors_internal

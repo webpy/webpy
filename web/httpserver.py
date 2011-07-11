@@ -2,6 +2,8 @@ __all__ = ["runsimple"]
 
 import sys, os
 from SimpleHTTPServer import SimpleHTTPRequestHandler
+import urllib
+import posixpath
 
 import webapi as web
 import net
@@ -151,8 +153,18 @@ def WSGIServer(server_address, wsgi_app):
     """Creates CherryPy WSGI server listening at `server_address` to serve `wsgi_app`.
     This function can be overwritten to customize the webserver or use a different webserver.
     """
-    from wsgiserver import CherryPyWSGIServer
-    return CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
+    import wsgiserver
+    
+    # Default values of wsgiserver.ssl_adapters uses cheerypy.wsgiserver
+    # prefix. Overwriting it make it work with web.wsgiserver.
+    wsgiserver.ssl_adapters = {
+        'builtin': 'web.wsgiserver.ssl_builtin.BuiltinSSLAdapter',
+        'pyopenssl': 'web.wsgiserver.ssl_pyopenssl.pyOpenSSLAdapter',
+    }
+    
+    server = wsgiserver.CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
+    server.nodelay = not sys.platform.startswith('java') # TCP_NODELAY isn't supported on the JVM
+    return server
 
 class StaticApp(SimpleHTTPRequestHandler):
     """WSGI application for serving static files."""
@@ -183,6 +195,18 @@ class StaticApp(SimpleHTTPRequestHandler):
         from cStringIO import StringIO
         self.wfile = StringIO() # for capturing error
 
+        try:
+            path = self.translate_path(self.path)
+            etag = '"%s"' % os.path.getmtime(path)
+            client_etag = environ.get('HTTP_IF_NONE_MATCH')
+            self.send_header('ETag', etag)
+            if etag == client_etag:
+                self.send_response(304, "Not Modified")
+                self.start_response(self.status, self.headers)
+                raise StopIteration
+        except OSError:
+            pass # Probably a 404
+
         f = self.send_head()
         self.start_response(self.status, self.headers)
 
@@ -206,10 +230,19 @@ class StaticMiddleware:
         
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO', '')
+        path = self.normpath(path)
+
         if path.startswith(self.prefix):
             return StaticApp(environ, start_response)
         else:
             return self.app(environ, start_response)
+
+    def normpath(self, path):
+        path2 = posixpath.normpath(urllib.unquote(path))
+        if path.endswith("/"):
+            path2 += "/"
+        return path2
+
     
 class LogMiddleware:
     """WSGI middleware for logging the status."""

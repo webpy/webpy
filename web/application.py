@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Web application
 (from web.py)
@@ -13,7 +12,6 @@ import urllib
 import traceback
 import itertools
 import os
-import re
 import types
 from exceptions import SystemExit
 
@@ -44,7 +42,7 @@ class application:
     def __init__(self, mapping=(), fvars={}, autoreload=None):
         if autoreload is None:
             autoreload = web.config.get('debug', False)
-        self.mapping = mapping
+        self.init_mapping(mapping)
         self.fvars = fvars
         self.processors = []
         
@@ -74,11 +72,11 @@ class application:
             
             def reload_mapping():
                 """loadhook to reload mapping and fvars."""
-                mod = __import__(module_name)
+                mod = __import__(module_name, None, None, [''])
                 mapping = getattr(mod, mapping_name, None)
                 if mapping:
                     self.fvars = mod.__dict__
-                    self.mapping = mapping
+                    self.init_mapping(mapping)
 
             self.add_processor(loadhook(Reloader()))
             if mapping_name and module_name:
@@ -107,19 +105,16 @@ class application:
                 web.ctx.fullpath = oldctx.fullpath
                 
     def _cleanup(self):
-        #@@@
-        # Since the CherryPy Webserver uses thread pool, the thread-local state is never cleared.
-        # This interferes with the other requests. 
-        # clearing the thread-local storage to avoid that.
-        # see utils.ThreadedDict for details
-        import threading
-        t = threading.currentThread()
-        if hasattr(t, '_d'):
-            del t._d
-    
+        # Threads can be recycled by WSGI servers.
+        # Clearing up all thread-local state to avoid interefereing with subsequent requests.
+        utils.ThreadedDict.clear_all()
+
+    def init_mapping(self, mapping):
+        self.mapping = list(utils.group(mapping, 2))
+
     def add_mapping(self, pattern, classname):
-        self.mapping += (pattern, classname)
-        
+        self.mapping.append((pattern, classname))
+
     def add_processor(self, processor):
         """
         Adds a processor to the application. 
@@ -270,6 +265,9 @@ class application:
         def is_generator(x): return x and hasattr(x, 'next')
         
         def wsgi(env, start_resp):
+            # clear threadlocal to avoid inteference of previous requests
+            self._cleanup()
+
             self.load(env)
             try:
                 # allow uppercase methods only
@@ -284,7 +282,7 @@ class application:
             except web.HTTPError, e:
                 result = [e.data]
 
-            result = web.utf8(iter(result))
+            result = web.safestr(iter(result))
 
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)
@@ -403,9 +401,8 @@ class application:
                         url += '?' + x
                 raise web.redirect(url)
             elif '.' in f:
-                x = f.split('.')
-                mod, cls = '.'.join(x[:-1]), x[-1]
-                mod = __import__(mod, globals(), locals(), [""])
+                mod, cls = f.rsplit('.', 1)
+                mod = __import__(mod, None, None, [''])
                 cls = getattr(mod, cls)
             else:
                 cls = fvars[f]
@@ -416,7 +413,7 @@ class application:
             return web.notfound()
 
     def _match(self, mapping, value):
-        for pat, what in utils.group(mapping, 2):
+        for pat, what in mapping:
             if isinstance(what, application):
                 if value.startswith(pat):
                     f = lambda: self._delegate_sub_application(pat, what)
@@ -534,7 +531,7 @@ class subdomain_application(application):
         return self._delegate(fn, self.fvars, args)
         
     def _match(self, mapping, value):
-        for pat, what in utils.group(mapping, 2):
+        for pat, what in mapping:
             if isinstance(what, basestring):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
@@ -638,19 +635,28 @@ class Reloader:
     """Checks to see if any loaded modules have changed on disk and, 
     if so, reloads them.
     """
+
+    SUFFIX = '$py.class' if sys.platform.startswith('java') else '.pyc'
+    """File suffix of compiled modules."""
+
     def __init__(self):
         self.mtimes = {}
 
     def __call__(self):
         for mod in sys.modules.values():
             self.check(mod)
-            
+
     def check(self, mod):
+        # jython registers java packages as modules but they either
+        # don't have a __file__ attribute or its value is None
+        if not (mod and hasattr(mod, '__file__') and mod.__file__):
+            return
+
         try: 
             mtime = os.stat(mod.__file__).st_mtime
-        except (AttributeError, OSError, IOError):
+        except (OSError, IOError):
             return
-        if mod.__file__.endswith('.pyc') and os.path.exists(mod.__file__[:-1]):
+        if mod.__file__.endswith(self.__class__.SUFFIX) and os.path.exists(mod.__file__[:-1]):
             mtime = max(os.stat(mod.__file__[:-1]).st_mtime, mtime)
             
         if mod not in self.mtimes:

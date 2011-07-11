@@ -15,6 +15,16 @@ class SessionTest(webtest.TestCase):
             def GET(self):
                 session.kill()
                 return ""
+
+        class redirect(app.page):
+            def GET(self):
+                session.request_token = '123'
+                raise web.redirect('/count')
+
+        class get_session(app.page):
+            path = "/session/(.*)"
+            def GET(self, name):
+                return session[name]
                 
         self.app = app
         self.session = session
@@ -50,6 +60,12 @@ class SessionTest(webtest.TestCase):
         cookie = b.cookiejar._cookies['0.0.0.0']['/']['webpy_session_id']
         cookie.value = '/etc/password'
         self.assertEquals(b.open('/count').read(), '1')
+
+    def testRedirect(self):
+        b = self.app.browser()
+        b.open("/redirect")
+        b.open("/session/request_token")
+        assert b.data == '123'
 
 class DBSessionTest(SessionTest):
     """Session test with db store."""

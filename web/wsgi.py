@@ -14,12 +14,12 @@ import httpserver
 def runfcgi(func, addr=('localhost', 8000)):
     """Runs a WSGI function as a FastCGI server."""
     import flup.server.fcgi as flups
-    return flups.WSGIServer(func, multiplexed=True, bindAddress=addr).run()
+    return flups.WSGIServer(func, multiplexed=True, bindAddress=addr, debug=False).run()
 
 def runscgi(func, addr=('localhost', 4000)):
     """Runs a WSGI function as an SCGI server."""
     import flup.server.scgi as flups
-    return flups.WSGIServer(func, bindAddress=addr).run()
+    return flups.WSGIServer(func, bindAddress=addr, debug=False).run()
 
 def runwsgi(func):
     """

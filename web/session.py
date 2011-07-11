@@ -3,7 +3,8 @@ Session Management
 (from web.py)
 """
 
-import os, time, datetime, random, base64, sys
+import os, time, datetime, random, base64
+import os.path
 from urlparse import urlsplit, urlunsplit
 try:
     import cPickle as pickle
@@ -32,6 +33,8 @@ web.config.session_parameters = utils.storage({
     'ignore_change_ip': True,
     'secret_key': 'fLjUfxqXtfNoIldA0A0J',
     'expired_message': 'Session expired',
+    'httponly': True,
+    'secure': False
     'cookieless': False,
 })
 
@@ -39,18 +42,42 @@ class SessionExpired(web.HTTPError):
     def __init__(self, message):
         web.HTTPError.__init__(self, '200 OK', {}, data=message)
 
-class Session(utils.ThreadedDict):
+class Session(object):
     """Session management for web.py
     """
+    __slots__ = [
+        "store", "_initializer", "_last_cleanup_time", "_config", "_data", 
+        "__getitem__", "__setitem__", "__delitem__"
+    ]
 
     def __init__(self, app, store, initializer=None):
-        self.__dict__['store'] = store
-        self.__dict__['_initializer'] = initializer
-        self.__dict__['_last_cleanup_time'] = 0
-        self.__dict__['_config'] = utils.storage(web.config.session_parameters)
+        self.store = store
+        self._initializer = initializer
+        self._last_cleanup_time = 0
+        self._config = utils.storage(web.config.session_parameters)
+        self._data = utils.threadeddict()
+        
+        self.__getitem__ = self._data.__getitem__
+        self.__setitem__ = self._data.__setitem__
+        self.__delitem__ = self._data.__delitem__
 
         if app:
             app.add_processor(self._processor)
+
+    def __contains__(self, name):
+        return name in self._data
+
+    def __getattr__(self, name):
+        return getattr(self._data, name)
+    
+    def __setattr__(self, name, value):
+        if name in self.__slots__:
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._data, name, value)
+        
+    def __delattr__(self, name):
+        delattr(self._data, name)
 
     def _processor(self, handler):
         """Application processor to setup session for every request"""
@@ -71,6 +98,7 @@ class Session(utils.ThreadedDict):
         """Load the session from the store, by the id from cookie"""
         cookie_name = self._config.cookie_name
         cookie_domain = self._config.cookie_domain
+        httponly = self._config.httponly
         self.session_id = web.cookies().get(cookie_name)
 
         if self._config.cookieless and not self.session_id:
@@ -112,13 +140,11 @@ class Session(utils.ThreadedDict):
                return self.expired() 
     
     def _save(self):
-        cookie_name = self._config.cookie_name
-        cookie_domain = self._config.cookie_domain
         if not self.get('_killed'):
-            web.setcookie(cookie_name, self.session_id, domain=cookie_domain)
-            self.store[self.session_id] = dict(self)
+            self._setcookie(self.session_id)
+            self.store[self.session_id] = dict(self._data)
         else:
-            web.setcookie(cookie_name, self.session_id, expires=-1, domain=cookie_domain)
+            self._setcookie(self.session_id, expires=-1)
 
     def _is_relative(self, url):
         split = urlsplit(url)
@@ -152,6 +178,13 @@ class Session(utils.ThreadedDict):
                 
             return html.tostring(doc)
         return response
+            
+    def _setcookie(self, session_id, expires='', **kw):
+        cookie_name = self._config.cookie_name
+        cookie_domain = self._config.cookie_domain
+        httponly = self._config.httponly
+        secure = self._config.secure
+        web.setcookie(cookie_name, session_id, expires=expires, domain=cookie_domain, httponly=httponly, secure=secure)
     
     def _generate_session_id(self):
         """Generate a random id for session"""
@@ -176,7 +209,7 @@ class Session(utils.ThreadedDict):
         timeout = self._config.timeout
         if current_time - self._last_cleanup_time > timeout:
             self.store.cleanup(timeout)
-            self.__dict__['_last_cleanup_time'] = current_time
+            self._last_cleanup_time = current_time
 
     def expired(self):
         """Called when an expired session is atime"""
@@ -235,7 +268,9 @@ class DiskStore(Store):
     def __init__(self, root):
         # if the storage root doesn't exists, create it.
         if not os.path.exists(root):
-            os.mkdir(root)
+            os.makedirs(
+                    os.path.abspath(root)
+                    )
         self.root = root
 
     def _get_path(self, key):

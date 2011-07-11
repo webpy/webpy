@@ -1,5 +1,62 @@
 # web.py changelog
 
+## 2011-07-04 0.36
+
+* Upgraded to CherryPy WSGIServer 3.2.0. -- #66
+* Various Jython compatibility fixes (tx Ben Noordhuis)
+* allow strips to accept lists -- #69
+* Improvements to setcookie (tx lovelylain) -- #65
+* Added __contains__ method to Session. (tx lovelylain) #65
+* Added secure option to session. -- #38
+* Fixed db.delete error with `using` clause (tx berndtj) -- #28
+* Fixed the case of no where-clauses in db.where
+* Fixed threadlocal error in python2.3 -- #77
+* Fixed TemplateResult inconsistant behavior -- #78
+* Fixed query execution issues with MSSQL -- #71
+
+## 2011-05-15 0.35
+
+* Better ThreaedDict implementation using threadlocal (tx Ben Hoyt)
+* Make Form a new-style class -- #53
+* Optimized SQLQuery.join and generation of multiple_insert query -- #58
+* New: support for Amazon's Simple Email Service
+* Added httponly keyword to setcookie (tx Justin Davis)
+* Added httponly only option to sessions and enabled it by default (tx Justin Davis)
+* made htmlquote and htmlunquote work with unicode
+* Added doseq support for web.url
+* New flag web.config.debug_sql to control printing of db queries (tx Nimrod S. Kerrett)
+* Fixed inserting default values into MySQL -- #49
+* Fixed rendering of Dropdown with mutliple values (tx krowbar) -- #43
+* Fixed mutliple set-cookie header issue with session -- #45
+* Fixed error in safeunicode when used with appengine datastore objects
+* Fixed unicode error in generating debugerror -- #26
+* Fixed GAE compilation issue -- #24
+* Fixed unicode encoding issue in templates -- #17
+* Fixed a bug in form.RadioButton when called with tuple options (tx fhsm) -- #13
+* Fixed error in creating PostgresDB with pgdb driver (tx cninucci) -- #23
+* Support auto convertion of timestamp/date datatypes in sqlite to datetime.data objects -- #22
+* Fixed escaping issue on GAE -- #10
+* fixed form.validates for checkbox (tx Justin Davis).
+* fixed duplicate content-type in web.sendmail -- #20
+* Fix: create session dirs if required (tx Martin Marcher)
+* Fixed safestr to make use of encoding argument (tx s7v7nislands)
+* Don't allow /static/../foo urls in dev webserver (tx Arnar Lundesgaard)
+* Disabled debug mode in flup server (tx irrelative) -- #35
+* And a lot of unicode fixes
+
+## 2010-03-20 0.34
+
+* fix: boolen test works even for sqlite results (tx Emyr Thomas for the idea)
+* fix issue with loop.xx variables in templetor (Bug#476708)
+* hide unwanted tracebacks in debugerror
+* display correct template line numbers in debugerror
+* new utilities: counter, safeiter, safewrite, requeue, restack (by Aaron Swartz)
+* various form.py fixes and improvements
+* automatically escape % characters in the db query (Bug#516516)
+* fix non-deterministic template order (Bug#490209)
+* attachment support for web.sendmail (tx gregglind)
+* template.py optimizations and extension support
+
 ## 2009-10-28 0.33
 
 * form.Button takes optional argument `html`

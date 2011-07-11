@@ -12,7 +12,7 @@ def attrget(obj, attr, value=None):
     if hasattr(obj, attr): return getattr(obj, attr)
     return value
 
-class Form:
+class Form(object):
     r"""
     HTML form.
     
@@ -37,7 +37,7 @@ class Form:
         out += '<table>\n'
         
         for i in self.inputs:
-            html = i.pre + i.render() + self.rendernote(i.note) + i.post
+            html = utils.safeunicode(i.pre) + i.render() + self.rendernote(i.note) + utils.safeunicode(i.post)
             if i.is_hidden():
                 out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (html)
             else:
@@ -70,7 +70,7 @@ class Form:
             if _validate:
                 out = i.validate(v) and out
             else:
-                i.value = v
+                i.set_value(v)
         if _validate:
             out = out and self._validate(source)
             self.valid = out
@@ -154,7 +154,7 @@ class Input(object):
     def render(self):
         attrs = self.attrs.copy()
         attrs['type'] = self.get_type()
-        if self.value:
+        if self.value is not None:
             attrs['value'] = self.value
         attrs['name'] = self.name
         return '<input %s/>' % attrs
@@ -188,6 +188,8 @@ class Textbox(Input):
     
         >>> Textbox(name='foo', value='bar').render()
         '<input type="text" id="foo" value="bar" name="foo"/>'
+        >>> Textbox(name='foo', value=0).render()
+        '<input type="text" id="foo" value="0" name="foo"/>'
     """        
     def get_type(self):
         return 'text'
@@ -238,7 +240,8 @@ class Dropdown(Input):
             else:
                 value, desc = arg, arg 
 
-            if self.value == value: select_p = ' selected="selected"'
+            if self.value == value or (isinstance(self.value, list) and value in self.value):
+                select_p = ' selected="selected"'
             else: select_p = ''
             x += '  <option%s value="%s">%s</option>\n' % (select_p, net.websafe(value), net.websafe(desc))
             
@@ -260,8 +263,8 @@ class Radio(Input):
             attrs = self.attrs.copy()
             attrs['name'] = self.name
             attrs['type'] = 'radio'
-            attrs['value'] = arg
-            if self.value == arg:
+            attrs['value'] = value
+            if self.value == value:
                 attrs['checked'] = 'checked'
             x += '<input %s/> %s' % (attrs, net.websafe(desc))
         x += '</span>'

@@ -3,9 +3,10 @@
 # ...
 
 from distutils.core import setup
+from web import __version__
 
 setup(name='web.py',
-      version='0.33',
+      version=__version__,
       description='web.py: makes web apps',
       author='Aaron Swartz',
       author_email='me@aaronsw.com',

@@ -113,6 +113,30 @@ class render_mako:
         t = self._lookup.get_template(path)
         return t.render
 
+class render_tempita:
+    """Rendering interface to Tempita templates.
+    """
+
+    extensions = {
+        '.html': ('HTMLTemplate', 'text/html; charset=utf-8'),
+        '.xhtml': ('HTMLTemplate', 'application/xhtml+xml; charset=utf-8'),
+        '.txt': ('Template', 'text/plain'),
+    }
+
+    def __init__(self, directories):
+        import tempita
+        self.directories = directories
+
+    def __getattr__(self, name):
+        import tempita
+
+        for directory in self.directories:
+            for extension in self.extensions:
+                filename = os.path.join(directory, name + extension)
+                if os.path.exists(filename):
+                    template = getattr(tempita, self.extensions[extension][0]).from_filename(filename)
+                    return template.substitute
+
 class cache:
     """Cache for any rendering interface.
     

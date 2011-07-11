@@ -132,8 +132,10 @@ class render_tempita:
         for directory in self.directories:
             for extension in self.extensions:
                 filename = os.path.join(directory, name + extension)
+                if not from_template:
+                    from_template = getattr(tempita, self.extensions[extension][0])
                 if os.path.exists(filename):
-                    template = getattr(tempita, self.extensions[extension][0]).from_filename(filename, get_template=self._get_template)
+                    template = from_template.from_filename(filename, get_template=self._get_template)
                     return template
 
     def __getattr__(self, name):

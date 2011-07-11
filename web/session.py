@@ -153,6 +153,11 @@ class Session(object):
     
     def _add_session(self, response):
         from lxml import html, etree
+        types = {
+            'application/xhtml+xml': etree,
+            'application/xml': etree,
+            'text/html': html,
+        }
 
         cookie_name = self._config.cookie_name
 
@@ -163,15 +168,17 @@ class Session(object):
                 if header.lower() == 'content-type':
                     content_type = value.lower().split(';')[0]
 
-            if content_type == 'text/html':
-                tree = html
-            elif content_type in ('application/xhtml+xml', 'application/xml'):
-                tree = etree
-            else:
+            if content_type not in types:
                 return response
 
+            tree = types[content_type]
             doc = tree.parse(StringIO(str(response)))
-            ns = None in doc.getroot().nsmap and '{%s}' % doc.getroot().nsmap[None] or ''
+            tostring_kwargs = {'encoding': 'utf-8'}
+            if None in doc.getroot().nsmap:
+                ns = '{%s}' % doc.getroot().nsmap[None]
+                tostring_kwargs['xml_declaration'] = True
+            else:
+                ns = ''
 
             # Add hidden input fields to forms
             for form in doc.iterfind('.//%sform' % ns):
@@ -190,7 +197,7 @@ class Session(object):
                         parts[3] += '&' + param
                     a.attrib['href'] = urlunsplit(parts)
                 
-            return tree.tostring(doc)
+            return tree.tostring(doc, **tostring_kwargs)
         return response
             
     def _setcookie(self, session_id, expires='', **kw):

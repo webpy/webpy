@@ -127,15 +127,17 @@ class render_tempita:
         import tempita
         self.directories = directories
 
-    def __getattr__(self, name):
+    def _get_template(self, name, from_template=None):
         import tempita
-
         for directory in self.directories:
             for extension in self.extensions:
                 filename = os.path.join(directory, name + extension)
                 if os.path.exists(filename):
-                    template = getattr(tempita, self.extensions[extension][0]).from_filename(filename)
-                    return template.substitute
+                    template = getattr(tempita, self.extensions[extension][0]).from_filename(filename, get_template=self._get_template)
+                    return template
+
+    def __getattr__(self, name):
+        return self._get_template(name).substitute
 
 class cache:
     """Cache for any rendering interface.

@@ -152,6 +152,12 @@ class Session(object):
         return split[0] == '' and split[1] == ''
     
     def _add_session(self, response):
+        cookie_name = self._config.cookie_name
+
+        # Only process response if client didn't provide a session cookie
+        if web.cookies().get(cookie_name):
+            return response
+
         from lxml import html, etree
         types = {
             'application/xhtml+xml': etree,
@@ -159,47 +165,42 @@ class Session(object):
             'text/html': html,
         }
 
-        cookie_name = self._config.cookie_name
+        content_type = None
+        for header, value in web.ctx.get('headers', []):
+            if header.lower() == 'content-type':
+                content_type = value.split(';')[0].lower()
+                content_type_params = dict((k.lower().strip(), v) for k,v in (part.split('=', 1) for part in value.split(';')[1:]))
 
-        # Only process response if client didn't provide a session cookie
-        if not web.cookies().get(cookie_name):
-            content_type = None
-            for header, value in web.ctx.get('headers', []):
-                if header.lower() == 'content-type':
-                    content_type = value.split(';')[0].lower()
-                    content_type_params = dict((k.lower().strip(), v) for k,v in (part.split('=', 1) for part in value.split(';')[1:]))
+        if content_type not in types:
+            return response
 
-            if content_type not in types:
-                return response
+        tree = types[content_type]
+        doc = tree.parse(StringIO(str(response)))
+        tostring_kwargs = {'encoding': content_type_params.get('charset', 'utf-8')}
+        if None in doc.getroot().nsmap:
+            ns = '{%s}' % doc.getroot().nsmap[None]
+            tostring_kwargs['xml_declaration'] = True
+        else:
+            ns = ''
 
-            tree = types[content_type]
-            doc = tree.parse(StringIO(str(response)))
-            tostring_kwargs = {'encoding': content_type_params.get('charset', 'utf-8')}
-            if None in doc.getroot().nsmap:
-                ns = '{%s}' % doc.getroot().nsmap[None]
-                tostring_kwargs['xml_declaration'] = True
-            else:
-                ns = ''
+        # Add hidden input fields to forms
+        for form in doc.iterfind('.//%sform' % ns):
+            if 'action' not in form.attrib or self._is_relative(form.attrib['action']):
+                input = etree.Element('input', type='hidden', name=cookie_name, id=cookie_name, value=self.session_id)
+                form.append(input)
 
-            # Add hidden input fields to forms
-            for form in doc.iterfind('.//%sform' % ns):
-                if 'action' not in form.attrib or self._is_relative(form.attrib['action']):
-                    input = etree.Element('input', type='hidden', name=cookie_name, id=cookie_name, value=self.session_id)
-                    form.append(input)
-
-            # Add query parameters to relative links
-            param = cookie_name + '=' + self.session_id
-            for a in doc.iterfind('.//%sa' % ns):
-                if 'href' in a.attrib and self._is_relative(a.attrib['href']):
-                    parts = list(urlsplit(a.attrib['href']))
-                    if len(parts[3]) == 0:
-                        parts[3] = param
-                    else:
-                        parts[3] += '&' + param
-                    a.attrib['href'] = urlunsplit(parts)
-                
-            return tree.tostring(doc, **tostring_kwargs)
-        return response
+        # Add query parameters to relative links
+        param = cookie_name + '=' + self.session_id
+        for a in doc.iterfind('.//%sa' % ns):
+            if 'href' in a.attrib and self._is_relative(a.attrib['href']):
+                parts = list(urlsplit(a.attrib['href']))
+                if len(parts[3]) == 0:
+                    parts[3] = param
+                else:
+                    parts[3] += '&' + param
+                a.attrib['href'] = urlunsplit(parts)
+            
+        return tree.tostring(doc, **tostring_kwargs)
             
     def _setcookie(self, session_id, expires='', **kw):
         cookie_name = self._config.cookie_name

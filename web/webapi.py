@@ -129,6 +129,26 @@ class BadRequest(HTTPError):
 
 badrequest = BadRequest
 
+class Unauthorized(HTTPError):
+    """`401 Unauthorized` error."""
+    message = "unauthorized"
+    def __init__(self):
+        status = "401 Unauthorized"
+        headers = {'Content-Type': 'text/html'}
+        HTTPError.__init__(self, status, headers, self.message)
+
+unauthorized = Unauthorized
+
+class Forbidden(HTTPError):
+    """`403 Forbidden` error."""
+    message = "forbidden"
+    def __init__(self):
+        status = "403 Forbidden"
+        headers = {'Content-Type': 'text/html'}
+        HTTPError.__init__(self, status, headers, self.message)
+
+forbidden = Forbidden
+
 class _NotFound(HTTPError):
     """`404 Not Found` error."""
     message = "not found"
@@ -149,12 +169,6 @@ def NotFound(message=None):
 
 notfound = NotFound
 
-unauthorized = Unauthorized = _status_code("401 Unauthorized")
-forbidden = Forbidden = _status_code("403 Forbidden")
-notacceptable = NotAcceptable = _status_code("406 Not Acceptable")
-conflict = Conflict = _status_code("409 Conflict")
-preconditionfailed = PreconditionFailed = _status_code("412 Precondition Failed")
-
 class NoMethod(HTTPError):
     """A `405 Method Not Allowed` error."""
     def __init__(self, cls=None):
@@ -172,6 +186,26 @@ class NoMethod(HTTPError):
         
 nomethod = NoMethod
 
+class NotAcceptable(HTTPError):
+    """`406 Not Acceptable` error."""
+    message = "not acceptable"
+    def __init__(self):
+        status = "406 Not Acceptable"
+        headers = {'Content-Type': 'text/html'}
+        HTTPError.__init__(self, status, headers, self.message)
+
+notacceptable = NotAcceptable
+
+class Conflict(HTTPError):
+    """`409 Conflict` error."""
+    message = "conflict"
+    def __init__(self):
+        status = "409 Conflict"
+        headers = {'Content-Type': 'text/html'}
+        HTTPError.__init__(self, status, headers, self.message)
+
+conflict = Conflict
+
 class Gone(HTTPError):
     """`410 Gone` error."""
     message = "gone"
@@ -181,6 +215,16 @@ class Gone(HTTPError):
         HTTPError.__init__(self, status, headers, self.message)
 
 gone = Gone
+
+class PreconditionFailed(HTTPError):
+    """`412 Precondition Failed` error."""
+    message = "precondition failed"
+    def __init__(self):
+        status = "412 Precondition Failed"
+        headers = {'Content-Type': 'text/html'}
+        HTTPError.__init__(self, status, headers, self.message)
+
+preconditionfailed = PreconditionFailed
 
 class _InternalError(HTTPError):
     """500 Internal Server Error`."""

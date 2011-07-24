@@ -361,14 +361,14 @@ class File(Input):
 class Time(Input): 
     r"""Time input with dropdowns
 
-    >>> Time('the_time', every=10, value='00:00:00').render()
+    >>> Time('the_time', False, 10, value='00:00:00').render()
     u'<select id="the_time_hour" name="the_time_hour">\n  <option value="01">01</option>\n  <option value="02">02</option>\n  <option value="03">03</option>\n  <option value="04">04</option>\n  <option value="05">05</option>\n  <option value="06">06</option>\n  <option value="07">07</option>\n  <option value="08">08</option>\n  <option value="09">09</option>\n  <option value="10">10</option>\n  <option value="11">11</option>\n  <option selected="selected" value="12">12</option>\n</select>\n:\n<select id="the_time_minute" name="the_time_minute">\n  <option selected="selected" value="00">00</option>\n  <option value="10">10</option>\n  <option value="20">20</option>\n  <option value="30">30</option>\n  <option value="40">40</option>\n  <option value="50">50</option>\n</select>\n&nbsp;\n<select id="the_time_ampm" name="the_time_ampm">\n  <option selected="selected" value="AM">AM</option>\n  <option value="PM">PM</option>\n</select>\n'
 
-    >>> Time('the_time', iso=True, every=10, value='00:00:00').render()
+    >>> Time('the_time', True, 10, value='00:00:00').render()
     u'<select id="the_time_hour" name="the_time_hour">\n  <option selected="selected" value="00">00</option>\n  <option value="01">01</option>\n  <option value="02">02</option>\n  <option value="03">03</option>\n  <option value="04">04</option>\n  <option value="05">05</option>\n  <option value="06">06</option>\n  <option value="07">07</option>\n  <option value="08">08</option>\n  <option value="09">09</option>\n  <option value="10">10</option>\n  <option value="11">11</option>\n  <option value="12">12</option>\n  <option value="13">13</option>\n  <option value="14">14</option>\n  <option value="15">15</option>\n  <option value="16">16</option>\n  <option value="17">17</option>\n  <option value="18">18</option>\n  <option value="19">19</option>\n  <option value="20">20</option>\n  <option value="21">21</option>\n  <option value="22">22</option>\n  <option value="23">23</option>\n</select>\n:\n<select id="the_time_minute" name="the_time_minute">\n  <option selected="selected" value="00">00</option>\n  <option value="10">10</option>\n  <option value="20">20</option>\n  <option value="30">30</option>\n  <option value="40">40</option>\n  <option value="50">50</option>\n</select>\n'
     """
 
-    def __init__(self, name, iso=False, every=15, *validators, **attrs):
+    def __init__(self, name, iso, every, *validators, **attrs):
         self.iso = iso
         if self.iso: 
             hours_range = range(0,24)
@@ -438,12 +438,12 @@ class Time(Input):
 class Date(Input):
     r"""Date input with three dropdowns.
 
-    >>> Date('the_date', years=2, start_year=2010, value='2011-12-01').render()
+    >>> Date('the_date', 2010, 2, value='2011-12-01').render()
     u'<select id="the_date_day" name="the_date_day">\n  <option selected="selected" value="01">01</option>\n  <option value="02">02</option>\n  <option value="03">03</option>\n  <option value="04">04</option>\n  <option value="05">05</option>\n  <option value="06">06</option>\n  <option value="07">07</option>\n  <option value="08">08</option>\n  <option value="09">09</option>\n  <option value="10">10</option>\n  <option value="11">11</option>\n  <option value="12">12</option>\n  <option value="13">13</option>\n  <option value="14">14</option>\n  <option value="15">15</option>\n  <option value="16">16</option>\n  <option value="17">17</option>\n  <option value="18">18</option>\n  <option value="19">19</option>\n  <option value="20">20</option>\n  <option value="21">21</option>\n  <option value="22">22</option>\n  <option value="23">23</option>\n  <option value="24">24</option>\n  <option value="25">25</option>\n  <option value="26">26</option>\n  <option value="27">27</option>\n  <option value="28">28</option>\n  <option value="29">29</option>\n  <option value="30">30</option>\n  <option value="31">31</option>\n</select>\n<select id="the_date_month" name="the_date_month">\n  <option value="01">Jan</option>\n  <option value="02">Feb</option>\n  <option value="03">Mar</option>\n  <option value="04">Apr</option>\n  <option value="05">May</option>\n  <option value="06">Jun</option>\n  <option value="07">Jul</option>\n  <option value="08">Aug</option>\n  <option value="09">Sep</option>\n  <option value="10">Oct</option>\n  <option value="11">Nov</option>\n  <option selected="selected" value="12">Dec</option>\n</select>\n<select id="the_date_year" name="the_date_year">\n  <option value="2010">2010</option>\n  <option selected="selected" value="2011">2011</option>\n</select>\n'
     """
     
-    def __init__(self, name, start_year=-1, years=2, *validators, **attrs):
-        if start_year == -1:
+    def __init__(self, name, start_year, years, *validators, **attrs):
+        if start_year <= 0:
             start = datetime.datetime.now().year
         else:
             start = start_year

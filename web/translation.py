@@ -102,6 +102,7 @@ class WebPyTranslation(object):
 
     def set_language(self, language):
         self.__language = language
+        self.force_language(self.__language)
 
     def get_language(self):
         return self.__language

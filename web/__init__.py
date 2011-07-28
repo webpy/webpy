@@ -16,6 +16,7 @@ import template, form
 
 import session
 
+from translation import WebPyTranslation
 from utils import *
 from db import *
 from net import *

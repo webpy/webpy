@@ -715,7 +715,7 @@ def safewrite(filename, content):
     f = file(filename + '.tmp', 'w')
     f.write(content)
     f.close()
-    os.rename(f.name, path)
+    os.rename(f.name, filename)
 
 def dictreverse(mapping):
     """

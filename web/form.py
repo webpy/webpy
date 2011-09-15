@@ -196,94 +196,94 @@ class Textbox(Input):
 
 
 class Telephone(Input):
-  """Telephone input.
+    """Telephone input.
   
-  See: `http://dev.w3.org/html5/spec/Overview.html#the-input-element`
+    See: <http://dev.w3.org/html5/spec/Overview.html#the-input-element>
   
-  >>> Telephone(name='tel', value='55512345').render()
-  u'<input type="tel" id="tel" value="55512345" name="tel"/>'
-  """
-  def get_type(self):
-    return 'tel'
+    >>> Telephone(name='tel', value='55512345').render()
+    u'<input type="tel" id="tel" value="55512345" name="tel"/>'
+    """
+    def get_type(self):
+        return 'tel'
 
 
 class Email(Input):
-  """Email input.
+    """Email input.
   
-  See: `http://dev.w3.org/html5/spec/Overview.html#the-input-element`
+    See: <http://dev.w3.org/html5/spec/Overview.html#the-input-element>
   
-  >>> Email(name='email', value='me@example.org').render()
-  u'<input type="email" id="email" value="me@example.org" name="email"/>'
+    >>> Email(name='email', value='me@example.org').render()
+    u'<input type="email" id="email" value="me@example.org" name="email"/>'
   
-  """
-  def get_type(self):
-    return 'email'
+    """
+    def get_type(self):
+        return 'email'
 
 
 class Search(Input):
-  """Search input.
+    """Search input.
   
-  See: `http://dev.w3.org/html5/spec/Overview.html#text-state-and-search-state`
+    See: <http://dev.w3.org/html5/spec/Overview.html#text-state-and-search-state>
+    
+    >> Search(name='search', value='Search').render()
+    u'<input type="search" id="search" value="Search" name="search"/>'
   
-  >> Search(name='search', value='Search').render()
-  u'<input type="search" id="search" value="Search" name="search"/>'
+    >>> Search(name='search', value='Search', required='required', pattern='[a-z0-9]{2,30}', placeholder='Search...').render()
+    u'<input name="search" pattern="[a-z0-9]{2,30}" required="required" value="Search" type="search" placeholder="Search..." id="search"/>'
   
-  >>> Search(name='search', value='Search', required='required', pattern='[a-z0-9]{2,30}', placeholder='Search...').render()
-  u'<input name="search" pattern="[a-z0-9]{2,30}" required="required" value="Search" type="search" placeholder="Search..." id="search"/>'
-  
-  """
-  def get_type(self):
-    return 'search'
+    """
+    def get_type(self):
+        return 'search'
 
 
 class Url(Input):
-  """URL input.
+    """URL input.
   
-  See: `http://dev.w3.org/html5/spec/Overview.html#url-state`
+    See: <http://dev.w3.org/html5/spec/Overview.html#url-state>
   
-  >>> Url(name='url', value='url').render()
-  u'<input type="url" id="url" value="url" name="url"/>'
-  """
-  def get_type(self):
-    return 'url'
+    >>> Url(name='url', value='url').render()
+    u'<input type="url" id="url" value="url" name="url"/>'
+    """
+    def get_type(self):
+        return 'url'
 
 
 class Number(Input):
-  """Number input.
+    """Number input.
   
-  See: `http://dev.w3.org/html5/spec/Overview.html#number-state`
+    See: <http://dev.w3.org/html5/spec/Overview.html#number-state>
   
-  >>> Number(name='num', min='0', max='10', step='2', value='5').render()
-  u'<input name="num" min="0" max="10" value="5" step="2" type="number" id="num"/>'
-  """
-  def get_type(self):
-    return 'number'
+    >>> Number(name='num', min='0', max='10', step='2', value='5').render()
+    u'<input name="num" min="0" max="10" value="5" step="2" type="number" id="num"/>'
+    """
+    def get_type(self):
+        return 'number'
 
     
 class Range(Input):
-  """Range input.
+    """Range input.
+
+    See: <http://dev.w3.org/html5/spec/Overview.html#range-state>
   
-  See: `http://dev.w3.org/html5/spec/Overview.html#range-state`
-  
-  >>> Range(name='range', min='0', max='10', step='2', value='5').render()
-  u'<input name="range" min="0" max="10" value="5" step="2" type="range" id="range"/>'
-  """
-  def get_type(self):
-    return 'range'
+    >>> Range(name='range', min='0', max='10', step='2', value='5').render()
+    u'<input name="range" min="0" max="10" value="5" step="2" type="range" id="range"/>'
+    """
+    def get_type(self):
+        return 'range'
 
 
 class Color(Input):
-  """Color input.
+    """Color input.
   
-  Warning: Only Opera 11 supports.
+    Warning: Only Opera 11 supports.
   
-  See: `http://dev.w3.org/html5/spec/Overview.html#color-state`
+    See: <http://dev.w3.org/html5/spec/Overview.html#color-state>
   
-  >>> Color(name='color').render()
-  u'<input type="color" id="color" name="color"/>'
-  """
-  def get_type(self):
-    return 'color'
+    >>> Color(name='color').render()
+    u'<input type="color" id="color" name="color"/>'
+    """
+    def get_type(self):
+        return 'color'
 
 
 class Password(Input):
@@ -310,39 +310,39 @@ class Textarea(Input):
 
 
 class Datalist(Input):
-  """Datalist input.
+    """Datalist input.
   
-  This is currently supported by only Firefox and Opera. Use it with caucious.
-  Datalist cannot be used separately. It must be bound to an input.
+    This is currently supported by only Firefox and Opera. Use it with caucious.
+    Datalist cannot be used separately. It must be bound to an input.
   
-  An example can be viewed on
-  `http://dev.w3.org/html5/spec/Overview.html#url-state`.
+    An example can be viewed on
+    <http://dev.w3.org/html5/spec/Overview.html#url-state>
   
-  >>> Datalist(name='list', args=[('a', 'b'), ('c', 'd')]).render()
-  u'<datalist id="list" name="list"><option label="a" value="b"><option label="c" value="d"></datalist>'
-  >>> Datalist(name='list', args=[['a', 'b'], ['c', 'd']]).render()
-  u'<datalist id="list" name="list"><option label="a" value="b"><option label="c" value="d"></datalist>'
-  >>> Datalist(name='list', args=['a', 'b', 'c', 'd']).render()
-  u'<datalist id="list" name="list"><option value="a"><option value="b"><option value="c"><option value="d"></datalist>'
-  """
-  def __init__(self, name, args, *validators, **kwargs):
-    self.args = args
-    super(Datalist, self).__init__(name, *validators, **kwargs)
+    >>> Datalist(name='list', args=[('a', 'b'), ('c', 'd')]).render()
+    u'<datalist id="list" name="list"><option label="a" value="b"><option label="c" value="d"></datalist>'
+    >>> Datalist(name='list', args=[['a', 'b'], ['c', 'd']]).render()
+    u'<datalist id="list" name="list"><option label="a" value="b"><option label="c" value="d"></datalist>'
+    >>> Datalist(name='list', args=['a', 'b', 'c', 'd']).render()
+    u'<datalist id="list" name="list"><option value="a"><option value="b"><option value="c"><option value="d"></datalist>'
+    """
+    def __init__(self, name, args, *validators, **kwargs):
+        self.args = args
+        super(Datalist, self).__init__(name, *validators, **kwargs)
   
-  def render(self):
-    attrs = self.attrs.copy()
-    attrs['name'] = self.name
-    label_p = ''
-    x = '<datalist %s>' % attrs
-    for arg in self.args:
-      if isinstance(arg, (tuple, list)):
-        label_p = ' label="%s"' % net.websafe(arg[0])
-        label = net.websafe(arg[1])
-      else:
-        label = net.websafe(arg)
-      x += '<option%s value="%s">' % (label_p, label)
-    x += '</datalist>'
-    return x
+    def render(self):
+        attrs = self.attrs.copy()
+        attrs['name'] = self.name
+        label_p = ''
+        x = '<datalist %s>' % attrs
+        for arg in self.args:
+            if isinstance(arg, (tuple, list)):
+                label_p = ' label="%s"' % net.websafe(arg[0])
+                label = net.websafe(arg[1])
+            else:
+                label = net.websafe(arg)
+            x += '<option%s value="%s">' % (label_p, label)
+        x += '</datalist>'
+        return x
 
 
 class Dropdown(Input):

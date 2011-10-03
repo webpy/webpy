@@ -201,7 +201,7 @@ class application:
         if 'HTTP_CONTENT_TYPE' in env:
             env['CONTENT_TYPE'] = env.pop('HTTP_CONTENT_TYPE')
 
-        if method in ["POST", "PUT"]:
+        if method not in ["HEAD", "GET"]:
             data = data or ''
             import StringIO
             if isinstance(data, dict):

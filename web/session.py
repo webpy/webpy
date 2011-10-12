@@ -5,6 +5,7 @@ Session Management
 
 import os, time, datetime, random, base64
 import os.path
+from copy import deepcopy
 try:
     import cPickle as pickle
 except ImportError:
@@ -109,7 +110,7 @@ class Session(object):
 
             if self._initializer:
                 if isinstance(self._initializer, dict):
-                    self.update(self._initializer)
+                    self.update(deepcopy(self._initializer))
                 elif hasattr(self._initializer, '__call__'):
                     self._initializer()
  

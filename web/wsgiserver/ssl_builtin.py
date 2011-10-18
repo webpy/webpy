@@ -11,7 +11,7 @@ try:
 except ImportError:
     ssl = None
 
-from cherrypy import wsgiserver
+from .. import wsgiserver
 
 
 class BuiltinSSLAdapter(wsgiserver.SSLAdapter):

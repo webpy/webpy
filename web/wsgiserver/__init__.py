@@ -1701,7 +1701,7 @@ class HTTPServer(object):
                     DeprecationWarning
                 )
             try:
-                from cherrypy.wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
+                from ssl_pyopenssl import pyOpenSSLAdapter
             except ImportError:
                 pass
             else:

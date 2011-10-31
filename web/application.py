@@ -377,6 +377,9 @@ class application:
     def _delegate(self, f, fvars, args=[]):
         def handle_class(cls):
             meth = web.ctx.method
+            override = web.ctx.env.get("HTTP_X_HTTP_METHOD_OVERRIDE", None)
+            if override in ("PUT", "DELETE",):
+                meth=override
             if meth == 'HEAD' and not hasattr(cls, meth):
                 meth = 'GET'
             if not hasattr(cls, meth):

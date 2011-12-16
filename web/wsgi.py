@@ -21,7 +21,7 @@ def runscgi(func, addr=('localhost', 4000)):
     import flup.server.scgi as flups
     return flups.WSGIServer(func, bindAddress=addr, debug=False).run()
 
-def runwsgi(func):
+def runwsgi(func, app):
     """
     Runs a WSGI-compatible `func` using FCGI, SCGI, or a simple web server,
     as appropriate based on context and `sys.argv`.
@@ -51,7 +51,7 @@ def runwsgi(func):
         else:
             return runscgi(func)
     
-    return httpserver.runsimple(func, validip(listget(sys.argv, 1, '')))
+    return httpserver.runsimple(func, app, validip(listget(sys.argv, 1, '')))
     
 def _is_dev_mode():
     # quick hack to check if the program is running in dev mode.

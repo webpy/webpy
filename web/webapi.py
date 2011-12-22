@@ -122,10 +122,10 @@ tempredirect = TempRedirect
 class BadRequest(HTTPError):
     """`400 Bad Request` error."""
     message = "bad request"
-    def __init__(self):
+    def __init__(self, message=None):
         status = "400 Bad Request"
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
 badrequest = BadRequest
 

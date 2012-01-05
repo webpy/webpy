@@ -203,6 +203,31 @@ class StaticApp(SimpleHTTPRequestHandler):
         self.environ = environ
         self.start_response = start_response
 
+    def translate_path(self, path):
+        """Translate a /-separated PATH to the local filename syntax.
+
+        Components that mean special things to the local file system
+        (e.g. drive or directory names) are ignored.  (XXX They should
+        probably be diagnosed.)
+
+        """
+        # abandon query parameters
+        path = path.split('?',1)[0]
+        path = path.split('#',1)[0]
+        path = posixpath.normpath(urllib.unquote(path))
+        words = path.split('/')
+        words = filter(None, words)
+        if web.config.static_path:
+            path = os.path.dirname(web.config.static_path)
+        else:
+            path = os.getcwd()
+        for word in words:
+            drive, word = os.path.splitdrive(word)
+            head, word = os.path.split(word)
+            if word in (os.curdir, os.pardir): continue
+            path = os.path.join(path, word)
+        return path
+
     def send_response(self, status, msg=""):
         self.status = str(status) + " " + msg
 

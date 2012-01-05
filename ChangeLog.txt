@@ -68,7 +68,7 @@
 * fix: make web.profiler work on Windows (tx asmo) (Bug#325139)
 * fix changequery to make it work correctly even when the input has multi-valued fields (Bug#118229)
 * fix: make sure sequence exists before queying for currval(seqname) when executing postgres insert query (Bug#268705)
-* fix: raise web.notfound() instead of return in autodelegate (tx SeC) 
+* fix: raise web.notfound() instead of return in autodelegate (tx SeC)
 * fix: raise NotSupportedError when len or bool is used on sqlite result (Bug#179644)
 * fix: make db paramater optional for creating postgres DB to allow taking it from environ. (Bug#153491)
 * fix unicode errors in db module
@@ -84,7 +84,7 @@
 * optional from_address to web.emailerrors
 * upgrade wsgiserver to CherryPy/3.1.2
 * support for extensions in Jinja2 templates (tx Zhang Huangbin)
-* support web.datestr for datetime.date objects also 
+* support web.datestr for datetime.date objects also
 * support for lists in db queries
 * new: uniq and iterview
 * fix: set debug=False when application is run with mod_wsgi (tx Patrick Swieskowski) [Bug#370904](https://bugs.launchpad.net/webpy/+bug/370904)
@@ -96,10 +96,10 @@
 * fix: make sessions work well with expirations
 * fix: accept both list and tuple as arg values in form.Dropdown [Bug#314970](https://bugs.launchpad.net/webpy/+bug/314970)
 * fix: match parenthesis when parsing `for` statement in templates
-* fix: fix python 2.3 compatibility 
-* fix: ignore dot folders when compiling templates (tx Stuart Langridge) 
-* fix: don't consume KeyboardInterrupt and SystemExit errors 
-* fix: make application work well with iterators 
+* fix: fix python 2.3 compatibility
+* fix: ignore dot folders when compiling templates (tx Stuart Langridge)
+* fix: don't consume KeyboardInterrupt and SystemExit errors
+* fix: make application work well with iterators
 
 ## 2008-12-10: 0.31
 
@@ -129,7 +129,7 @@
 * fix: python 2.6 compatibility
 * fix: file uploads are not loaded into memory
 * fix: SQLLiteral issue (Bug#180027)
-* change: web.background is moved to experimental (<i>backward-incompatible</i>) 
+* change: web.background is moved to experimental (<i>backward-incompatible</i>)
 * improved API doc generation (tx Colin Rothwell)
 
 ## 2008-01-19: 0.23
@@ -159,17 +159,17 @@
 ## 2007-05-28: 0.21
 
 * <strong>security fix:</strong> prevent bad characters in headers
-* support for cheetah template reloading                    
-* support for form validation                               
-* new `form.File`                                           
-* new `web.url`                                             
-* fix rendering issues with hidden and button inputs        
-* fix 2.3 incompatability with `numify`                     
-* fix multiple headers with same name                       
-* fix web.redirect issues when homepath is not /            
-* new CherryPy wsgi server                                  
-* new nested transactions                                   
-* new sqlliteral                                            
+* support for cheetah template reloading
+* support for form validation
+* new `form.File`
+* new `web.url`
+* fix rendering issues with hidden and button inputs
+* fix 2.3 incompatability with `numify`
+* fix multiple headers with same name
+* fix web.redirect issues when homepath is not /
+* new CherryPy wsgi server
+* new nested transactions
+* new sqlliteral
 
 ## 2006-05-09: 0.138
 

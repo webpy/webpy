@@ -159,7 +159,7 @@ def WSGIServer(server_address, wsgi_app):
     """
     import wsgiserver
     
-    # Default values of wsgiserver.ssl_adapters uses cheerypy.wsgiserver
+    # Default values of wsgiserver.ssl_adapters uses cherrypy.wsgiserver
     # prefix. Overwriting it make it work with web.wsgiserver.
     wsgiserver.ssl_adapters = {
         'builtin': 'web.wsgiserver.ssl_builtin.BuiltinSSLAdapter',

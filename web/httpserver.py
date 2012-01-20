@@ -217,7 +217,7 @@ class StaticApp(SimpleHTTPRequestHandler):
         path = posixpath.normpath(urllib.unquote(path))
         words = path.split('/')
         words = filter(None, words)
-        if web.config.static_path:
+        if hasattr(web.config, "static_path"):
             path = os.path.dirname(web.config.static_path)
         else:
             path = os.getcwd()

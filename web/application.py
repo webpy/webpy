@@ -366,8 +366,10 @@ class application:
         ctx.fullpath = ctx.path + ctx.query
         
         for k, v in ctx.iteritems():
+            # convert all string values to unicode values and replace 
+            # malformed data with a suitable replacement marker.
             if isinstance(v, str):
-                ctx[k] = safeunicode(v)
+                ctx[k] = v.decode('utf-8', 'replace') 
 
         # status must always be str
         ctx.status = '200 OK'

@@ -143,10 +143,14 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     
     server = WSGIServer(server_address, func)
 
-    print "http://%s:%d/" % server_address
+    if server.ssl_adapter:
+        print "https://%s:%d/" % server_address
+    else:
+        print "http://%s:%d/" % server_address
+
     try:
         server.start()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         server.stop()
 
 def WSGIServer(server_address, wsgi_app):
@@ -155,7 +159,7 @@ def WSGIServer(server_address, wsgi_app):
     """
     import wsgiserver
     
-    # Default values of wsgiserver.ssl_adapters uses cheerypy.wsgiserver
+    # Default values of wsgiserver.ssl_adapters uses cherrypy.wsgiserver
     # prefix. Overwriting it make it work with web.wsgiserver.
     wsgiserver.ssl_adapters = {
         'builtin': 'web.wsgiserver.ssl_builtin.BuiltinSSLAdapter',
@@ -163,6 +167,32 @@ def WSGIServer(server_address, wsgi_app):
     }
     
     server = wsgiserver.CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
+        
+    def create_ssl_adapter(cert, key):
+        # wsgiserver tries to import submodules as cherrypy.wsgiserver.foo.
+        # That doesn't work as not it is web.wsgiserver. 
+        # Patching sys.modules temporarily to make it work.
+        import types
+        cherrypy = types.ModuleType('cherrypy')
+        cherrypy.wsgiserver = wsgiserver
+        sys.modules['cherrypy'] = cherrypy
+        sys.modules['cherrypy.wsgiserver'] = wsgiserver
+        
+        from wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
+        adapter = pyOpenSSLAdapter(cert, key)
+        
+        # We are done with our work. Cleanup the patches.
+        del sys.modules['cherrypy']
+        del sys.modules['cherrypy.wsgiserver']
+
+        return adapter
+
+    # SSL backward compatibility
+    if (server.ssl_adapter is None and
+        getattr(server, 'ssl_certificate', None) and
+        getattr(server, 'ssl_private_key', None)):
+        server.ssl_adapter = create_ssl_adapter(server.ssl_certificate, server.ssl_private_key)
+
     server.nodelay = not sys.platform.startswith('java') # TCP_NODELAY isn't supported on the JVM
     return server
 

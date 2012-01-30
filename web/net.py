@@ -168,7 +168,8 @@ def htmlunquote(text):
     return text
     
 def websafe(val):
-    r"""Converts `val` so that it is safe for use in Unicode HTML.
+    r"""
+    Converts `val` so that it is safe for use in Unicode HTML.
 
         >>> websafe("<'&\">")
         u'&lt;&#39;&amp;&quot;&gt;'

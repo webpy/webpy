@@ -8,7 +8,7 @@ import inspect
 import markdown
 sys.path.insert(0, '..')
 
-modules = [
+ALL_MODULES = [
     'web.application',
     'web.contrib.template',
     'web.db',
@@ -153,7 +153,8 @@ def recurse_over(ob, name, indent_level=0):
             recurse_over(getattr(ob, name), name, indent_level + 1)
     if indent_level > 0: print indent_end
 
-def main():
+def main(modules=None):
+    modules = modules or ALL_MODULES
     print '<div>' #Stops markdown vandalising my html.
     print css
     print header
@@ -167,4 +168,4 @@ def main():
     print '</div>'
         
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

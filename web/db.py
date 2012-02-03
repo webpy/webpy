@@ -673,6 +673,20 @@ class DB:
             <sql: 'SELECT * FROM foo'>
             >>> db.select(['foo', 'bar'], where="foo.bar_id = bar.id", limit=5, _test=True)
             <sql: 'SELECT * FROM foo, bar WHERE foo.bar_id = bar.id LIMIT 5'>
+        
+        
+        Return an iterator of storage items.  example:
+            db.query("create table foo (age int, name varchar(30), created datetime);")
+            db.insert("INSERT INTO foo (age, name, created) VALUES (2, 'bob', NOW())")
+            r = db.select('foo')
+            r is now an iterator or you can get by item:
+            r[0] is the first row returned.
+            r[0].age == 2
+            r[0].name == 'bob'
+            r[0].created is the timestamp for whatever NOW() is at the time of insert.
+            
+            len(r) gives you the rowcount, in this case 1.
+            
         """
         if vars is None: vars = {}
         sql_clauses = self.sql_clauses(what, tables, where, group, order, limit, offset)

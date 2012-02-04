@@ -41,6 +41,7 @@ import sys
 import glob
 import re
 from UserDict import DictMixin
+import warnings
 
 from utils import storage, safeunicode, safestr, re_compile
 from webapi import config
@@ -920,11 +921,13 @@ class Template(BaseTemplate):
         
         # make sure code is safe - but not with jython, it doesn't have a working compiler module
         if not sys.platform.startswith('java'):
-            import compiler
-            ast = compiler.parse(code)
-            SafeVisitor().walk(ast, filename)
+            try:
+                import compiler
+                ast = compiler.parse(code)
+                SafeVisitor().walk(ast, filename)
+            except ImportError:
+                warnings.warn("Unabled to import compiler module. Unable to check templates for safety.")
         else:
-            import warnings
             warnings.warn("SECURITY ISSUE: You are using Jython, which does not support checking templates for safety. Your templates can execute arbitrary code.")
 
         return compiled_code

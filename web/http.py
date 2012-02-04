@@ -122,7 +122,7 @@ def changequery(query=None, **kw):
 
 def url(path=None, doseq=False, **kw):
     """
-    Makes url by concatinating web.ctx.homepath and path and the 
+    Makes url by concatenating web.ctx.homepath and path and the 
     query string created using the arguments.
     """
     if path is None:

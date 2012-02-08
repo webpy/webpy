@@ -28,6 +28,7 @@ __all__ = [
 web.config.session_parameters = utils.storage({
     'cookie_name': 'webpy_session_id',
     'cookie_domain': None,
+    'cookie_path' : None,
     'timeout': 86400, #24 * 60 * 60, # 24 hours in seconds
     'ignore_expiry': True,
     'ignore_change_ip': True,
@@ -92,6 +93,7 @@ class Session(object):
         """Load the session from the store, by the id from cookie"""
         cookie_name = self._config.cookie_name
         cookie_domain = self._config.cookie_domain
+        cookie_path = self._config.cookie_path
         httponly = self._config.httponly
         self.session_id = web.cookies().get(cookie_name)
 
@@ -140,9 +142,10 @@ class Session(object):
     def _setcookie(self, session_id, expires='', **kw):
         cookie_name = self._config.cookie_name
         cookie_domain = self._config.cookie_domain
+        cookie_path = self._config.cookie_path
         httponly = self._config.httponly
         secure = self._config.secure
-        web.setcookie(cookie_name, session_id, expires=expires, domain=cookie_domain, httponly=httponly, secure=secure)
+        web.setcookie(cookie_name, session_id, expires=expires, domain=cookie_domain, httponly=httponly, secure=secure, path=cookie_path)
     
     def _generate_session_id(self):
         """Generate a random id for session"""

@@ -6,7 +6,8 @@ python:
     - "3.2"
 install: pip install -r test/requirements.txt --use-mirrors
 script: python test/alltests.py
-before_script:
+before_install:
   - "sudo apt-get install python-profiler postgresql-dev"
+before_script:
   - "psql -c 'create database webpy;' -U postgres"
   - "mysql -e 'create user \'scott\'@\'localhost\' identified by \'tiger\'; create database webpy; grant all privileges on webpy.* to \'scott\'@\'localhost\' with grant option'"

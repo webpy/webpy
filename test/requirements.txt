@@ -1,7 +1,7 @@
 psycopg2
-pysqlite2
-MySQLdb
+pysqlite
+MySQL-python
 psycopg
-pgdb
+PyGreSQL
 DBUtils
 https://gist.github.com/gists/1926061/download

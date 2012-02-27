@@ -9,4 +9,4 @@ before_install:
   - "sudo apt-get install python-profiler"
 before_script:
   - "psql -c 'create database webpy;' -U postgres"
-  - "mysql -e 'create user \'scott\'@\'localhost\' identified by \'tiger\'; create database webpy; grant all privileges on webpy.* to \'scott\'@\'localhost\' with grant option'"
+  - mysql -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"

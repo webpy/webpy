@@ -5,7 +5,7 @@ python:
 install: pip install -r test/requirements.txt --use-mirrors
 script: python test/alltests.py
 before_install:
-  - "sudo mkdir /usr/include/postgresql/8.4/server"
+  - "sudo mkdir -p /usr/include/postgresql/8.4/server"
   - "sudo apt-get install python-profiler"
 before_script:
   - "psql -c 'create database webpy;' -U postgres"

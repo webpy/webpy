@@ -1,6 +1,6 @@
 psycopg2
 pysqlite
 MySQL-python
-http://initd.org/pub/software/psycopg/psycopg-1.1.21.tar.gz
+http://initd.org/psycopg/tarballs/PSYCOPG-1-1/psycopg-1.1.21.tar.gz
 PyGreSQL
 DBUtils

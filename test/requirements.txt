@@ -1,1 +1,7 @@
 psycopg2
+pysqlite2
+MySQLdb
+psycopg
+pgdb
+DBUtils
+https://gist.github.com/gists/1926061/download

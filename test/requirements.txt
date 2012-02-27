@@ -1,6 +1,6 @@
 psycopg2
 pysqlite
 MySQL-python
-psycopg
+psycopg==1.1.2.1
 PyGreSQL
 DBUtils

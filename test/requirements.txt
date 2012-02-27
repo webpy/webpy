@@ -2,6 +2,7 @@ psycopg2
 pysqlite
 MySQL-python
 psycopg
-PyGreSQL
+# doesn't seem to build on travis:
+#PyGreSQL
 DBUtils
 https://gist.github.com/gists/1926061/download

@@ -1,0 +1,5 @@
+psycopg2
+pysqlite
+MySQL-python
+PyGreSQL
+DBUtils

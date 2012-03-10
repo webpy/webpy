@@ -9,7 +9,7 @@ install: pip install -r test/requirements.txt --use-mirrors
 script: python test/alltests.py
 before_install:
   - "sudo mkdir -p /usr/include/postgresql/8.4/server"
-#  - "sudo apt-get install python-profiler"
+  - 'if [ $TRAVIS_PYTHON_VERSION != "2.5" ] ; then sudo apt-get install python-profiler; fi'
 before_script:
   - "psql -c 'create database webpy;' -U postgres"
   - mysql --user=root -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"

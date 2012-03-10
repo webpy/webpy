@@ -1,5 +1,5 @@
 psycopg2
-pysqlite
+#pysqlite
 MySQL-python
 PyGreSQL
 DBUtils

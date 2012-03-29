@@ -19,9 +19,9 @@ __all__ = [
     "Redirect", "Found", "SeeOther", "NotModified", "TempRedirect", 
     "redirect", "found", "seeother", "notmodified", "tempredirect",
 
-    # 400, 401, 403, 404, 405, 406, 409, 410, 412
-    "BadRequest", "Unauthorized", "Forbidden", "NotFound", "NoMethod", "NotAcceptable", "Conflict", "Gone", "PreconditionFailed",
-    "badrequest", "unauthorized", "forbidden", "notfound", "nomethod", "notacceptable", "conflict", "gone", "preconditionfailed",
+    # 400, 401, 403, 404, 405, 406, 409, 410, 412, 415
+    "BadRequest", "Unauthorized", "Forbidden", "NotFound", "NoMethod", "NotAcceptable", "Conflict", "Gone", "PreconditionFailed", "UnsupportedMediaType",
+    "badrequest", "unauthorized", "forbidden", "notfound", "nomethod", "notacceptable", "conflict", "gone", "preconditionfailed", "unsupportedmediatype",
 
     # 500
     "InternalError", 
@@ -225,6 +225,16 @@ class PreconditionFailed(HTTPError):
         HTTPError.__init__(self, status, headers, self.message)
 
 preconditionfailed = PreconditionFailed
+
+class UnsupportedMediaType(HTTPError):
+    """`415 Unsupported Media Type` error."""
+    message = "unsupported media type"
+    def __init__(self):
+        status = "415 Unsupported Media Type"
+        headers = {'Content-Type': 'text/html'}
+        HTTPError.__init__(self, status, headers, self.message)
+
+unsupportedmediatype = UnsupportedMediaType
 
 class _InternalError(HTTPError):
     """500 Internal Server Error`."""

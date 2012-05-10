@@ -379,14 +379,16 @@ class MongoStore(Store):
     It is HIGHLY reccomended that you also change the Session object's keygen
     to a function which returns a new Mongo ObjectID.
     
-        import pymongo
+        import pymongo, os, re
         from pymongo.objectid import ObjectId
         
-        objectid_re = re.compile("[A-Fa-f0-9]{18}[0-9]{6}")
+        objectid_re = re.compile("[A-Fa-f0-9]{24}")
         key_validator = lambda key: objectid_re.match(key)
         
+        keygen = lambda: ObjectId(os.urandom(12).encode("hex"))
+        
         store = MongoStore(pymongo.Connection("localhost").mydb.mycollection,
-                           ObjectId, key_validator)
+                           keygen, key_validator)
     
     """
     

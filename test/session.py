@@ -89,15 +89,17 @@ class DBSessionTest(SessionTest):
 class MongoSessionTest(SessionTest):
     """Session test with MongoStore"""
     def make_session(self, app):
-        import pymongo, re
+        import pymongo, re, os
         from pymongo.objectid import ObjectId
         self.collection = pymongo.Connection("localhost").test.sessions
         store = web.session.MongoStore(self.collection)
         
-        objectid_re = re.compile("[A-Fa-f0-9]{18}[0-9]{6}")
+        objectid_re = re.compile("[A-Fa-f0-9]{24}")
         keyvalidator = lambda key: objectid_re.match(key)
         
-        return web.session.Session(app, store, {"count": 0}, ObjectId,
+        keygen = lambda: ObjectId(os.urandom(12).encode("hex"))
+        
+        return web.session.Session(app, store, {"count": 0}, keygen,
                                    keyvalidator)
         
     def tearDown(self):

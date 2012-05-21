@@ -242,15 +242,48 @@ class Dropdown(Input):
         x = '<select %s>\n' % attrs
         
         for arg in self.args:
-            if isinstance(arg, (tuple, list)):
-                value, desc= arg
-            else:
-                value, desc = arg, arg 
+            x += self._render_option(arg)
 
-            if self.value == value or (isinstance(self.value, list) and value in self.value):
-                select_p = ' selected="selected"'
-            else: select_p = ''
-            x += '  <option%s value="%s">%s</option>\n' % (select_p, net.websafe(value), net.websafe(desc))
+        x += '</select>\n'
+        return x
+
+    def _render_option(self, arg, indent='  '):
+        if isinstance(arg, (tuple, list)):
+            value, desc= arg
+        else:
+            value, desc = arg, arg 
+
+        if self.value == value or (isinstance(self.value, list) and value in self.value):
+            select_p = ' selected="selected"'
+        else:
+            select_p = ''
+        return indent + '<option%s value="%s">%s</option>\n' % (select_p, net.websafe(value), net.websafe(desc))
+        
+
+class GroupedDropdown(Dropdown):
+    r"""Grouped Dropdown/select input.
+    
+        >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', ('Volvo', 'Saab')), ('German Cars', ('Mercedes', 'Audi'))), value='Audi').render()
+        u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="Volvo">Volvo</option>\n    <option value="Saab">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="Mercedes">Mercedes</option>\n    <option selected="selected" value="Audi">Audi</option>\n  </optgroup>\n</select>\n'
+        >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', (('v', 'Volvo'), ('s', 'Saab'))), ('German Cars', (('m', 'Mercedes'), ('a', 'Audi')))), value='a').render()
+        u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="v">Volvo</option>\n    <option value="s">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="m">Mercedes</option>\n    <option selected="selected" value="a">Audi</option>\n  </optgroup>\n</select>\n'
+
+    """
+    def __init__(self, name, args, *validators, **attrs):
+        self.args = args
+        super(Dropdown, self).__init__(name, *validators, **attrs)
+
+    def render(self):
+        attrs = self.attrs.copy()
+        attrs['name'] = self.name
+        
+        x = '<select %s>\n' % attrs
+        
+        for label, options in self.args:
+            x += '  <optgroup label="%s">\n' % net.websafe(label)
+            for arg in options:
+                x += self._render_option(arg, indent = '    ')
+            x +=  '  </optgroup>\n'
             
         x += '</select>\n'
         return x

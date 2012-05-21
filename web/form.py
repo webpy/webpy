@@ -25,7 +25,7 @@ class Form(object):
     
         >>> f = Form(Textbox("x"))
         >>> f.render()
-        '<table>\n    <tr><th><label for="x">x</label></th><td><input type="text" id="x" name="x"/></td></tr>\n</table>'
+        u'<table>\n    <tr><th><label for="x">x</label></th><td><input type="text" id="x" name="x"/></td></tr>\n</table>'
     """
     def __init__(self, *inputs, **kw):
         self.inputs = inputs
@@ -194,9 +194,9 @@ class Textbox(Input):
     """Textbox input.
     
         >>> Textbox(name='foo', value='bar').render()
-        '<input type="text" id="foo" value="bar" name="foo"/>'
+        u'<input type="text" id="foo" value="bar" name="foo"/>'
         >>> Textbox(name='foo', value=0).render()
-        '<input type="text" id="foo" value="0" name="foo"/>'
+        u'<input type="text" id="foo" value="0" name="foo"/>'
     """        
     def get_type(self):
         return 'text'
@@ -205,7 +205,7 @@ class Password(Input):
     """Password input.
 
         >>> Password(name='password', value='secret').render()
-        '<input type="password" id="password" value="secret" name="password"/>'
+        u'<input type="password" id="password" value="secret" name="password"/>'
     """
     
     def get_type(self):
@@ -215,7 +215,7 @@ class Textarea(Input):
     """Textarea input.
     
         >>> Textarea(name='foo', value='bar').render()
-        '<textarea id="foo" name="foo">bar</textarea>'
+        u'<textarea id="foo" name="foo">bar</textarea>'
     """
     def render(self):
         attrs = self.attrs.copy()
@@ -227,9 +227,9 @@ class Dropdown(Input):
     r"""Dropdown/select input.
     
         >>> Dropdown(name='foo', args=['a', 'b', 'c'], value='b').render()
-        '<select id="foo" name="foo">\n  <option value="a">a</option>\n  <option selected="selected" value="b">b</option>\n  <option value="c">c</option>\n</select>\n'
+        u'<select id="foo" name="foo">\n  <option value="a">a</option>\n  <option selected="selected" value="b">b</option>\n  <option value="c">c</option>\n</select>\n'
         >>> Dropdown(name='foo', args=[('a', 'aa'), ('b', 'bb'), ('c', 'cc')], value='b').render()
-        '<select id="foo" name="foo">\n  <option value="a">aa</option>\n  <option selected="selected" value="b">bb</option>\n  <option value="c">cc</option>\n</select>\n'
+        u'<select id="foo" name="foo">\n  <option value="a">aa</option>\n  <option selected="selected" value="b">bb</option>\n  <option value="c">cc</option>\n</select>\n'
     """
     def __init__(self, name, args, *validators, **attrs):
         self.args = args
@@ -281,14 +281,14 @@ class Checkbox(Input):
     """Checkbox input.
 
     >>> Checkbox('foo', value='bar', checked=True).render()
-    '<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
     >>> Checkbox('foo', value='bar').render()
-    '<input type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input type="checkbox" id="foo_bar" value="bar" name="foo"/>'
     >>> c = Checkbox('foo', value='bar')
     >>> c.validate('on')
     True
     >>> c.render()
-    '<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
     """
     def __init__(self, name, *validators, **attrs):
         self.checked = attrs.pop('checked', False)
@@ -318,9 +318,9 @@ class Button(Input):
     """HTML Button.
     
     >>> Button("save").render()
-    '<button id="save" name="save">save</button>'
+    u'<button id="save" name="save">save</button>'
     >>> Button("action", value="save", html="<b>Save Changes</b>").render()
-    '<button id="action" value="save" name="action"><b>Save Changes</b></button>'
+    u'<button id="action" value="save" name="action"><b>Save Changes</b></button>'
     """
     def __init__(self, name, *validators, **attrs):
         super(Button, self).__init__(name, *validators, **attrs)
@@ -338,7 +338,7 @@ class Hidden(Input):
     """Hidden Input.
     
         >>> Hidden(name='foo', value='bar').render()
-        '<input type="hidden" id="foo" value="bar" name="foo"/>'
+        u'<input type="hidden" id="foo" value="bar" name="foo"/>'
     """
     def is_hidden(self):
         return True
@@ -350,7 +350,7 @@ class File(Input):
     """File input.
     
         >>> File(name='f').render()
-        '<input type="file" id="f" name="f"/>'
+        u'<input type="file" id="f" name="f"/>'
     """
     def get_type(self):
         return 'file'

@@ -1019,6 +1019,7 @@ class SqliteDB(DB):
 
         self.paramstyle = db.paramstyle
         keywords['database'] = keywords.pop('db')
+        keywords['pooling'] = False # sqlite don't allows connections to be shared by threads
         self.dbname = "sqlite"        
         DB.__init__(self, db, keywords)
 

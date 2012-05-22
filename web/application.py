@@ -48,6 +48,7 @@ class application:
         
         self.add_processor(loadhook(self._load))
         self.add_processor(unloadhook(self._unload))
+        self._simpleserver = None
         
         if autoreload:
             def main_module_name():
@@ -308,7 +309,12 @@ class application:
         `middleware` is a list of WSGI middleware which is applied to the resulting WSGI
         function.
         """
-        return wsgi.runwsgi(self.wsgifunc(*middleware))
+        return wsgi.runwsgi(self.wsgifunc(*middleware), self)
+
+    def stop(self):
+        if self._simpleserver:
+            self._simpleserver.stop()
+            self._simpleserver = None
     
     def cgirun(self, *middleware):
         """

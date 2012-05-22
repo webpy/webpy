@@ -131,7 +131,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     print "http://%s:%d/" % server_address
     WSGIServer(func, server_address).serve_forever()
 
-def runsimple(func, server_address=("0.0.0.0", 8080)):
+def runsimple(func, app, server_address=("0.0.0.0", 8080)):
     """
     Runs [CherryPy][cp] WSGI server hosting WSGI app `func`. 
     The directory `static/` is hosted statically.
@@ -142,6 +142,7 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     func = LogMiddleware(func)
     
     server = WSGIServer(server_address, func)
+    app._simpleserver = server
 
     if server.ssl_adapter:
         print "https://%s:%d/" % server_address

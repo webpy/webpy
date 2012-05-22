@@ -54,11 +54,15 @@ def runwsgi(func):
     return httpserver.runsimple(func, validip(listget(sys.argv, 1, '')))
     
 def _is_dev_mode():
+    # Some embedded python interpreters won't have sys.arv
+    # For details, see https://github.com/webpy/webpy/issues/87
+    argv = getattr(sys, "argv", [])
+
     # quick hack to check if the program is running in dev mode.
     if os.environ.has_key('SERVER_SOFTWARE') \
         or os.environ.has_key('PHP_FCGI_CHILDREN') \
-        or 'fcgi' in sys.argv or 'fastcgi' in sys.argv \
-        or 'mod_wsgi' in sys.argv:
+        or 'fcgi' in argv or 'fastcgi' in argv \
+        or 'mod_wsgi' in argv:
             return False
     return True
 

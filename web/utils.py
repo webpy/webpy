@@ -1199,7 +1199,7 @@ class ThreadedDict(threadlocal):
     def clear_all():
         """Clears all ThreadedDict instances.
         """
-        for t in ThreadedDict._instances:
+        for t in list(ThreadedDict._instances):
             t.clear()
     clear_all = staticmethod(clear_all)
     

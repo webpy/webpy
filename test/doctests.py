@@ -5,7 +5,8 @@ import webtest
 def suite():
     modules = [
         "web.application",
-        "web.db", 
+        "web.db",
+        "web.form",
         "web.http", 
         "web.net", 
         "web.session",

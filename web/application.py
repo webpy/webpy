@@ -5,6 +5,8 @@ Web application
 import webapi as web
 import webapi, wsgi, utils
 import debugerror
+import httpserver
+
 from utils import lstrips, safeunicode
 import sys
 
@@ -309,6 +311,13 @@ class application:
         function.
         """
         return wsgi.runwsgi(self.wsgifunc(*middleware))
+
+    def stop(self):
+        """Stops the http server started by run.
+        """
+        if httpserver.server:
+            httpserver.server.stop()
+            httpserver.server = None
     
     def cgirun(self, *middleware):
         """

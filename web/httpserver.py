@@ -131,6 +131,10 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     print "http://%s:%d/" % server_address
     WSGIServer(func, server_address).serve_forever()
 
+# The WSGIServer instance. 
+# Made global so that it can be stopped in embedded mode.
+server = None
+
 def runsimple(func, server_address=("0.0.0.0", 8080)):
     """
     Runs [CherryPy][cp] WSGI server hosting WSGI app `func`. 
@@ -138,6 +142,7 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
 
     [cp]: http://www.cherrypy.org
     """
+    global server
     func = StaticMiddleware(func)
     func = LogMiddleware(func)
     
@@ -152,6 +157,7 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
         server.start()
     except (KeyboardInterrupt, SystemExit):
         server.stop()
+        server = None
 
 def WSGIServer(server_address, wsgi_app):
     """Creates CherryPy WSGI server listening at `server_address` to serve `wsgi_app`.

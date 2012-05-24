@@ -1,5 +1,6 @@
 import webtest
 import time
+import threading
 
 import web
 import urllib
@@ -323,6 +324,24 @@ class ApplicationTest(webtest.TestCase):
         
         self.assertEquals(f(''), 'foo=bar; Path=/')
         self.assertEquals(f('/admin'), 'foo=bar; Path=/admin/')
+
+    def test_stopsimpleserver(self):
+        urls = (
+            '/', 'index',
+        )
+        class index:
+            def GET(self):
+                pass
+        app = web.application(urls, locals())
+        thread = threading.Thread(target=app.run)
+
+        thread.start()
+        time.sleep(1)
+        self.assertTrue(thread.is_alive())
+
+        app.stop()
+        thread.join(timeout=1)
+        self.assertFalse(thread.is_alive())
 
 if __name__ == '__main__':
     webtest.main()

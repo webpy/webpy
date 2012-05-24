@@ -143,6 +143,10 @@ class SqliteTest(DBTest):
         #nested transactions does not work with sqlite
         pass
 
+    def testPooling(self):
+        # pooling is not support for sqlite
+        pass
+
 class SqliteTest_pysqlite2(SqliteTest):
     driver = "pysqlite2.dbapi2"
 

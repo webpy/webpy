@@ -131,8 +131,14 @@ def storify(mapping, *requireds, **defaults):
         <Storage {'x': u'a'}>
     """
     _unicode = defaults.pop('_unicode', False)
+
+    # if _unicode is callable object, use it convert a string to unicode.
+    to_unicode = safeunicode
+    if _unicode is not False and hasattr(_unicode, "__call__"):
+        to_unicode = _unicode
+    
     def unicodify(s):
-        if _unicode and isinstance(s, str): return safeunicode(s)
+        if _unicode and isinstance(s, str): return to_unicode(s)
         else: return s
         
     def getvalue(x):

@@ -359,19 +359,101 @@ def setcookie(name, value, expires='', domain=None,
     if httponly:
         value += '; httponly'
     header('Set-Cookie', value)
+        
+def decode_cookie(value):
+    r"""Safely decodes a cookie value to unicode. 
+    
+    Tries us-ascii, utf-8 and io8859 encodings, in that order.
+
+    >>> decode_cookie('')
+    u''
+    >>> decode_cookie('asdf')
+    u'asdf'
+    >>> decode_cookie('foo \xC3\xA9 bar')
+    u'foo \xe9 bar'
+    >>> decode_cookie('foo \xE9 bar')
+    u'foo \xe9 bar'
+    """
+    try:
+        # First try plain ASCII encoding
+        return unicode(value, 'us-ascii')
+    except UnicodeError:
+        # Then try UTF-8, and if that fails, ISO8859
+        try:
+            return unicode(value, 'utf-8')
+        except UnicodeError:
+            return unicode(value, 'iso8859', 'ignore')
+
+def parse_cookies(http_cookie):
+    r"""Parse a HTTP_COOKIE header and return dict of cookie names and decoded values.
+        
+    >>> sorted(parse_cookies('').items())
+    []
+    >>> sorted(parse_cookies('a=1').items())
+    [('a', '1')]
+    >>> sorted(parse_cookies('a=1%202').items())
+    [('a', '1 2')]
+    >>> sorted(parse_cookies('a=Z%C3%A9Z').items())
+    [('a', 'Z\xc3\xa9Z')]
+    >>> sorted(parse_cookies('a=1; b=2; c=3').items())
+    [('a', '1'), ('b', '2'), ('c', '3')]
+    >>> sorted(parse_cookies('a=1; b=w("x")|y=z; c=3').items())
+    [('a', '1'), ('b', 'w('), ('c', '3')]
+    >>> sorted(parse_cookies('a=1; b=w(%22x%22)|y=z; c=3').items())
+    [('a', '1'), ('b', 'w("x")|y=z'), ('c', '3')]
+
+    >>> sorted(parse_cookies('keebler=E=mc2').items())
+    [('keebler', 'E=mc2')]
+    >>> sorted(parse_cookies(r'keebler="E=mc2; L=\"Loves\"; fudge=\012;"').items())
+    [('keebler', 'E=mc2; L="Loves"; fudge=\n;')]
+    """
+    #print "parse_cookies"
+    if '"' in http_cookie:
+        # HTTP_COOKIE has quotes in it, use slow but correct cookie parsing
+        cookie = Cookie.SimpleCookie()
+        try:
+            cookie.load(http_cookie)
+        except Cookie.CookieError:
+            # If HTTP_COOKIE header is malformed, try at least to load the cookies we can by
+            # first splitting on ';' and loading each attr=value pair separately
+            cookie = Cookie.SimpleCookie()
+            for attr_value in http_cookie.split(';'):
+                try:
+                    cookie.load(attr_value)
+                except Cookie.CookieError:
+                    pass
+        cookies = dict((k, urllib.unquote(v.value)) for k, v in cookie.iteritems())
+    else:
+        # HTTP_COOKIE doesn't have quotes, use fast cookie parsing
+        cookies = {}
+        for key_value in http_cookie.split(';'):
+            key_value = key_value.split('=', 1)
+            if len(key_value) == 2:
+                key, value = key_value
+                cookies[key.strip()] = urllib.unquote(value.strip())
+    return cookies
 
 def cookies(*requireds, **defaults):
-    """
-    Returns a `storage` object with all the cookies in it.
+    r"""Returns a `storage` object with all the request cookies in it.
+    
     See `storify` for how `requireds` and `defaults` work.
+
+    This is forgiving on bad HTTP_COOKIE input, it tries to parse at least
+    the cookies it can.
+    
+    The values are converted to unicode if _unicode=True is passed.
     """
-    cookie = Cookie.SimpleCookie()
-    cookie.load(ctx.env.get('HTTP_COOKIE', ''))
+    # If _unicode=True is specified, use decode_cookie to convert cookie value to unicode 
+    if defaults.get("_unicode") is True:
+        defaults['_unicode'] = decode_cookie
+        
+    # parse cookie string and cache the result for next time.
+    if '_parsed_cookies' not in ctx:
+        http_cookie = ctx.env.get("HTTP_COOKIE", "")
+        ctx._parsed_cookies = parse_cookies(http_cookie)
+
     try:
-        d = storify(cookie, *requireds, **defaults)
-        for k, v in d.items():
-            d[k] = v and urllib.unquote(v)
-        return d
+        return storify(ctx._parsed_cookies, *requireds, **defaults)
     except KeyError:
         badrequest()
         raise StopIteration
@@ -437,3 +519,7 @@ A `storage` object containing various information about the request:
 `output`
    : A string to be used as the response.
 """
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

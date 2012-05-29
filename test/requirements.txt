@@ -1,4 +1,4 @@
 psycopg2
-PyMySQL
+MySQL-python
 PyGreSQL
 DBUtils

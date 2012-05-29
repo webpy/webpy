@@ -337,11 +337,11 @@ class ApplicationTest(webtest.TestCase):
 
         thread.start()
         time.sleep(1)
-        self.assertTrue(thread.is_alive())
+        self.assertTrue(thread.isAlive())
 
         app.stop()
         thread.join(timeout=1)
-        self.assertFalse(thread.is_alive())
+        self.assertFalse(thread.isAlive())
 
 if __name__ == '__main__':
     webtest.main()

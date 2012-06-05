@@ -911,7 +911,12 @@ def datestr(then, now=None):
         if abs(deltadays) < 4:
             return agohence(deltadays, 'day')
 
-        out = then.strftime('%B %e') # e.g. 'June 13'
+        try:
+            out = then.strftime('%B %e') # e.g. 'June  3'
+        except ValueError:
+            # %e doesn't work on Windows.
+            out = then.strftime('%B %d') # e.g. 'June 03'
+
         if then.year != now.year or deltadays < 0:
             out += ', %s' % then.year
         return out

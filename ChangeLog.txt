@@ -1,5 +1,23 @@
 # web.py changelog
 
+## 2012-06-26 0.37
+
+* Fixed datestr issue on Windows -- #155
+* Fixed Python 2.4 compatability issues (tx fredludlow)
+* Fixed error in utils.safewrite (tx shuge) -- #95
+* Allow use of web.data() with app.request() -- #105
+* Fixed an issue with session initializaton (tx beardedprojamz) -- #109
+* Allow custom message on 400 Bad Request (tx patryk) -- #121
+* Made djangoerror work on GAE. -- #80
+* Handle malformatted data in the urls. -- #117
+* Made it easier to stop the dev server -- #100, #122
+* Added support fot customizing cookie_path in session (tx larsga) -- #89
+* Added exception for "415 Unsupported Media" (tx JirkaChadima) -- #145
+* Added GroupedDropdown to support `<optgroup>` tag (tx jzellman) -- #152
+* Fixed failure in embedded interpreter - #87
+* Optimized web.cookies (tx benhoyt) - #148
+
+
 ## 2011-07-04 0.36
 
 * Upgraded to CherryPy WSGIServer 3.2.0. -- #66

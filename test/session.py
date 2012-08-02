@@ -70,21 +70,21 @@ class SessionTest(webtest.TestCase):
 class DBSessionTest(SessionTest):
     """Session test with db store."""
     def make_session(self, app):
-        db = webtest.setup_database("postgres")
+        db = webtest.setup_database("sqlite", "sqlite3")
         #db.printing = True
         db.query("" 
             + "CREATE TABLE session ("
             + "    session_id char(128) unique not null,"
-            + "    atime timestamp default (current_timestamp at time zone 'utc'),"
+            + "    atime timestamp default (datetime('now','utc')),"
             + "    data text)"
         )
         store = web.session.DBStore(db, 'session')
         return web.session.Session(app, store, {'count': 0})
-         
+
     def tearDown(self):
         # there might be some error with the current connection, delete from a new connection
-        self.db = webtest.setup_database("postgres")
+        self.db = webtest.setup_database("sqlite","sqlite3")
         self.db.query('DROP TABLE session')
-
+         
 if __name__ == "__main__":
     webtest.main()

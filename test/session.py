@@ -72,11 +72,11 @@ class DBSessionTest(SessionTest):
     def make_session(self, app):
         db = webtest.setup_database("postgres")
         #db.printing = True
-        db.query("" 
-            + "CREATE TABLE session ("
-            + "    session_id char(128) unique not null,"
-            + "    atime timestamp default (current_timestamp at time zone 'utc'),"
-            + "    data text)"
+        db.query(
+            "CREATE TABLE session ("
+            "    session_id char(128) unique not null,"
+            "    atime timestamp default (current_timestamp at time zone 'utc'),"
+            "    data text)"
         )
         store = web.session.DBStore(db, 'session')
         return web.session.Session(app, store, {'count': 0})
@@ -85,6 +85,25 @@ class DBSessionTest(SessionTest):
         # there might be some error with the current connection, delete from a new connection
         self.db = webtest.setup_database("postgres")
         self.db.query('DROP TABLE session')
+
+class MongoSessionTest(SessionTest):
+    """Session test with MongoStore"""
+    def make_session(self, app):
+        import pymongo, re, os
+        from pymongo.objectid import ObjectId
+        self.collection = pymongo.Connection("localhost").test.sessions
+        store = web.session.MongoStore(self.collection)
+        
+        objectid_re = re.compile("[A-Fa-f0-9]{24}")
+        keyvalidator = lambda key: objectid_re.match(key)
+        
+        keygen = lambda: ObjectId(os.urandom(12).encode("hex"))
+        
+        return web.session.Session(app, store, {"count": 0}, keygen,
+                                   keyvalidator)
+        
+    def tearDown(self):
+        self.collection.drop()
 
 if __name__ == "__main__":
     webtest.main()

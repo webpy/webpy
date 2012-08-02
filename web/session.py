@@ -47,15 +47,19 @@ class Session(object):
     """
     __slots__ = [
         "store", "_initializer", "_last_cleanup_time", "_config", "_data", 
-        "__getitem__", "__setitem__", "__delitem__"
+        "_keygen", "_keyvalidator", "_keytype", "__getitem__", "__setitem__",
+        "__delitem__"
     ]
 
-    def __init__(self, app, store, initializer=None):
+    def __init__(self, app, store, initializer=None, keygen=None, keyvalidator=None):
         self.store = store
         self._initializer = initializer
         self._last_cleanup_time = 0
         self._config = utils.storage(web.config.session_parameters)
         self._data = utils.threadeddict()
+        self._keygen = keygen
+        self._keyvalidator = keyvalidator
+        self._keytype = None
         
         self.__getitem__ = self._data.__getitem__
         self.__setitem__ = self._data.__setitem__
@@ -100,6 +104,10 @@ class Session(object):
         # protection against session_id tampering
         if self.session_id and not self._valid_session_id(self.session_id):
             self.session_id = None
+            
+        # Convert the key to the correct type if known
+        if self._keytype:
+            self.session_id = self._keytype(self.session_id)
 
         self._check_expiry()
         if self.session_id:
@@ -109,6 +117,8 @@ class Session(object):
         
         if not self.session_id:
             self.session_id = self._generate_session_id()
+            if not self._keytype:
+                self._keytype = type(self.session_id)
 
             if self._initializer:
                 if isinstance(self._initializer, dict):
@@ -134,10 +144,10 @@ class Session(object):
     
     def _save(self):
         if not self.get('_killed'):
-            self._setcookie(self.session_id)
+            self._setcookie(str(self.session_id))
             self.store[self.session_id] = dict(self._data)
         else:
-            self._setcookie(self.session_id, expires=-1)
+            self._setcookie(str(self.session_id), expires=-1)
             
     def _setcookie(self, session_id, expires='', **kw):
         cookie_name = self._config.cookie_name
@@ -145,24 +155,33 @@ class Session(object):
         cookie_path = self._config.cookie_path
         httponly = self._config.httponly
         secure = self._config.secure
-        web.setcookie(cookie_name, session_id, expires=expires, domain=cookie_domain, httponly=httponly, secure=secure, path=cookie_path)
+        web.setcookie(cookie_name, str(session_id), expires=expires, domain=cookie_domain, httponly=httponly, secure=secure, path=cookie_path)
     
     def _generate_session_id(self):
         """Generate a random id for session"""
 
         while True:
-            rand = os.urandom(16)
-            now = time.time()
-            secret_key = self._config.secret_key
-            session_id = sha1("%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key))
-            session_id = session_id.hexdigest()
+            if not self._keygen:
+                rand = os.urandom(16)
+                now = time.time()
+                secret_key = self._config.secret_key
+                session_id = sha1("%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key))
+                session_id = session_id.hexdigest()
+            else:
+                session_id = self._keygen()
+                
             if session_id not in self.store:
                 break
         return session_id
 
     def _valid_session_id(self, session_id):
-        rx = utils.re_compile('^[0-9a-fA-F]+$')
-        return rx.match(session_id)
+        """session_id is guarenteed to be a str or unicode object."""
+        
+        if self._keyvalidator == None:
+            rx = utils.re_compile('^[0-9a-fA-F]+$')
+            return rx.match(session_id)
+        else:
+            return self._keyvalidator(session_id)
         
     def _cleanup(self):
         """Cleanup the stored sessions"""
@@ -314,7 +333,7 @@ class DBStore(Store):
         self.db.delete(self.table, where="session_id=$key", vars=locals())
 
     def cleanup(self, timeout):
-        timeout = datetime.timedelta(timeout/(24.0*60*60)) #timedelta takes numdays as arg
+        timeout = datetime.timedelta(seconds=timeout)
         last_allowed_time = datetime.datetime.now() - timeout
         self.db.delete(self.table, where="$last_allowed_time > atime", vars=locals())
 
@@ -352,6 +371,67 @@ class ShelfStore:
             atime, v = self.shelf[k]
             if now - atime > timeout :
                 del self[k]
+
+class MongoStore(Store):
+    """
+    Store for saving a session in a Mongo Database.
+    
+    It is HIGHLY reccomended that you also change the Session object's keygen
+    to a function which returns a new Mongo ObjectID.
+    
+        import pymongo, os, re
+        from pymongo.objectid import ObjectId
+        
+        objectid_re = re.compile("[A-Fa-f0-9]{24}")
+        key_validator = lambda key: objectid_re.match(key)
+        
+        keygen = lambda: ObjectId(os.urandom(12).encode("hex"))
+        
+        store = MongoStore(pymongo.Connection("localhost").mydb.mycollection,
+                           keygen, key_validator)
+    
+    """
+    
+    def __init__(self, collection, keyAttribute = "_id"):
+        """
+        collection - The Mongo collection the sessions will be stored within.
+        keyAttribute - The attribute tha will be used as the key for session
+                       documents. Note: An index should exist on this attribute.
+        
+        """
+        
+        self.collection = collection
+        self.keyAttribute = keyAttribute
+        
+    def __contains__(self, key):
+        return None != self.collection.find_one({self.keyAttribute: key})
+        
+    def __getitem__(self, key):
+        result = self.collection.find_and_modify(
+            query={self.keyAttribute: key},
+            update={"$set": {"lastUsed": datetime.datetime.now()}}
+        )
+        
+        if result == None:
+            raise KeyError
+            
+        return self.decode(result["value"])
+        
+    def __setitem__(self, key, value):
+        self.collection.save({
+            self.keyAttribute: key,
+            "value": self.encode(value),
+            "lastUsed": datetime.datetime.now()
+        })
+        
+    def __delitem__(self, key):
+        self.collection.remove({self.keyAttribute: key})
+        
+    def cleanup(self, timeout):
+        timeout = datetime.timedelta(seconds=timeout)
+        last_allowed_time = datetime.datetime.now() - timeout
+        
+        self.collection.remove({"lastUsed": {"$lt": last_allowed_time}})
 
 if __name__ == '__main__' :
     import doctest

@@ -1136,7 +1136,7 @@ def dburl2dict(url):
     Takes a URL to a database and parses it into an equivalent dictionary.
     
         >>> dburl2dict('postgres://james:day@serverfarm.example.net:5432/mygreatdb')
-        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'day', 'dbn': 'postgres'}
+        {'host': 'serverfarm.example.net', 'pw': 'day', 'dbn': 'postgres', 'db': 'mygreatdb', 'port': '5432', 'user': 'james'}
     
     """
     dbn, rest = url.split('://', 1)
@@ -1145,7 +1145,7 @@ def dburl2dict(url):
     host, rest = rest.split(':', 1)
     port, rest = rest.split('/', 1)
     db = rest
-    return dict(dbn=dbn, user=user, pw=pw, db=db, host=host)
+    return dict(dbn=dbn, user=user, pw=pw, host=host, port=port, db=db)
 
 _databases = {}
 def database(dburl=None, **params):

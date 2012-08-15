@@ -353,6 +353,52 @@ class ShelfStore:
             if now - atime > timeout :
                 del self[k]
 
+
+# From: Michele Petrazzo <michele.petra...@gmail.com>
+# Date: Sat, 26 Apr 2008 09:55:20 -0700 (PDT)
+# Local: Sat, Apr 26 2008 6:55 pm
+# Subject: memory session
+class MemoryStore(web.session.Store):
+    """Store for saving a session in memory.
+    Usefull where there is limited fs writes on the disk, like
+    flash memories
+
+    I save the data into a dict:
+    k: (time, pydata)
+    """
+    def __init__(self, d_store=None):
+        if d_store is None:
+            d_store = {}
+        self.d_store = d_store
+
+    def __contains__(self, key):
+        return key in self.d_store
+
+    def __getitem__(self, key):
+        """ Return the value and update the last seen value
+        """
+        t, value = self.d_store[key]
+        self.d_store[key] = (time.time(), value)
+        return value
+
+    def __setitem__(self, key, value):
+        self.d_store[key] = (time.time(), value)
+
+    def __delitem__(self, key):
+        del self.d_store[key]
+
+    def cleanup(self, timeout):
+        now = time.time()
+        to_del = []
+        for k, (atime, value) in self.d_store.iteritems():
+            if now - atime > timeout :
+                to_del.append(k)
+
+        #to avoid exception on "dict change during iterations"
+        for k in to_del:
+            del self.d_store[k]
+
+
 if __name__ == '__main__' :
     import doctest
     doctest.testmod()

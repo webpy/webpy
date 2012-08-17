@@ -926,6 +926,8 @@ class PostgresDB(DB):
         if db_module.__name__ == "psycopg2":
             import psycopg2.extensions
             psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+        if db_module.__name__ == "pgdb" and 'port' in keywords:
+            keywords["host"] += ":" + str(keywords.pop('port'))
 
         # if db is not provided postgres driver will take it from PGDATABASE environment variable
         if 'db' in keywords:

@@ -1048,6 +1048,9 @@ class FirebirdDB(DB):
             del keywords['pw']
         keywords['database'] = keywords['db']
         del keywords['db']
+        
+        self.paramstyle = db.paramstyle
+        
         DB.__init__(self, db, keywords)
         
     def delete(self, table, where=None, using=None, vars=None, _test=False):

@@ -1044,10 +1044,8 @@ class FirebirdDB(DB):
             db = None
             pass
         if 'pw' in keywords:
-            keywords['passwd'] = keywords['pw']
-            del keywords['pw']
-        keywords['database'] = keywords['db']
-        del keywords['db']
+            keywords['password'] = keywords.pop('pw')
+        keywords['database'] = keywords.pop('db')
 
         self.paramstyle = db.paramstyle
 

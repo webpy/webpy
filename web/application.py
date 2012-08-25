@@ -334,7 +334,49 @@ class application:
         except ImportError:
             # we're not running from within Google App Engine
             return wsgiref.handlers.CGIHandler().run(wsgiapp)
-    
+
+    def gaerun(self, *middleware):
+        """
+        Starts the program in a way that will work with Google app engine,
+        no matter which version you are using (2.5 / 2.7)
+
+        If it is 2.5, just normally start it with app.gaerun()
+
+        If it is 2.7, make sure to change the app.yaml handler to point to the
+        global variable that contains the result of app.gaerun()
+
+        For example:
+
+        in app.yaml (where code.py is where the main code is located)
+
+            handlers:
+            - url: /.*
+              script: code.app
+
+        Make sure that the app variable is globally accessible
+        """
+        wsgiapp = self.wsgifunc(*middleware)
+        try:
+            # check what version of python is running
+            version = sys.version_info[:2]
+            major   = version[0]
+            minor   = version[1]
+
+            if major != 2:
+                raise EnvironmentError("Google App Engine only supports python 2.5 and 2.7")
+
+            # if 2.7, return a function that can be run by gae
+            if minor == 7:
+                return wsgiapp
+            # if 2.5, use run_wsgi_app
+            elif minor == 5:
+                from google.appengine.ext.webapp.util import run_wsgi_app
+                return run_wsgi_app(wsgiapp)
+            else:
+                raise EnvironmentError("Not a supported platform, use python 2.5 or 2.7")
+        except ImportError:
+            return wsgiref.handlers.CGIHandler().run(wsgiapp)
+     
     def load(self, env):
         """Initializes ctx using env."""
         ctx = web.ctx

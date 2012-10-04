@@ -815,10 +815,9 @@ class DB:
         keys = values[0].keys()
         #@@ make sure all keys are valid
 
-        # make sure all rows have same keys.
         for v in values:
             if v.keys() != keys:
-                raise ValueError, 'Bad data'
+                raise ValueError, 'Not all rows have the same keys'
 
         sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
 

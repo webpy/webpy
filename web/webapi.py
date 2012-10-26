@@ -132,20 +132,20 @@ badrequest = BadRequest
 class Unauthorized(HTTPError):
     """`401 Unauthorized` error."""
     message = "unauthorized"
-    def __init__(self):
+    def __init__(self, message=None):
         status = "401 Unauthorized"
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
 unauthorized = Unauthorized
 
 class Forbidden(HTTPError):
     """`403 Forbidden` error."""
     message = "forbidden"
-    def __init__(self):
+    def __init__(self, message=None):
         status = "403 Forbidden"
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
 forbidden = Forbidden
 
@@ -189,50 +189,50 @@ nomethod = NoMethod
 class NotAcceptable(HTTPError):
     """`406 Not Acceptable` error."""
     message = "not acceptable"
-    def __init__(self):
+    def __init__(self, message=None):
         status = "406 Not Acceptable"
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
 notacceptable = NotAcceptable
 
 class Conflict(HTTPError):
     """`409 Conflict` error."""
     message = "conflict"
-    def __init__(self):
+    def __init__(self, message=None):
         status = "409 Conflict"
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
 conflict = Conflict
 
 class Gone(HTTPError):
     """`410 Gone` error."""
     message = "gone"
-    def __init__(self):
+    def __init__(self, message=None):
         status = '410 Gone'
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
 gone = Gone
 
 class PreconditionFailed(HTTPError):
     """`412 Precondition Failed` error."""
     message = "precondition failed"
-    def __init__(self):
+    def __init__(self, message=None):
         status = "412 Precondition Failed"
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
 preconditionfailed = PreconditionFailed
 
 class UnsupportedMediaType(HTTPError):
     """`415 Unsupported Media Type` error."""
     message = "unsupported media type"
-    def __init__(self):
+    def __init__(self, message=None):
         status = "415 Unsupported Media Type"
         headers = {'Content-Type': 'text/html'}
-        HTTPError.__init__(self, status, headers, self.message)
+        HTTPError.__init__(self, status, headers, message or self.message)
 
 unsupportedmediatype = UnsupportedMediaType
 

@@ -7,7 +7,7 @@ import os, sys
 
 import http
 import webapi as web
-from utils import listget
+from utils import listget, intget
 from net import validaddr, validip
 import httpserver
     
@@ -51,7 +51,12 @@ def runwsgi(func):
         else:
             return runscgi(func)
     
-    return httpserver.runsimple(func, validip(listget(sys.argv, 1, '')))
+    
+    server_addr = validip(listget(sys.argv, 1, ''))
+    if os.environ.has_key('PORT'): # e.g. Heroku
+        server_addr = ('0.0.0.0', intget(os.environ['PORT']))
+    
+    return httpserver.runsimple(func, server_addr)
     
 def _is_dev_mode():
     # Some embedded python interpreters won't have sys.arv

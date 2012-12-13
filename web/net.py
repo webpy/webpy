@@ -33,7 +33,7 @@ def validip6addr(address):
         socket.inet_pton(socket.AF_INET6, address)
     except socket.error:
         return False
-    
+
     return True
 
 def validipaddr(address):
@@ -77,7 +77,22 @@ def validipport(port):
     return True
 
 def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
-    """Returns `(ip_address, port)` from string `ip_addr_port`"""
+    """
+    Returns `(ip_address, port)` from string `ip_addr_port`
+    >>> validip('1.2.3.4')
+    ('1.2.3.4', 8080)
+    >>> validip('80')
+    ('0.0.0.0', 80)
+    >>> validip('192.168.0.1:85')
+    ('192.168.0.1', 85)
+    >>> validip('::')
+    ('::', 8080)
+    >>> validip('[::]:88')
+    ('::', 88)
+    >>> validip('[::1]:80')
+    ('::1', 80)
+
+    """
     addr = defaultaddr
     port = defaultport
     
@@ -92,7 +107,7 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
     else:
         if validip6addr(ip): return (ip,port)
     #end ipv6 code
-    
+
     ip = ip.split(":", 1)
     if len(ip) == 1:
         if not ip[0]:
@@ -124,6 +139,8 @@ def validaddr(string_):
         ('127.0.0.1', 8080)
         >>> validaddr('127.0.0.1:8000')
         ('127.0.0.1', 8000)
+        >>> validip('[::1]:80')
+        ('::1', 80)
         >>> validaddr('fff')
         Traceback (most recent call last):
             ...

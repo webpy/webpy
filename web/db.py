@@ -1037,11 +1037,8 @@ class FirebirdDB(DB):
     """Firebird Database.
     """
     def __init__(self, **keywords):
-        try:
-            import kinterbasdb as db
-        except Exception:
-            db = None
-            pass
+        db = import_driver(["fdb", "kinterbasdb"], preferred=keywords.pop('driver', None))
+        
         if 'pw' in keywords:
             keywords['password'] = keywords.pop('pw')
         keywords['database'] = keywords.pop('db')
@@ -1066,6 +1063,20 @@ class FirebirdDB(DB):
             ('GROUP BY', group),
             ('ORDER BY', order)
         )
+        
+    def _process_insert_query(self, query, tablename, seqname):
+        # Firebird doesn't have an accurate way to know what a
+        # table's sequence is as autoincrementing fields are
+        # implemented using generators and triggers
+    
+        # If we know the sequence then return the value
+        if seqname:
+            query.append(' RETURNING %s' % seqname)
+            return query
+        
+        # 'fdb' currently causes a segmentation fault when calling fetchone() 
+        # immediately after an insert. This NULL query fixes the problem.
+        return query, SQLQuery("SELECT NULL FROM RDB$DATABASE;")
 
 class MSSQLDB(DB):
     def __init__(self, **keywords):

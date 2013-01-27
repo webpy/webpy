@@ -1143,8 +1143,6 @@ def dburl2dict(url):
         {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'day', 'dbn': 'postgres'}
         >>> dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
         {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
-        >>> dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
-        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
         >>> dburl2dict('sqlite:///mygreatdb.db')
         {'db': 'mygreatdb.db', 'dbn': 'sqlite'}
         >>> dburl2dict('sqlite:////absolute/path/mygreatdb.db')

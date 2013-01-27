@@ -1143,20 +1143,33 @@ def dburl2dict(url):
         {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'day', 'dbn': 'postgres'}
         >>> dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
         {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
+        >>> dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
+        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
+        >>> dburl2dict('sqlite:///mygreatdb.db')
+        {'db': 'mygreatdb.db', 'dbn': 'sqlite'}
+        >>> dburl2dict('sqlite:////absolute/path/mygreatdb.db')
+        {'db': '/absolute/path/mygreatdb.db', 'dbn': 'sqlite'}
     """
     dbn, rest = url.split('://', 1)
-    user, rest = rest.split(':', 1)
-    pw, rest = rest.split('@', 1)
-    if ':' in rest:
-        host, rest = rest.split(':', 1)
-        port, rest = rest.split('/', 1)
+    if rest.startswith('/'):
+        _, rest = rest.split('/', 1)
+        user = pw = host = port = ''
     else:
-        host, rest = rest.split('/', 1)
-        port = None
+        user, rest = rest.split(':', 1)
+        pw, rest = rest.split('@', 1)
+        if ':' in rest:
+            host, rest = rest.split(':', 1)
+            port, rest = rest.split('/', 1)
+        else:
+            host, rest = rest.split('/', 1)
+            port = None
     db = rest
     
     uq = urllib.unquote
     out = dict(dbn=dbn, user=uq(user), pw=uq(pw), host=uq(host), db=uq(db))
+    if not user: out.pop('user')
+    if not pw: out.pop('pw')
+    if not host: out.pop('host')
     if port: out['port'] = port
     return out
 

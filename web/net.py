@@ -4,7 +4,7 @@ Network Utilities
 """
 
 __all__ = [
-  "validipaddr", "validipport", "validip", "validaddr", 
+  "validipaddr", "validip6addr", "validipport", "validip", "validaddr",
   "urlquote",
   "httpdate", "parsehttpdate", 
   "htmlquote", "htmlunquote", "websafe",
@@ -13,6 +13,28 @@ __all__ = [
 import urllib, time
 try: import datetime
 except ImportError: pass
+import re
+import socket
+
+def validip6addr(address):
+    """
+    Returns True if `address` is a valid IPv6 address.
+
+        >>> validip6addr('::')
+        True
+        >>> validip6addr('aaaa:bbbb:cccc:dddd::1')
+        True
+        >>> validip6addr('1:2:3:4:5:6:7:8:9:10')
+        False
+        >>> validip6addr('12:10')
+        False
+    """
+    try:
+        socket.inet_pton(socket.AF_INET6, address)
+    except socket.error:
+        return False
+
+    return True
 
 def validipaddr(address):
     """
@@ -55,10 +77,37 @@ def validipport(port):
     return True
 
 def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
-    """Returns `(ip_address, port)` from string `ip_addr_port`"""
+    """
+    Returns `(ip_address, port)` from string `ip_addr_port`
+    >>> validip('1.2.3.4')
+    ('1.2.3.4', 8080)
+    >>> validip('80')
+    ('0.0.0.0', 80)
+    >>> validip('192.168.0.1:85')
+    ('192.168.0.1', 85)
+    >>> validip('::')
+    ('::', 8080)
+    >>> validip('[::]:88')
+    ('::', 88)
+    >>> validip('[::1]:80')
+    ('::1', 80)
+
+    """
     addr = defaultaddr
     port = defaultport
     
+    #Matt Boswell's code to check for ipv6 first
+    match = re.search(r'^\[([^]]+)\](?::(\d+))?$',ip) #check for [ipv6]:port
+    if match:
+        if validip6addr(match.group(1)):
+            if match.group(2):
+                if validipport(match.group(2)): return (match.group(1),int(match.group(2)))
+            else:
+                return (match.group(1),port)
+    else:
+        if validip6addr(ip): return (ip,port)
+    #end ipv6 code
+
     ip = ip.split(":", 1)
     if len(ip) == 1:
         if not ip[0]:
@@ -90,6 +139,8 @@ def validaddr(string_):
         ('127.0.0.1', 8080)
         >>> validaddr('127.0.0.1:8000')
         ('127.0.0.1', 8000)
+        >>> validip('[::1]:80')
+        ('::1', 80)
         >>> validaddr('fff')
         Traceback (most recent call last):
             ...

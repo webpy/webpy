@@ -87,8 +87,16 @@ class DBSessionTest(SessionTest):
         self.db.query('DROP TABLE session')
 
 class RedisSessionTest(SessionTest):
+    """Session test with redis store"""
     def make_session(self, app):
         import redis
+        self.redis_conn = redis.Redis(host='localhost', port=6379, db=0)
+        store = web.session.RedisStore(self.redis_conn)
+        return web.session.Session(app, store, {'count': 0})
+
+    def tearDown(self):
+        self.redis_conn = None
+
 
 
 if __name__ == "__main__":

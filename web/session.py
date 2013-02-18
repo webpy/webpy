@@ -373,28 +373,28 @@ class RedisStore(Store):
         self.redis = redis_conn
 
     def __contains__(self, key):
-        return self.redis.exists(session_key_prefix % key)
+        return self.redis.exists(self.session_key_prefix % key)
 
     def __getitem__(self, key):
-        session_key = session_key_prefix % key
+        session_key = self.session_key_prefix % key
         data = self.redis.get(session_key)
         if data:
-            self.redis.expire(session_key, web.webapi.config.session_parameters.timeout)
+            self.redis.expire(session_key, web.config.session_parameters.timeout)
             decoded_data = self.decode(data)
             return decoded_data
         else:
             raise KeyError
 
     def __setitem__(self, key, value):
-        session_key = session_key_prefix % key
+        session_key = self.session_key_prefix % key
         encoded_value = self.encode(value)
         pipe = self.redis.pipeline()
         pipe.set(session_key, encoded_value)
-        pipe.expire(session_key, web.webapi.config.session_parameters.timeout)
+        pipe.expire(session_key, web.config.session_parameters.timeout)
         pipe.execute()
 
     def __delitem__(self, key):
-        session_key = session_key_prefix % key
+        session_key = self.session_key_prefix % key
         self.redis.delete(session_key)
 
     def cleanup(self, timeout):

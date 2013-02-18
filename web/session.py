@@ -19,7 +19,6 @@ except ImportError:
 
 import utils
 import webapi as web
-import redis
 
 __all__ = [
     'Session', 'SessionExpired',
@@ -355,24 +354,23 @@ class ShelfStore:
                 del self[k]
 
 class RedisStore(Store):
-    """Use a Redis Instance as a Session Store
+    """
+    Use a Redis Instance as a Session Store. Uses the redis-py library as a
+    Python wrapper for a Redis instance. https://github.com/andymccurdy/redis-py
+
+    import redis
+
     """
 
-    def __init__(self, redis_host, redis_password, redis_port,
-                 redis_db, session_key_prefix="web::session::key::%s"):
-        self.redis_host = redis_host
-        self.redis_password = redis_password
-        self.redis_port = redis_port
-        self.redis_db = redis_db
-
-        self.connection_pool = redis.ConnectionPool(host=self.redis_host,
-                            password=self.redis_password, port=self.redis_port,
-                            db=self.redis_db)
-
+    def __init__(self, redis_conn, session_key_prefix="web::session::key::%s"):
+        """
+        redis - The redis connection object.
+        session_key_prefix - The prefix of the unique identifier for each
+                             session stored. This is used for namespacing
+                             in redis.
+        """
         self.session_key_prefix = session_key_prefix
-
-        self.redis = redis.Redis(connection_pool=self.connection_pool)
-        super(RedisStore, self).__init__()
+        self.redis = redis_conn
 
     def __contains__(self, key):
         return self.redis.exists(session_key_prefix % key)

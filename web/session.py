@@ -364,13 +364,13 @@ class RedisStore(Store):
 
     def __init__(self, redis_conn, session_key_prefix="web::session::key::%s"):
         """
-        redis - The redis connection object.
+        redis_conn - The redis connection object.
         session_key_prefix - The prefix of the unique identifier for each
                              session stored. This is used for namespacing
                              in redis.
         """
-        self.session_key_prefix = session_key_prefix
         self.redis = redis_conn
+        self.session_key_prefix = session_key_prefix
 
     def __contains__(self, key):
         return self.redis.exists(self.session_key_prefix % key)

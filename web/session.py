@@ -140,6 +140,8 @@ class Session(object):
             self._setcookie(self.session_id, expires=-1)
             
     def _setcookie(self, session_id, expires='', **kw):
+        if expires == '':
+            expires = self._config.timeout
         cookie_name = self._config.cookie_name
         cookie_domain = self._config.cookie_domain
         cookie_path = self._config.cookie_path

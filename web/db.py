@@ -326,6 +326,8 @@ def sqlify(obj):
         return "'t'"
     elif obj is False:
         return "'f'"
+    elif isinstance(obj, long):
+        return str(obj)
     elif datetime and isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
     else:

@@ -41,9 +41,10 @@ class application:
         >>> app.request("/hello").data
         'hello'
     """
-    def __init__(self, mapping=(), fvars={}, autoreload=None):
+    def __init__(self, mapping=(), fvars={}, autoreload=None, use_path_dict=False):
         if autoreload is None:
             autoreload = web.config.get('debug', False)
+        self.use_path_dict = use_path_dict
         self.init_mapping(mapping)
         self.fvars = fvars
         self.processors = []
@@ -113,9 +114,14 @@ class application:
 
     def init_mapping(self, mapping):
         self.mapping = list(utils.group(mapping, 2))
+        if self.use_path_dict:
+            self.mapping = dict(x for x in reversed(self.mapping))  # reversed so that if there are duplicate paths the first entry "wins"
 
     def add_mapping(self, pattern, classname):
-        self.mapping.append((pattern, classname))
+        if self.use_path_dict:
+            self.mapping[pattern] = classname
+        else:
+            self.mapping.append((pattern, classname))
 
     def add_processor(self, processor):
         """
@@ -226,7 +232,11 @@ class application:
         return browser.AppBrowser(self)
 
     def handle(self):
-        fn, args = self._match(self.mapping, web.ctx.path)
+        if self.use_path_dict:
+            fn = self.mapping.get(web.ctx.path)
+            args = []
+        else:
+            fn, args = self._match(self.mapping, web.ctx.path)
         return self._delegate(fn, self.fvars, args)
         
     def handle_with_processors(self):

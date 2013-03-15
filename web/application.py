@@ -110,7 +110,8 @@ class application:
     def _cleanup(self):
         # Threads can be recycled by WSGI servers.
         # Clearing up all thread-local state to avoid interefereing with subsequent requests.
-        utils.ThreadedDict.clear_all()
+        if hasattr(utils.ThreadedDict, 'clear_all'):
+            utils.ThreadedDict.clear_all()
 
     def init_mapping(self, mapping):
         self.mapping = list(utils.group(mapping, 2))

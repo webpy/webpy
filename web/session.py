@@ -182,6 +182,10 @@ class Session(object):
         """Kill the session, make it no longer available"""
         del self.store[self.session_id]
         self._killed = True
+        
+    def renew_session_id(self):
+        """Renew the session id to prevent session fixation attacks"""
+        self.session_id = self._generate_session_id()
 
 class Store:
     """Base class for session stores"""

@@ -975,9 +975,21 @@ class PostgresDB(DB):
 
 class MySQLDB(DB): 
     def __init__(self, **keywords):
-        import MySQLdb as db
+        if 'driver' not in keywords:
+            keywords['driver'] = 'mysql'
+
+        params = {'mysql': 'passwd', 'mysql-connector': 'password'}
+        key = keywords['driver']
+        del keywords['driver']
+
+        if key == 'mysql-connector':
+            import mysql.connector as db
+        else:
+            import MySQLdb as db
+
+        key = params[key];
         if 'pw' in keywords:
-            keywords['passwd'] = keywords['pw']
+            keywords[key] = keywords['pw']
             del keywords['pw']
 
         if 'charset' not in keywords:

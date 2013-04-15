@@ -253,13 +253,15 @@ class DiskStore(Store):
 
     def __setitem__(self, key, value):
         path = self._get_path(key)
-        pickled = self.encode(value)    
+        pickled = self.encode(value)
         try:
-            f = open(path, 'w')
+            tname = path+"."+threading.current_thread().getName()
+            f = open(tname, 'w')
             try:
                 f.write(pickled)
-            finally: 
+            finally:
                 f.close()
+                os.rename(tname, path) # atomary operation
         except IOError:
             pass
 

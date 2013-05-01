@@ -358,7 +358,7 @@ class ShelfStore:
 # Date: Sat, 26 Apr 2008 09:55:20 -0700 (PDT)
 # Local: Sat, Apr 26 2008 6:55 pm
 # Subject: memory session
-class MemoryStore(web.session.Store):
+class MemoryStore(Store):
     """Store for saving a session in memory.
     Usefull where there is limited fs writes on the disk, like
     flash memories

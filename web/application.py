@@ -231,22 +231,22 @@ class application:
         
     def handle_with_processors(self):
         def process(processors):
-            try:
-                if processors:
-                    p, processors = processors[0], processors[1:]
-                    return p(lambda: process(processors))
-                else:
-                    return self.handle()
-            except web.HTTPError:
-                raise
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except:
-                print >> web.debug, traceback.format_exc()
-                raise self.internalerror()
+            if processors:
+                p, processors = processors[0], processors[1:]
+                return p(lambda: process(processors))
+            else:
+                return self.handle()
         
-        # processors must be applied in the resvere order. (??)
-        return process(self.processors)
+        try:
+            # processors must be applied in the resvere order. (??)
+            return process(self.processors)
+        except web.HTTPError:
+            raise
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            print >> web.debug, traceback.format_exc()
+            raise self.internalerror()
                         
     def wsgifunc(self, *middleware):
         """Returns a WSGI-compatible function for this application."""

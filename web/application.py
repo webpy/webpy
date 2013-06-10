@@ -2,12 +2,12 @@
 Web application
 (from web.py)
 """
-import webapi as web
-import webapi, wsgi, utils
-import debugerror
-import httpserver
+from . import webapi as web
+from . import webapi, wsgi, utils
+from . import debugerror
+from . import httpserver
 
-from utils import lstrips, safeunicode
+from .utils import lstrips, safeunicode
 import sys
 
 import urllib

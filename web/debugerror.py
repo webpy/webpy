@@ -11,10 +11,10 @@ http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 __all__ = ["debugerror", "djangoerror", "emailerrors"]
 
 import sys, urlparse, pprint, traceback
-from template import Template
-from net import websafe
-from utils import sendmail, safestr
-import webapi as web
+from .template import Template
+from .net import websafe
+from .utils import sendmail, safestr
+from . import webapi as web
 
 import os, os.path
 whereami = os.path.join(os.getcwd(), __file__)
@@ -343,7 +343,7 @@ if __name__ == "__main__":
     urls = (
         '/', 'index'
     )
-    from application import application
+    from .application import application
     app = application(urls, globals())
     app.internalerror = debugerror
     

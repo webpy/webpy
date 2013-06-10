@@ -21,11 +21,11 @@ try: set
 except NameError:
     from sets import Set as set
     
-from utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
+from .utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
 
 try:
     # db module can work independent of web.py
-    from webapi import debug, config
+    from .webapi import debug, config
 except:
     import sys
     debug = sys.stderr

@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 import sys, cgi, Cookie, pprint, urlparse, urllib
-from utils import storage, storify, threadeddict, dictadd, intget, safestr
+from .utils import storage, storify, threadeddict, dictadd, intget, safestr
 
 config = storage()
 config.__doc__ = """

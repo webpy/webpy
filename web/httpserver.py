@@ -5,9 +5,9 @@ from SimpleHTTPServer import SimpleHTTPRequestHandler
 import urllib
 import posixpath
 
-import webapi as web
-import net
-import utils
+from . import webapi as web
+from . import net
+from . import utils
 
 def runbasic(func, server_address=("0.0.0.0", 8080)):
     """

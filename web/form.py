@@ -4,8 +4,7 @@ HTML forms
 """
 
 import copy, re
-import webapi as web
-import utils, net
+from . import utils, net, webapi as web
 
 def attrget(obj, attr, value=None):
     try:

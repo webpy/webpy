@@ -17,8 +17,8 @@ except ImportError:
     import sha
     sha1 = sha.new
 
-import utils
-import webapi as web
+from . import utils
+from . import webapi as web
 
 __all__ = [
     'Session', 'SessionExpired',

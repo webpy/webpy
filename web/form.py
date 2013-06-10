@@ -96,7 +96,7 @@ class Form(object):
     def __getitem__(self, i):
         for x in self.inputs:
             if x.name == i: return x
-        raise KeyError, i
+        raise KeyError(i)
 
     def __getattr__(self, name):
         # don't interfere with deepcopy

@@ -13,7 +13,7 @@ __all__ = [
 import sys, os, threading, urllib, urlparse
 try: import datetime
 except ImportError: pass
-import net, utils, webapi as web
+from . import net, utils, webapi as web
 
 def prefixurl(base=''):
     """

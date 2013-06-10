@@ -43,9 +43,9 @@ import re
 from UserDict import DictMixin
 import warnings
 
-from utils import storage, safeunicode, safestr, re_compile
-from webapi import config
-from net import websafe
+from .utils import storage, safeunicode, safestr, re_compile
+from .webapi import config
+from .net import websafe
 
 def splitline(text):
     r"""

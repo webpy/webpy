@@ -74,12 +74,12 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                     finally:
                         if hasattr(result, 'close'): 
                             result.close()
-                except socket.error, socket_err:
+                except socket.error as socket_err:
                     # Catch common network errors and suppress them
                     if (socket_err.args[0] in \
                        (errno.ECONNABORTED, errno.EPIPE)): 
                         return
-                except socket.timeout, socket_timeout: 
+                except socket.timeout as socket_timeout: 
                     return
             except:
                 print(traceback.format_exc(), file=web.debug)
@@ -241,7 +241,7 @@ class StaticApp(SimpleHTTPRequestHandler):
             if etag == client_etag:
                 self.send_response(304, "Not Modified")
                 self.start_response(self.status, self.headers)
-                raise StopIteration
+                raise StopIteration()
         except OSError:
             pass # Probably a 404
 

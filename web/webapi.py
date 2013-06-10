@@ -289,8 +289,7 @@ def header(hdr, value, unique=False):
     hdr, value = safestr(hdr), safestr(value)
     # protection against HTTP response splitting attack
     if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
-        raise ValueError, 'invalid characters in header'
-
+        raise ValueError('invalid characters in header')
     if unique is True:
         for h, v in ctx.headers:
             if h.lower() == hdr.lower(): return
@@ -478,7 +477,7 @@ def cookies(*requireds, **defaults):
         return storify(ctx._parsed_cookies, *requireds, **defaults)
     except KeyError:
         badrequest()
-        raise StopIteration
+        raise StopIteration()
 
 def debug(*args):
     """

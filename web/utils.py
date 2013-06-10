@@ -73,8 +73,8 @@ class Storage(dict):
     def __getattr__(self, key): 
         try:
             return self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
     
     def __setattr__(self, key, value): 
         self[key] = value
@@ -82,8 +82,8 @@ class Storage(dict):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
     
     def __repr__(self):     
         return '<Storage ' + dict.__repr__(self) + '>'
@@ -292,7 +292,7 @@ def _strips(direction, text, remove):
         if text.endswith(remove):   
             return text[:-len(remove)]
     else: 
-        raise ValueError, "Direction needs to be r or l."
+        raise ValueError("Direction needs to be r or l.")
     return text
 
 def rstrips(text, remove):
@@ -420,9 +420,9 @@ def timelimit(timeout):
             c = Dispatch()
             c.join(timeout)
             if c.isAlive():
-                raise TimeoutError, 'took too long'
+                raise TimeoutError('took too long')
             if c.error:
-                raise c.error[0], c.error[1]
+                raise c.error[1]
             return c.result
         return _2
     return _1
@@ -694,7 +694,7 @@ class IterBetter:
     def __getitem__(self, i):
         #todo: slices
         if i < self.c: 
-            raise IndexError, "already passed "+str(i)
+            raise IndexError("already passed "+str(i))
         try:
             while i > self.c: 
                 self.i.next()
@@ -703,7 +703,7 @@ class IterBetter:
             self.c += 1
             return self.i.next()
         except StopIteration: 
-            raise IndexError, str(i)
+            raise IndexError(str(i))
             
     def __nonzero__(self):
         if hasattr(self, "__len__"):
@@ -1337,7 +1337,7 @@ def to36(q):
         ValueError: must supply a positive integer
     
     """
-    if q < 0: raise ValueError, "must supply a positive integer"
+    if q < 0: raise ValueError("must supply a positive integer")
     letters = "0123456789abcdefghijklmnopqrstuvwxyz"
     converted = []
     while q != 0:
@@ -1397,7 +1397,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             filename = os.path.basename(a)
             mail.attach(filename, content, None)
         else:
-            raise ValueError, "Invalid attachment: %s" % repr(a)
+            raise ValueError("Invalid attachment: %s" % repr(a))
             
     mail.send()
 

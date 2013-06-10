@@ -103,7 +103,7 @@ class Form(object):
         inputs = self.__dict__.get('inputs') or []
         for x in inputs:
             if x.name == name: return x
-        raise AttributeError, name
+        raise AttributeError(name)
     
     def get(self, i, default=None):
         try:
@@ -137,7 +137,7 @@ class Input(object):
         return False
         
     def get_type(self):
-        raise NotImplementedError
+        raise NotImplementedError()
         
     def get_default_id(self):
         return self.name

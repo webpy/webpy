@@ -79,7 +79,7 @@ class SQLParam(object):
             return ':1'
         elif paramstyle is None or paramstyle in ['format', 'pyformat']:
             return '%s'
-        raise UnknownParamstyle, paramstyle
+        raise UnknownParamstyle(paramstyle)
         
     def sqlquery(self): 
         return SQLQuery([self])
@@ -580,7 +580,7 @@ class DB:
             return ':1'
         elif style in ['format', 'pyformat']:
             return '%s'
-        raise UnknownParamstyle, style
+        raise UnknownParamstyle(style)
 
     def _db_execute(self, cur, sql_query): 
         """executes an sql query"""
@@ -829,7 +829,7 @@ class DB:
 
         for v in values:
             if v.keys() != keys:
-                raise ValueError, 'Not all rows have the same keys'
+                raise ValueError('Not all rows have the same keys')
 
         sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
 
@@ -1184,7 +1184,7 @@ def database(dburl=None, **params):
     if dbn in _databases:
         return _databases[dbn](**params)
     else:
-        raise UnknownDB, dbn
+        raise UnknownDB(dbn)
 
 def register_database(name, clazz):
     """

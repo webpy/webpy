@@ -280,7 +280,7 @@ def djangoerror():
     def prettify(x):
         try: 
             out = pprint.pformat(x)
-        except Exception, e: 
+        except Exception as e: 
             out = '[could not display: <' + e.__class__.__name__ + \
                   ': '+str(e)+'>]'
         return out

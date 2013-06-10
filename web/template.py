@@ -466,7 +466,7 @@ class Parser:
         if keyword in self.statement_nodes:
             return self.statement_nodes[keyword](stmt, block, begin_indent)
         else:
-            raise ParseError, 'Unknown statement: %s' % repr(keyword)
+            raise ParseError('Unknown statement: %s' % repr(keyword))
         
 class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
@@ -745,7 +745,7 @@ class ForLoop:
         
     def __getattr__(self, name):
         if self._ctx is None:
-            raise AttributeError, name
+            raise AttributeError(name)
         else:
             return getattr(self._ctx, name)
         
@@ -910,7 +910,7 @@ class Template(BaseTemplate):
         try:
             # compile the code first to report the errors, if any, with the filename
             compiled_code = compile(code, filename, 'exec')
-        except SyntaxError, e:
+        except SyntaxError as e:
             # display template line that caused the error along with the traceback.
             try:
                 e.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
@@ -998,7 +998,7 @@ class Render:
         elif kind == 'file':
             return Template(open(path).read(), filename=path, **self._keywords)
         else:
-            raise AttributeError, "No template named " + name            
+            raise AttributeError("No template named " + name)
 
     def _findfile(self, path_prefix): 
         p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
@@ -1161,7 +1161,7 @@ class SafeVisitor(object):
         self.visit(ast)
         
         if self.errors:        
-            raise SecurityError, '\n'.join([str(err) for err in self.errors])
+            raise SecurityError('\n'.join([str(err) for err in self.errors]))
         
     def visit(self, node, *args):
         "Recursively validate node and all of its children."
@@ -1277,8 +1277,8 @@ class TemplateResult(object, DictMixin):
     def __getattr__(self, key): 
         try:
             return self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
 
     def __setattr__(self, key, value): 
         self[key] = value
@@ -1286,8 +1286,8 @@ class TemplateResult(object, DictMixin):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
         
     def __unicode__(self):
         self._prepare_body()

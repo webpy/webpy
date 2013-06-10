@@ -3,6 +3,7 @@
 General Utilities
 (part of web.py)
 """
+from __future__ import print_function
 
 __all__ = [
   "Storage", "storage", "storify", 
@@ -1077,7 +1078,7 @@ class CaptureStdout:
     Captures everything `func` prints to stdout and returns it instead.
     
         >>> def idiot():
-        ...     print "foo"
+        ...     print("foo")
         >>> capturestdout(idiot)()
         'foo\\n'
     
@@ -1185,20 +1186,20 @@ def tryall(context, prefix=None):
             continue
         if prefix and not key.startswith(prefix): 
             continue
-        print key + ':',
+        print(key + ':', end=" ")
         try:
             r = value()
             dictincr(results, r)
-            print r
+            print(r)
         except:
-            print 'ERROR'
+            print('ERROR')
             dictincr(results, 'ERROR')
-            print '   ' + '\n   '.join(traceback.format_exc().split('\n'))
+            print('   ' + '\n   '.join(traceback.format_exc().split('\n')))
         
-    print '-'*40
-    print 'results:'
+    print('-'*40)
+    print('results:')
     for (key, value) in results.iteritems():
-        print ' '*2, str(key)+':', value
+        print(' '*2, str(key)+':', value)
         
 class ThreadedDict(threadlocal):
     """

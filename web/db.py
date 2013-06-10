@@ -2,14 +2,7 @@
 Database API
 (part of web.py)
 """
-
-__all__ = [
-  "UnknownParamstyle", "UnknownDB", "TransactionError", 
-  "sqllist", "sqlors", "reparam", "sqlquote",
-  "SQLQuery", "SQLParam", "sqlparam",
-  "SQLLiteral", "sqlliteral",
-  "database", 'DB',
-]
+from __future__ import print_function
 
 import time, os, urllib, urlparse
 try:
@@ -30,6 +23,14 @@ except:
     import sys
     debug = sys.stderr
     config = storage()
+
+__all__ = [
+  "UnknownParamstyle", "UnknownDB", "TransactionError", 
+  "sqllist", "sqlors", "reparam", "sqlquote",
+  "SQLQuery", "SQLParam", "sqlparam",
+  "SQLLiteral", "sqlliteral",
+  "database", 'DB',
+]
 
 class UnknownDB(Exception):
     """raised for unsupported dbms"""
@@ -592,7 +593,7 @@ class DB:
             b = time.time()
         except:
             if self.printing:
-                print >> debug, 'ERR:', str(sql_query)
+                print('ERR:', str(sql_query), file=debug)
             if self.ctx.transactions:
                 self.ctx.transactions[-1].rollback()
             else:
@@ -600,7 +601,7 @@ class DB:
             raise
 
         if self.printing:
-            print >> debug, '%s (%s): %s' % (round(b-a, 2), self.ctx.dbq_count, str(sql_query))
+            print('%s (%s): %s' % (round(b-a, 2), self.ctx.dbq_count, str(sql_query)), file=debug)
         return out
 
     def _process_query(self, sql_query):

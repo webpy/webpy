@@ -1,4 +1,4 @@
-__all__ = ["runsimple"]
+from __future__ import print_function
 
 import sys, os
 from SimpleHTTPServer import SimpleHTTPRequestHandler
@@ -8,6 +8,8 @@ import posixpath
 from . import webapi as web
 from . import net
 from . import utils
+
+__all__ = ["runsimple"]
 
 def runbasic(func, server_address=("0.0.0.0", 8080)):
     """
@@ -80,7 +82,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                 except socket.timeout, socket_timeout: 
                     return
             except:
-                print >> web.debug, traceback.format_exc(),
+                print(traceback.format_exc(), file=web.debug)
 
             if (not self.wsgi_sent_headers):
                 # We must write out something!
@@ -128,7 +130,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
             self.app = func
             self.serverShuttingDown = 0
 
-    print "http://%s:%d/" % server_address
+    print("http://%s:%d/" % server_address)
     WSGIServer(func, server_address).serve_forever()
 
 # The WSGIServer instance. 
@@ -149,9 +151,9 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     server = WSGIServer(server_address, func)
 
     if server.ssl_adapter:
-        print "https://%s:%d/" % server_address
+        print("https://%s:%d/" % server_address)
     else:
-        print "http://%s:%d/" % server_address
+        print("http://%s:%d/" % server_address)
 
     try:
         server.start()
@@ -316,4 +318,4 @@ class LogMiddleware:
         time = self.log_date_time_string()
 
         msg = self.format % (host, time, protocol, method, req, status)
-        print >> outfile, utils.safestr(msg)
+        print(utils.safestr(msg), file=outfile)

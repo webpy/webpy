@@ -10,12 +10,8 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-try:
-    import hashlib
-    sha1 = hashlib.sha1
-except ImportError:
-    import sha
-    sha1 = sha.new
+
+from hashlib import sha1
 
 from . import utils
 from . import webapi as web

@@ -33,22 +33,9 @@ __all__ = [
 
 import re, sys, time, threading, itertools, traceback, os
 
-try:
-    import subprocess
-except ImportError: 
-    subprocess = None
-
-try: import datetime
-except ImportError: pass
-
-try: set
-except NameError:
-    from sets import Set as set
-    
-try:
-    from threading import local as threadlocal
-except ImportError:
-    from python23 import threadlocal
+import subprocess
+import datetime
+from threading import local as threadlocal
 
 class Storage(dict):
     """
@@ -259,19 +246,7 @@ class Counter(storage):
        
 counter = Counter
 
-iters = [list, tuple]
-import __builtin__
-if hasattr(__builtin__, 'set'):
-    iters.append(set)
-if hasattr(__builtin__, 'frozenset'):
-    iters.append(set)
-if sys.version_info < (2,6): # sets module deprecated in 2.6
-    try:
-        from sets import Set
-        iters.append(Set)
-    except ImportError: 
-        pass
-    
+iters = [list, tuple, set, frozenset]
 class _hack(tuple): pass
 iters = _hack(iters)
 iters.__doc__ = """
@@ -1525,17 +1500,10 @@ class _EmailMessage:
                 
             cmd = [sendmail, '-f', self.from_address] + self.recipients
 
-            if subprocess:
-                p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-                p.stdin.write(message_text)
-                p.stdin.close()
-                p.wait()
-            else:
-                i, o = os.popen2(cmd)
-                i.write(message)
-                i.close()
-                o.close()
-                del i, o
+            p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            p.stdin.write(message_text)
+            p.stdin.close()
+            p.wait()
                 
     def __repr__(self):
         return "<EmailMessage>"

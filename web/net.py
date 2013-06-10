@@ -11,8 +11,7 @@ __all__ = [
 ]
 
 import urllib, time
-try: import datetime
-except ImportError: pass
+import datetime
 import re
 import socket
 

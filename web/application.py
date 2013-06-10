@@ -2,6 +2,8 @@
 Web application
 (from web.py)
 """
+from __future__ import print_function
+
 from . import webapi as web
 from . import webapi, wsgi, utils
 from . import debugerror
@@ -242,7 +244,7 @@ class application:
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                print >> web.debug, traceback.format_exc()
+                print(traceback.format_exc(), file=web.debug)
                 raise self.internalerror()
         
         # processors must be applied in the resvere order. (??)

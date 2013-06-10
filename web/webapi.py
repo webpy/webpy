@@ -2,6 +2,7 @@
 Web API (wrapper around WSGI)
 (from web.py)
 """
+from __future__ import print_function
 
 __all__ = [
     "config",
@@ -468,7 +469,7 @@ def debug(*args):
     except: 
         out = sys.stderr
     for arg in args:
-        print >> out, pprint.pformat(arg)
+        print(pprint.pformat(arg), file=out)
     return ''
 
 def _debugwrite(x):

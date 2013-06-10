@@ -5,15 +5,7 @@ Database API
 from __future__ import print_function
 
 import time, os, urllib
-try:
-    import datetime
-except ImportError:
-    datetime = None
-
-try: set
-except NameError:
-    from sets import Set as set
-    
+import datetime
 from .utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
 
 try:
@@ -329,7 +321,7 @@ def sqlify(obj):
         return "'f'"
     elif isinstance(obj, long):
         return str(obj)
-    elif datetime and isinstance(obj, datetime.datetime):
+    elif isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
     else:
         if isinstance(obj, unicode): obj = obj.encode('utf8')

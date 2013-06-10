@@ -17,12 +17,8 @@ import traceback
 import itertools
 import os
 import types
-from exceptions import SystemExit
 
-try:
-    import wsgiref.handlers
-except ImportError:
-    pass # don't break people with old Pythons
+import wsgiref.handlers
 
 __all__ = [
     "application", "auto_application",

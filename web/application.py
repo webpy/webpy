@@ -9,8 +9,7 @@ from . import webapi, wsgi, utils
 from . import debugerror
 from . import httpserver
 from .utils import lstrips, safeunicode
-from .py3helpers import iteritems
-
+from .py3helpers import iteritems, string_types
 import sys
 
 import urllib
@@ -18,6 +17,7 @@ import traceback
 import itertools
 import os
 import types
+from inspect import isclass
 
 import wsgiref.handlers
 
@@ -290,7 +290,7 @@ class application:
             
             def cleanup():
                 self._cleanup()
-                yield '' # force this function to be a generator
+                yield b'' # force this function to be a generator
                             
             return itertools.chain(result, cleanup())
 
@@ -418,8 +418,8 @@ class application:
         for k, v in iteritems(ctx):
             # convert all string values to unicode values and replace 
             # malformed data with a suitable replacement marker.
-            if isinstance(v, str):
-                ctx[k] = v.decode('utf-8', 'replace') 
+            if isinstance(v, bytes):
+                ctx[k] = v.decode('utf-8', 'replace')
 
         # status must always be str
         ctx.status = '200 OK'
@@ -436,15 +436,13 @@ class application:
             tocall = getattr(cls(), meth)
             return tocall(*args)
             
-        def is_class(o): return isinstance(o, (types.ClassType, type))
-            
         if f is None:
             raise web.notfound()
         elif isinstance(f, application):
             return f.handle_with_processors()
-        elif is_class(f):
+        elif isclass(f):
             return handle_class(f)
-        elif isinstance(f, basestring):
+        elif isinstance(f, string_types):
             if f.startswith('redirect '):
                 url = f.split(' ', 1)[1]
                 if web.ctx.method == "GET":
@@ -472,7 +470,7 @@ class application:
                     return f, None
                 else:
                     continue
-            elif isinstance(what, basestring):
+            elif isinstance(what, string_types):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)

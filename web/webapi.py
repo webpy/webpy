@@ -29,8 +29,15 @@ __all__ = [
     "internalerror",
 ]
 
-import sys, cgi, Cookie, pprint, urlparse, urllib
+import sys, cgi, pprint, urllib
 from .utils import storage, storify, threadeddict, dictadd, intget, safestr
+
+from .py3helpers import PY2, urljoin
+
+if PY2:
+    from Cookie import Morsel
+else:
+    from http.cookies import Morsel
 
 config = storage()
 config.__doc__ = """
@@ -76,7 +83,7 @@ class Redirect(HTTPError):
         `url` is joined with the base URL so that things like
         `redirect("about") will work properly.
         """
-        newloc = urlparse.urljoin(ctx.path, url)
+        newloc = urljoin(ctx.path, url)
 
         if newloc.startswith('/'):
             if absolute:
@@ -365,7 +372,7 @@ def data():
 def setcookie(name, value, expires='', domain=None,
               secure=False, httponly=False, path=None):
     """Sets a cookie."""
-    morsel = Cookie.Morsel()
+    morsel = Morsel()
     name, value = safestr(name), safestr(value)
     morsel.set(name, value, urllib.quote(value))
     if expires < 0:

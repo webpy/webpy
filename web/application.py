@@ -8,8 +8,9 @@ from . import webapi as web
 from . import webapi, wsgi, utils
 from . import debugerror
 from . import httpserver
-
 from .utils import lstrips, safeunicode
+from .py3helpers import iteritems
+
 import sys
 
 import urllib
@@ -414,7 +415,7 @@ class application:
 
         ctx.fullpath = ctx.path + ctx.query
         
-        for k, v in ctx.iteritems():
+        for k, v in iteritems(ctx):
             # convert all string values to unicode values and replace 
             # malformed data with a suitable replacement marker.
             if isinstance(v, str):

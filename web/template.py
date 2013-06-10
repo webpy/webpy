@@ -40,12 +40,21 @@ import os
 import sys
 import glob
 import re
-from UserDict import DictMixin
 import warnings
 
 from .utils import storage, safeunicode, safestr, re_compile
 from .webapi import config
 from .net import websafe
+from .py3helpers import PY2
+
+if PY2:
+    from UserDict import DictMixin
+
+    # Make a new-style class
+    class MutableMapping(object, DictMixin):
+        pass
+else:
+    from collections import MutableMapping
 
 def splitline(text):
     r"""
@@ -721,8 +730,11 @@ TEMPLATE_BUILTIN_NAMES = [
     "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-import __builtin__
-TEMPLATE_BUILTINS = dict([(name, getattr(__builtin__, name)) for name in TEMPLATE_BUILTIN_NAMES if name in __builtin__.__dict__])
+if PY2:
+    import __builtin__ as builtins
+else:
+    import builtins
+TEMPLATE_BUILTINS = dict([(name, getattr(builtins, name)) for name in TEMPLATE_BUILTIN_NAMES if name in builtins.__dict__])
 
 class ForLoop:
     """
@@ -1209,7 +1221,7 @@ class SafeVisitor(object):
         e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
         self.errors.append(e)
 
-class TemplateResult(object, DictMixin):
+class TemplateResult(MutableMapping):
     """Dictionary like object for storing template output.
     
     The result of a template execution is usally a string, but sometimes it

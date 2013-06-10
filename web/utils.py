@@ -37,6 +37,8 @@ import subprocess
 import datetime
 from threading import local as threadlocal
 
+from .py3helpers import itervalues, iteritems
+
 class Storage(dict):
     """
     A Storage object is like a dictionary except `obj.foo` can be used
@@ -151,7 +153,7 @@ def storify(mapping, *requireds, **defaults):
             value = [value]
         setattr(stor, key, value)
 
-    for (key, value) in defaults.iteritems():
+    for (key, value) in iteritems(defaults):
         result = value
         if hasattr(stor, key): 
             result = stor[key]
@@ -182,13 +184,13 @@ class Counter(storage):
     
     def most(self):
         """Returns the keys with maximum count."""
-        m = max(self.itervalues())
-        return [k for k, v in self.iteritems() if v == m]
+        m = max(itervalues(self))
+        return [k for k, v in iteritems(self) if v == m]
         
     def least(self):
         """Returns the keys with mininum count."""
         m = min(self.itervalues())
-        return [k for k, v in self.iteritems() if v == m]
+        return [k for k, v in iteritems(self) if v == m]
 
     def percent(self, key):
        """Returns what percentage a certain key is of all entries.
@@ -519,8 +521,8 @@ def group(seq, size):
         [[1, 2], [3, 4], [5]]
     """
     def take(seq, n):
-        for i in xrange(n):
-            yield seq.next()
+        for i in range(n):
+            yield next(seq)
 
     if not hasattr(seq, 'next'):  
         seq = iter(seq)
@@ -727,7 +729,7 @@ def dictreverse(mapping):
         >>> dictreverse({1: 2, 3: 4})
         {2: 1, 4: 3}
     """
-    return dict([(value, key) for (key, value) in mapping.iteritems()])
+    return dict([(value, key) for (key, value) in iteritems(mapping)])
 
 def dictfind(dictionary, element):
     """
@@ -739,7 +741,7 @@ def dictfind(dictionary, element):
         3
         >>> dictfind(d, 5)
     """
-    for (key, value) in dictionary.iteritems():
+    for (key, value) in iteritems(dictionary):
         if element is value: 
             return key
 
@@ -755,7 +757,7 @@ def dictfindall(dictionary, element):
         []
     """
     res = []
-    for (key, value) in dictionary.iteritems():
+    for (key, value) in iteritems(dictionary):
         if element is value:
             res.append(key)
     return res
@@ -1156,7 +1158,7 @@ def tryall(context, prefix=None):
     """
     context = context.copy() # vars() would update
     results = {}
-    for (key, value) in context.iteritems():
+    for (key, value) in iteritems(context):
         if not hasattr(value, '__call__'): 
             continue
         if prefix and not key.startswith(prefix): 
@@ -1289,7 +1291,7 @@ def autoassign(self, locals):
 
         def __init__(self, foo, bar, baz=1): autoassign(self, locals())
     """
-    for (key, value) in locals.iteritems():
+    for (key, value) in iteritems(locals):
         if key == 'self': 
             continue
         setattr(self, key, value)
@@ -1444,7 +1446,7 @@ class _EmailMessage:
         self.message.attach(msg)
 
     def prepare_message(self):
-        for k, v in self.headers.iteritems():
+        for k, v in iteritems(self.headers):
             if k.lower() == "content-type":
                 self.message.set_type(v)
             else:

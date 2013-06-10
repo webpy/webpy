@@ -10,11 +10,12 @@ http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
 __all__ = ["debugerror", "djangoerror", "emailerrors"]
 
-import sys, urlparse, pprint, traceback
+import sys, pprint, traceback
 from .template import Template
 from .net import websafe
 from .utils import sendmail, safestr
 from . import webapi as web
+from .py3helpers import urljoin
 
 import os, os.path
 whereami = os.path.join(os.getcwd(), __file__)
@@ -276,7 +277,6 @@ def djangoerror():
             }))
         tback = tback.tb_next
     frames.reverse()
-    urljoin = urlparse.urljoin
     def prettify(x):
         try: 
             out = pprint.pformat(x)

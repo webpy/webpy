@@ -5,6 +5,7 @@ General Utilities
 """
 from __future__ import print_function
 
+
 __all__ = [
   "Storage", "storage", "storify", 
   "Counter", "counter",
@@ -37,7 +38,7 @@ import subprocess
 import datetime
 from threading import local as threadlocal
 
-from .py3helpers import itervalues, iteritems
+from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap
 
 class Storage(dict):
     """
@@ -320,17 +321,26 @@ def safeunicode(obj, encoding='utf-8'):
         u'\u1234'
     """
     t = type(obj)
-    if t is unicode:
+    if t is text_type:
         return obj
-    elif t is str:
+    elif t is bytes:
         return obj.decode(encoding)
     elif t in [int, float, bool]:
         return unicode(obj)
-    elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
-        return unicode(obj)
+    #elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
+    #    return unicode(obj)
+    #else:
+    #    return str(obj).decode(encoding)
     else:
-        return str(obj).decode(encoding)
-    
+        return unicode(obj)
+
+if PY2:
+    def is_iter(obj):
+        return hasattr(obj, 'next')
+else:
+    def is_iter(obj):
+        return hasattr(obj, '__next__')
+
 def safestr(obj, encoding='utf-8'):
     r"""
     Converts any given object to utf-8 encoded string. 
@@ -342,12 +352,12 @@ def safestr(obj, encoding='utf-8'):
         >>> safestr(2)
         '2'
     """
-    if isinstance(obj, unicode):
+    if isinstance(obj, text_type):
         return obj.encode(encoding)
-    elif isinstance(obj, str):
+    elif isinstance(obj, bytes):
         return obj
-    elif hasattr(obj, 'next'): # iterator
-        return itertools.imap(safestr, obj)
+    elif is_iter(obj):
+        return imap(safestr, obj)
     else:
         return str(obj)
 

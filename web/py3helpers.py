@@ -20,3 +20,16 @@ else:
     itervalues = lambda d: iter(d.values())
     iteritems = lambda d: iter(d.items())
 
+# string and text types
+if PY2:
+    text_type = unicode
+    string_types = (str, unicode)
+else:
+    text_type = str
+    string_types = (str,)
+
+# imap
+if PY2:
+	from itertools import imap
+else:
+	imap = map

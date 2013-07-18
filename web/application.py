@@ -2,6 +2,7 @@
 Web application
 (from web.py)
 """
+from re import UNICODE
 import webapi as web
 import webapi, wsgi, utils
 import debugerror
@@ -476,7 +477,7 @@ class application:
             elif isinstance(what, basestring):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
-                result = utils.re_compile('^' + pat + '$').match(value)
+                result = utils.re_compile('^' + pat + '$').match(value, UNICODE)
                 
             if result: # it's a match
                 return what, [x for x in result.groups()]
@@ -588,7 +589,7 @@ class subdomain_application(application):
             if isinstance(what, basestring):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
-                result = utils.re_compile('^' + pat + '$').match(value)
+                result = utils.re_compile('^' + pat + '$',UNICODE).match(value)
 
             if result: # it's a match
                 return what, [x for x in result.groups()]

@@ -31,7 +31,7 @@ __all__ = [
 ]
 
 import re, sys, time, threading, itertools, traceback, os
-
+from re import UNICODE
 try:
     import subprocess
 except ImportError: 
@@ -528,7 +528,7 @@ def re_subm(pat, repl, string):
         >>> m.groups()
         ('oooooo',)
     """
-    compiled_pat = re_compile(pat)
+    compiled_pat = re_compile(pat,UNICODE)
     proxy = _re_subm_proxy()
     compiled_pat.sub(proxy.__call__, string)
     return compiled_pat.sub(repl, string), proxy.match
@@ -1324,7 +1324,7 @@ def to36(q):
     return "".join(converted) or '0'
 
 
-r_url = re_compile('(?<!\()(http://(\S+))')
+r_url = re_compile('(?<!\()(http://(\S+))', UNICODE)
 def safemarkdown(text):
     """
     Converts text to HTML following the rules of Markdown, but blocking any

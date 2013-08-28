@@ -1,5 +1,5 @@
 """DB test"""
-import webtest
+from . import webtest
 import web
 
 class DBTest(webtest.TestCase):

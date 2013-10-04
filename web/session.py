@@ -6,10 +6,8 @@ Session Management
 import os, time, datetime, random, base64
 import os.path
 from copy import deepcopy
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
+
 
 from hashlib import sha1
 

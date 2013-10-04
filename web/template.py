@@ -722,7 +722,7 @@ KEYWORDS = [
 
 TEMPLATE_BUILTIN_NAMES = [
     "dict", "enumerate", "float", "int", "bool", "list", "reversed", 
-    "set", "slice", "tuple", "xrange",
+    "set", "slice", "tuple", "range",
     "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex", 
     "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
     "True", "False",

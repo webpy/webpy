@@ -20,7 +20,7 @@ def prefixurl(base=''):
     Maybe some other time.
     """
     url = web.ctx.path.lstrip('/')
-    for i in xrange(url.count('/')): 
+    for i in range(url.count('/')): 
         base += '../'
     if not base: 
         base = './'

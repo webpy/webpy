@@ -254,7 +254,7 @@ class _Markdown:
             title = self.titles.get(link_id, None)
                 
 
-            if self.urls.has_key(link_id):
+            if link_id in self.urls:
                 url = self.urls[link_id]
                 url = url.replace("*", self.escapetable["*"])
                 url = url.replace("_", self.escapetable["_"])
@@ -336,12 +336,12 @@ class _Markdown:
                 link_id = alt_text.lower()
 
             alt_text = alt_text.replace('"', "&quot;")
-            if self.urls.has_key(link_id):
+            if link_id in self.urls:
                 url = self.urls[link_id]
                 url = url.replace("*", self.escapetable["*"])
                 url = url.replace("_", self.escapetable["_"])
                 res = '''<img src="%s" alt="%s"''' % (htmlquote(url), htmlquote(alt_text))
-                if self.titles.has_key(link_id):
+                if link_id in self.titles:
                     title = self.titles[link_id]
                     title = title.replace("*", self.escapetable["*"])
                     title = title.replace("_", self.escapetable["_"])
@@ -559,15 +559,15 @@ class _Markdown:
 
         for g in xrange(len(grafs)):
             t = grafs[g].strip() #@@?
-            if not self.html_blocks.has_key(t):
+            if t not in self.html_blocks:
                 t = self._RunSpanGamut(t)
                 t = self.r_tabbed.sub(r"<p>", t)
                 t += "</p>"
                 grafs[g] = t
 
-        for g in xrange(len(grafs)):
+        for g in range(len(grafs)):
             t = grafs[g].strip()
-            if self.html_blocks.has_key(t):
+            if t in self.html_blocks:
                 grafs[g] = self.html_blocks[t]
         
         return "\n\n".join(grafs)

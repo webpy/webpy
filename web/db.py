@@ -319,7 +319,7 @@ def sqlify(obj):
         return "'t'"
     elif obj is False:
         return "'f'"
-    elif isinstance(obj, long):
+    elif isinstance(obj, int):
         return str(obj)
     elif isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
@@ -603,7 +603,7 @@ class DB:
         return query, params
     
     def _where(self, where, vars): 
-        if isinstance(where, (int, long)):
+        if isinstance(where, int):
             where = "id = " + sqlparam(where)
         #@@@ for backward-compatibility
         elif isinstance(where, (list, tuple)) and len(where) == 2:
@@ -713,7 +713,7 @@ class DB:
             ('OFFSET', offset))
     
     def gen_clause(self, sql, val, vars): 
-        if isinstance(val, (int, long)):
+        if isinstance(val, int):
             if sql == 'WHERE':
                 nout = 'id = ' + sqlquote(val)
             else:

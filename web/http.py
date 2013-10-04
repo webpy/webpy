@@ -31,7 +31,7 @@ def expires(delta):
     Outputs an `Expires` header for `delta` from now. 
     `delta` is a `timedelta` object or a number of seconds.
     """
-    if isinstance(delta, (int, long)):
+    if isinstance(delta, int):
         delta = datetime.timedelta(seconds=delta)
     date_obj = datetime.datetime.utcnow() + delta
     web.header('Expires', net.httpdate(date_obj))

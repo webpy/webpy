@@ -1053,7 +1053,7 @@ class CaptureStdout:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args, **keywords):
-        from cStringIO import StringIO
+        import io
         # Not threadsafe!
         out = StringIO()
         oldstdout = sys.stdout
@@ -1091,8 +1091,8 @@ class Profile:
         stime = time.time() - stime
         prof.close()
 
-        import cStringIO
-        out = cStringIO.StringIO()
+        import io
+        out = StringIO()
         stats = hotshot.stats.load(filename)
         stats.stream = out
         stats.strip_dirs()
@@ -1117,7 +1117,7 @@ profile = Profile
 import traceback
 # hack for compatibility with Python 2.3:
 if not hasattr(traceback, 'format_exc'):
-    from cStringIO import StringIO
+    import io
     def format_exc(limit=None):
         strbuf = StringIO()
         traceback.print_exc(limit, strbuf)

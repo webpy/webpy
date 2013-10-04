@@ -235,7 +235,7 @@ class StaticApp(SimpleHTTPRequestHandler):
                               environ.get('REMOTE_PORT','-')
         self.command = environ.get('REQUEST_METHOD', '-')
 
-        from cStringIO import StringIO
+        import io
         self.wfile = StringIO() # for capturing error
 
         try:
@@ -294,7 +294,7 @@ class LogMiddleware:
         self.format = '%s - - [%s] "%s %s %s" - %s'
     
         from BaseHTTPServer import BaseHTTPRequestHandler
-        import StringIO
+        import io
         f = StringIO.StringIO()
         
         class FakeSocket:

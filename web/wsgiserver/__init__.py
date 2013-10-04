@@ -78,10 +78,8 @@ import socket
 import sys
 if 'win' in sys.platform and not hasattr(socket, 'IPPROTO_IPV6'):
     socket.IPPROTO_IPV6 = 41
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
+
+import io
 DEFAULT_BUFFER_SIZE = -1
 
 _fileobject_uses_str_type = isinstance(socket._fileobject(None)._rbuf, str)

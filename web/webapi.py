@@ -288,7 +288,7 @@ def rawinput(method=None):
     """Returns storage object with GET or POST arguments.
     """
     method = method or "both"
-    from cStringIO import StringIO
+    import io
 
     def dictify(fs): 
         # hack to make web.input work with enctype='text/plain.

@@ -204,7 +204,7 @@ class application:
 
         if method not in ["HEAD", "GET"]:
             data = data or ''
-            import StringIO
+            import io
             if isinstance(data, dict):
                 q = urllib.urlencode(data)
             else:

@@ -723,7 +723,7 @@ KEYWORDS = [
 TEMPLATE_BUILTIN_NAMES = [
     "dict", "enumerate", "float", "int", "bool", "list", "reversed", 
     "set", "slice", "tuple", "range",
-    "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex", 
+    "abs", "all", "any", "__call__", "chr", "cmp", "divmod", "filter", "hex", 
     "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
     "True", "False",
     "None",
@@ -739,7 +739,7 @@ class ForLoop:
     
         >>> loop = ForLoop()
         >>> for x in loop.setup(['a', 'b', 'c']):
-        ...     print loop.index, loop.revindex, loop.parity, x
+        ...     print (loop.index, loop.revindex, loop.parity, x)
         ...
         1 3 odd a
         2 2 even b
@@ -825,7 +825,7 @@ class BaseTemplate:
             join_=self._join
         )
     def _join(self, *items):
-        return u"".join(items)
+        return "".join(items)
             
     def _escape(self, value, escape=False):
         if value is None: 

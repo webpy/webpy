@@ -671,7 +671,7 @@ class IterBetter:
         except StopIteration: 
             raise IndexError(str(i))
             
-    def __nonzero__(self):
+    def __bool__(self):
         if hasattr(self, "__len__"):
             return len(self) != 0
         elif hasattr(self, "_head"):
@@ -692,7 +692,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
     def next():
         while True:
             try:
-                return it.next()
+                return next(it)
             except StopIteration:
                 raise
             except:
@@ -706,7 +706,7 @@ def safewrite(filename, content):
     """Writes the content to a temp file and then moves the temp file to 
     given filename to avoid overwriting the existing file in case of errors.
     """
-    f = file(filename + '.tmp', 'w')
+    f = open(filename + '.tmp', 'w')
     f.write(content)
     f.close()
     os.rename(f.name, filename)

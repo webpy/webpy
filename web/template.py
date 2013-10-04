@@ -271,7 +271,7 @@ class Parser:
             extended_expr()
         
         def identifier():
-            tokens.next()
+            next(tokens)
         
         def extended_expr():
             lookahead = tokens.lookahead()
@@ -317,7 +317,7 @@ class Parser:
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            readline = iter([text]).next
+            readline = next(iter([text]))
             end = None
             for t in tokenize.generate_tokens(readline):
                 t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
@@ -343,7 +343,7 @@ class Parser:
 
             def _next(self):
                 try:
-                    return self.iteritems.next()
+                    return next(self.iteritems)
                 except StopIteration:
                     return None
                 
@@ -352,7 +352,7 @@ class Parser:
                     self.items.append(self._next())
                 return self.items[self.position+1]
                     
-            def next(self):
+            def __next__(self):
                 self.current_item = self.lookahead()
                 self.position += 1
                 return self.current_item
@@ -520,7 +520,7 @@ class PythonTokenizer:
             # if this error is ignored, then it will be caught when compiling the python code.
             return
     
-    def next(self):
+    def __next__(self):
         type, t, begin, end, line = self.tokens.next()
         row, col = end
         self.index = col

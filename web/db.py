@@ -1213,7 +1213,7 @@ def _interpolate(format):
     chunks = []
     pos = 0
 
-    while 1:
+    while True:
         dollar = format.find("$", pos)
         if dollar < 0: 
             break

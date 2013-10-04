@@ -653,7 +653,7 @@ class IterBetter:
         if hasattr(self, "_head"):
             yield self._head
 
-        while 1:    
+        while True:    
             yield self.i.next()
             self.c += 1
 

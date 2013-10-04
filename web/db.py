@@ -135,7 +135,7 @@ class SQLQuery(object):
         self.items.append(value)
 
     def __add__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, str):
             items = [other]
         elif isinstance(other, SQLQuery):
             items = other.items
@@ -144,7 +144,7 @@ class SQLQuery(object):
         return SQLQuery(self.items + items)
 
     def __radd__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, str):
             items = [other]
         else:
             return NotImplemented
@@ -152,7 +152,7 @@ class SQLQuery(object):
         return SQLQuery(items + self.items)
 
     def __iadd__(self, other):
-        if isinstance(other, (basestring, SQLParam)):
+        if isinstance(other, (str, SQLParam)):
             self.items.append(other)
         elif isinstance(other, SQLQuery):
             self.items.extend(other.items)
@@ -338,7 +338,7 @@ def sqllist(lst):
         >>> sqllist(u'abc')
         u'abc'
     """
-    if isinstance(lst, basestring): 
+    if isinstance(lst, str): 
         return lst
     else:
         return ', '.join(lst)

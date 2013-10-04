@@ -582,7 +582,7 @@ class subdomain_application(application):
         
     def _match(self, mapping, value):
         for pat, what in mapping:
-            if isinstance(what, basestring):
+            if isinstance(what, str):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)

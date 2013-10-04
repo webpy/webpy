@@ -84,7 +84,7 @@ except ImportError:
     import StringIO
 DEFAULT_BUFFER_SIZE = -1
 
-_fileobject_uses_str_type = isinstance(socket._fileobject(None)._rbuf, basestring)
+_fileobject_uses_str_type = isinstance(socket._fileobject(None)._rbuf, str)
 
 import threading
 import time
@@ -1710,7 +1710,7 @@ class HTTPServer(object):
                     getattr(self, 'ssl_certificate_chain', None))
         
         # Select the appropriate socket
-        if isinstance(self.bind_addr, basestring):
+        if isinstance(self.bind_addr, str):
             # AF_UNIX socket
             
             # So we can reuse the socket...
@@ -1837,7 +1837,7 @@ class HTTPServer(object):
             
             conn = self.ConnectionClass(self, s, makefile)
             
-            if not isinstance(self.bind_addr, basestring):
+            if not isinstance(self.bind_addr, str):
                 # optional values
                 # Until we do DNS lookups, omit REMOTE_HOST
                 if addr is None: # sometimes this can happen
@@ -1897,7 +1897,7 @@ class HTTPServer(object):
         
         sock = getattr(self, "socket", None)
         if sock:
-            if not isinstance(self.bind_addr, basestring):
+            if not isinstance(self.bind_addr, str):
                 # Touch our own socket to make accept() return immediately.
                 try:
                     host, port = sock.getsockname()[:2]
@@ -1950,7 +1950,7 @@ ssl_adapters = {
 
 def get_ssl_adapter_class(name='pyopenssl'):
     adapter = ssl_adapters[name.lower()]
-    if isinstance(adapter, basestring):
+    if isinstance(adapter, str):
         last_dot = adapter.rfind(".")
         attr_name = adapter[last_dot + 1:]
         mod_path = adapter[:last_dot]
@@ -2127,7 +2127,7 @@ class WSGIGateway_10(WSGIGateway):
             'wsgi.version': (1, 0),
             }
         
-        if isinstance(req.server.bind_addr, basestring):
+        if isinstance(req.server.bind_addr, str):
             # AF_UNIX. This isn't really allowed by WSGI, which doesn't
             # address unix domain sockets. But it's better than nothing.
             env["SERVER_PORT"] = ""

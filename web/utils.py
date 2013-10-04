@@ -1356,7 +1356,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             filename = os.path.basename(getattr(a, "name", ""))
             content_type = getattr(a, 'content_type', None)
             mail.attach(filename, a.read(), content_type)
-        elif isinstance(a, basestring):
+        elif isinstance(a, str):
             f = open(a, 'rb')
             content = f.read()
             f.close()

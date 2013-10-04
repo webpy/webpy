@@ -547,9 +547,8 @@ class auto_application(application):
                 if path is not None:
                     self.add_mapping(path, klass)
 
-        class page:
+        class page(metaclass = metapage):
             path = None
-            __metaclass__ = metapage
 
         self.page = page
 

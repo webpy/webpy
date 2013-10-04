@@ -59,7 +59,7 @@ def modified(date=None, etag=None):
     `Last-Modified` and `ETag` output headers.
     """
     try:
-        from __builtin__ import set
+        from builtins import set
     except ImportError:
         # for python 2.3
         from sets import Set as set

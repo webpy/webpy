@@ -20,7 +20,7 @@ class DBTest(webtest.TestCase):
             webtest.setup_database(self.dbname, driver=self.driver)
             return True
         except ImportError as e:
-            print >> web.debug, str(e), "(ignoring %s)" % self.__class__.__name__
+            print (str(e), "(ignoring %s)" % self.__class__.__name__, file=web.debug)
             return False
     
     def testUnicode(self):
@@ -177,7 +177,7 @@ del t
 try:
     import DBUtils
 except ImportError as e:
-    print >> web.debug, str(e) + "(ignoring testPooling)"
+    print (str(e) + "(ignoring testPooling)", file=web.debug)
 
 if __name__ == '__main__':
     webtest.main()

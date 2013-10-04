@@ -64,7 +64,7 @@ def modified(date=None, etag=None):
         # for python 2.3
         from sets import Set as set
 
-    n = set([x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(',')])
+    n = {x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(',')}
     m = net.parsehttpdate(web.ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
     validate = False
     if etag:

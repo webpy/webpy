@@ -27,7 +27,7 @@ class Request(http.Request):
             f = web.lstrips(self.path, '/static/')
             assert '/' not in f
             #@@@ big security hole
-            self.write(file('static/' + f).read())
+            self.write(open('static/' + f).read())
             return self.finish()
 
         web.webapi._load(env)

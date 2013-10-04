@@ -31,7 +31,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     # Used under the modified BSD license:
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
-    import SimpleHTTPServer, SocketServer, BaseHTTPServer, urlparse
+    import SimpleHTTPServer, socketserver, BaseHTTPServer, urlparse
     import socket, errno
     import traceback
 
@@ -127,7 +127,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
             # Send the data
             self.wfile.write(data)
 
-    class WSGIServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+    class WSGIServer(socketserver.ThreadingMixIn, BaseHTTPServer.HTTPServer):
         def __init__(self, func, server_address):
             BaseHTTPServer.HTTPServer.__init__(self, 
                                                server_address, 

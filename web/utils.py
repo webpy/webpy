@@ -49,6 +49,8 @@ try:
 except ImportError:
     from python23 import threadlocal
 
+import gzip
+
 class Storage(dict):
     """
     A Storage object is like a dictionary except `obj.foo` can be used
@@ -143,6 +145,9 @@ def storify(mapping, *requireds, **defaults):
         
     def getvalue(x):
         if hasattr(x, 'file') and hasattr(x, 'value'):
+            if hasattr(x, 'type'):
+                if 'application/gzip' in x.type.lower():
+                    return gzip.GzipFile(mode='rb', fileobj=x.file).read()
             return x.value
         elif hasattr(x, 'value'):
             return unicodify(x.value)

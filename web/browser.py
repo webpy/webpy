@@ -46,12 +46,12 @@ class Browser:
 
     def do_request(self, req):
         if DEBUG:
-            print 'requesting', req.get_method(), req.get_full_url()
+            print('requesting', req.get_method(), req.get_full_url())
         opener = self.build_opener()
         opener.add_handler(self._cookie_processor)
         try:
             self._response = opener.open(req)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             self._response = e
 
         self.url = self._response.geturl()

@@ -513,8 +513,8 @@ class application:
         if parent:
             return parent.internalerror()
         elif web.config.get('debug'):
-            import debugerror
-            return debugerror.debugerror()
+            #from . import debugerror #zw
+            return debugerror()
         else:
             return web._InternalError()
 
@@ -716,7 +716,7 @@ class Reloader:
             self.mtimes[mod] = mtime
         elif self.mtimes[mod] < mtime:
             try: 
-                reload(mod)
+                imp.reload(mod)
                 self.mtimes[mod] = mtime
             except ImportError: 
                 pass

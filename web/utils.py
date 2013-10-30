@@ -355,7 +355,7 @@ def safestr(obj, encoding='utf-8'):
     if isinstance(obj, text_type):
         return obj.encode(encoding)
     elif isinstance(obj, bytes):
-        return obj
+        return str(obj, encoding)
     elif is_iter(obj):
         return imap(safestr, obj)
     else:

@@ -317,7 +317,7 @@ class Parser:
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            readline = iter([text]).next
+            readline = iter([text]).__next__
             end = None
             for t in tokenize.generate_tokens(readline):
                 t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
@@ -343,7 +343,7 @@ class Parser:
 
             def _next(self):
                 try:
-                    return self.iteritems.next()
+                    return self.iteritems.__next__()
                 except StopIteration:
                     return None
                 
@@ -387,12 +387,12 @@ class Parser:
             >>> python_lookahead(' x = 1')
             ' '
         """
-        readline = iter([text]).next
+        readline = iter([text]).__next__
         tokens = tokenize.generate_tokens(readline)
-        return tokens.next()[1]
+        return tokens.__next__()[1]
         
     def python_tokens(self, text):
-        readline = iter([text]).next
+        readline = iter([text]).__next__
         tokens = tokenize.generate_tokens(readline)
         return [t[1] for t in tokens]
         
@@ -481,7 +481,7 @@ class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
     def __init__(self, text):
         self.text = text
-        readline = iter([text]).next
+        readline = iter([text]).__next__
         self.tokens = tokenize.generate_tokens(readline)
         self.index = 0
         
@@ -886,7 +886,7 @@ class Template(BaseTemplate):
                 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        import webapi as web
+        from . import webapi as web
         if 'headers' in web.ctx and self.content_type:
             web.header('Content-Type', self.content_type, unique=True)
             
@@ -934,9 +934,9 @@ class Template(BaseTemplate):
         # make sure code is safe - but not with jython, it doesn't have a working compiler module
         if not sys.platform.startswith('java'):
             try:
-                import compiler
-                ast = compiler.parse(code)
-                SafeVisitor().walk(ast, filename)
+                import ast
+                ast_node = ast.parse(code)
+                SafeVisitor().walk(ast_node, filename)
             except ImportError:
                 warnings.warn("Unabled to import compiler module. Unable to check templates for safety.")
         else:
@@ -1008,7 +1008,8 @@ class Render:
         if kind == 'dir':
             return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
         elif kind == 'file':
-            return Template(open(path).read(), filename=path, **self._keywords)
+            f = open(path, encoding = 'utf-8')
+            return Template(f.read(), filename=path, **self._keywords)
         else:
             raise AttributeError("No template named " + name)
 
@@ -1028,7 +1029,9 @@ class Render:
     def __getattr__(self, name):
         t = self._template(name)
         if self._base and isinstance(t, Template):
+            print('template yes')
             def template(*a, **kw):
+                print('template func: ', a, kw)
                 return self._base(t(*a, **kw))
             return template
         else:
@@ -1070,7 +1073,8 @@ except ImportError:
 def frender(path, **keywords):
     """Creates a template from the given file path.
     """
-    return Template(open(path).read(), filename=path, **keywords)
+    f = open(path, encoding='utf-8')
+    return Template(f.read(), filename=path, **keywords)
     
 def compile_templates(root):
     """Compiles templates to python code."""
@@ -1123,31 +1127,36 @@ class SecurityError(Exception):
 # Enumerate all the allowed AST nodes
 ALLOWED_AST_NODES = [
     "Add", "And",
+    "arg", "arguments",
 #   "AssAttr",
     "AssList", "AssName", "AssTuple",
 #   "Assert",
-    "Assign", "AugAssign",
+    "Assign", "AugAssign", "Attribute",
 #   "Backquote",
     "Bitand", "Bitor", "Bitxor", "Break",
-    "CallFunc","Class", "Compare", "Const", "Continue",
+    "Call", "CallFunc","Class", "Compare", "Const", "Continue",
     "Decorators", "Dict", "Discard", "Div",
     "Ellipsis", "EmptyNode",
 #   "Exec",
+    "Expr",
     "Expression", "FloorDiv", "For",
 #   "From",
-    "Function", 
+#   "Function",
+    "FunctionDef",
     "GenExpr", "GenExprFor", "GenExprIf", "GenExprInner",
     "Getattr", 
 #   "Global", 
     "If", "IfExp",
 #   "Import",
     "Invert", "Keyword", "Lambda", "LeftShift",
-    "List", "ListComp", "ListCompFor", "ListCompIf", "Mod",
+    "List", "ListComp", "ListCompFor", "ListCompIf", "Load", "Mod",
     "Module",
-    "Mul", "Name", "Not", "Or", "Pass", "Power",
+    "Mul", "Name", "Not", "Num", "Or", "Pass", "Power",
 #   "Print", "Printnl", "Raise",
     "Return", "RightShift", "Slice", "Sliceobj",
     "Stmt", "Sub", "Subscript",
+    "Store", "Str",
+    "UnaryOp", "USub",
 #   "TryExcept", "TryFinally",
     "Tuple", "UnaryAdd", "UnarySub",
     "While", "With", "Yield",
@@ -1167,12 +1176,12 @@ class SafeVisitor(object):
         "Initialize visitor by generating callbacks for all AST node types."
         self.errors = []
 
-    def walk(self, ast, filename):
+    def walk(self, ast_node, filename):
         "Validate each node in AST and raise SecurityError if the code is not safe."
         self.filename = filename
-        self.visit(ast)
+        self.visit(ast_node)
         
-        if self.errors:        
+        if self.errors:
             raise SecurityError('\n'.join([str(err) for err in self.errors]))
         
     def visit(self, node, *args):
@@ -1181,14 +1190,16 @@ class SafeVisitor(object):
             return obj.__class__.__name__
         nodename = classname(node)
         fn = getattr(self, 'visit' + nodename, None)
-        
+
         if fn:
             fn(node, *args)
         else:
             if nodename not in ALLOWED_AST_NODES:
+                print('[zw]fail: ', nodename)
                 self.fail(node, *args)
-            
-        for child in node.getChildNodes():
+
+        import ast #zw
+        for child in ast.iter_child_nodes(node): #node.getChildNodes():
             self.visit(child, *args)
 
     def visitName(self, node, *args):
@@ -1212,7 +1223,14 @@ class SafeVisitor(object):
             or name.startswith('im_')
             
     def get_node_lineno(self, node):
-        return (node.lineno) and node.lineno or 0
+        if hasattr(node, 'lineno'):
+            return node.lineno
+        else:
+            return 0
+        #try:
+        #return (node.lineno) and node.lineno or 0
+        #except:
+            #return 0 #zw
         
     def fail(self, node, *args):
         "Default callback for unallowed AST nodes."
@@ -1255,6 +1273,13 @@ class TemplateResult(MutableMapping):
         self.__dict__["extend"] = self._parts.extend
         
         self._d.setdefault("__body__", None)
+    
+    def __iter__(self):
+        for k in self.keys():
+            yield k
+
+    def __len__(self):
+        return len(self.keys())
     
     def keys(self):
         return self._d.keys()
@@ -1301,13 +1326,13 @@ class TemplateResult(MutableMapping):
         except KeyError as k:
             raise AttributeError(k)
         
-    def __unicode__(self):
+    def __unicode__(self): # __unicode__ in Python2.x equals str in Python3.x
         self._prepare_body()
         return self["__body__"]
     
     def __str__(self):
         self._prepare_body()
-        return self["__body__"].encode('utf-8')
+        return self["__body__"] #.encode('utf-8')  #zw: convert bytes to str
         
     def __repr__(self):
         self._prepare_body()

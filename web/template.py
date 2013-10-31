@@ -42,7 +42,7 @@ import glob
 import re
 import warnings
 
-from .utils import storage, safeunicode, safestr, re_compile
+from .utils import storage, safeunicode, re_compile
 from .webapi import config
 from .net import websafe
 from .py3helpers import PY2
@@ -869,7 +869,11 @@ class Template(BaseTemplate):
         BaseTemplate.__init__(self, code=code, filename=filename, filter=filter, globals=globals, builtins=builtins)
         
     def normalize_text(text):
-        """Normalizes template text by correcting \r\n, tabs and BOM chars."""
+        """Normalizes template text by removing zero-width characters, correcting \r\n, tabs and BOM chars."""
+        ZERO_WIDTH_CHARS = ['\ufeff', '\u200b', '\u200c', '\u200d', '\u200e', '\u200f']
+        for c in ZERO_WIDTH_CHARS:
+            text = text.lstrip(c)
+        
         text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
         if not text.endswith('\n'):
             text += '\n'
@@ -899,7 +903,7 @@ class Template(BaseTemplate):
                 
         # generate python code from the parse tree
         code = rootnode.emit(indent="").strip()
-        return safestr(code)
+        return code
         
     generate_code = staticmethod(generate_code)
     
@@ -911,6 +915,7 @@ class Template(BaseTemplate):
                 
     def compile_template(self, template_string, filename):
         code = Template.generate_code(template_string, filename, parser=self.create_parser())
+        print('[zw]code: \n', code)
 
         def get_source_line(filename, lineno):
             try:
@@ -1029,9 +1034,7 @@ class Render:
     def __getattr__(self, name):
         t = self._template(name)
         if self._base and isinstance(t, Template):
-            print('template yes')
             def template(*a, **kw):
-                print('template func: ', a, kw)
                 return self._base(t(*a, **kw))
             return template
         else:
@@ -1074,6 +1077,8 @@ def frender(path, **keywords):
     """Creates a template from the given file path.
     """
     f = open(path, encoding='utf-8')
+    r = f.read()
+    print(r)
     return Template(f.read(), filename=path, **keywords)
     
 def compile_templates(root):
@@ -1148,6 +1153,7 @@ ALLOWED_AST_NODES = [
 #   "Global", 
     "If", "IfExp",
 #   "Import",
+    "Index",
     "Invert", "Keyword", "Lambda", "LeftShift",
     "List", "ListComp", "ListCompFor", "ListCompIf", "Load", "Mod",
     "Module",
@@ -1195,10 +1201,10 @@ class SafeVisitor(object):
             fn(node, *args)
         else:
             if nodename not in ALLOWED_AST_NODES:
-                print('[zw]fail: ', nodename)
+                print('[zw]fail node: ', node)
                 self.fail(node, *args)
 
-        import ast #zw
+        import ast
         for child in ast.iter_child_nodes(node): #node.getChildNodes():
             self.visit(child, *args)
 

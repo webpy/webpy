@@ -8,7 +8,7 @@ from . import webapi as web
 from . import webapi, wsgi, utils
 from . import debugerror
 from . import httpserver
-from .utils import lstrips, safeunicode
+from .utils import lstrips, safeunicode, safebytes
 from .py3helpers import iteritems, string_types
 import sys
 
@@ -283,7 +283,7 @@ class application:
             except web.HTTPError as e:
                 result = [e.data]
 
-            result = web.safestr(iter(result))
+            result = safebytes(iter(result)) #zw: safestr -> safebytes
 
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)

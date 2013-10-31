@@ -326,13 +326,13 @@ def safeunicode(obj, encoding='utf-8'):
     elif t is bytes:
         return obj.decode(encoding)
     elif t in [int, float, bool]:
-        return unicode(obj)
+        return str(obj, encoding = 'utf-8')
     #elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
     #    return unicode(obj)
     #else:
     #    return str(obj).decode(encoding)
     else:
-        return unicode(obj)
+        return str(obj)
 
 if PY2:
     def is_iter(obj):
@@ -340,8 +340,21 @@ if PY2:
 else:
     def is_iter(obj):
         return hasattr(obj, '__next__')
+    
+def safebytes(obj, encoding = 'utf-8'):
+    r"""
+    Converts any given object to utf-8 encoded bytes.
+    """
+    if isinstance(obj, str):
+        return obj.encode(encoding)
+    elif isinstance(obj, bytes):
+        return obj
+    elif is_iter(obj):
+        return map(safebytes, obj)
+    else: # probably templateResult
+        return str(obj).encode(encoding)
 
-def safestr(obj, encoding='utf-8'):
+def safestr(obj, encoding='utf-8'): # this function should return bytes in Python 3.x
     r"""
     Converts any given object to utf-8 encoded string. 
     
@@ -353,13 +366,13 @@ def safestr(obj, encoding='utf-8'):
         '2'
     """
     if isinstance(obj, text_type):
-        return obj.encode(encoding)
+        return obj #.encode(encoding)
     elif isinstance(obj, bytes):
         return str(obj, encoding)
     elif is_iter(obj):
         return imap(safestr, obj)
     else:
-        return str(obj)
+        return str(obj) #
 
 # for backward-compatibility
 utf8 = safestr

@@ -274,7 +274,6 @@ def header(hdr, value, unique=False):
     it doesn't add a new one. 
     """
     hdr, value = safestr(hdr), safestr(value)
-    hdr, value = str(hdr, encoding='utf-8'), safestr(value, encoding='utf-8')
     # protection against HTTP response splitting attack
     if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
         raise ValueError('invalid characters in header')

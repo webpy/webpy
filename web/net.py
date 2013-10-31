@@ -234,7 +234,7 @@ def websafe(val):
     if val is None:
         return u''
     elif isinstance(val, str):
-        val = val.decode('utf-8')
+        val = val #.decode('utf-8')
     elif not isinstance(val, unicode):
         val = unicode(val)
         

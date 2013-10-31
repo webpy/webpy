@@ -1065,8 +1065,6 @@ def frender(path, **keywords):
     """Creates a template from the given file path.
     """
     f = open(path, encoding='utf-8')
-    r = f.read()
-    print(r)
     return Template(f.read(), filename=path, **keywords)
     
 def compile_templates(root):
@@ -1220,10 +1218,6 @@ class SafeVisitor(object):
             return node.lineno
         else:
             return 0
-        #try:
-        #return (node.lineno) and node.lineno or 0
-        #except:
-            #return 0 #zw
         
     def fail(self, node, *args):
         "Default callback for unallowed AST nodes."

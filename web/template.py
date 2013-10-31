@@ -45,16 +45,8 @@ import warnings
 from .utils import storage, safeunicode, re_compile
 from .webapi import config
 from .net import websafe
-from .py3helpers import PY2
 
-if PY2:
-    from UserDict import DictMixin
-
-    # Make a new-style class
-    class MutableMapping(object, DictMixin):
-        pass
-else:
-    from collections import MutableMapping
+from collections import MutableMapping
 
 def splitline(text):
     r"""
@@ -730,10 +722,7 @@ TEMPLATE_BUILTIN_NAMES = [
     "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-if PY2:
-    import __builtin__ as builtins
-else:
-    import builtins
+import builtins
 TEMPLATE_BUILTINS = dict([(name, getattr(builtins, name)) for name in TEMPLATE_BUILTIN_NAMES if name in builtins.__dict__])
 
 class ForLoop:
@@ -915,7 +904,6 @@ class Template(BaseTemplate):
                 
     def compile_template(self, template_string, filename):
         code = Template.generate_code(template_string, filename, parser=self.create_parser())
-        print('[zw]code: \n', code)
 
         def get_source_line(filename, lineno):
             try:
@@ -1201,7 +1189,6 @@ class SafeVisitor(object):
             fn(node, *args)
         else:
             if nodename not in ALLOWED_AST_NODES:
-                print('[zw]fail node: ', node)
                 self.fail(node, *args)
 
         import ast
@@ -1338,7 +1325,7 @@ class TemplateResult(MutableMapping):
     
     def __str__(self):
         self._prepare_body()
-        return self["__body__"] #.encode('utf-8')  #zw: convert bytes to str
+        return self["__body__"]
         
     def __repr__(self):
         self._prepare_body()

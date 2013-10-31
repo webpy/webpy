@@ -32,12 +32,9 @@ __all__ = [
 import sys, cgi, pprint, urllib
 from .utils import storage, storify, threadeddict, dictadd, intget, safestr
 
-from .py3helpers import PY2, urljoin
+from urllib.parse import urljoin
 
-if PY2:
-    from Cookie import Morsel
-else:
-    from http.cookies import Morsel
+from http.cookies import Morsel
 
 config = storage()
 config.__doc__ = """

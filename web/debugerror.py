@@ -15,7 +15,7 @@ from .template import Template
 from .net import websafe
 from .utils import sendmail, safestr
 from . import webapi as web
-from .py3helpers import urljoin
+from urllib.parse import urljoin
 
 import os, os.path
 whereami = os.path.join(os.getcwd(), __file__)

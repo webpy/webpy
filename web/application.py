@@ -9,7 +9,6 @@ from . import webapi, wsgi, utils
 from . import debugerror
 from . import httpserver
 from .utils import lstrips, safeunicode, safebytes
-from .py3helpers import iteritems, string_types
 import sys
 
 import urllib
@@ -415,6 +414,7 @@ class application:
 
         ctx.fullpath = ctx.path + ctx.query
         
+        iteritems = lambda d: iter(d.items())
         for k, v in iteritems(ctx):
             # convert all string values to unicode values and replace 
             # malformed data with a suitable replacement marker.
@@ -442,7 +442,7 @@ class application:
             return f.handle_with_processors()
         elif isclass(f):
             return handle_class(f)
-        elif isinstance(f, string_types):
+        elif isinstance(f, str):
             if f.startswith('redirect '):
                 url = f.split(' ', 1)[1]
                 if web.ctx.method == "GET":
@@ -470,7 +470,7 @@ class application:
                     return f, None
                 else:
                     continue
-            elif isinstance(what, string_types):
+            elif isinstance(what, str):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)

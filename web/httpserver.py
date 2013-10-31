@@ -7,12 +7,8 @@ import posixpath
 from . import webapi as web
 from . import net
 from . import utils
-from .py3helpers import PY2
 
-if PY2:
-    from SimpleHTTPServer import SimpleHTTPRequestHandler
-else:
-    from http.server import SimpleHTTPRequestHandler
+from http.server import SimpleHTTPRequestHandler
 
 __all__ = ["runsimple"]
 

@@ -5,13 +5,12 @@ General Utilities
 """
 from __future__ import print_function
 
-
 __all__ = [
   "Storage", "storage", "storify", 
   "Counter", "counter",
   "iters", 
   "rstrips", "lstrips", "strips", 
-  "safeunicode", "safestr", "utf8",
+  "safebytes", "safeunicode", "safestr", "utf8",
   "TimeoutError", "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
@@ -38,7 +37,8 @@ import subprocess
 import datetime
 from threading import local as threadlocal
 
-from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap
+itervalues = lambda d: iter(d.values())
+iteritems = lambda d: iter(d.items())
 
 class Storage(dict):
     """
@@ -321,7 +321,7 @@ def safeunicode(obj, encoding='utf-8'):
         u'\u1234'
     """
     t = type(obj)
-    if t is text_type:
+    if t is str:
         return obj
     elif t is bytes:
         return obj.decode(encoding)
@@ -334,11 +334,7 @@ def safeunicode(obj, encoding='utf-8'):
     else:
         return str(obj)
 
-if PY2:
-    def is_iter(obj):
-        return hasattr(obj, 'next')
-else:
-    def is_iter(obj):
+def is_iter(obj):
         return hasattr(obj, '__next__')
     
 def safebytes(obj, encoding = 'utf-8'):
@@ -365,12 +361,12 @@ def safestr(obj, encoding='utf-8'): # this function should return bytes in Pytho
         >>> safestr(2)
         '2'
     """
-    if isinstance(obj, text_type):
+    if isinstance(obj, str):
         return obj #.encode(encoding)
     elif isinstance(obj, bytes):
         return str(obj, encoding)
     elif is_iter(obj):
-        return imap(safestr, obj)
+        return map(safestr, obj)
     else:
         return str(obj) #
 

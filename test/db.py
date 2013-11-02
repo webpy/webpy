@@ -19,7 +19,7 @@ class DBTest(webtest.TestCase):
         try:
             webtest.setup_database(self.dbname, driver=self.driver)
             return True
-        except ImportError, e:
+        except ImportError as e:
             print >> web.debug, str(e), "(ignoring %s)" % self.__class__.__name__
             return False
     
@@ -176,7 +176,7 @@ del t
 
 try:
     import DBUtils
-except ImportError, e:
+except ImportError as e:
     print >> web.debug, str(e) + "(ignoring testPooling)"
 
 if __name__ == '__main__':

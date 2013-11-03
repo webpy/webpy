@@ -292,8 +292,8 @@ def rawinput(method=None):
     e = ctx.env.copy()
     a = b = {}
     
-    if method.lower() in ['both', 'post', 'put']:
-        if e['REQUEST_METHOD'] in ['POST', 'PUT']:
+    if method.lower() in ['both', 'post', 'put', 'patch']:
+        if e['REQUEST_METHOD'] in ['POST', 'PUT', 'PATCH']:
             if e.get('CONTENT_TYPE', '').lower().startswith('multipart/'):
                 # since wsgi.input is directly passed to cgi.FieldStorage, 
                 # it can not be called multiple times. Saving the FieldStorage

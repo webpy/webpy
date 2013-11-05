@@ -11,18 +11,28 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   urlmapping
    input
    db
 
-Hello World
-===========
+Getting Started
+===============
 
-URL Mapping
-===========
+Building webapps with web.py is easy. To get started, save the following code as say, `hello.py` and run it with `python hello.py`. Now point your browser to `http://localhost:8080/` which responds you with 'Hello, world!'. Hey, you're done with your first program with with web.py - with just 8 lines of code!
 
-urls = (...)
+::
 
-regular expressions and grouping
+    import web
+
+    urls = ("/.*", "hello")
+    app = web.application(urls, globals())
+
+    class hello:
+        def GET(self):
+            return 'Hello, world!'
+
+    if __name__ == "__main__":
+        app.run()
 
 Indices and tables
 ==================

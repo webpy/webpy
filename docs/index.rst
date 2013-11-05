@@ -24,30 +24,6 @@ urls = (...)
 
 regular expressions and grouping
 
-Taking Inputs
-=============
-
-web.input()
-web.input(page=0)
-reading GET and POST
-reading files
-
-Working with database
-=====================
-
-web.database()
-
-db.query
-db.select
-db.insert
-db.multiple_insert
-db.delete
-
-working with transactions
-
-with db.transaction():
-    db.insert(..)
-
 Indices and tables
 ==================
 

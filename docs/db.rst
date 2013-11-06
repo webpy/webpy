@@ -7,31 +7,16 @@ Web.py provides a simple and uniform interface to the database that you want to 
 Create database object
 ------------------------
 
-You could create a database object with `web.database()`. Make sure that you have appropriate database library installed.
+The first thing to work with databases from web.py is to create a
+create a database object with `web.database()`. It returns database object, which has convenient methods for you to use.
 
-PostgreSQL
-``````````
-Database Library: `psycopg2`
+Make sure that you have appropriate database library installed (`psycopg2` for PostgreSQL, `MySQLdb` for MySQL, `sqlite3` for SQLite).
+
 ::
 
     db = web.database(dbn='postgres', db='dbname', user='username', pw='password')
 
-MySQL
-`````
-Database Library: `MySQLdb`
-::
-
-    db = web.database(dbn='mysql', db='dbname', user='username', pw='password')
-
-
-SQLite
-``````
-
-Database Library: `sqlite3`
-::
-
-    db = web.database(dbn='sqlite', db='dbname')
-
+`dbn` for MySQL is `mysql` and `sqlite` for SQLite. SQLite doesn't take `user` `pw` parameters.
 
 Multiple databases
 ``````````````````

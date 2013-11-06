@@ -9,11 +9,12 @@ Welcome to web.py's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    urlmapping
    input
    db
+   templating
 
 Getting Started
 ===============

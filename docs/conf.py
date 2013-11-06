@@ -44,7 +44,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'web.py'
-copyright = u'2013, Anand Chitipothu'
+copyright = u''
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

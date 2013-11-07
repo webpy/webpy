@@ -34,7 +34,9 @@ Here is a sample lighttpd configuration file to expose a web.py app using fastcg
             # path to the application
             "bin-path" => "/path/to/yourapp.py",
 
+            # number of fastcgi processes to start
             "max-procs" => 1,
+
             "bin-environment" => (
                 "REAL_SCRIPT_NAME" => ""
             ),
@@ -55,4 +57,4 @@ Here is a sample lighttpd configuration file to expose a web.py app using fastcg
         "^/(.*)$" => "/yourapp.py/$1",
      )
 
-With this configuration lighttpd takes care of starting the application. The webserver tasks to your application using fastcgi via a unix domain socket. This means both the webserver and the application will run on the same machine.
+With this configuration lighttpd takes care of starting the application. The webserver talks to your application using fastcgi via a unix domain socket. This means both the webserver and the application will run on the same machine.

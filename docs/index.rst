@@ -15,6 +15,7 @@ Contents:
    input
    db
    templating
+   deploying
    api
 
 Getting Started

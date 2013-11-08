@@ -73,7 +73,7 @@ To make a web.py application work with gunicorn, you'll need to get the wsgi app
     # get the wsgi app from web.py application object
     wsgiapp = app.wsgifunc()
 
-Once that change is made, gunicorn server be started using:
+Once that change is made, gunicorn server be started using::
 
     gunicorn -w 4 -b 127.0.0.1:4000 yourapp:wsgiapp
 

@@ -842,10 +842,9 @@ class DB:
             self._db_execute(db_cursor, q2)
         else:
             self._db_execute(db_cursor, sql_query)
-
         try: 
             out = db_cursor.fetchone()[0]
-            out = range(out-len(values)+1, out+1)        
+            out = range(out, out+len(values))
         except Exception: 
             out = None
 

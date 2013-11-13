@@ -127,7 +127,7 @@ From Python 2.5 onwards, which support `with` statements, you would do
 
     with db.transaction():
         userid = db.insert('users', name='foo')
-        authorid = db.insert('authors', userid=$userid, vars={'userid': userid})
+        authorid = db.insert('authors', userid=userid)
 
 
 For earlier versions of Python, you can do
@@ -137,7 +137,7 @@ For earlier versions of Python, you can do
     t = db.transaction()
     try:
         userid = db.insert('users', name='foo')
-        authorid = db.insert('authors', userid=$userid, vars={'userid': userid})
+        authorid = db.insert('authors', userid=userid)
     except:
         t.rollback()
         raise

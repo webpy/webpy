@@ -352,11 +352,7 @@ def safestr(obj, encoding='utf-8'):
         >>> safestr(2)
         '2'
     """
-    if isinstance(obj, text_type):
-        return obj.encode(encoding)
-    elif isinstance(obj, bytes):
-        return obj
-    elif is_iter(obj):
+    if is_iter(obj):
         return imap(safestr, obj)
     else:
         return str(obj)

@@ -1,5 +1,5 @@
 """DB test"""
-import six
+from __future__ import print_function
 
 import webtest
 import web
@@ -22,7 +22,7 @@ class DBTest(webtest.TestCase):
             webtest.setup_database(self.dbname, driver=self.driver)
             return True
         except ImportError as e:
-            six.print_(str(e), "(ignoring %s)" % self.__class__.__name__, file=web.debug)
+            print(str(e), "(ignoring %s)" % self.__class__.__name__, file=web.debug)
             return False
     
     def testUnicode(self):
@@ -179,7 +179,7 @@ del t
 try:
     import DBUtils
 except ImportError as e:
-    six.print_(str(e) + "(ignoring testPooling)", file=web.debug)
+    print(str(e) + "(ignoring testPooling)", file=web.debug)
 
 if __name__ == '__main__':
     webtest.main()

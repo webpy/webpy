@@ -33,3 +33,10 @@ if PY2:
 	from itertools import imap
 else:
 	imap = map
+
+if PY2:
+  from tokenize import tokenprog
+else:
+  import re
+  from tokenize import Token
+  tokenprog = re.compile(Token)

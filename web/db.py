@@ -1200,7 +1200,7 @@ def _interpolate(format):
 
     from <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
-    from tokenize import tokenprog
+    from .py3helpers import tokenprog
 
     def matchorfail(text, pos):
         match = tokenprog.match(text, pos)

@@ -5,7 +5,6 @@ General Utilities
 """
 from __future__ import print_function
 
-
 __all__ = [
   "Storage", "storage", "storify", 
   "Counter", "counter",
@@ -37,6 +36,8 @@ import re, sys, time, threading, itertools, traceback, os
 import subprocess
 import datetime
 from threading import local as threadlocal
+
+import six
 
 from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap
 
@@ -650,7 +651,7 @@ class IterBetter:
             yield self._head
 
         while 1:    
-            yield self.i.next()
+            yield six.next(self.i)
             self.c += 1
 
     def __getitem__(self, i):
@@ -663,7 +664,7 @@ class IterBetter:
                 self.c += 1
             # now self.c == i
             self.c += 1
-            return self.i.next()
+            return six.next(self.i)
         except StopIteration: 
             raise IndexError(str(i))
             

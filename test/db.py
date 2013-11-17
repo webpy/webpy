@@ -1,6 +1,8 @@
 """DB test"""
 from __future__ import print_function
 
+import six
+
 import webtest
 import web
 
@@ -95,11 +97,12 @@ class DBTest(webtest.TestCase):
         assert db.select("person", where="name='a'").list()
         assert db.select("person", where="name='b'").list()
 
-    def test_result_is_unicode(self):
+    def test_result_is_valid_string_type(self):
         db = webtest.setup_database(self.dbname)
         self.db.insert('person', False, name='user')
         name = db.select('person')[0].name
-        self.assertEquals(type(name), unicode)
+        string_type = six.PY2 and unicode or str
+        self.assertEquals(type(name), string_type)
 
     def test_result_is_true(self):
         db = webtest.setup_database(self.dbname)

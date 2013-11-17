@@ -6,6 +6,9 @@ from __future__ import print_function
 
 import time, os, urllib
 import datetime
+
+import six
+
 from .utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
 
 try:
@@ -135,7 +138,7 @@ class SQLQuery(object):
         self.items.append(value)
 
     def __add__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, six.string_types):
             items = [other]
         elif isinstance(other, SQLQuery):
             items = other.items
@@ -144,7 +147,7 @@ class SQLQuery(object):
         return SQLQuery(self.items + items)
 
     def __radd__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, six.string_types):
             items = [other]
         else:
             return NotImplemented
@@ -338,7 +341,7 @@ def sqllist(lst):
         >>> sqllist(u'abc')
         u'abc'
     """
-    if isinstance(lst, basestring): 
+    if isinstance(lst, six.string_types): 
         return lst
     else:
         return ', '.join(lst)
@@ -690,7 +693,7 @@ class DB:
             <sql: 'SELECT * FROM foo'>
         """
         where_clauses = []
-        for k, v in kwargs.iteritems():
+        for k, v in six.iteritems(kwargs):
             where_clauses.append(k + ' = ' + sqlquote(v))
             
         if where_clauses:
@@ -713,7 +716,7 @@ class DB:
             ('OFFSET', offset))
     
     def gen_clause(self, sql, val, vars): 
-        if isinstance(val, (int, long)):
+        if isinstance(val, six.integer_types):
             if sql == 'WHERE':
                 nout = 'id = ' + sqlquote(val)
             else:

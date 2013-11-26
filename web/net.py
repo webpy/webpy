@@ -164,7 +164,7 @@ def urlquote(val):
         '%E2%80%BD'
     """
     if val is None: return ''
-    if not isinstance(val, unicode): val = str(val)
+    if not isinstance(val, str): val = str(val)
     else: val = val.encode('utf-8')
     return urllib.quote(val)
 
@@ -235,8 +235,8 @@ def websafe(val):
         return u''
     elif isinstance(val, str):
         val = val #.decode('utf-8')
-    elif not isinstance(val, unicode):
-        val = unicode(val)
+    elif not isinstance(val, str):
+        val = str(val)
         
     return htmlquote(val)
 

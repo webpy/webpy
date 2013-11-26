@@ -42,7 +42,7 @@ import glob
 import re
 import warnings
 
-from .utils import storage, safeunicode, re_compile
+from .utils import storage, re_compile, safestr
 from .webapi import config
 from .net import websafe
 
@@ -513,7 +513,7 @@ class PythonTokenizer:
             return
     
     def next(self):
-        type, t, begin, end, line = self.tokens.next()
+        type, t, begin, end, line = self.tokens.__next__()
         row, col = end
         self.index = col
         return storage(type=type, value=t, begin=begin, end=end)
@@ -546,7 +546,7 @@ class TextNode:
         self.value = value
 
     def emit(self, indent, begin_indent=''):
-        return repr(safeunicode(self.value))
+        return repr(self.value)
         
     def __repr__(self):
         return 't' + repr(self.value)
@@ -714,7 +714,7 @@ KEYWORDS = [
 
 TEMPLATE_BUILTIN_NAMES = [
     "dict", "enumerate", "float", "int", "bool", "list", "long", "reversed", 
-    "set", "slice", "tuple", "xrange",
+    "set", "slice", "sorted", "tuple", "xrange",
     "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex", 
     "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
     "True", "False",
@@ -822,8 +822,8 @@ class BaseTemplate:
     def _escape(self, value, escape=False):
         if value is None: 
             value = ''
-            
-        value = safeunicode(value)
+        
+        value = safestr(value)
         if escape and self.filter:
             value = self.filter(value)
         return value
@@ -1125,7 +1125,8 @@ ALLOWED_AST_NODES = [
     "Assign", "AugAssign", "Attribute",
 #   "Backquote",
     "Bitand", "Bitor", "Bitxor", "Break",
-    "Call", "CallFunc","Class", "Compare", "Const", "Continue",
+    "BoolOp", "BinOp",
+    "Call", "CallFunc","Class", "Compare", "Const", "Continue", "comprehension",
     "Decorators", "Dict", "Discard", "Div",
     "Ellipsis", "EmptyNode",
 #   "Exec",
@@ -1140,7 +1141,8 @@ ALLOWED_AST_NODES = [
     "If", "IfExp",
 #   "Import",
     "Index",
-    "Invert", "Keyword", "Lambda", "LeftShift",
+    "IsNot",
+    "Invert", "Keyword", "keyword", "Lambda", "LeftShift",
     "List", "ListComp", "ListCompFor", "ListCompIf", "Load", "Mod",
     "Module",
     "Mul", "Name", "Not", "Num", "Or", "Pass", "Power",
@@ -1312,10 +1314,6 @@ class TemplateResult(MutableMapping):
             del self[key]
         except KeyError as k:
             raise AttributeError(k)
-        
-    def __unicode__(self): # __unicode__ in Python2.x equals str in Python3.x
-        self._prepare_body()
-        return self["__body__"]
     
     def __str__(self):
         self._prepare_body()

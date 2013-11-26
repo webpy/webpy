@@ -10,7 +10,7 @@ __all__ = [
   "Counter", "counter",
   "iters", 
   "rstrips", "lstrips", "strips", 
-  "safebytes", "safeunicode", "safestr", "utf8",
+  "safebytes", "safestr", "utf8",
   "TimeoutError", "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
@@ -124,7 +124,7 @@ def storify(mapping, *requireds, **defaults):
     _unicode = defaults.pop('_unicode', False)
 
     # if _unicode is callable object, use it convert a string to unicode.
-    to_unicode = safeunicode
+    to_unicode = safestr
     if _unicode is not False and hasattr(_unicode, "__call__"):
         to_unicode = _unicode
     
@@ -308,31 +308,6 @@ def strips(text, remove):
     
     """
     return rstrips(lstrips(text, remove), remove)
-
-def safeunicode(obj, encoding='utf-8'):
-    r"""
-    Converts any given object to unicode string.
-    
-        >>> safeunicode('hello')
-        u'hello'
-        >>> safeunicode(2)
-        u'2'
-        >>> safeunicode('\xe1\x88\xb4')
-        u'\u1234'
-    """
-    t = type(obj)
-    if t is str:
-        return obj
-    elif t is bytes:
-        return obj.decode(encoding)
-    elif t in [int, float, bool]:
-        return str(obj, encoding = 'utf-8')
-    #elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
-    #    return unicode(obj)
-    #else:
-    #    return str(obj).decode(encoding)
-    else:
-        return str(obj)
 
 def is_iter(obj):
         return hasattr(obj, '__next__')
@@ -1240,8 +1215,8 @@ class ThreadedDict(threadlocal):
     def items(self):
         return self.__dict__.items()
 
-    def iteritems(self):
-        return self.__dict__.iteritems()
+#     def iteritems(self):
+#         return self.__dict__.items()#iteritems()
 
     def keys(self):
         return self.__dict__.keys()

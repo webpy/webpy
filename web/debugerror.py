@@ -130,8 +130,7 @@ $def with (exception_type, exception_value, frames)
 
 $def dicttable (d, kls='req', id=None):
     $ items = d and d.items() or []
-    $items.sort()
-    $:dicttable_items(items, kls, id)
+    $:dicttable_items(sorted(items), kls, id)
         
 $def dicttable_items(items, kls='req', id=None):
     $if items:
@@ -208,7 +207,7 @@ $:dicttable(web.input(_unicode=False))
 $:dicttable(web.cookies())
 
 <h3 id="meta-info">META</h3>
-$ newctx = [(k, v) for (k, v) in ctx.iteritems() if not k.startswith('_') and not isinstance(v, dict)]
+$ newctx = [(k, v) for (k, v) in ctx.items() if not k.startswith('_') and not isinstance(v, dict)]
 $:dicttable(dict(newctx))
 
 <h3 id="meta-info">ENVIRONMENT</h3>
@@ -291,7 +290,7 @@ def djangoerror():
         
     t = djangoerror_r
     globals = {'ctx': web.ctx, 'web':web, 'dict':dict, 'str':str, 'prettify': prettify}
-    t.t.func_globals.update(globals)
+    t.t.__globals__.update(globals)
     return t(exception_type, exception_value, frames)
 
 def debugerror():

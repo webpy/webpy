@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import time, os, urllib
 import datetime
-from .utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
+from .utils import threadeddict, storage, iters, iterbetter, safestr, safebytes
 
 try:
     # db module can work independent of web.py
@@ -240,9 +240,6 @@ class SQLQuery(object):
         
     def __str__(self):
         return safestr(self._str())
-        
-    def __unicode__(self):
-        return safeunicode(self._str())
 
     def __repr__(self):
         return '<sql: %s>' % repr(str(self))
@@ -324,7 +321,7 @@ def sqlify(obj):
     elif isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
     else:
-        if isinstance(obj, unicode): obj = obj.encode('utf8')
+        if isinstance(obj, str): obj = obj.encode('utf8')
         return repr(obj)
 
 def sqllist(lst): 

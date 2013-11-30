@@ -10,8 +10,8 @@ from . import debugerror
 from . import httpserver
 from .utils import lstrips, safestr, safebytes
 import sys
-
-import urllib
+import imp
+import urllib.parse
 import traceback
 import itertools
 import os
@@ -182,7 +182,7 @@ class application:
             'your user-agent is a small jumping bean/1.0 (compatible)'
 
         """
-        path, maybe_query = urllib.splitquery(localpart)
+        path, maybe_query = urllib.parse.splitquery(localpart)
         query = maybe_query or ""
         
         if 'env' in kw:
@@ -205,7 +205,7 @@ class application:
             data = data or ''
             import StringIO
             if isinstance(data, dict):
-                q = urllib.urlencode(data)
+                q = urllib.parse.urlencode(data)
             else:
                 q = data
             env['wsgi.input'] = StringIO.StringIO(q)
@@ -216,7 +216,7 @@ class application:
             response.status = status
             response.headers = dict(headers)
             response.header_items = headers
-        response.data = "".join(self.wsgifunc()(env, start_response))
+        response.data = b''.join(self.wsgifunc()(env, start_response))
         return response
 
     def browser(self):
@@ -405,7 +405,7 @@ class application:
             ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], ctx.homepath)
             # Apache and CherryPy webservers unquote the url but lighttpd doesn't. 
             # unquote explicitly for lighttpd to make ctx.path uniform across all servers.
-            ctx.path = urllib.unquote(ctx.path)
+            ctx.path = urllib.parse.unquote(ctx.path)
 
         if env.get('QUERY_STRING'):
             ctx.query = '?' + env.get('QUERY_STRING', '')

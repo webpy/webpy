@@ -29,7 +29,7 @@ __all__ = [
     "internalerror",
 ]
 
-import sys, cgi, pprint, urllib
+import sys, cgi, pprint, urllib.parse
 from .utils import storage, storify, threadeddict, dictadd, intget, safestr
 
 from urllib.parse import urljoin
@@ -285,7 +285,7 @@ def rawinput(method=None):
     """Returns storage object with GET or POST arguments.
     """
     method = method or "both"
-    from io import StringIO
+    from io import BytesIO
 
     def dictify(fs): 
         # hack to make web.input work with enctype='text/plain.
@@ -309,7 +309,7 @@ def rawinput(method=None):
                     a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
                     ctx._fieldstorage = a
             else:
-                fp = StringIO(data())
+                fp = BytesIO(data())
                 a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
             a = dictify(a)
 
@@ -352,8 +352,8 @@ def setcookie(name, value, expires='', domain=None,
     """Sets a cookie."""
     morsel = Morsel()
     name, value = safestr(name), safestr(value)
-    morsel.set(name, value, urllib.quote(value))
-    if expires < 0:
+    morsel.set(name, value, urllib.parse.quote(value))
+    if isinstance(expires, int) and expires < 0:
         expires = -1000000000
     morsel['expires'] = expires
     morsel['path'] = path or ctx.homepath+'/'

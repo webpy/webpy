@@ -1147,7 +1147,7 @@ ALLOWED_AST_NODES = [
     "Invert", "Keyword", "keyword", "Lambda", "LeftShift",
     "List", "ListComp", "ListCompFor", "ListCompIf", "Load", "Mod",
     "Module",
-    "Mul", "Name", "Not", "Num", "Or", "Pass", "Power",
+    "Mul", "Name", "Not", "NotEq", "Num", "Or", "Pass", "Power",
 #   "Print", "Printnl", "Raise",
     "Return", "RightShift", "Slice", "Sliceobj",
     "Stmt", "Sub", "Subscript",

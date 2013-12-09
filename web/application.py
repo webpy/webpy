@@ -435,7 +435,8 @@ class application:
             if not hasattr(cls, meth):
                 raise web.nomethod(cls)
             tocall = getattr(cls(), meth)
-            return tocall(*args)
+            #return tocall(*args)
+            return tocall(**args)
             
         def is_class(o): return isinstance(o, (types.ClassType, type))
             
@@ -479,7 +480,8 @@ class application:
                 result = utils.re_compile('^' + pat + '$').match(value)
                 
             if result: # it's a match
-                return what, [x for x in result.groups()]
+                #return what, [x for x in result.groups()]
+                return what, result.groupdict()
         return None, None
         
     def _delegate_sub_application(self, dir, app):
@@ -591,7 +593,8 @@ class subdomain_application(application):
                 result = utils.re_compile('^' + pat + '$').match(value)
 
             if result: # it's a match
-                return what, [x for x in result.groups()]
+                #return what, [x for x in result.groups()]
+                return what, result.groupdict()
         return None, None
         
 def loadhook(h):

@@ -435,7 +435,8 @@ class application:
             if not hasattr(cls, meth):
                 raise web.nomethod(cls)
             tocall = getattr(cls(), meth)
-            #return tocall(*args)
+            #return tocall({'id':123,'title':234})
+            #args={'id':123,'title':234}
             return tocall(**args)
             
         def is_class(o): return isinstance(o, (types.ClassType, type))

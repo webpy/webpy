@@ -226,8 +226,8 @@ class application:
         return browser.AppBrowser(self)
 
     def handle(self):
-        fn, args = self._match(self.mapping, web.ctx.path)
-        return self._delegate(fn, self.fvars, args)
+        fn, args, kwargs = self._match(self.mapping, web.ctx.path)      #microhuang
+        return self._delegate(fn, self.fvars, args, kwargs)             #microhuang
         
     def handle_with_processors(self):
         def process(processors):
@@ -427,7 +427,7 @@ class application:
         
         ctx.app_stack = []
 
-    def _delegate(self, f, fvars, args=[]):
+    def _delegate(self, f, fvars, args=[], kwargs={}):     #microhuang
         def handle_class(cls):
             meth = web.ctx.method
             if meth == 'HEAD' and not hasattr(cls, meth):
@@ -435,7 +435,7 @@ class application:
             if not hasattr(cls, meth):
                 raise web.nomethod(cls)
             tocall = getattr(cls(), meth)
-            return tocall(*args)
+            return tocall(*args,**kwargs)   #microhuang
             
         def is_class(o): return isinstance(o, (types.ClassType, type))
             
@@ -479,7 +479,7 @@ class application:
                 result = utils.re_compile('^' + pat + '$').match(value)
                 
             if result: # it's a match
-                return what, [x for x in result.groups()]
+                return what, [x for x in set(result.groups()).difference(set(result.groupdict().values()))], result.groupdict()   #microhuang
         return None, None
         
     def _delegate_sub_application(self, dir, app):
@@ -580,8 +580,8 @@ class subdomain_application(application):
     """
     def handle(self):
         host = web.ctx.host.split(':')[0] #strip port
-        fn, args = self._match(self.mapping, host)
-        return self._delegate(fn, self.fvars, args)
+        fn, args, kwargs = self._match(self.mapping, host)       #microhuang
+        return self._delegate(fn, self.fvars, args, kwargs)      #microhuang
         
     def _match(self, mapping, value):
         for pat, what in mapping:
@@ -591,7 +591,7 @@ class subdomain_application(application):
                 result = utils.re_compile('^' + pat + '$').match(value)
 
             if result: # it's a match
-                return what, [x for x in result.groups()]
+                return what, [x for x in set(result.groups()).difference(set(result.groupdict().values()))], result.groupdict()   #microhuang
         return None, None
         
 def loadhook(h):
@@ -727,3 +727,4 @@ class Reloader:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+

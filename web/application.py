@@ -480,7 +480,7 @@ class application:
                 
             if result: # it's a match
                 return what, [x for x in set(result.groups()).difference(set(result.groupdict().values()))], result.groupdict()   #microhuang
-        return None, None
+        return None, None, None
         
     def _delegate_sub_application(self, dir, app):
         """Deletes request to sub application `app` rooted at the directory `dir`.
@@ -592,7 +592,7 @@ class subdomain_application(application):
 
             if result: # it's a match
                 return what, [x for x in set(result.groups()).difference(set(result.groupdict().values()))], result.groupdict()   #microhuang
-        return None, None
+        return None, None, None
         
 def loadhook(h):
     """

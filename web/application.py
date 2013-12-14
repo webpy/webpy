@@ -203,12 +203,12 @@ class application:
 
         if method not in ["HEAD", "GET"]:
             data = data or ''
-            from io import StringIO
+            from io import BytesIO
             if isinstance(data, dict):
                 q = urllib.parse.urlencode(data)
             else:
                 q = data
-            env['wsgi.input'] = StringIO(q)
+            env['wsgi.input'] = BytesIO(q.encode())
             if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
                 env['CONTENT_LENGTH'] = len(q)
         response = web.storage()
@@ -256,13 +256,13 @@ class application:
             # so we need to do an iteration
             # and save the result for later
             try:
-                firstchunk = iterator.next()
+                firstchunk = iterator.__next__()
             except StopIteration:
                 firstchunk = ''
 
             return itertools.chain([firstchunk], iterator)    
                                 
-        def is_generator(x): return x and hasattr(x, 'next')
+        def is_generator(x): return x and hasattr(x, '__next__')
         
         def wsgi(env, start_resp):
             # clear threadlocal to avoid inteference of previous requests
@@ -617,7 +617,7 @@ def unloadhook(h):
     def processor(handler):
         try:
             result = handler()
-            is_generator = result and hasattr(result, 'next')
+            is_generator = result and hasattr(result, '__next__')
         except:
             # run the hook even when handler raises some exception
             h()
@@ -632,7 +632,7 @@ def unloadhook(h):
     def wrap(result):
         def next():
             try:
-                return result.next()
+                return result.__next__()
             except:
                 # call the hook at the and of iterator
                 h()

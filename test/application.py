@@ -40,17 +40,17 @@ class ApplicationTest(webtest.TestCase):
         import foo
         app = foo.app
         
-        self.assertEquals(app.request('/').data, 'a')
+        self.assertEquals(app.request('/').data, b'a')
         
         # test class change
         time.sleep(1)
         write('foo.py', data % dict(classname='a', output='b'))
-        self.assertEquals(app.request('/').data, 'b')
+        self.assertEquals(app.request('/').data, b'b')
 
         # test urls change
         time.sleep(1)
         write('foo.py', data % dict(classname='c', output='c'))
-        self.assertEquals(app.request('/').data, 'c')
+        self.assertEquals(app.request('/').data, b'c')
         
     def testUppercaseMethods(self):
         urls = ("/", "hello")
@@ -104,13 +104,13 @@ class ApplicationTest(webtest.TestCase):
                 return "hello " + path
         app = web.application(urls, locals())
         
-        self.assertEquals(app.request('/blog/foo').data, 'blog foo')
-        self.assertEquals(app.request('/foo').data, 'hello foo')
+        self.assertEquals(app.request('/blog/foo').data, b'blog foo')
+        self.assertEquals(app.request('/foo').data, b'hello foo')
         
         def processor(handler):
             return web.ctx.path + ":" + handler()
         app.add_processor(processor)
-        self.assertEquals(app.request('/blog/foo').data, '/blog/foo:blog foo')
+        self.assertEquals(app.request('/blog/foo').data, b'/blog/foo:blog foo')
     
     def test_subdomains(self):
         def create_app(name):
@@ -131,10 +131,10 @@ class ApplicationTest(webtest.TestCase):
             result = app.request('/', host=host)
             self.assertEquals(result.data, expected_result)
             
-        test('a.example.com', 'a')
-        test('b.example.com', 'b')
-        test('c.example.com', '*')
-        test('d.example.com', '*')
+        test('a.example.com', b'a')
+        test('b.example.com', b'b')
+        test('c.example.com', b'*')
+        test('d.example.com', b'*')
         
     def test_redirect(self):
         urls = (
@@ -208,7 +208,7 @@ class ApplicationTest(webtest.TestCase):
         class foo:
             def GET(self, path):
                 i = web.input(name='')
-                return repr(i.name)
+                return i.name
                 
             def POST(self, path):
                 if path == '/multipart':
@@ -222,13 +222,13 @@ class ApplicationTest(webtest.TestCase):
         
         def f(name):
             path = '/?' + urllib.parse.urlencode({"name": name.encode('utf-8')})
-            self.assertEquals(app.request(path).data, repr(name))
+            self.assertEquals(app.request(path).data, name.encode())
             
         f(u'\u1234')
         f(u'foo')
 
         response = app.request('/', method='POST', data=dict(name='foo'))
-        self.assertEquals(response.data, "{'name': u'foo'}")
+        self.assertEquals(response.data, b"{'name': 'foo'}")
         
         data = '--boundary\r\nContent-Disposition: form-data; name="x"\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
         headers = {'Content-Type': 'multipart/form-data; boundary=boundary'}
@@ -255,19 +255,19 @@ class ApplicationTest(webtest.TestCase):
             self.assertEquals(response.status.split()[0], "404")
             self.assertEquals(response.data, message)
             
-        assert_notfound("/a/foo", "not found 1")
-        assert_notfound("/b/foo", "not found")
+        assert_notfound("/a/foo", b"not found 1")
+        assert_notfound("/b/foo", b"not found")
         
         app.notfound = lambda: web.HTTPError("404 Not Found", {}, "not found 2")
-        assert_notfound("/a/foo", "not found 1")
-        assert_notfound("/b/foo", "not found 2")
+        assert_notfound("/a/foo", b"not found 1")
+        assert_notfound("/b/foo", b"not found 2")
 
     def testIter(self):
-        self.assertEquals(app.request('/iter').data, 'hello, world')
-        self.assertEquals(app.request('/iter?name=web').data, 'hello, web')
+        self.assertEquals(app.request('/iter').data, b'hello, world')
+        self.assertEquals(app.request('/iter?name=web').data, b'hello, web')
 
-        self.assertEquals(app.request('/iter', method='POST').data, 'hello, world')
-        self.assertEquals(app.request('/iter', method='POST', data='name=web').data, 'hello, web')
+        self.assertEquals(app.request('/iter', method='POST').data, b'hello, world')
+        self.assertEquals(app.request('/iter', method='POST', data='name=web').data, b'hello, web')
 
     def testUnload(self):
         x = web.storage(a=0)
@@ -306,8 +306,8 @@ class ApplicationTest(webtest.TestCase):
         def f(path):
             return app.request(path).data
                 
-        self.assertEquals(f('/?x=2'), '/?x=1')
-        self.assertEquals(f('/?y=1&y=2&x=2'), '/?y=1&y=2&x=1')
+        self.assertEquals(f('/?x=2'), b'/?x=1')
+        self.assertEquals(f('/?y=1&y=2&x=2'), b'/?y=1&y=2&x=1')
         
     def test_setcookie(self):
         urls = (

@@ -325,7 +325,7 @@ def safebytes(obj, encoding = 'utf-8'):
     else: # probably templateResult
         return str(obj).encode(encoding)
 
-def safestr(obj, encoding='utf-8'): # this function should return bytes in Python 3.x
+def safestr(obj, encoding='utf-8'):
     r"""
     Converts any given object to utf-8 encoded string. 
     

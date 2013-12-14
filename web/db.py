@@ -687,7 +687,7 @@ class DB:
             <sql: 'SELECT * FROM foo'>
         """
         where_clauses = []
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             where_clauses.append(k + ' = ' + sqlquote(v))
             
         if where_clauses:

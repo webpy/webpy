@@ -203,12 +203,12 @@ class application:
 
         if method not in ["HEAD", "GET"]:
             data = data or ''
-            import StringIO
+            from io import StringIO
             if isinstance(data, dict):
                 q = urllib.parse.urlencode(data)
             else:
                 q = data
-            env['wsgi.input'] = StringIO.StringIO(q)
+            env['wsgi.input'] = StringIO(q)
             if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
                 env['CONTENT_LENGTH'] = len(q)
         response = web.storage()
@@ -220,7 +220,7 @@ class application:
         return response
 
     def browser(self):
-        import browser
+        from . import browser
         return browser.AppBrowser(self)
 
     def handle(self):
@@ -581,7 +581,7 @@ class subdomain_application(application):
         
     def _match(self, mapping, value):
         for pat, what in mapping:
-            if isinstance(what, basestring):
+            if isinstance(what, str):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)

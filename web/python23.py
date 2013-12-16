@@ -1,4 +1,4 @@
-"""Python 2.3 compatabilty"""
+"""Python 2.3 compatibility"""
 import threading
 
 class threadlocal(object):

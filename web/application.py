@@ -37,7 +37,7 @@ class application:
         ...     def GET(self): return "hello"
         >>>
         >>> app.request("/hello").data
-        'hello'
+        b'hello'
     """
     def __init__(self, mapping=(), fvars={}, autoreload=None):
         if autoreload is None:
@@ -129,7 +129,7 @@ class application:
             ...
             >>> app.add_processor(hello)
             >>> app.request("/web.py").data
-            'hello, web.py'
+            b'hello, web.py'
         """
         self.processors.append(processor)
 
@@ -147,7 +147,7 @@ class application:
             ...
             >>> response = app.request("/hello")
             >>> response.data
-            'hello'
+            b'hello'
             >>> response.status
             '200 OK'
             >>> response.headers['Content-Type']
@@ -179,7 +179,7 @@ class application:
             >>> app.request('/ua', headers = {
             ...      'User-Agent': 'a small jumping bean/1.0 (compatible)'
             ... }).data
-            'your user-agent is a small jumping bean/1.0 (compatible)'
+            b'your user-agent is a small jumping bean/1.0 (compatible)'
 
         """
         path, maybe_query = urllib.parse.splitquery(localpart)
@@ -529,9 +529,9 @@ class auto_application(application):
         ...     path = '/foo/.*'
         ...     def GET(self): return "foo"
         >>> app.request("/hello").data
-        'hello, world'
+        b'hello, world'
         >>> app.request('/foo/bar').data
-        'foo'
+        b'foo'
     """
     def __init__(self):
         application.__init__(self)
@@ -567,12 +567,12 @@ class subdomain_application(application):
         >>> mapping = (r"hello\.example\.com", app)
         >>> app2 = subdomain_application(mapping)
         >>> app2.request("/hello", host="hello.example.com").data
-        'hello'
+        b'hello'
         >>> response = app2.request("/hello", host="something.example.com")
         >>> response.status
         '404 Not Found'
         >>> response.data
-        'not found'
+        b'not found'
     """
     def handle(self):
         host = web.ctx.host.split(':')[0] #strip port

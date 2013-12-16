@@ -230,10 +230,10 @@ class ApplicationTest(webtest.TestCase):
         response = app.request('/', method='POST', data=dict(name='foo'))
         self.assertEquals(response.data, b"{'name': 'foo'}")
         
-        data = '--boundary\r\nContent-Disposition: form-data; name="x"\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
-        headers = {'Content-Type': 'multipart/form-data; boundary=boundary'}
+        data = '--boundary\r\nContent-Disposition: form-data; name="x"\r\n\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
+        headers = {'Content-Length':str(len(data)), 'Content-Type': 'multipart/form-data; boundary=boundary'}
         response = app.request('/multipart', method="POST", data=data, headers=headers)
-        self.assertEquals(response.data, 'a')
+        self.assertEquals(response.data, b'a')
         
     def testCustomNotFound(self):
         urls_a = ("/", "a")

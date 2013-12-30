@@ -338,7 +338,6 @@ def input(*requireds, **defaults):
 def data():
     """Returns the data sent with the request."""
     if 'data' not in ctx:
-        print ctx.env
         if ctx.env.get('HTTP_TRANSFER_ENCODING') == 'chunked':
             ctx.data = ctx.env['wsgi.input'].read()
         else:

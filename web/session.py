@@ -246,6 +246,7 @@ class DiskStore(Store):
     def __getitem__(self, key):
         path = self._get_path(key)
         if os.path.exists(path): 
+            os.utime(path, None)
             pickled = open(path).read()
             return self.decode(pickled)
         else:

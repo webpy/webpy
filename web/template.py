@@ -840,7 +840,7 @@ class Template(BaseTemplate):
     }
     globals = {}
     
-    def __init__(self, text, filename='<template>', filter=None, globals=None, builtins=None, extensions=None):
+    def __init__(self, text, filename='&lt;template&gt;', filter=None, globals=None, builtins=None, extensions=None):
         self.extensions = extensions or []
         text = Template.normalize_text(text)
         code = self.compile_template(text, filename)

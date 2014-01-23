@@ -808,7 +808,7 @@ class DB:
             return []
             
         if not self.supports_multiple_insert:
-            out = [self.insert(tablename, seqname=seqname, _test=_test, statement, **v) for v in values]
+            out = [self.insert(tablename, seqname=seqname, _test=_test, statement=statement, **v) for v in values]
             if seqname is False:
                 return None
             else:

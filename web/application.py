@@ -3,7 +3,7 @@ Web application
 (from web.py)
 """
 import webapi as web
-import webapi, wsgi, utils
+import wsgi, utils
 import debugerror
 import httpserver
 

@@ -253,7 +253,7 @@ class Dropdown(Input):
         else:
             value, desc = arg, arg 
 
-        if self.value == value or (isinstance(self.value, list) and value in self.value):
+        if utils.safestr(self.value) == utils.safestr(value) or (isinstance(self.value, list) and value in self.value):
             select_p = ' selected="selected"'
         else:
             select_p = ''

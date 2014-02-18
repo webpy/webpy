@@ -255,11 +255,11 @@ class Dropdown(Input):
 
         value = utils.safestr(value)
         if isinstance(self.value, (tuple, list)):
-            self.value = [utils.safestr(x) for x in self.value]
+            s_value = [utils.safestr(x) for x in self.value]
         else:
-            self.value = utils.safestr(self.value)
+            s_value = utils.safestr(self.value)
         
-        if self.value == value or (isinstance(self.value, list) and value in self.value):
+        if s_value == value or (isinstance(s_value, list) and value in s_value):
             select_p = ' selected="selected"'
         else:
             select_p = ''

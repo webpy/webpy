@@ -966,7 +966,7 @@ def denumify(string, pattern):
             out.append(c)
     return ''.join(out)
 
-def commify(n):
+def commify(n, decimal_point='.', thousands_separator=','):
     """
     Add commas to an integer `n`.
 
@@ -986,12 +986,18 @@ def commify(n):
         '1,234.56789'
         >>> commify('%.2f' % 1234.5)
         '1,234.50'
+        >>> commify(1234.5, decimal_point=',', thousands_separator='.')
+        '1.234,5'
+        >>> commify('%.2f' %1234.5, decimal_point=',', thousands_separator='.')
+        '1.234,50'        
         >>> commify(None)
         >>>
 
     """
     if n is None: return None
     n = str(n)
+    decimal_point = str(decimal_point)
+    thousands_separator = str(thousands_separator)
     if '.' in n:
         dollars, cents = n.split('.')
     else:
@@ -1000,11 +1006,11 @@ def commify(n):
     r = []
     for i, c in enumerate(str(dollars)[::-1]):
         if i and (not (i % 3)):
-            r.insert(0, ',')
+            r.insert(0, thousands_separator)
         r.insert(0, c)
     out = ''.join(r)
     if cents:
-        out += '.' + cents
+        out += decimal_point + cents
     return out
 
 def dateify(datestring):

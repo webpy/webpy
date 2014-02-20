@@ -1108,52 +1108,32 @@ class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
     pass
 
-# Enumerate all the allowed AST nodes
-ALLOWED_AST_NODES = [
-    "Add", "And",
-#   "AssAttr",
-    "AssList", "AssName", "AssTuple",
-#   "Assert",
-    "Assign", "AugAssign",
-#   "Backquote",
-    "Bitand", "Bitor", "Bitxor", "Break",
-    "CallFunc","Class", "Compare", "Const", "Continue",
-    "Decorators", "Dict", "Discard", "Div",
-    "Ellipsis", "EmptyNode",
-#   "Exec",
-    "Expression", "FloorDiv", "For",
-#   "From",
-    "Function", 
-    "GenExpr", "GenExprFor", "GenExprIf", "GenExprInner",
-    "Getattr", 
-#   "Global", 
-    "If", "IfExp",
-#   "Import",
-    "Invert", "Keyword", "Lambda", "LeftShift",
-    "List", "ListComp", "ListCompFor", "ListCompIf", "Mod",
-    "Module",
-    "Mul", "Name", "Not", "Or", "Pass", "Power",
-#   "Print", "Printnl", "Raise",
-    "Return", "RightShift", "Slice", "Sliceobj",
-    "Stmt", "Sub", "Subscript",
-#   "TryExcept", "TryFinally",
-    "Tuple", "UnaryAdd", "UnarySub",
-    "While", "With", "Yield",
-]
-
 class SafeVisitor(object):
     """
     Make sure code is safe by walking through the AST.
     
     Code considered unsafe if:
-        * it has restricted AST nodes
+        * it has restricted AST nodes (explicitly defined in BLACKLIST)
         * it is trying to access resricted attributes   
         
     Adopted from http://www.zafar.se/bkz/uploads/safe.txt (public domain, Babar K. Zafar)
+    Used to be a whitelist ALLOWED_AST_NODES; list is stale, changes with each Py release
     """
     def __init__(self):
         "Initialize visitor by generating callbacks for all AST node types."
         self.errors = []
+        self.BLACKLIST = ["AssAttr",
+                          "Assert",
+                          "Backquote",
+                          "Exec",
+                          "From",
+                          "Global",
+                          "Import",
+                          "Print",
+                          "Printnl",
+                          "Raise",
+                          "TryExcept",
+                          "TryFinally"]
 
     def walk(self, ast, filename):
         "Validate each node in AST and raise SecurityError if the code is not safe."
@@ -1173,7 +1153,7 @@ class SafeVisitor(object):
         if fn:
             fn(node, *args)
         else:
-            if nodename not in ALLOWED_AST_NODES:
+            if nodename in self.BLACKLIST:
                 self.fail(node, *args)
             
         for child in node.getChildNodes():
@@ -1503,6 +1483,18 @@ def test():
         >>> import datetime
         >>> t("$def with (date)\n$date.strftime('%m %Y')")(datetime.datetime(2009, 1, 1))
         u'01 2009\n'
+
+    Test SecurityError works as expected 
+        NOTE: third example should pass, but registers 'DictComp' as of release 0.37
+
+        >>> t("$code:\n    print 'blah'")()  # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+            ...
+        SecurityError: ... 'Printnl' statements is denied
+        >>> t("$code:\n    foo = {'a': 1}.items()")()
+        u''
+        >>> t("$code:\n    bar = {k:0 for k in [1,2,3]}")()
+        u''
     """
     pass
             

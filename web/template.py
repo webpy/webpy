@@ -1102,89 +1102,91 @@ class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
     pass
 
-class SafeVisitor(object):
+class SafeVisitor(ast.NodeVisitor):
     """
     Make sure code is safe by walking through the AST.
     
     Code considered unsafe if:
         * it has restricted AST nodes (explicitly defined in BLACKLIST)
+        * it is trying to assign to attributes
         * it is trying to access resricted attributes   
         
     Adopted from http://www.zafar.se/bkz/uploads/safe.txt (public domain, Babar K. Zafar)
         * Used to be a whitelist ALLOWED_AST_NODES; list is stale, changes with each Py release
-        * Passing ast rather than compiler tree, for jython and Py3 support since Py2.6
-        * TODO simplify all this code using an ast.NodeVisitor class 
+        * Using ast rather than compiler tree, for jython and Py3 support since Py2.6
+        * Simplified with ast.NodeVisitor class
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         "Initialize visitor by generating callbacks for all AST node types."
+        super(SafeVisitor, self).__init__(*args, **kwargs)
         self.errors = []
-        self.BLACKLIST = ["AssAttr",
-                          "Assert",
-                          "Backquote",
+        self.BLACKLIST = ("Assert",
                           "Exec",
-                          "From",
+                          "ImportFrom",  # replaces From
                           "Global",
                           "Import",
                           "Print",
-                          "Printnl",
                           "Raise",
+                          "Repr",  # replaces Backquote
                           "TryExcept",
-                          "TryFinally"]
+                          "TryFinally",)
 
     def walk(self, tree, filename):
         "Validate each node in AST and raise SecurityError if the code is not safe."
         self.filename = filename
         self.visit(tree)
-        
         if self.errors:        
             raise SecurityError, '\n'.join([str(err) for err in self.errors])
-        
-    def visit(self, node, *args):
-        "Recursively validate node and all of its children."
-        def classname(obj):
-            return obj.__class__.__name__
-        nodename = classname(node)
-        fn = getattr(self, 'visit' + nodename, None)
-        
-        if fn:
-            fn(node, *args)
-        else:
-            if nodename in self.BLACKLIST:
-                self.fail(node, *args)
-            
-        for child in ast.iter_child_nodes(node):
-            self.visit(child, *args)
 
-    def visitName(self, node, *args):
-        "Disallow any attempts to access a restricted attr."
-        #self.assert_attr(node.getChildren()[0], node)
-        pass
-        
-    def visitGetattr(self, node, *args):
-        "Disallow any attempts to access a restricted attribute."
-        self.assert_attr(node.attrname, node)
-            
-    def assert_attr(self, attrname, node):
+    def generic_visit(self, node):
+        nodename = type(node).__name__
+        if nodename in self.BLACKLIST:
+            self.fail_name(node, nodename)
+        super(SafeVisitor, self).generic_visit(node)
+
+    def visit_Attribute(self, node):
+        attrname = self.get_node_attr(node)
         if self.is_unallowed_attr(attrname):
-            lineno = self.get_node_lineno(node)
-            e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
-            self.errors.append(e)
+            self.fail_attribute(node, attrname)
+        super(SafeVisitor, self).generic_visit(node)
 
+    def visit_Assign(self, node):
+        self.check_assign_node(node)
+
+    def visit_AugAssign(self, node):
+        self.check_assign_node(node)
+
+    def check_assign_node(self, node):
+        for target in node.targets:
+            targetname = type(target).__name__
+            if targetname == "Attribute":
+                attrname = self.get_node_attr(target)
+                self.fail_attribute(target, attrname)
+        super(SafeVisitor, self).generic_visit(node)
+
+    # failure modes
+    def fail_name(self, node, nodename):
+        lineno = self.get_node_lineno(node)
+        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
+        self.errors.append(e)
+
+    def fail_attribute(self, node, attrname):
+        lineno = self.get_node_lineno(node)
+        e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
+        self.errors.append(e)
+        
+    # helpers
     def is_unallowed_attr(self, name):
         return name.startswith('_') \
             or name.startswith('func_') \
             or name.startswith('im_')
+
+    def get_node_attr(self, node):
+        return 'attr' in node._fields and node.attr or None
             
     def get_node_lineno(self, node):
         return (node.lineno) and node.lineno or 0
         
-    def fail(self, node, *args):
-        "Default callback for unallowed AST nodes."
-        lineno = self.get_node_lineno(node)
-        nodename = node.__class__.__name__
-        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
-        self.errors.append(e)
-
 class TemplateResult(object, DictMixin):
     """Dictionary like object for storing template output.
     
@@ -1481,12 +1483,23 @@ def test():
         u'01 2009\n'
 
     Test SecurityError works as expected 
-        NOTE: third example should pass, but registers 'DictComp' as of release 0.37
 
         >>> t("$code:\n    print 'blah'")()  # doctest: +ELLIPSIS
         Traceback (most recent call last):
             ...
         SecurityError: ... 'Print' statements is denied
+        >>> t("$code:\n    `1`")()  # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+            ...
+        SecurityError: ... 'Repr' statements is denied
+        >>> t('$code:\n    (lambda x: x+1).func_code')()  # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+            ...
+        SecurityError: ... attribute 'func_code' is denied
+        >>> t('$def with (a)\n$code:\n    a.b = 3')(storage(b=[1]))  # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+            ...
+        SecurityError: ... attribute 'b' is denied
         >>> t("$code:\n    foo = {'a': 1}.items()")()
         u''
         >>> t("$code:\n    bar = {k:0 for k in [1,2,3]}")()

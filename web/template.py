@@ -42,6 +42,7 @@ import glob
 import re
 from UserDict import DictMixin
 import warnings
+import ast
 
 from utils import storage, safeunicode, safestr, re_compile
 from webapi import config
@@ -919,16 +920,9 @@ class Template(BaseTemplate):
                 pass
             raise
         
-        # make sure code is safe - but not with jython, it doesn't have a working compiler module
-        if not sys.platform.startswith('java'):
-            try:
-                import compiler
-                ast = compiler.parse(code)
-                SafeVisitor().walk(ast, filename)
-            except ImportError:
-                warnings.warn("Unabled to import compiler module. Unable to check templates for safety.")
-        else:
-            warnings.warn("SECURITY ISSUE: You are using Jython, which does not support checking templates for safety. Your templates can execute arbitrary code.")
+        # make sure we are only use "safe" python code in templates
+        pytree = ast.parse(code)
+        SafeVisitor().walk(pytree, filename)
 
         return compiled_code
         
@@ -1117,7 +1111,9 @@ class SafeVisitor(object):
         * it is trying to access resricted attributes   
         
     Adopted from http://www.zafar.se/bkz/uploads/safe.txt (public domain, Babar K. Zafar)
-    Used to be a whitelist ALLOWED_AST_NODES; list is stale, changes with each Py release
+        * Used to be a whitelist ALLOWED_AST_NODES; list is stale, changes with each Py release
+        * Passing ast rather than compiler tree, for jython and Py3 support since Py2.6
+        * TODO simplify all this code using an ast.NodeVisitor class 
     """
     def __init__(self):
         "Initialize visitor by generating callbacks for all AST node types."
@@ -1135,10 +1131,10 @@ class SafeVisitor(object):
                           "TryExcept",
                           "TryFinally"]
 
-    def walk(self, ast, filename):
+    def walk(self, tree, filename):
         "Validate each node in AST and raise SecurityError if the code is not safe."
         self.filename = filename
-        self.visit(ast)
+        self.visit(tree)
         
         if self.errors:        
             raise SecurityError, '\n'.join([str(err) for err in self.errors])
@@ -1156,7 +1152,7 @@ class SafeVisitor(object):
             if nodename in self.BLACKLIST:
                 self.fail(node, *args)
             
-        for child in node.getChildNodes():
+        for child in ast.iter_child_nodes(node):
             self.visit(child, *args)
 
     def visitName(self, node, *args):
@@ -1490,7 +1486,7 @@ def test():
         >>> t("$code:\n    print 'blah'")()  # doctest: +ELLIPSIS
         Traceback (most recent call last):
             ...
-        SecurityError: ... 'Printnl' statements is denied
+        SecurityError: ... 'Print' statements is denied
         >>> t("$code:\n    foo = {'a': 1}.items()")()
         u''
         >>> t("$code:\n    bar = {k:0 for k in [1,2,3]}")()

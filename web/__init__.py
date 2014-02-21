@@ -11,7 +11,7 @@ __author__ = [
 __license__ = "public domain"
 __contributors__ = "see http://webpy.org/changes"
 
-import utils, db, net, wsgi, http, webapi, httpserver, debugerror
+import utils, db, net, auth, wsgi, http, webapi, httpserver, debugerror
 import template, form
 
 import session
@@ -19,6 +19,7 @@ import session
 from utils import *
 from db import *
 from net import *
+from auth import *
 from wsgi import *
 from http import *
 from webapi import *

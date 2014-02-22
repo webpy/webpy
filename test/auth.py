@@ -14,7 +14,7 @@ class AuthTest(webtest.TestCase):
     role = 'admin'
 
     def setUp(self):
-        web.config.auth_parameters.crypt = self.crypt
+        web.config.auth.crypt = self.crypt
         self.app = web.auto_application()
         try:
             self.remove_database()

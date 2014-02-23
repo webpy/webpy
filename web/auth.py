@@ -1,17 +1,6 @@
 """
     Authentication and authorization tools
     (for web.py)
-
-    I v mikroframeworku je auth otazkou temer vsech uziti, proto by zde
-    mel/mohl byt.
-
-    https://crackstation.net/hashing-security.htm - text o spravnem tvoreni
-    hesel, haskovani, pouziti bcryptu (nastaveni slozitosti apod)
-
-    >>> print hashlib.sha256("heslo").hexdigest()
-    55b1db8133d9eb398aabd376f07bf8ab5fc584ea0b8bd6a1770200cb613ca005
-    >>> print os.urandom(32).encode('hex')
-    78bf101ee634da55b5b24fa5fd608c6cf5f3563a3ede23d6106b3ef96d84ff49
 """
 import hashlib
 import os
@@ -34,7 +23,7 @@ web.config.auth = utils.storage({
     'password_column': 'passwd',
     'role_column': 'role',
     # hashing/crypting (bcrypt|sha256salt)
-    'crypt': 'bcrypt',
+    'crypt': 'sha256salt',
     'bcrypt_loops': 10,
     'sha_salt_len': 32
 })
@@ -70,7 +59,6 @@ class Auth(object):
         self._db = db
         self._lgn_pg = lgn_pg
 
-        #TODO: mozna to bude stacit dat na zacatek tridy
         self._config = utils.storage(web.config.auth)
         self._db.user = None
         self._crypt = Crypt()

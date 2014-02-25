@@ -131,6 +131,12 @@ class Crypt:
         else:
             raise UnknownCryptAlgorithm
 
+    def encrypt(self, *args, **kwargs):
+        return self[self._config.crypt].encrypt(*args, **kwargs)
+
+    def compare(self, *args, **kwargs):
+        return self[self._config.crypt].compare(*args, **kwargs)
+
     class Bcrypt:
         @staticmethod
         def encrypt(passwd):

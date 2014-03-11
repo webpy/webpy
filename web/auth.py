@@ -13,7 +13,8 @@ except ImportError:
     pass
 
 __all__ = [
-    "Auth", "Crypt", "UnknownCryptAlgorithm", "LogoutError"
+    "Auth", "Crypt",
+    "UnknownCryptAlgorithm", "UserNotFound", "WrongPassword", "LogoutError"
 ]
 
 web.config.auth = utils.storage({

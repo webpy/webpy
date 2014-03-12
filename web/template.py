@@ -1151,18 +1151,21 @@ class SafeVisitor(ast.NodeVisitor):
         super(SafeVisitor, self).generic_visit(node)
 
     def visit_Assign(self, node):
-        self.check_assign_node(node)
+        self.check_assign_targets(node)
 
     def visit_AugAssign(self, node):
-        self.check_assign_node(node)
+        self.check_assign_target(node)
 
-    def check_assign_node(self, node):
+    def check_assign_targets(self, node):
         for target in node.targets:
-            targetname = type(target).__name__
-            if targetname == "Attribute":
-                attrname = self.get_node_attr(target)
-                self.fail_attribute(target, attrname)
+            self.check_assign_target(target)
         super(SafeVisitor, self).generic_visit(node)
+
+    def check_assign_target(self, targetnode):
+        targetname = type(targetnode).__name__
+        if targetname == "Attribute":
+            attrname = self.get_node_attr(targetnode)
+            self.fail_attribute(targetnode, attrname)
 
     # failure modes
     def fail_name(self, node, nodename):

@@ -96,9 +96,9 @@ class Auth(object):
         return real_role
 
     def hasrole(self, *rargs):
-        roles = []
+        roles = set()
         for r in rargs:
-            roles.append(r)
+            roles.add(r)
         role = self.getrole()
         hasrole = role in roles
         return hasrole
@@ -122,7 +122,6 @@ class Auth(object):
 
 class Crypt:
     _config = utils.storage(web.config.auth)
-    _algs = ['bcrypt', 'sha256salt']
 
     def __getitem__(self, key):
         if key == 'bcrypt':

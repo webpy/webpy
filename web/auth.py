@@ -26,7 +26,7 @@ web.config.auth = utils.storage({
     # hashing/crypting (bcrypt|sha256salt)
     'crypt': 'sha256salt',
     'bcrypt_loops': 10,
-    'sha_salt_len': 32
+    'sha_salt_len': 64
 })
 
 
@@ -155,7 +155,8 @@ class Crypt:
         def encrypt(passwd, salt=None):
             if not salt:
                 salt_len = Crypt._config.sha_salt_len
-                salt = os.urandom(salt_len).encode('hex')
+                salt_hex_len = salt_len / 2
+                salt = os.urandom(salt_hex_len).encode('hex')
             crypted = hashlib.sha256(passwd + salt).hexdigest() + '$' + salt
             return crypted
 

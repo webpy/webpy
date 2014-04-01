@@ -617,11 +617,22 @@ class DB:
         #@@@ for backward-compatibility
         elif isinstance(where, (list, tuple)) and len(where) == 2:
             where = SQLQuery(where[0], where[1])
+        elif isinstance(where, dict):
+            where = self._where_dict(where)
         elif isinstance(where, SQLQuery):
             pass
         else:
             where = reparam(where, vars)        
         return where
+
+    def _where_dict(self, where):
+        where_clauses = []
+        for k, v in where.iteritems():
+            where_clauses.append(k + ' = ' + sqlquote(v))
+        if where_clauses:
+            return SQLQuery.join(where_clauses, " AND ")
+        else:
+            return None
     
     def query(self, sql_query, vars=None, processed=False, _test=False): 
         """
@@ -677,6 +688,8 @@ class DB:
             <sql: 'SELECT * FROM foo'>
             >>> db.select(['foo', 'bar'], where="foo.bar_id = bar.id", limit=5, _test=True)
             <sql: 'SELECT * FROM foo, bar WHERE foo.bar_id = bar.id LIMIT 5'>
+            >>> db.select('foo', where={'id': 5}, _test=True)
+            <sql: 'SELECT * FROM foo WHERE id = 5'>
         """
         if vars is None: vars = {}
         sql_clauses = self.sql_clauses(what, tables, where, group, order, limit, offset)
@@ -698,15 +711,7 @@ class DB:
             >>> db.where('foo', _test=True)
             <sql: 'SELECT * FROM foo'>
         """
-        where_clauses = []
-        for k, v in kwargs.iteritems():
-            where_clauses.append(k + ' = ' + sqlquote(v))
-            
-        if where_clauses:
-            where = SQLQuery.join(where_clauses, " AND ")
-        else:
-            where = None
-            
+        where = self._where_dict(kwargs)            
         return self.select(table, what=what, order=order, 
                group=group, limit=limit, offset=offset, _test=_test, 
                where=where)
@@ -730,6 +735,8 @@ class DB:
         #@@@
         elif isinstance(val, (list, tuple)) and len(val) == 2:
             nout = SQLQuery(val[0], val[1]) # backwards-compatibility
+        elif sql == 'WHERE' and isinstance(val, dict):
+            nout = self._where_dict(val)
         elif isinstance(val, SQLQuery):
             nout = val
         else:

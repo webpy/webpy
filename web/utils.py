@@ -645,6 +645,15 @@ class IterBetter:
             ...
         IndexError: already passed 3
 
+    It is also possible to get the first value of the iterator or None.
+
+        >>> c = iterbetter(iter([3, 4, 5]))
+        >>> print c.first()
+        3
+        >>> c = iterbetter(iter([]))
+        >>> print c.first()
+        None
+
     For boolean test, IterBetter peeps at first value in the itertor without effecting the iteration.
 
         >>> c = iterbetter(iter(range(5)))
@@ -660,6 +669,18 @@ class IterBetter:
     """
     def __init__(self, iterator): 
         self.i, self.c = iterator, 0
+
+    def first(self, default=None):
+        """Returns the first element of the iterator or None when there are no
+        elements.
+
+        If the optional argument default is specified, that is returned instead
+        of None when there are no elements.
+        """
+        try:
+            return iter(self).next()
+        except StopIteration:
+            return default
 
     def __iter__(self): 
         if hasattr(self, "_head"):

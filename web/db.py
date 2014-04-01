@@ -296,6 +296,8 @@ def reparam(string_, dictionary):
         <sql: 's IN (1, 2)'>
     """
     dictionary = dictionary.copy() # eval mucks with it
+    # disable builtins to avoid risk for remote code exection.
+    dictionary['__builtins__'] = object()
     vals = []
     result = []
     for live, chunk in _interpolate(string_):

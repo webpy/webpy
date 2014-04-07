@@ -37,7 +37,7 @@ SQL command which can be used for creation of a sample users table in MySQL:
 
     CREATE TABLE users (
         usr VARCHAR(30) NOT NULL PRIMARY KEY,
-        passwd BINARY(60) NOT NULL,
+        passwd BINARY(128) NOT NULL,
         role VARCHAR(30) NOT NULL
     );
 
@@ -108,22 +108,22 @@ method.
 
 Has role
 ````````
-Another rights checking method is `hasRole`. It returns `True` if logged user
+Another rights checking method is `hasrole`. It returns `True` if logged user
 has one of listed roles.
 
 .. code:: python
     
-    >>> auth.hasRole('user', 'admin')
+    >>> auth.hasrole('user', 'admin')
     True
 
 Get role
 ````````
-Method `getRole` returns logged user's role. If there is no logged user,
+Method `getrole` returns logged user's role. If there is no logged user,
 returns `None`.
 
 .. code:: python
     
-    >>> auth.getRole()
+    >>> auth.getrole()
     'admin'
 
 

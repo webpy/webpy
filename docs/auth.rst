@@ -17,6 +17,7 @@ case when you have not the right permissions, if it is not defined,
 `web.forbidden()` is raised.    
 
 .. code:: python
+
     db = web.database(...)
     session = web.session.Session(...)
 
@@ -33,6 +34,7 @@ algoritm) and role.
 SQL command which can be used for creation of a sample users table in MySQL:
 
 ::
+
     CREATE TABLE users (
         usr VARCHAR(30) NOT NULL PRIMARY KEY,
         passwd BINARY(60) NOT NULL,
@@ -46,6 +48,7 @@ Authorization – login
 Authorization is carried out via a simple form. It may looks like this:
 
 ::
+    
     <form action="/login" method="POST">
     <input type="text" name="usr" placeHolder="Username" /><br />
     <input type="password" name="passwd" placeHolder="Password" /><br />
@@ -58,6 +61,7 @@ or non-existing user function returns *WrongPassword* or *UserNotFound*
 exception.
 
 .. code:: python
+    
     def POST(self):
         usr = web.input().usr
         passwd = web.input().passwd
@@ -72,12 +76,14 @@ after login. If you want to prevent it, you can add following code to the start
 of GET function which generates login page:*
 
 .. code:: python
+    
     web.header("Cache-Control", "no-cache, max-age=0, must-revalidate, no-store")
 
 
 For log out from Auth object use `logout()` function:
 
 .. code:: python
+    
     def GET(self):
         auth.logout()
 
@@ -94,6 +100,7 @@ allowed roles, just add `@role(role1, role2,...)` before the `GET` or `POST`
 method.
 
 .. code:: python
+    
     @auth.role('admin')
     def GET(self):
         return render.text("Admin's page")
@@ -105,6 +112,7 @@ Another rights checking method is `hasRole`. It returns `True` if logged user
 has one of listed roles.
 
 .. code:: python
+    
     >>> auth.hasRole('user', 'admin')
     True
 
@@ -114,6 +122,7 @@ Method `getRole` returns logged user's role. If there is no logged user,
 returns `None`.
 
 .. code:: python
+    
     >>> auth.getRole()
     'admin'
 
@@ -137,6 +146,7 @@ By default it uses standard algorithm defined in configuration, if you want to
 use another one, you must define it as key. 
 
 .. code:: python
+    
     crypt = auth.Crypt()
 
     >>> crypt.encrypt("tiger") # encrypt with default sha256 alg
@@ -160,6 +170,7 @@ Additional settings
 Default Auth settings is stored in `web.config.auth`.
 
 .. code:: python
+    
     web.config.auth = utils.storage({
         # database settings
         'table_name': 'users',
@@ -175,4 +186,5 @@ Default Auth settings is stored in `web.config.auth`.
 You can change default options in the beginning of the application.
 
 .. code:: python
+    
     web.config.auth.crypt = 'bcrypt'

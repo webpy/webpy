@@ -139,8 +139,9 @@ may be sufficient for most purposes. Standard format is
 VARCHAR or BINARY column in database.
 
 If you want to use extra-save and slower algorithm, you may use Bcrypt
-(`bcrypt`). It requires extra library installed. You must reserve at least 60
-chars long VARCHAR or BINARY column in database.
+(`bcrypt`). It requires extra library installed (it's named `py-bcrypt` in
+pip). You must reserve at least 60 chars long VARCHAR or BINARY column in
+database.
 
 By default it uses standard algorithm defined in configuration, if you want to
 use another one, you must define it as key. 

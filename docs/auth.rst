@@ -72,12 +72,18 @@ exception.
             return render.login()
 
 *Hint: It's still possible to return to a login form with browser's back button
-after login. If you want to prevent it, you can add following code to the start
-of GET function which generates login page:*
+after login. If you want to prevent it, you must change login page header as
+following:*
 
 .. code:: python
-    
-    web.header("Cache-Control", "no-cache, max-age=0, must-revalidate, no-store")
+
+    def GET(self):
+        web.header("Cache-Control",
+                   "no-cache, max-age=0, must-revalidate, no-store")
+        if auth.getrole(): # if already logged, see other
+            raise web.seeother('/')
+        else:
+            return render.login()    
 
 
 For log out from Auth object use `logout()` function:

@@ -108,7 +108,8 @@ class Auth(object):
             user = self._ses.usr
             row = self._getrow(user)
             return row.role
-        except AttributeError:
+        except AttributeError as e:
+            print "AttributeError:", e
             return None
 
     def _getrow(self, usr):
@@ -116,7 +117,8 @@ class Auth(object):
                               limit=1, vars={'usr': usr})
         try:
             return row[0]
-        except IndexError:
+        except IndexError as e:
+            print "IndexError:", e
             return None
 
 

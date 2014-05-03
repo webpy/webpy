@@ -40,11 +40,11 @@ class Form(object):
     
     def render(self):
         out = ''
-        out += self.rendernote(self.note)
+        out += self.rendernote()
         out += '<table>\n'
         
         for i in self.inputs:
-            html = utils.safeunicode(i.pre) + i.render() + self.rendernote(i.note) + utils.safeunicode(i.post)
+            html = utils.safeunicode(i.pre) + i.render() + i.rendernote() + utils.safeunicode(i.post)
             if i.is_hidden():
                 out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (html)
             else:
@@ -54,18 +54,19 @@ class Form(object):
         
     def render_css(self): 
         out = [] 
-        out.append(self.rendernote(self.note)) 
+        out.append(self.rendernote()) 
         for i in self.inputs:
             if not i.is_hidden():
                 out.append('<label for="%s">%s</label>' % (i.id, net.websafe(i.description))) 
             out.append(i.pre)
             out.append(i.render()) 
-            out.append(self.rendernote(i.note))
+            out.append(i.rendernote())
             out.append(i.post) 
             out.append('\n')
         return ''.join(out) 
         
-    def rendernote(self, note):
+    def rendernote(self, note = None):
+        if not note: note = self.note
         if note: return '<strong class="wrong">%s</strong>' % net.websafe(note)
         else: return ""
     
@@ -166,7 +167,8 @@ class Input(object):
         attrs['name'] = self.name
         return '<input %s/>' % attrs
 
-    def rendernote(self, note):
+    def rendernote(self, note = None):
+        if not note: note = self.note
         if note: return '<strong class="wrong">%s</strong>' % net.websafe(note)
         else: return ""
         

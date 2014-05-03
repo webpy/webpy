@@ -399,7 +399,7 @@ class File(Input):
 class CSRF_Token(Input):
     def __init__(self, name, session, *validators, **attrs):
         self._session = session
-        _validator =  form.Validator("CSRF token failed.", lambda token: self.token_validation(token))
+        _validator =  Validator("CSRF token failed.", lambda token: self.token_validation(token))
         super(CSRF_Token, self).__init__(name, _validator, *validators, **attrs)
         self.description = ""
 
@@ -407,7 +407,7 @@ class CSRF_Token(Input):
         return "hidden"
 
     def get_token(self):
-        if not "csrf_token" in _session:
+        if not "csrf_token" in self._session:
             self._session.csrf_token = uuid.uuid4().hex
         return self._session.csrf_token
 

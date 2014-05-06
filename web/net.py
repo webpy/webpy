@@ -19,6 +19,8 @@ import socket
 def validip6addr(address):
     """
     Returns True if `address` is a valid IPv6 address.
+    catch AttributeError - python does not handle ipv6 errors normally
+    https://github.com/webpy/webpy/pull/195
 
         >>> validip6addr('::')
         True
@@ -31,7 +33,7 @@ def validip6addr(address):
     """
     try:
         socket.inet_pton(socket.AF_INET6, address)
-    except socket.error:
+    except (socket.error, AttributeError):
         return False
 
     return True

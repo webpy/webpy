@@ -6,19 +6,13 @@ Session Management
 import os, time, datetime, random, base64
 import os.path
 from copy import deepcopy
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-try:
-    import hashlib
-    sha1 = hashlib.sha1
-except ImportError:
-    import sha
-    sha1 = sha.new
+import pickle
 
-import utils
-import webapi as web
+
+from hashlib import sha1
+
+from . import utils
+from . import webapi as web
 
 __all__ = [
     'Session', 'SessionExpired',
@@ -187,17 +181,17 @@ class Store:
     """Base class for session stores"""
 
     def __contains__(self, key):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def __getitem__(self, key):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def __setitem__(self, key, value):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def cleanup(self, timeout):
         """removes all the expired sessions"""
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def encode(self, session_dict):
         """encodes session dict as a string"""
@@ -236,7 +230,7 @@ class DiskStore(Store):
 
     def _get_path(self, key):
         if os.path.sep in key: 
-            raise ValueError, "Bad key: %s" % repr(key)
+            raise ValueError("Bad key: %s" % repr(key))
         return os.path.join(self.root, key)
     
     def __contains__(self, key):
@@ -249,7 +243,7 @@ class DiskStore(Store):
             pickled = open(path).read()
             return self.decode(pickled)
         else:
-            raise KeyError, key
+            raise KeyError(key)
 
     def __setitem__(self, key, value):
         path = self._get_path(key)
@@ -298,7 +292,7 @@ class DBStore(Store):
             s = self.db.select(self.table, where="session_id=$key", vars=locals())[0]
             self.db.update(self.table, where="session_id=$key", atime=now, vars=locals())
         except IndexError:
-            raise KeyError
+            raise KeyError(key)
         else:
             return self.decode(s.data)
 

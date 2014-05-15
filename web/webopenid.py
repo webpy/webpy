@@ -31,11 +31,11 @@ store = openid.store.memstore.MemoryStore()
 
 def _secret():
     try:
-        secret = file('.openid_secret_key').read()
+        secret = open('.openid_secret_key').read()
     except IOError:
         # file doesn't exist
         secret = os.urandom(20)
-        file('.openid_secret_key', 'w').write(secret)
+        open('.openid_secret_key', 'w').write(secret)
     return secret
 
 def _hmac(identity_url):

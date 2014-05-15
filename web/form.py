@@ -4,8 +4,7 @@ HTML forms
 """
 
 import copy, re
-import webapi as web
-import utils, net
+from . import utils, net, webapi as web
 
 def attrget(obj, attr, value=None):
     try:
@@ -97,14 +96,14 @@ class Form(object):
     def __getitem__(self, i):
         for x in self.inputs:
             if x.name == i: return x
-        raise KeyError, i
+        raise KeyError(i)
 
     def __getattr__(self, name):
         # don't interfere with deepcopy
         inputs = self.__dict__.get('inputs') or []
         for x in inputs:
             if x.name == name: return x
-        raise AttributeError, name
+        raise AttributeError(name)
     
     def get(self, i, default=None):
         try:
@@ -138,7 +137,7 @@ class Input(object):
         return False
         
     def get_type(self):
-        raise NotImplementedError
+        raise NotImplementedError()
         
     def get_default_id(self):
         return self.name

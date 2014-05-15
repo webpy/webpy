@@ -2,6 +2,7 @@
 Web API (wrapper around WSGI)
 (from web.py)
 """
+from __future__ import print_function
 
 __all__ = [
     "config",
@@ -28,8 +29,15 @@ __all__ = [
     "internalerror",
 ]
 
-import sys, cgi, Cookie, pprint, urlparse, urllib
-from utils import storage, storify, threadeddict, dictadd, intget, safestr
+import sys, cgi, pprint, urllib
+from .utils import storage, storify, threadeddict, dictadd, intget, safestr
+
+from .py3helpers import PY2, urljoin
+
+if PY2:
+    from Cookie import Morsel
+else:
+    from http.cookies import Morsel
 
 config = storage()
 config.__doc__ = """
@@ -75,7 +83,7 @@ class Redirect(HTTPError):
         `url` is joined with the base URL so that things like 
         `redirect("about") will work properly.
         """
-        newloc = urlparse.urljoin(ctx.path, url)
+        newloc = urljoin(ctx.path, url)
 
         if newloc.startswith('/'):
             if absolute:
@@ -268,7 +276,7 @@ def header(hdr, value, unique=False):
     hdr, value = safestr(hdr), safestr(value)
     # protection against HTTP response splitting attack
     if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
-        raise ValueError, 'invalid characters in header'
+        raise ValueError('invalid characters in header')
         
     if unique is True:
         for h, v in ctx.headers:
@@ -280,7 +288,7 @@ def rawinput(method=None):
     """Returns storage object with GET or POST arguments.
     """
     method = method or "both"
-    from cStringIO import StringIO
+    import io
 
     def dictify(fs): 
         # hack to make web.input work with enctype='text/plain.
@@ -345,7 +353,7 @@ def data():
 def setcookie(name, value, expires='', domain=None,
               secure=False, httponly=False, path=None):
     """Sets a cookie."""
-    morsel = Cookie.Morsel()
+    morsel = Morsel()
     name, value = safestr(name), safestr(value)
     morsel.set(name, value, urllib.quote(value))
     if expires < 0:
@@ -423,7 +431,7 @@ def parse_cookies(http_cookie):
                     cookie.load(attr_value)
                 except Cookie.CookieError:
                     pass
-        cookies = dict([(k, urllib.unquote(v.value)) for k, v in cookie.iteritems()])
+        cookies = dict([(k, urllib.unquote(v.value)) for k, v in cookie.items()])
     else:
         # HTTP_COOKIE doesn't have quotes, use fast cookie parsing
         cookies = {}
@@ -457,7 +465,7 @@ def cookies(*requireds, **defaults):
         return storify(ctx._parsed_cookies, *requireds, **defaults)
     except KeyError:
         badrequest()
-        raise StopIteration
+        raise StopIteration()
 
 def debug(*args):
     """
@@ -468,7 +476,7 @@ def debug(*args):
     except: 
         out = sys.stderr
     for arg in args:
-        print >> out, pprint.pformat(arg)
+        print(pprint.pformat(arg), file=out)
     return ''
 
 def _debugwrite(x):

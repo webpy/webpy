@@ -51,7 +51,7 @@ class Browser:
         opener.add_handler(self._cookie_processor)
         try:
             self._response = opener.open(req)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             self._response = e
 
         self.url = self._response.geturl()

@@ -10,10 +10,9 @@ __all__ = [
   "profiler",
 ]
 
-import sys, os, threading, urllib, urlparse
-try: import datetime
-except ImportError: pass
-import net, utils, webapi as web
+import sys, os, threading, urllib
+import datetime
+from . import net, utils, webapi as web
 
 def prefixurl(base=''):
     """
@@ -21,7 +20,7 @@ def prefixurl(base=''):
     Maybe some other time.
     """
     url = web.ctx.path.lstrip('/')
-    for i in xrange(url.count('/')): 
+    for i in range(url.count('/')): 
         base += '../'
     if not base: 
         base = './'
@@ -32,7 +31,7 @@ def expires(delta):
     Outputs an `Expires` header for `delta` from now. 
     `delta` is a `timedelta` object or a number of seconds.
     """
-    if isinstance(delta, (int, long)):
+    if isinstance(delta, int):
         delta = datetime.timedelta(seconds=delta)
     date_obj = datetime.datetime.utcnow() + delta
     web.header('Expires', net.httpdate(date_obj))
@@ -60,12 +59,12 @@ def modified(date=None, etag=None):
     `Last-Modified` and `ETag` output headers.
     """
     try:
-        from __builtin__ import set
+        from builtins import set
     except ImportError:
         # for python 2.3
         from sets import Set as set
 
-    n = set([x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(',')])
+    n = {x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(',')}
     m = net.parsehttpdate(web.ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
     validate = False
     if etag:

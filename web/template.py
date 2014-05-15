@@ -40,12 +40,21 @@ import os
 import sys
 import glob
 import re
-from UserDict import DictMixin
 import warnings
 
-from utils import storage, safeunicode, safestr, re_compile
-from webapi import config
-from net import websafe
+from .utils import storage, safeunicode, safestr, re_compile
+from .webapi import config
+from .net import websafe
+from .py3helpers import PY2
+
+if PY2:
+    from UserDict import DictMixin
+
+    # Make a new-style class
+    class MutableMapping(object, DictMixin):
+        pass
+else:
+    from collections import MutableMapping
 
 def splitline(text):
     r"""
@@ -262,7 +271,7 @@ class Parser:
             extended_expr()
         
         def identifier():
-            tokens.next()
+            next(tokens)
         
         def extended_expr():
             lookahead = tokens.lookahead()
@@ -308,7 +317,7 @@ class Parser:
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            readline = iter([text]).next
+            readline = next(iter([text]))
             end = None
             for t in tokenize.generate_tokens(readline):
                 t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
@@ -334,7 +343,7 @@ class Parser:
 
             def _next(self):
                 try:
-                    return self.iteritems.next()
+                    return next(self.iteritems)
                 except StopIteration:
                     return None
                 
@@ -343,7 +352,7 @@ class Parser:
                     self.items.append(self._next())
                 return self.items[self.position+1]
                     
-            def next(self):
+            def __next__(self):
                 self.current_item = self.lookahead()
                 self.position += 1
                 return self.current_item
@@ -466,7 +475,7 @@ class Parser:
         if keyword in self.statement_nodes:
             return self.statement_nodes[keyword](stmt, block, begin_indent)
         else:
-            raise ParseError, 'Unknown statement: %s' % repr(keyword)
+            raise ParseError('Unknown statement: %s' % repr(keyword))
         
 class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
@@ -511,7 +520,7 @@ class PythonTokenizer:
             # if this error is ignored, then it will be caught when compiling the python code.
             return
     
-    def next(self):
+    def __next__(self):
         type, t, begin, end, line = self.tokens.next()
         row, col = end
         self.index = col
@@ -712,17 +721,17 @@ KEYWORDS = [
 ]
 
 TEMPLATE_BUILTIN_NAMES = [
-    "dict", "enumerate", "float", "int", "bool", "list", "long", "reversed", 
-    "set", "slice", "tuple", "xrange",
-    "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex", 
+    "dict", "enumerate", "float", "int", "bool", "list", "reversed", 
+    "set", "slice", "tuple", "range",
+    "abs", "all", "any", "__call__", "chr", "cmp", "divmod", "filter", "hex", 
     "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
     "True", "False",
     "None",
     "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-import __builtin__
-TEMPLATE_BUILTINS = dict([(name, getattr(__builtin__, name)) for name in TEMPLATE_BUILTIN_NAMES if name in __builtin__.__dict__])
+import builtins
+TEMPLATE_BUILTINS = dict([(name, getattr(builtins, name)) for name in TEMPLATE_BUILTIN_NAMES if name in builtins.__dict__])
 
 class ForLoop:
     """
@@ -730,7 +739,7 @@ class ForLoop:
     
         >>> loop = ForLoop()
         >>> for x in loop.setup(['a', 'b', 'c']):
-        ...     print loop.index, loop.revindex, loop.parity, x
+        ...     print (loop.index, loop.revindex, loop.parity, x)
         ...
         1 3 odd a
         2 2 even b
@@ -745,7 +754,7 @@ class ForLoop:
         
     def __getattr__(self, name):
         if self._ctx is None:
-            raise AttributeError, name
+            raise AttributeError(name)
         else:
             return getattr(self._ctx, name)
         
@@ -816,7 +825,7 @@ class BaseTemplate:
             join_=self._join
         )
     def _join(self, *items):
-        return u"".join(items)
+        return "".join(items)
             
     def _escape(self, value, escape=False):
         if value is None: 
@@ -910,7 +919,7 @@ class Template(BaseTemplate):
         try:
             # compile the code first to report the errors, if any, with the filename
             compiled_code = compile(code, filename, 'exec')
-        except SyntaxError, e:
+        except SyntaxError as e:
             # display template line that caused the error along with the traceback.
             try:
                 e.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
@@ -998,7 +1007,7 @@ class Render:
         elif kind == 'file':
             return Template(open(path).read(), filename=path, **self._keywords)
         else:
-            raise AttributeError, "No template named " + name            
+            raise AttributeError("No template named " + name)
 
     def _findfile(self, path_prefix): 
         p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
@@ -1161,7 +1170,7 @@ class SafeVisitor(object):
         self.visit(ast)
         
         if self.errors:        
-            raise SecurityError, '\n'.join([str(err) for err in self.errors])
+            raise SecurityError('\n'.join([str(err) for err in self.errors]))
         
     def visit(self, node, *args):
         "Recursively validate node and all of its children."
@@ -1209,7 +1218,7 @@ class SafeVisitor(object):
         e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
         self.errors.append(e)
 
-class TemplateResult(object, DictMixin):
+class TemplateResult(MutableMapping):
     """Dictionary like object for storing template output.
     
     The result of a template execution is usally a string, but sometimes it
@@ -1277,8 +1286,8 @@ class TemplateResult(object, DictMixin):
     def __getattr__(self, key): 
         try:
             return self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
 
     def __setattr__(self, key, value): 
         self[key] = value
@@ -1286,8 +1295,8 @@ class TemplateResult(object, DictMixin):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
         
     def __unicode__(self):
         self._prepare_body()

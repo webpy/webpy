@@ -78,13 +78,11 @@ import socket
 import sys
 if 'win' in sys.platform and not hasattr(socket, 'IPPROTO_IPV6'):
     socket.IPPROTO_IPV6 = 41
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
+
+import io
 DEFAULT_BUFFER_SIZE = -1
 
-_fileobject_uses_str_type = isinstance(socket._fileobject(None)._rbuf, basestring)
+_fileobject_uses_str_type = isinstance(socket._fileobject(None)._rbuf, str)
 
 import threading
 import time
@@ -613,7 +611,7 @@ class HTTPRequest(object):
         # Therefore, "/this%2Fpath" becomes "/this%2Fpath", not "/this/path".
         try:
             atoms = [unquote(x) for x in quoted_slash.split(path)]
-        except ValueError, ex:
+        except ValueError as ex:
             self.simple_response("400 Bad Request", ex.args[0])
             return
         path = "%2F".join(atoms)
@@ -649,7 +647,7 @@ class HTTPRequest(object):
         # then all the http headers
         try:
             read_headers(self.rfile, self.inheaders)
-        except ValueError, ex:
+        except ValueError as ex:
             self.simple_response("400 Bad Request", ex.args[0])
             return False
         
@@ -713,7 +711,7 @@ class HTTPRequest(object):
             msg = self.server.protocol + " 100 Continue\r\n\r\n"
             try:
                 self.conn.wfile.sendall(msg)
-            except socket.error, x:
+            except socket.error as x:
                 if x.args[0] not in socket_errors_to_ignore:
                     raise
         return True
@@ -809,7 +807,7 @@ class HTTPRequest(object):
         
         try:
             self.conn.wfile.sendall("".join(buf))
-        except socket.error, x:
+        except socket.error as x:
             if x.args[0] not in socket_errors_to_ignore:
                 raise
     
@@ -912,7 +910,7 @@ class CP_fileobject(socket._fileobject):
             try:
                 bytes_sent = self.send(data)
                 data = data[bytes_sent:]
-            except socket.error, e:
+            except socket.error as e:
                 if e.args[0] not in socket_errors_nonblocking:
                     raise
 
@@ -933,7 +931,7 @@ class CP_fileobject(socket._fileobject):
                 data = self._sock.recv(size)
                 self.bytes_read += len(data)
                 return data
-            except socket.error, e:
+            except socket.error as e:
                 if (e.args[0] not in socket_errors_nonblocking
                     and e.args[0] not in socket_error_eintr):
                     raise
@@ -1245,7 +1243,7 @@ class HTTPConnection(object):
                 req.respond()
                 if req.close_connection:
                     return
-        except socket.error, e:
+        except socket.error as e:
             errnum = e.args[0]
             # sadly SSL sockets return a different (longer) time out string
             if errnum == 'timed out' or errnum == 'The read operation timed out':
@@ -1382,7 +1380,7 @@ class WorkerThread(threading.Thread):
                         self.work_time += time.time() - self.start_time
                         self.start_time = None
                     self.conn = None
-        except (KeyboardInterrupt, SystemExit), exc:
+        except (KeyboardInterrupt, SystemExit) as exc:
             self.server.interrupt = exc
 
 
@@ -1483,7 +1481,7 @@ class ThreadPool(object):
                 except (AssertionError,
                         # Ignore repeated Ctrl-C.
                         # See http://www.cherrypy.org/ticket/691.
-                        KeyboardInterrupt), exc1:
+                        KeyboardInterrupt) as exc1:
                     pass
     
     def _get_qsize(self):
@@ -1710,7 +1708,7 @@ class HTTPServer(object):
                     getattr(self, 'ssl_certificate_chain', None))
         
         # Select the appropriate socket
-        if isinstance(self.bind_addr, basestring):
+        if isinstance(self.bind_addr, str):
             # AF_UNIX socket
             
             # So we can reuse the socket...
@@ -1824,7 +1822,7 @@ class HTTPServer(object):
                     wfile = CP_fileobject(s, "wb", DEFAULT_BUFFER_SIZE)
                     try:
                         wfile.sendall("".join(buf))
-                    except socket.error, x:
+                    except socket.error as x:
                         if x.args[0] not in socket_errors_to_ignore:
                             raise
                     return
@@ -1837,7 +1835,7 @@ class HTTPServer(object):
             
             conn = self.ConnectionClass(self, s, makefile)
             
-            if not isinstance(self.bind_addr, basestring):
+            if not isinstance(self.bind_addr, str):
                 # optional values
                 # Until we do DNS lookups, omit REMOTE_HOST
                 if addr is None: # sometimes this can happen
@@ -1859,7 +1857,7 @@ class HTTPServer(object):
             # notice keyboard interrupts on Win32, which don't interrupt
             # accept() by default
             return
-        except socket.error, x:
+        except socket.error as x:
             if self.stats['Enabled']:
                 self.stats['Socket Errors'] += 1
             if x.args[0] in socket_error_eintr:
@@ -1897,11 +1895,11 @@ class HTTPServer(object):
         
         sock = getattr(self, "socket", None)
         if sock:
-            if not isinstance(self.bind_addr, basestring):
+            if not isinstance(self.bind_addr, str):
                 # Touch our own socket to make accept() return immediately.
                 try:
                     host, port = sock.getsockname()[:2]
-                except socket.error, x:
+                except socket.error as x:
                     if x.args[0] not in socket_errors_to_ignore:
                         # Changed to use error code and not message
                         # See http://www.cherrypy.org/ticket/860.
@@ -1950,7 +1948,7 @@ ssl_adapters = {
 
 def get_ssl_adapter_class(name='pyopenssl'):
     adapter = ssl_adapters[name.lower()]
-    if isinstance(adapter, basestring):
+    if isinstance(adapter, str):
         last_dot = adapter.rfind(".")
         attr_name = adapter[last_dot + 1:]
         mod_path = adapter[:last_dot]
@@ -2127,7 +2125,7 @@ class WSGIGateway_10(WSGIGateway):
             'wsgi.version': (1, 0),
             }
         
-        if isinstance(req.server.bind_addr, basestring):
+        if isinstance(req.server.bind_addr, str):
             # AF_UNIX. This isn't really allowed by WSGI, which doesn't
             # address unix domain sockets. But it's better than nothing.
             env["SERVER_PORT"] = ""
@@ -2135,7 +2133,7 @@ class WSGIGateway_10(WSGIGateway):
             env["SERVER_PORT"] = str(req.server.bind_addr[1])
         
         # Request headers
-        for k, v in req.inheaders.iteritems():
+        for k, v in req.inheaders.items():
             env["HTTP_" + k.upper().replace("-", "_")] = v
         
         # CONTENT_TYPE/CONTENT_LENGTH
@@ -2158,7 +2156,7 @@ class WSGIGateway_u0(WSGIGateway_10):
         """Return a new environ dict targeting the given wsgi.version"""
         req = self.req
         env_10 = WSGIGateway_10.get_environ(self)
-        env = dict([(k.decode('ISO-8859-1'), v) for k, v in env_10.iteritems()])
+        env = dict([(k.decode('ISO-8859-1'), v) for k, v in env_10.items()])
         env[u'wsgi.version'] = ('u', 0)
         
         # Request-URI

@@ -40,7 +40,7 @@ class BuiltinSSLAdapter(wsgiserver.SSLAdapter):
             s = ssl.wrap_socket(sock, do_handshake_on_connect=True,
                     server_side=True, certfile=self.certificate,
                     keyfile=self.private_key, ssl_version=ssl.PROTOCOL_SSLv23)
-        except ssl.SSLError, e:
+        except ssl.SSLError as e:
             if e.errno == ssl.SSL_ERROR_EOF:
                 # This is almost certainly due to the cherrypy engine
                 # 'pinging' the socket to assert it's connectable;

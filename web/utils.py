@@ -3,6 +3,8 @@
 General Utilities
 (part of web.py)
 """
+from __future__ import print_function
+
 
 __all__ = [
   "Storage", "storage", "storify", 
@@ -32,22 +34,11 @@ __all__ = [
 
 import re, sys, time, threading, itertools, traceback, os
 
-try:
-    import subprocess
-except ImportError: 
-    subprocess = None
+import subprocess
+import datetime
+from threading import local as threadlocal
 
-try: import datetime
-except ImportError: pass
-
-try: set
-except NameError:
-    from sets import Set as set
-    
-try:
-    from threading import local as threadlocal
-except ImportError:
-    from python23 import threadlocal
+from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap
 
 class Storage(dict):
     """
@@ -72,8 +63,8 @@ class Storage(dict):
     def __getattr__(self, key): 
         try:
             return self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
     
     def __setattr__(self, key, value): 
         self[key] = value
@@ -81,8 +72,8 @@ class Storage(dict):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
     
     def __repr__(self):     
         return '<Storage ' + dict.__repr__(self) + '>'
@@ -163,7 +154,7 @@ def storify(mapping, *requireds, **defaults):
             value = [value]
         setattr(stor, key, value)
 
-    for (key, value) in defaults.iteritems():
+    for (key, value) in iteritems(defaults):
         result = value
         if hasattr(stor, key): 
             result = stor[key]
@@ -194,13 +185,13 @@ class Counter(storage):
     
     def most(self):
         """Returns the keys with maximum count."""
-        m = max(self.itervalues())
-        return [k for k, v in self.iteritems() if v == m]
+        m = max(itervalues(self))
+        return [k for k, v in iteritems(self) if v == m]
         
     def least(self):
         """Returns the keys with mininum count."""
         m = min(self.itervalues())
-        return [k for k, v in self.iteritems() if v == m]
+        return [k for k, v in iteritems(self) if v == m]
 
     def percent(self, key):
        """Returns what percentage a certain key is of all entries.
@@ -258,19 +249,7 @@ class Counter(storage):
        
 counter = Counter
 
-iters = [list, tuple]
-import __builtin__
-if hasattr(__builtin__, 'set'):
-    iters.append(set)
-if hasattr(__builtin__, 'frozenset'):
-    iters.append(set)
-if sys.version_info < (2,6): # sets module deprecated in 2.6
-    try:
-        from sets import Set
-        iters.append(Set)
-    except ImportError: 
-        pass
-    
+iters = [list, tuple, set, frozenset]
 class _hack(tuple): pass
 iters = _hack(iters)
 iters.__doc__ = """
@@ -291,7 +270,7 @@ def _strips(direction, text, remove):
         if text.endswith(remove):   
             return text[:-len(remove)]
     else: 
-        raise ValueError, "Direction needs to be r or l."
+        raise ValueError("Direction needs to be r or l.")
     return text
 
 def rstrips(text, remove):
@@ -342,17 +321,26 @@ def safeunicode(obj, encoding='utf-8'):
         u'\u1234'
     """
     t = type(obj)
-    if t is unicode:
+    if t is text_type:
         return obj
-    elif t is str:
+    elif t is bytes:
         return obj.decode(encoding)
     elif t in [int, float, bool]:
         return unicode(obj)
-    elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
-        return unicode(obj)
+    #elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
+    #    return unicode(obj)
+    #else:
+    #    return str(obj).decode(encoding)
     else:
-        return str(obj).decode(encoding)
-    
+        return unicode(obj)
+
+if PY2:
+    def is_iter(obj):
+        return hasattr(obj, 'next')
+else:
+    def is_iter(obj):
+        return hasattr(obj, '__next__')
+
 def safestr(obj, encoding='utf-8'):
     r"""
     Converts any given object to utf-8 encoded string. 
@@ -364,12 +352,12 @@ def safestr(obj, encoding='utf-8'):
         >>> safestr(2)
         '2'
     """
-    if isinstance(obj, unicode):
+    if isinstance(obj, text_type):
         return obj.encode(encoding)
-    elif isinstance(obj, str):
+    elif isinstance(obj, bytes):
         return obj
-    elif hasattr(obj, 'next'): # iterator
-        return itertools.imap(safestr, obj)
+    elif is_iter(obj):
+        return imap(safestr, obj)
     else:
         return str(obj)
 
@@ -419,9 +407,9 @@ def timelimit(timeout):
             c = Dispatch()
             c.join(timeout)
             if c.isAlive():
-                raise TimeoutError, 'took too long'
+                raise TimeoutError('took too long')
             if c.error:
-                raise c.error[0], c.error[1]
+                raise c.error[1]
             return c.result
         return _2
     return _1
@@ -543,8 +531,8 @@ def group(seq, size):
         [[1, 2], [3, 4], [5]]
     """
     def take(seq, n):
-        for i in xrange(n):
-            yield seq.next()
+        for i in range(n):
+            yield next(seq)
 
     if not hasattr(seq, 'next'):  
         seq = iter(seq)
@@ -686,14 +674,14 @@ class IterBetter:
         if hasattr(self, "_head"):
             yield self._head
 
-        while 1:    
+        while True:    
             yield self.i.next()
             self.c += 1
 
     def __getitem__(self, i):
         #todo: slices
         if i < self.c: 
-            raise IndexError, "already passed "+str(i)
+            raise IndexError("already passed "+str(i))
         try:
             while i > self.c: 
                 self.i.next()
@@ -702,9 +690,9 @@ class IterBetter:
             self.c += 1
             return self.i.next()
         except StopIteration: 
-            raise IndexError, str(i)
+            raise IndexError(str(i))
             
-    def __nonzero__(self):
+    def __bool__(self):
         if hasattr(self, "__len__"):
             return len(self) != 0
         elif hasattr(self, "_head"):
@@ -725,7 +713,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
     def next():
         while True:
             try:
-                return it.next()
+                return next(it)
             except StopIteration:
                 raise
             except:
@@ -739,7 +727,7 @@ def safewrite(filename, content):
     """Writes the content to a temp file and then moves the temp file to 
     given filename to avoid overwriting the existing file in case of errors.
     """
-    f = file(filename + '.tmp', 'w')
+    f = open(filename + '.tmp', 'w')
     f.write(content)
     f.close()
     os.rename(f.name, filename)
@@ -751,7 +739,7 @@ def dictreverse(mapping):
         >>> dictreverse({1: 2, 3: 4})
         {2: 1, 4: 3}
     """
-    return dict([(value, key) for (key, value) in mapping.iteritems()])
+    return dict([(value, key) for (key, value) in iteritems(mapping)])
 
 def dictfind(dictionary, element):
     """
@@ -763,7 +751,7 @@ def dictfind(dictionary, element):
         3
         >>> dictfind(d, 5)
     """
-    for (key, value) in dictionary.iteritems():
+    for (key, value) in iteritems(dictionary):
         if element is value: 
             return key
 
@@ -779,7 +767,7 @@ def dictfindall(dictionary, element):
         []
     """
     res = []
-    for (key, value) in dictionary.iteritems():
+    for (key, value) in iteritems(dictionary):
         if element is value:
             res.append(key)
     return res
@@ -1077,7 +1065,7 @@ class CaptureStdout:
     Captures everything `func` prints to stdout and returns it instead.
     
         >>> def idiot():
-        ...     print "foo"
+        ...     print("foo")
         >>> capturestdout(idiot)()
         'foo\\n'
     
@@ -1086,7 +1074,7 @@ class CaptureStdout:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args, **keywords):
-        from cStringIO import StringIO
+        import io
         # Not threadsafe!
         out = StringIO()
         oldstdout = sys.stdout
@@ -1124,8 +1112,8 @@ class Profile:
         stime = time.time() - stime
         prof.close()
 
-        import cStringIO
-        out = cStringIO.StringIO()
+        import io
+        out = StringIO()
         stats = hotshot.stats.load(filename)
         stats.stream = out
         stats.strip_dirs()
@@ -1150,7 +1138,7 @@ profile = Profile
 import traceback
 # hack for compatibility with Python 2.3:
 if not hasattr(traceback, 'format_exc'):
-    from cStringIO import StringIO
+    import io
     def format_exc(limit=None):
         strbuf = StringIO()
         traceback.print_exc(limit, strbuf)
@@ -1180,25 +1168,25 @@ def tryall(context, prefix=None):
     """
     context = context.copy() # vars() would update
     results = {}
-    for (key, value) in context.iteritems():
+    for (key, value) in iteritems(context):
         if not hasattr(value, '__call__'): 
             continue
         if prefix and not key.startswith(prefix): 
             continue
-        print key + ':',
+        print(key + ':', end=" ")
         try:
             r = value()
             dictincr(results, r)
-            print r
+            print(r)
         except:
-            print 'ERROR'
+            print('ERROR')
             dictincr(results, 'ERROR')
-            print '   ' + '\n   '.join(traceback.format_exc().split('\n'))
+            print('   ' + '\n   '.join(traceback.format_exc().split('\n')))
         
-    print '-'*40
-    print 'results:'
+    print('-'*40)
+    print('results:')
     for (key, value) in results.iteritems():
-        print ' '*2, str(key)+':', value
+        print(' '*2, str(key)+':', value)
         
 class ThreadedDict(threadlocal):
     """
@@ -1313,7 +1301,7 @@ def autoassign(self, locals):
 
         def __init__(self, foo, bar, baz=1): autoassign(self, locals())
     """
-    for (key, value) in locals.iteritems():
+    for (key, value) in iteritems(locals):
         if key == 'self': 
             continue
         setattr(self, key, value)
@@ -1336,7 +1324,7 @@ def to36(q):
         ValueError: must supply a positive integer
     
     """
-    if q < 0: raise ValueError, "must supply a positive integer"
+    if q < 0: raise ValueError("must supply a positive integer")
     letters = "0123456789abcdefghijklmnopqrstuvwxyz"
     converted = []
     while q != 0:
@@ -1389,14 +1377,14 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             filename = os.path.basename(getattr(a, "name", ""))
             content_type = getattr(a, 'content_type', None)
             mail.attach(filename, a.read(), content_type)
-        elif isinstance(a, basestring):
+        elif isinstance(a, str):
             f = open(a, 'rb')
             content = f.read()
             f.close()
             filename = os.path.basename(a)
             mail.attach(filename, content, None)
         else:
-            raise ValueError, "Invalid attachment: %s" % repr(a)
+            raise ValueError("Invalid attachment: %s" % repr(a))
             
     mail.send()
 
@@ -1468,7 +1456,7 @@ class _EmailMessage:
         self.message.attach(msg)
 
     def prepare_message(self):
-        for k, v in self.headers.iteritems():
+        for k, v in iteritems(self.headers):
             if k.lower() == "content-type":
                 self.message.set_type(v)
             else:
@@ -1524,17 +1512,10 @@ class _EmailMessage:
                 
             cmd = [sendmail, '-f', self.from_address] + self.recipients
 
-            if subprocess:
-                p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-                p.stdin.write(message_text)
-                p.stdin.close()
-                p.wait()
-            else:
-                i, o = os.popen2(cmd)
-                i.write(message)
-                i.close()
-                o.close()
-                del i, o
+            p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            p.stdin.write(message_text)
+            p.stdin.close()
+            p.wait()
                 
     def __repr__(self):
         return "<EmailMessage>"

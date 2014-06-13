@@ -397,8 +397,7 @@ class File(Input):
         return 'file'
 
 class CSRF_Token(Input):
-    def __init__(self, name, session, *validators, **attrs):
-        self._session = session
+    def __init__(self, name, *validators, **attrs):
         _validator =  Validator("CSRF token failed.", lambda token: self.token_validation(token))
         super(CSRF_Token, self).__init__(name, _validator, *validators, **attrs)
         self.description = ""
@@ -407,29 +406,17 @@ class CSRF_Token(Input):
         return "hidden"
 
     def get_token(self):
-        if not "csrf_token" in self._session:
-            self._session.csrf_token = uuid.uuid4().hex
-        return self._session.csrf_token
+        return web.cookies().get("CSRF_token") 
 
     def token_validation(self, token):
-        return "csrf_token" in self._session and self._session.csrf_token == token
+        return self.get_token() == token
 
     def render(self):
-        self.value = self.get_token()
+        token = uuid.uuid4().hex
+        web.setcookie("CSRF_token", token)
+        self.value = token 
         return super(CSRF_Token, self).render()
 
-    #Prevent deepcopying _session which will cause infinite recursion
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == "_session":
-                setattr(result, k, self._session)
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
-    
 class Validator:
     def __deepcopy__(self, memo): return copy.copy(self)
     def __init__(self, msg, test, jstest=None): utils.autoassign(self, locals())

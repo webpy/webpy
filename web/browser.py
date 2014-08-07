@@ -55,7 +55,7 @@ class Browser:
             self._response = e
 
         self.url = self._response.geturl()
-        self.path = urllib.request.Request(self.url).get_selector()
+        self.path = urllib.request.Request(self.url).selector
         self.data = self._response.read()
         self.status = self._response.code
         self._forms = None
@@ -209,12 +209,12 @@ class AppHandler(urllib.request.HTTPHandler):
 
     def http_open(self, req):
         result = self.app.request(
-            localpart=req.get_selector(),
+            localpart=req.selector,
             method=req.get_method(),
-            host=req.get_host(),
-            data=req.get_data(),
+            host=req.host,
+            data=req.data,
             headers=dict(req.header_items()),
-            https=req.get_type() == "https"
+            https=req.type == "https"
         )
         return self._make_response(result, req.get_full_url())
 

@@ -22,7 +22,7 @@ Notes:
 import os
 import random
 import hmac
-import __init__ as web
+from . import __init__ as web
 import openid.consumer.consumer
 import openid.store.memstore
 

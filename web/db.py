@@ -471,13 +471,17 @@ class Transaction:
 
     def commit(self):
         if len(self.ctx.transactions) > self.transaction_count:
-            self.engine.do_commit()
-            self.ctx.transactions = self.ctx.transactions[:self.transaction_count]
+            try:
+                self.engine.do_commit()
+            finally:
+                self.ctx.transactions = self.ctx.transactions[:self.transaction_count]
 
     def rollback(self):
         if len(self.ctx.transactions) > self.transaction_count:
-            self.engine.do_rollback()
-            self.ctx.transactions = self.ctx.transactions[:self.transaction_count]
+            try:
+                self.engine.do_rollback()
+            finally:
+                self.ctx.transactions = self.ctx.transactions[:self.transaction_count]
 
 class DB: 
     """Database"""

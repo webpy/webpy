@@ -1,18 +1,14 @@
-from __future__ import print_function
+
 
 import sys, os
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import posixpath
 
 from . import webapi as web
 from . import net
 from . import utils
-from .py3helpers import PY2
 
-if PY2:
-    from SimpleHTTPServer import SimpleHTTPRequestHandler
-else:
-    from http.server import SimpleHTTPRequestHandler
+from http.server import SimpleHTTPRequestHandler
 
 __all__ = ["runsimple"]
 
@@ -31,14 +27,14 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     # Used under the modified BSD license:
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
-    import SimpleHTTPServer, SocketServer, BaseHTTPServer, urlparse
+    import http.server, socketserver, http.server, urllib.parse
     import socket, errno
     import traceback
 
-    class WSGIHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+    class WSGIHandler(http.server.SimpleHTTPRequestHandler):
         def run_wsgi_app(self):
             protocol, host, path, parameters, query, fragment = \
-                urlparse.urlparse('http://dummyhost%s' % self.path)
+                urllib.parse.urlparse('http://dummyhost%s' % self.path)
 
             # we only use path, query
             env = {'wsgi.version': (1, 0)
@@ -60,7 +56,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                    ,'SERVER_PROTOCOL': self.request_version
                    }
 
-            for http_header, http_value in self.headers.items():
+            for http_header, http_value in list(self.headers.items()):
                 env ['HTTP_%s' % http_header.replace('-', '_').upper()] = \
                     http_value
 
@@ -100,7 +96,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
 
         def do_GET(self):
             if self.path.startswith('/static/'):
-                SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+                http.server.SimpleHTTPRequestHandler.do_GET(self)
             else:
                 self.run_wsgi_app()
 
@@ -127,9 +123,9 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
             # Send the data
             self.wfile.write(data)
 
-    class WSGIServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+    class WSGIServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         def __init__(self, func, server_address):
-            BaseHTTPServer.HTTPServer.__init__(self, 
+            http.server.HTTPServer.__init__(self, 
                                                server_address, 
                                                WSGIHandler)
             self.app = func
@@ -170,7 +166,7 @@ def WSGIServer(server_address, wsgi_app):
     """Creates CherryPy WSGI server listening at `server_address` to serve `wsgi_app`.
     This function can be overwritten to customize the webserver or use a different webserver.
     """
-    import wsgiserver
+    from . import wsgiserver
     
     # Default values of wsgiserver.ssl_adapters uses cherrypy.wsgiserver
     # prefix. Overwriting it make it work with web.wsgiserver.
@@ -191,7 +187,7 @@ def WSGIServer(server_address, wsgi_app):
         sys.modules['cherrypy'] = cherrypy
         sys.modules['cherrypy.wsgiserver'] = wsgiserver
         
-        from wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
+        from .wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
         adapter = pyOpenSSLAdapter(cert, key)
         
         # We are done with our work. Cleanup the patches.
@@ -235,7 +231,7 @@ class StaticApp(SimpleHTTPRequestHandler):
                               environ.get('REMOTE_PORT','-')
         self.command = environ.get('REQUEST_METHOD', '-')
 
-        from cStringIO import StringIO
+        from io import StringIO
         self.wfile = StringIO() # for capturing error
 
         try:
@@ -281,7 +277,7 @@ class StaticMiddleware:
             return self.app(environ, start_response)
 
     def normpath(self, path):
-        path2 = posixpath.normpath(urllib.unquote(path))
+        path2 = posixpath.normpath(urllib.parse.unquote(path))
         if path.endswith("/"):
             path2 += "/"
         return path2
@@ -293,9 +289,9 @@ class LogMiddleware:
         self.app = app
         self.format = '%s - - [%s] "%s %s %s" - %s'
     
-        from BaseHTTPServer import BaseHTTPRequestHandler
-        import StringIO
-        f = StringIO.StringIO()
+        from http.server import BaseHTTPRequestHandler
+        import io
+        f = io.StringIO()
         
         class FakeSocket:
             def makefile(self, *a):

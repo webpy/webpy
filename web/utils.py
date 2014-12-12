@@ -5,13 +5,12 @@ General Utilities
 """
 from __future__ import print_function
 
-
 __all__ = [
   "Storage", "storage", "storify", 
   "Counter", "counter",
   "iters", 
   "rstrips", "lstrips", "strips", 
-  "safeunicode", "safestr", "utf8",
+  "safebytes", "safestr", "utf8",
   "TimeoutError", "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
@@ -38,7 +37,8 @@ import subprocess
 import datetime
 from threading import local as threadlocal
 
-from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap
+itervalues = lambda d: iter(d.values())
+iteritems = lambda d: iter(d.items())
 
 class Storage(dict):
     """
@@ -124,7 +124,7 @@ def storify(mapping, *requireds, **defaults):
     _unicode = defaults.pop('_unicode', False)
 
     # if _unicode is callable object, use it convert a string to unicode.
-    to_unicode = safeunicode
+    to_unicode = safestr
     if _unicode is not False and hasattr(_unicode, "__call__"):
         to_unicode = _unicode
     
@@ -309,37 +309,21 @@ def strips(text, remove):
     """
     return rstrips(lstrips(text, remove), remove)
 
-def safeunicode(obj, encoding='utf-8'):
-    r"""
-    Converts any given object to unicode string.
-    
-        >>> safeunicode('hello')
-        u'hello'
-        >>> safeunicode(2)
-        u'2'
-        >>> safeunicode('\xe1\x88\xb4')
-        u'\u1234'
-    """
-    t = type(obj)
-    if t is text_type:
-        return obj
-    elif t is bytes:
-        return obj.decode(encoding)
-    elif t in [int, float, bool]:
-        return unicode(obj)
-    #elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
-    #    return unicode(obj)
-    #else:
-    #    return str(obj).decode(encoding)
-    else:
-        return unicode(obj)
-
-if PY2:
-    def is_iter(obj):
-        return hasattr(obj, 'next')
-else:
-    def is_iter(obj):
+def is_iter(obj):
         return hasattr(obj, '__next__')
+    
+def safebytes(obj, encoding = 'utf-8'):
+    r"""
+    Converts any given object to utf-8 encoded bytes.
+    """
+    if isinstance(obj, str):
+        return obj.encode(encoding)
+    elif isinstance(obj, bytes):
+        return obj
+    elif is_iter(obj):
+        return map(safebytes, obj)
+    else: # probably templateResult
+        return str(obj).encode(encoding)
 
 def safestr(obj, encoding='utf-8'):
     r"""
@@ -352,14 +336,14 @@ def safestr(obj, encoding='utf-8'):
         >>> safestr(2)
         '2'
     """
-    if isinstance(obj, text_type):
-        return obj.encode(encoding)
+    if isinstance(obj, str):
+        return obj #.encode(encoding)
     elif isinstance(obj, bytes):
-        return obj
+        return str(obj, encoding)
     elif is_iter(obj):
-        return imap(safestr, obj)
+        return map(safestr, obj)
     else:
-        return str(obj)
+        return str(obj) #
 
 # for backward-compatibility
 utf8 = safestr
@@ -654,7 +638,7 @@ class IterBetter:
             yield self._head
 
         while 1:    
-            yield self.i.next()
+            yield self.i.__next__()
             self.c += 1
 
     def __getitem__(self, i):
@@ -663,11 +647,11 @@ class IterBetter:
             raise IndexError("already passed "+str(i))
         try:
             while i > self.c: 
-                self.i.next()
+                self.i.__next__()
                 self.c += 1
             # now self.c == i
             self.c += 1
-            return self.i.next()
+            return self.i.__next__()
         except StopIteration: 
             raise IndexError(str(i))
             
@@ -678,7 +662,7 @@ class IterBetter:
             return True
         else:
             try:
-                self._head = self.i.next()
+                self._head = self.i.__next__()
             except StopIteration:
                 return False
             else:
@@ -692,7 +676,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
     def next():
         while True:
             try:
-                return it.next()
+                return it.__next__()
             except StopIteration:
                 raise
             except:
@@ -1231,8 +1215,8 @@ class ThreadedDict(threadlocal):
     def items(self):
         return self.__dict__.items()
 
-    def iteritems(self):
-        return self.__dict__.iteritems()
+#     def iteritems(self):
+#         return self.__dict__.items()#iteritems()
 
     def keys(self):
         return self.__dict__.keys()

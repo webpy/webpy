@@ -32,6 +32,8 @@ def validip6addr(address):
         socket.inet_pton(socket.AF_INET6, address)
     except socket.error:
         return False
+    except:
+        pass
 
     return True
 
@@ -162,7 +164,7 @@ def urlquote(val):
         '%E2%80%BD'
     """
     if val is None: return ''
-    if not isinstance(val, unicode): val = str(val)
+    if not isinstance(val, str): val = str(val)
     else: val = val.encode('utf-8')
     return urllib.quote(val)
 
@@ -232,9 +234,9 @@ def websafe(val):
     if val is None:
         return u''
     elif isinstance(val, str):
-        val = val.decode('utf-8')
-    elif not isinstance(val, unicode):
-        val = unicode(val)
+        val = val #.decode('utf-8')
+    elif not isinstance(val, str):
+        val = str(val)
         
     return htmlquote(val)
 

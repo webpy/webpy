@@ -11,6 +11,16 @@ try:
 except ImportError:
     ssl = None
 
+try:
+    from _pyio import DEFAULT_BUFFER_SIZE
+except ImportError:
+    try:
+        from io import DEFAULT_BUFFER_SIZE
+    except ImportError:
+        DEFAULT_BUFFER_SIZE = -1
+
+import sys
+
 from cherrypy import wsgiserver
 
 
@@ -40,7 +50,12 @@ class BuiltinSSLAdapter(wsgiserver.SSLAdapter):
             s = ssl.wrap_socket(sock, do_handshake_on_connect=True,
                     server_side=True, certfile=self.certificate,
                     keyfile=self.private_key, ssl_version=ssl.PROTOCOL_SSLv23)
+<<<<<<< HEAD
         except ssl.SSLError as e:
+=======
+        except ssl.SSLError:
+            e = sys.exc_info()[1]
+>>>>>>> 4ff74df8a12d7d0a7c95178e067ccc50ad1cde6c
             if e.errno == ssl.SSL_ERROR_EOF:
                 # This is almost certainly due to the cherrypy engine
                 # 'pinging' the socket to assert it's connectable;
@@ -50,6 +65,10 @@ class BuiltinSSLAdapter(wsgiserver.SSLAdapter):
                 if e.args[1].endswith('http request'):
                     # The client is speaking HTTP to an HTTPS server.
                     raise wsgiserver.NoSSLError
+                elif e.args[1].endswith('unknown protocol'):
+                    # The client is speaking some non-HTTP protocol.
+                    # Drop the conn.
+                    return None, {}
             raise
         return s, self.get_environ(s)
 
@@ -66,7 +85,17 @@ class BuiltinSSLAdapter(wsgiserver.SSLAdapter):
 ##            SSL_VERSION_LIBRARY 	string 	The OpenSSL program version
             }
         return ssl_environ
+<<<<<<< HEAD
 
     def makefile(self, sock, mode='r', bufsize=-1):
         return wsgiserver.CP_fileobject(sock, mode, bufsize)
+=======
+    
+    if sys.version_info >= (3, 0):
+        def makefile(self, sock, mode='r', bufsize=DEFAULT_BUFFER_SIZE):
+            return wsgiserver.CP_makefile(sock, mode, bufsize)
+    else:
+        def makefile(self, sock, mode='r', bufsize=DEFAULT_BUFFER_SIZE):
+            return wsgiserver.CP_fileobject(sock, mode, bufsize)
+>>>>>>> 4ff74df8a12d7d0a7c95178e067ccc50ad1cde6c
 

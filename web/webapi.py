@@ -29,15 +29,12 @@ __all__ = [
     "internalerror",
 ]
 
-import sys, cgi, pprint, urllib
+import sys, cgi, pprint, urllib.parse
 from .utils import storage, storify, threadeddict, dictadd, intget, safestr
 
-from .py3helpers import PY2, urljoin
+from urllib.parse import urljoin
 
-if PY2:
-    from Cookie import Morsel
-else:
-    from http.cookies import Morsel
+from http.cookies import Morsel
 
 config = storage()
 config.__doc__ = """
@@ -288,7 +285,7 @@ def rawinput(method=None):
     """Returns storage object with GET or POST arguments.
     """
     method = method or "both"
-    from cStringIO import StringIO
+    from io import BytesIO
 
     def dictify(fs): 
         # hack to make web.input work with enctype='text/plain.
@@ -312,7 +309,7 @@ def rawinput(method=None):
                     a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
                     ctx._fieldstorage = a
             else:
-                fp = StringIO(data())
+                fp = BytesIO(data())
                 a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
             a = dictify(a)
 
@@ -355,8 +352,8 @@ def setcookie(name, value, expires='', domain=None,
     """Sets a cookie."""
     morsel = Morsel()
     name, value = safestr(name), safestr(value)
-    morsel.set(name, value, urllib.quote(value))
-    if expires < 0:
+    morsel.set(name, value, urllib.parse.quote(value))
+    if isinstance(expires, int) and expires < 0:
         expires = -1000000000
     morsel['expires'] = expires
     morsel['path'] = path or ctx.homepath+'/'
@@ -385,13 +382,13 @@ def decode_cookie(value):
     """
     try:
         # First try plain ASCII encoding
-        return unicode(value, 'us-ascii')
+        return str(value, 'us-ascii')
     except UnicodeError:
         # Then try UTF-8, and if that fails, ISO8859
         try:
-            return unicode(value, 'utf-8')
+            return str(value, 'utf-8')
         except UnicodeError:
-            return unicode(value, 'iso8859', 'ignore')
+            return str(value, 'iso8859', 'ignore')
 
 def parse_cookies(http_cookie):
     r"""Parse a HTTP_COOKIE header and return dict of cookie names and decoded values.
@@ -431,7 +428,7 @@ def parse_cookies(http_cookie):
                     cookie.load(attr_value)
                 except Cookie.CookieError:
                     pass
-        cookies = dict([(k, urllib.unquote(v.value)) for k, v in cookie.iteritems()])
+        cookies = dict([(k, urllib.parse.unquote(v.value)) for k, v in cookie.iteritems()])
     else:
         # HTTP_COOKIE doesn't have quotes, use fast cookie parsing
         cookies = {}
@@ -439,7 +436,7 @@ def parse_cookies(http_cookie):
             key_value = key_value.split('=', 1)
             if len(key_value) == 2:
                 key, value = key_value
-                cookies[key.strip()] = urllib.unquote(value.strip())
+                cookies[key.strip()] = urllib.parse.unquote(value.strip())
     return cookies
 
 def cookies(*requireds, **defaults):

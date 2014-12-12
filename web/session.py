@@ -5,6 +5,7 @@ Session Management
 
 import os, time, datetime, random, base64
 import os.path
+import threading
 from copy import deepcopy
 try:
     import cPickle as pickle
@@ -150,7 +151,8 @@ class Session(object):
             rand = os.urandom(16)
             now = time.time()
             secret_key = self._config.secret_key
-            session_id = sha1("%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key))
+            seed = b"".join((rand, str(now).encode(), utils.safebytes(web.ctx.ip), secret_key.encode()))
+            session_id = sha1(seed)
             session_id = session_id.hexdigest()
             if session_id not in self.store:
                 break
@@ -202,7 +204,7 @@ class Store:
 
     def decode(self, session_data):
         """decodes the data to get back the session dict """
-        pickled = base64.decodestring(session_data)
+        pickled = base64.decodestring(session_data.encode())
         return pickle.loads(pickled)
 
 class DiskStore(Store):
@@ -249,13 +251,15 @@ class DiskStore(Store):
 
     def __setitem__(self, key, value):
         path = self._get_path(key)
-        pickled = self.encode(value)    
+        pickled = self.encode(value)
         try:
-            f = open(path, 'w')
+            tname = path+"."+threading.current_thread().getName()
+            f = open(tname, 'w')
             try:
-                f.write(pickled)
-            finally: 
+                f.write(pickled.decode())
+            finally:
                 f.close()
+                os.rename(tname, path) # atomary operation
         except IOError:
             pass
 

@@ -1,12 +1,12 @@
 """Browser to test web applications.
 (from web.py)
 """
-from utils import re_compile
-from net import htmlunquote
+from .utils import re_compile
+from .net import htmlunquote
 
-import httplib, urllib, urllib2
+import http.client, urllib.request, urllib.parse, urllib.error
 import copy
-from StringIO import StringIO
+from io import StringIO
 
 DEBUG = False
 
@@ -21,9 +21,9 @@ class BrowserError(Exception):
 
 class Browser:
     def __init__(self):
-        import cookielib
-        self.cookiejar = cookielib.CookieJar()
-        self._cookie_processor = urllib2.HTTPCookieProcessor(self.cookiejar)
+        import http.cookiejar
+        self.cookiejar = http.cookiejar.CookieJar()
+        self._cookie_processor = urllib.request.HTTPCookieProcessor(self.cookiejar)
         self.form = None
 
         self.url = "http://0.0.0.0:8080/"
@@ -42,7 +42,7 @@ class Browser:
         """Builds the opener using urllib2.build_opener.
         Subclasses can override this function to prodive custom openers.
         """
-        return urllib2.build_opener()
+        return urllib.request.build_opener()
 
     def do_request(self, req):
         if DEBUG:
@@ -51,11 +51,11 @@ class Browser:
         opener.add_handler(self._cookie_processor)
         try:
             self._response = opener.open(req)
-        except urllib2.HTTPError as e:
+        except urllib.error.HTTPError as e:
             self._response = e
 
         self.url = self._response.geturl()
-        self.path = urllib2.Request(self.url).get_selector()
+        self.path = urllib.request.Request(self.url).selector
         self.data = self._response.read()
         self.status = self._response.code
         self._forms = None
@@ -64,8 +64,8 @@ class Browser:
 
     def open(self, url, data=None, headers={}):
         """Opens the specified url."""
-        url = urllib.basejoin(self.url, url)
-        req = urllib2.Request(url, data, headers)
+        url = urllib.parse.urljoin(self.url, url)
+        req = urllib.request.Request(url, data, headers)
         return self.do_request(req)
 
     def show(self):
@@ -80,7 +80,7 @@ class Browser:
 
     def get_response(self):
         """Returns a copy of the current response."""
-        return urllib.addinfourl(StringIO(self.data), self._response.info(), self._response.geturl())
+        return urllib.request.addinfourl(StringIO(self.data), self._response.info(), self._response.geturl())
 
     def get_soup(self):
         """Returns beautiful soup of the current document."""
@@ -90,7 +90,7 @@ class Browser:
     def get_text(self, e=None):
         """Returns content of e or the current document as plain text."""
         e = e or self.get_soup()
-        return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, unicode)])
+        return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, str)])
 
     def _get_links(self):
         soup = self.get_soup()
@@ -198,9 +198,9 @@ class AppBrowser(Browser):
         self.app = app
 
     def build_opener(self):
-        return urllib2.build_opener(AppHandler(self.app))
+        return urllib.request.build_opener(AppHandler(self.app))
 
-class AppHandler(urllib2.HTTPHandler):
+class AppHandler(urllib.request.HTTPHandler):
     """urllib2 handler to handle requests using web.py application."""
     handler_order = 100
 
@@ -209,12 +209,12 @@ class AppHandler(urllib2.HTTPHandler):
 
     def http_open(self, req):
         result = self.app.request(
-            localpart=req.get_selector(),
+            localpart=req.selector,
             method=req.get_method(),
-            host=req.get_host(),
-            data=req.get_data(),
+            host=req.host,
+            data=req.data,
             headers=dict(req.header_items()),
-            https=req.get_type() == "https"
+            https=req.type == "https"
         )
         return self._make_response(result, req.get_full_url())
 
@@ -222,15 +222,15 @@ class AppHandler(urllib2.HTTPHandler):
         return self.http_open(req)
 
     try:
-        https_request = urllib2.HTTPHandler.do_request_
+        https_request = urllib.request.HTTPHandler.do_request_
     except AttributeError:
         # for python 2.3
         pass
 
     def _make_response(self, result, url):
         data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
-        headers = httplib.HTTPMessage(StringIO(data))
-        response = urllib.addinfourl(StringIO(result.data), headers, url)
+        headers = http.client.HTTPMessage(StringIO(data))
+        response = urllib.request.addinfourl(StringIO(str(result.data)), headers, url)
         code, msg = result.status.split(None, 1)
         response.code, response.msg = int(code), msg
         return response

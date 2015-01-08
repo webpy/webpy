@@ -474,9 +474,9 @@ class application:
                 else:
                     continue
             elif isinstance(what, basestring):
-                what, result = utils.re_subm('^' + pat + '$', what, value)
+                what, result = utils.re_subm(r'^%s\Z' % (pat,), what, value)
             else:
-                result = utils.re_compile('^' + pat + '$').match(value)
+                result = utils.re_compile(r'^%s\Z' % (pat,)).match(value)
                 
             if result: # it's a match
                 return what, [x for x in result.groups()]

@@ -90,11 +90,10 @@ class render_jinja:
         self._lookup.globals.update(globals)
         
     def __getattr__(self, name):
-        # Assuming all templates end with .html
-        path = name + '.html'
-        t = self._lookup.get_template(path)
+        paths = [name + '.' + ext for ext in ['html', 'xml']]
+        t = self._lookup.select_template(paths)
         return t.render
-        
+
 class render_mako:
     """Rendering interface to Mako Templates.
 

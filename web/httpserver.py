@@ -174,7 +174,7 @@ def WSGIServer(server_address, wsgi_app):
     
     server = wsgiserver.CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
         
-    def create_ssl_adapter(cert, key):
+    def create_ssl_adapter(cert, key, chain=None):
         # wsgiserver tries to import submodules as cherrypy.wsgiserver.foo.
         # That doesn't work as not it is web.wsgiserver. 
         # Patching sys.modules temporarily to make it work.
@@ -185,7 +185,7 @@ def WSGIServer(server_address, wsgi_app):
         sys.modules['cherrypy.wsgiserver'] = wsgiserver
         
         from wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
-        adapter = pyOpenSSLAdapter(cert, key)
+        adapter = pyOpenSSLAdapter(cert, key, chain)
         
         # We are done with our work. Cleanup the patches.
         del sys.modules['cherrypy']
@@ -197,7 +197,8 @@ def WSGIServer(server_address, wsgi_app):
     if (server.ssl_adapter is None and
         getattr(server, 'ssl_certificate', None) and
         getattr(server, 'ssl_private_key', None)):
-        server.ssl_adapter = create_ssl_adapter(server.ssl_certificate, server.ssl_private_key)
+        server.ssl_adapter = create_ssl_adapter(server.ssl_certificate, server.ssl_private_key,
+                                                getattr(server, 'ssl_certificate_chain', None))
 
     server.nodelay = not sys.platform.startswith('java') # TCP_NODELAY isn't supported on the JVM
     return server

@@ -31,7 +31,7 @@ def validip6addr(address):
     """
     try:
         socket.inet_pton(socket.AF_INET6, address)
-    except socket.error:
+    except (socket.error, AttributeError):
         return False
 
     return True

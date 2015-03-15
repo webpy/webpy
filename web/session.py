@@ -306,9 +306,9 @@ class DBStore(Store):
         pickled = self.encode(value)
         now = datetime.datetime.now()
         if key in self:
-            self.db.update(self.table, where="session_id=$key", data=pickled, vars=locals())
+            self.db.update(self.table, where="session_id=$key", data=pickled,atime=now,  vars=locals())
         else:
-            self.db.insert(self.table, False, session_id=key, data=pickled )
+            self.db.insert(self.table, False, session_id=key, atime=now, data=pickled )
                 
     def __delitem__(self, key):
         self.db.delete(self.table, where="session_id=$key", vars=locals())

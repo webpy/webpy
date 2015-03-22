@@ -85,6 +85,19 @@ class ApplicationTest(webtest.TestCase):
         response = app.request('/b/foo?x=2')
         self.assertEquals(response.status, '301 Moved Permanently')
         self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/hello/foo?x=2')
+
+    def test_routing(self):
+        urls = (
+            "/foo", "foo"
+        )
+
+        class foo:
+            def GET(self):
+                return "foo"
+
+        app = web.application(urls, {"foo": foo})
+
+        self.assertEquals(app.request('/foo\n').data, 'not found')
         
     def test_subdirs(self):
         urls = (

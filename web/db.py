@@ -925,6 +925,10 @@ class DB:
     def transaction(self): 
         """Start a transaction."""
         return Transaction(self.ctx)
+
+    def __del__(self):
+        """faster close of database connection"""
+        self.ctx.db.close()
     
 class PostgresDB(DB): 
     """Postgres driver."""

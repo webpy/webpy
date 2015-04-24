@@ -882,11 +882,11 @@ def datestr(then, now=None):
         ... }.iteritems():
         ...     assert datestr(d, now=d+t) == v
         >>> datestr(datetime(1970, 1, 1), now=d)
-        'January  1'
+        'January 01'
         >>> datestr(datetime(1969, 1, 1), now=d)
-        'January  1, 1969'
+        'January 01, 1969'
         >>> datestr(datetime(1970, 6, 1), now=d)
-        'June  1, 1970'
+        'June 01, 1970'
         >>> datestr(None)
         ''
     """

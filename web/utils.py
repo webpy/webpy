@@ -99,17 +99,28 @@ def storify(mapping, *requireds, **defaults):
     `storage({'a':1, 'b':2, 'c':3})`.
     
     If a `storify` value is a list (e.g. multiple values in a form submission), 
-    `storify` returns the last element of the list, unless the key appears in 
+    `storify` returns the first element of the list, unless the key appears in
     `defaults` as a list. Thus:
     
         >>> storify({'a':[1, 2]}).a
-        2
+        1
         >>> storify({'a':[1, 2]}, a=[]).a
         [1, 2]
         >>> storify({'a':1}, a=[]).a
         [1]
         >>> storify({}, a=[]).a
         []
+
+    Note: `storify` used to return the *last* element of the list, but this is a less
+    useful default.  Consider a common workflow editing values in some kind of storage:
+
+        #. user clicks a hyperlink to /edit/?a=1&b=2 to edit attributes on object A1
+        #. GET populates a form with hidden value `a` of 1 and textbox `b`, filled with 2
+        #. user changes the value of `b` to be 3 and submits
+        #. expects object A1 to update `b` to be 3
+        #. `web.webapi.rawinput()` returns a list b=[3, 2]
+        #. `storify` used to take the last value, 2, which was from the GET
+        #. what we actually want is the first value, 3, from the POST
     
     Similarly, if the value has a `value` attribute, `storify will return _its_
     value, unless the key appears in `defaults` as a dictionary.
@@ -156,7 +167,7 @@ def storify(mapping, *requireds, **defaults):
             if isinstance(defaults.get(key), list):
                 value = [getvalue(x) for x in value]
             else:
-                value = value[-1]
+                value = value[0]
         if not isinstance(defaults.get(key), dict):
             value = getvalue(value)
         if isinstance(defaults.get(key), list) and not isinstance(value, list):

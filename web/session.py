@@ -145,6 +145,14 @@ class Session(object):
         cookie_path = self._config.cookie_path
         httponly = self._config.httponly
         secure = self._config.secure
+
+        # Don't set session_id cookie again and again whenever _save() called
+        # This checks whether cookie header is already set or not,
+        # if yes just return set cookie otherwise
+        for h,v in web.ctx.headers:
+            cookie = web.parse_cookies(v)
+            if cookie.get(cookie_name, '') == session_id:
+                return
         web.setcookie(cookie_name, session_id, expires=expires, domain=cookie_domain, httponly=httponly, secure=secure, path=cookie_path)
     
     def _generate_session_id(self):

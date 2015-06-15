@@ -823,11 +823,12 @@ class DB:
             else:
                 return out
                 
-        keys = values[0].keys()
+        keys = sorted(values[0].keys())
         #@@ make sure all keys are valid
 
         for v in values:
-            if v.keys() != keys:
+		    # make sure keys are sorted, keep compare correct
+            if sorted(v.keys()) != keys:
                 raise ValueError, 'Not all rows have the same keys'
 
         sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))

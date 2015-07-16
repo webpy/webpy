@@ -7,6 +7,8 @@ import copy, re
 import webapi as web
 import utils, net
 
+web.config.form = utils.storage()
+
 def attrget(obj, attr, value=None):
     try:
         if hasattr(obj, 'has_key') and obj.has_key(attr):
@@ -42,7 +44,7 @@ class Form(object):
     def render(self):
         out = ''
         out += self.rendernote(self.note)
-        out += web.config.form.get('before') or '<table>\n'
+        out += web.config.form.get('before_inputs') or '<table>\n'
 
         for i in self.inputs:
             html = utils.safeunicode(i.pre) + i.render() + self.rendernote(i.note) + utils.safeunicode(i.post)
@@ -54,9 +56,9 @@ class Form(object):
                 pre_output = web.config.form.get('required_wrapper') or '    <tr><th><label class="required" for="%(id)s">%(desc)s</label></th><td>%(input)s</td></tr>\n'
                 out += pre_output % {'id': i.id, 'desc': net.websafe(i.description), 'input': html}
             else:
-                pre_output = web.config.form.get('input_wrapper') or '    <tr><th><label for="%(id)s">%(desc)s</label></th><td>%(input)s</td></tr>\n'
+                pre_output = web.config.form.get('normal_wrapper') or '    <tr><th><label for="%(id)s">%(desc)s</label></th><td>%(input)s</td></tr>\n'
                 out += pre_output % {'id': i.id, 'desc': net.websafe(i.description), 'input': html}
-        out += web.config.form.get('after') or "</table>"
+        out += web.config.form.get('after_inputs') or "</table>"
         return out
 
     def render_css(self):

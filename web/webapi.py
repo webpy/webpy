@@ -32,16 +32,12 @@ import sys, cgi, Cookie, pprint, urlparse, urllib
 from utils import storage, storify, threadeddict, dictadd, intget, safestr
 
 config = storage()
-config.form = storage()
 config.__doc__ = """
 A configuration object for various aspects of web.py.
 
 `debug`
    : when True, enables reloading, disabled template caching and sets internalerror to debugerror.
-`form`
-   : contains optional replacements for the default form elements.
 """
-
 
 class HTTPError(Exception):
     def __init__(self, status, headers={}, data=""):

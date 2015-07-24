@@ -53,7 +53,6 @@ class Session(object):
 
     def __init__(self, app, store, initializer=None):
         self.store              = store
-        self.cookie_expire      = self._config.cookie_expire
         self._initializer       = initializer
         self._last_cleanup_time = 0
         self._config            = utils.storage(web.config.session_parameters)
@@ -147,7 +146,7 @@ class Session(object):
         cookie_path = self._config.cookie_path
         httponly = self._config.httponly
         secure = self._config.secure
-        web.setcookie(cookie_name, session_id, expires=self.cookie_expire, domain=cookie_domain, httponly=httponly, secure=secure, path=cookie_path)
+        web.setcookie(cookie_name, session_id, expires=self._config.cookie_expire, domain=cookie_domain, httponly=httponly, secure=secure, path=cookie_path)
     
     def _generate_session_id(self):
         """Generate a random id for session"""

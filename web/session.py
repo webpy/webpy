@@ -30,6 +30,7 @@ web.config.session_parameters = utils.storage({
     'cookie_domain': None,
     'cookie_path' : None,
     'timeout': 86400, #24 * 60 * 60, # 24 hours in seconds
+	'cookie_expire':'',
     'ignore_expiry': True,
     'ignore_change_ip': True,
     'secret_key': 'fLjUfxqXtfNoIldA0A0J',
@@ -46,20 +47,21 @@ class Session(object):
     """Session management for web.py
     """
     __slots__ = [
-        "store", "_initializer", "_last_cleanup_time", "_config", "_data", 
+        "store", "cookie_expire", "_initializer", "_last_cleanup_time", "_config", "_data",
         "__getitem__", "__setitem__", "__delitem__"
     ]
 
     def __init__(self, app, store, initializer=None):
-        self.store = store
-        self._initializer = initializer
+        self.store              = store
+        self.cookie_expire      = self._config.cookie_expire
+        self._initializer       = initializer
         self._last_cleanup_time = 0
-        self._config = utils.storage(web.config.session_parameters)
-        self._data = utils.threadeddict()
+        self._config            = utils.storage(web.config.session_parameters)
+        self._data              = utils.threadeddict()
         
-        self.__getitem__ = self._data.__getitem__
-        self.__setitem__ = self._data.__setitem__
-        self.__delitem__ = self._data.__delitem__
+        self.__getitem__        = self._data.__getitem__
+        self.__setitem__        = self._data.__setitem__
+        self.__delitem__        = self._data.__delitem__
 
         if app:
             app.add_processor(self._processor)
@@ -139,13 +141,13 @@ class Session(object):
         else:
             self._setcookie(self.session_id, expires=-1)
             
-    def _setcookie(self, session_id, expires='', **kw):
+    def _setcookie(self, session_id, **kw):
         cookie_name = self._config.cookie_name
         cookie_domain = self._config.cookie_domain
         cookie_path = self._config.cookie_path
         httponly = self._config.httponly
         secure = self._config.secure
-        web.setcookie(cookie_name, session_id, expires=expires, domain=cookie_domain, httponly=httponly, secure=secure, path=cookie_path)
+        web.setcookie(cookie_name, session_id, expires=self.cookie_expire, domain=cookie_domain, httponly=httponly, secure=secure, path=cookie_path)
     
     def _generate_session_id(self):
         """Generate a random id for session"""

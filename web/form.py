@@ -164,6 +164,7 @@ class Input(object):
         if self.value is not None:
             attrs['value'] = self.value
         attrs['name'] = self.name
+        attrs['id'] = self.id
         return '<input %s/>' % attrs
 
     def rendernote(self, note):

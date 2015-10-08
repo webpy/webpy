@@ -38,7 +38,7 @@ def backgrounder(func):
             except KeyError:
                 return web.notfound()
             web._context[threading.currentThread()] = web._context[t]
-            return
+            return 'Process running background...'
         else:
             return func(*a, **kw)
     return internal

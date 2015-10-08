@@ -1,4 +1,5 @@
 """Helpers functions to run log-running tasks."""
+import threading
 from web import utils
 from web import webapi as web
 
@@ -6,9 +7,10 @@ def background(func):
     """A function decorator to run a long-running function as a background thread."""
     def internal(*a, **kw):
         web.data() # cache it
-
-        tmpctx = web._context[threading.currentThread()]
+        
+        web._context = {}
         web._context[threading.currentThread()] = utils.storage(web.ctx.copy())
+        tmpctx = web._context[threading.currentThread()]
 
         def newfunc():
             web._context[threading.currentThread()] = tmpctx

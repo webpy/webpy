@@ -897,10 +897,10 @@ def datestr(then, now=None):
         'January  1, 1969'
         >>> datestr(datetime(1970, 6, 1), now=d)
         'June  1, 1970'
-        >>> datestr(datetime(2014, 12, 13), now=d)
-        'December 12, 2014'        
-        >>> datestr(datetime(2014, 12, 6), now=d)
-        'December  6, 2014'        
+        >>> datestr(datetime(1969, 12, 13), now=d)
+        'December 13, 1969'
+        >>> datestr(datetime(1969, 12, 6), now=d)
+        'December  6, 1969'
         >>> datestr(None)
         ''
     """

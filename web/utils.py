@@ -897,6 +897,10 @@ def datestr(then, now=None):
         'January  1, 1969'
         >>> datestr(datetime(1970, 6, 1), now=d)
         'June  1, 1970'
+        >>> datestr(datetime(2014, 12, 13), now=d)
+        'December 12, 2014'        
+        >>> datestr(datetime(2014, 12, 6), now=d)
+        'December  6, 2014'        
         >>> datestr(None)
         ''
     """
@@ -936,7 +940,10 @@ def datestr(then, now=None):
             out = then.strftime('%B %e') # e.g. 'June  3'
         except ValueError:
             # %e doesn't work on Windows.
-            out = then.strftime('%B %d') # e.g. 'June 03'
+            # %d normally gives 'June 03', but following 'hack' makes
+            # the output the same on windows as on unix. Extra unit test was
+            # added (note that the 2 replace's are required, 1 won't suffice).
+            out = then.strftime('%B \t%d').replace('\t0','\t ').replace('\t','')
 
         if then.year != now.year or deltadays < 0:
             out += ', %s' % then.year

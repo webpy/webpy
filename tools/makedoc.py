@@ -8,6 +8,8 @@ import inspect
 import markdown
 sys.path.insert(0, '..')
 
+from web.net import websafe
+
 ALL_MODULES = [
     'web.application',
     'web.contrib.template',
@@ -138,9 +140,8 @@ def recurse_over(ob, name, indent_level=0):
     
     mlink = '<a name="%s">' % name if ts == 'module' else '' 
     mend = '</a>' if ts == 'module' else ''
-                
-    print ''.join(('<p>', ts_css(ts), item_start % ts, ' ', mlink, name, argstr,
-            mend, item_end, '<br />'))
+    print ''.join(('<p>', ts_css(ts), item_start % ts, ' ', mlink, name,
+                   websafe(argstr), mend, item_end, '<br />'))
     print ''.join((indent_start % ds_indent, ds, indent_end, '</p>'))
     #Although ''.join looks wierd, it's alot faster is string addition    
     members = ''

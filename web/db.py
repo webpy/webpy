@@ -11,7 +11,7 @@ __all__ = [
   "database", 'DB',
 ]
 
-import time, os, urllib
+import time, os, urllib, urlparse
 try:
     import datetime
 except ImportError:
@@ -1148,28 +1148,25 @@ def dburl2dict(url):
     """
     Takes a URL to a database and parses it into an equivalent dictionary.
     
+        >>> dburl2dict('postgres:///mygreatdb')
+        {'pw': None, 'dbn': 'postgres', 'db': 'mygreatdb', 'host': None, 'user': None, 'port': None}
         >>> dburl2dict('postgres://james:day@serverfarm.example.net:5432/mygreatdb')
-        {'pw': 'day', 'dbn': 'postgres', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': '5432'}
+        {'pw': 'day', 'dbn': 'postgres', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': 5432}
         >>> dburl2dict('postgres://james:day@serverfarm.example.net/mygreatdb')
-        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'day', 'dbn': 'postgres'}
+        {'pw': 'day', 'dbn': 'postgres', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': None}
         >>> dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
-        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
+        {'pw': 'd@y', 'dbn': 'postgres', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': None}
+        >>> dburl2dict('mysql://james:d%40y@serverfarm.example.net/mygreatdb')
+        {'pw': 'd@y', 'dbn': 'mysql', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': None}
     """
-    dbn, rest = url.split('://', 1)
-    user, rest = rest.split(':', 1)
-    pw, rest = rest.split('@', 1)
-    if ':' in rest:
-        host, rest = rest.split(':', 1)
-        port, rest = rest.split('/', 1)
-    else:
-        host, rest = rest.split('/', 1)
-        port = None
-    db = rest
-    
-    uq = urllib.unquote
-    out = dict(dbn=dbn, user=uq(user), pw=uq(pw), host=uq(host), db=uq(db))
-    if port: out['port'] = port
-    return out
+    parts = urlparse.urlparse(urllib.unquote(url))
+
+    return {'dbn': parts.scheme,
+            'user': parts.username,
+            'pw': parts.password,
+            'db': parts.path[1:],
+            'host': parts.hostname,
+            'port': parts.port}
 
 _databases = {}
 def database(dburl=None, **params):

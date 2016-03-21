@@ -521,6 +521,14 @@ class application:
         else:
             return web._InternalError()
 
+    def serviceunavailable(self):
+        """Returns HTTPError with '503 service unavailable' message"""
+        parent = self.get_parent_app()
+        if parent:
+            return parent.serviceunavailable()
+        else:
+            return web._ServiceUnavailable()
+
 class auto_application(application):
     """Application similar to `application` but urls are constructed 
     automatiacally using metaclass.

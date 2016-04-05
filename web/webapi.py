@@ -8,23 +8,23 @@ __all__ = [
     "header", "debug",
     "input", "data",
     "setcookie", "cookies",
-    "ctx", 
-    "HTTPError", 
+    "ctx",
+    "HTTPError",
 
     # 200, 201, 202, 204
-    "OK", "Created", "Accepted", "NoContent",    
+    "OK", "Created", "Accepted", "NoContent",
     "ok", "created", "accepted", "nocontent",
-    
+
     # 301, 302, 303, 304, 307
-    "Redirect", "Found", "SeeOther", "NotModified", "TempRedirect", 
+    "Redirect", "Found", "SeeOther", "NotModified", "TempRedirect",
     "redirect", "found", "seeother", "notmodified", "tempredirect",
 
-    # 400, 401, 403, 404, 405, 406, 409, 410, 412, 415
-    "BadRequest", "Unauthorized", "Forbidden", "NotFound", "NoMethod", "NotAcceptable", "Conflict", "Gone", "PreconditionFailed", "UnsupportedMediaType",
-    "badrequest", "unauthorized", "forbidden", "notfound", "nomethod", "notacceptable", "conflict", "gone", "preconditionfailed", "unsupportedmediatype",
+    # 400, 401, 403, 404, 405, 406, 409, 410, 412, 415, 451
+    "BadRequest", "Unauthorized", "Forbidden", "NotFound", "NoMethod", "NotAcceptable", "Conflict", "Gone", "PreconditionFailed", "UnsupportedMediaType", "UnavailableForLegalReasons",
+    "badrequest", "unauthorized", "forbidden", "notfound", "nomethod", "notacceptable", "conflict", "gone", "preconditionfailed", "unsupportedmediatype", "unavailableforlegalreasons",
 
     # 500
-    "InternalError", 
+    "InternalError",
     "internalerror",
 ]
 
@@ -46,16 +46,16 @@ class HTTPError(Exception):
             header(k, v)
         self.data = data
         Exception.__init__(self, status)
-        
+
 def _status_code(status, data=None, classname=None, docstring=None):
     if data is None:
         data = status.split(" ", 1)[1]
-    classname = status.split(" ", 1)[1].replace(' ', '') # 304 Not Modified -> NotModified    
+    classname = status.split(" ", 1)[1].replace(' ', '') # 304 Not Modified -> NotModified
     docstring = docstring or '`%s` status' % status
 
     def __init__(self, data=data, headers={}):
         HTTPError.__init__(self, status, headers, data)
-        
+
     # trick to create class dynamically with dynamic docstring.
     return type(classname, (HTTPError, object), {
         '__doc__': docstring,
@@ -71,8 +71,8 @@ class Redirect(HTTPError):
     """A `301 Moved Permanently` redirect."""
     def __init__(self, url, status='301 Moved Permanently', absolute=False):
         """
-        Returns a `status` redirect to the new URL. 
-        `url` is joined with the base URL so that things like 
+        Returns a `status` redirect to the new URL.
+        `url` is joined with the base URL so that things like
         `redirect("about") will work properly.
         """
         newloc = urlparse.urljoin(ctx.path, url)
@@ -103,7 +103,7 @@ class SeeOther(Redirect):
     """A `303 See Other` redirect."""
     def __init__(self, url, absolute=False):
         Redirect.__init__(self, url, '303 See Other', absolute=absolute)
-    
+
 seeother = SeeOther
 
 class NotModified(HTTPError):
@@ -176,7 +176,7 @@ class NoMethod(HTTPError):
         status = '405 Method Not Allowed'
         headers = {}
         headers['Content-Type'] = 'text/html'
-        
+
         methods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE']
         if cls:
             methods = [method for method in methods if hasattr(cls, method)]
@@ -184,7 +184,7 @@ class NoMethod(HTTPError):
         headers['Allow'] = ', '.join(methods)
         data = None
         HTTPError.__init__(self, status, headers, data)
-        
+
 nomethod = NoMethod
 
 class NotAcceptable(HTTPError):
@@ -237,10 +237,30 @@ class UnsupportedMediaType(HTTPError):
 
 unsupportedmediatype = UnsupportedMediaType
 
+class _UnavailableForLegalReasons(HTTPError):
+    """`451 Unavailable For Legal Reasons` error."""
+    message="unavailable for legal reasons"
+    def __init__(self, message=None):
+        status = "451 Unavailable For Legal Reasons"
+        headers = {'Content-Type': 'text/html'}
+        HTTPError.__init__(self, status, headers, message or self.message)
+
+def UnavailableForLegalReasons(message=None):
+    """Returns HTTPError with '415 Unavailable For Legal Reasons' error from the active application.
+    """
+    if message:
+        return _UnavailableForLegalReasons(message)
+    elif ctx.get('app_stack'):
+        return ctx.app_stack[-1].unavailableforlegalreasons()
+    else:
+        return _UnavailableForLegalReasons()
+
+unavailableforlegalreasons = UnavailableForLegalReasons
+
 class _InternalError(HTTPError):
     """500 Internal Server Error`."""
     message = "internal server error"
-    
+
     def __init__(self, message=None):
         status = '500 Internal Server Error'
         headers = {'Content-Type': 'text/html'}
@@ -261,41 +281,41 @@ internalerror = InternalError
 def header(hdr, value, unique=False):
     """
     Adds the header `hdr: value` with the response.
-    
+
     If `unique` is True and a header with that name already exists,
-    it doesn't add a new one. 
+    it doesn't add a new one.
     """
     hdr, value = safestr(hdr), safestr(value)
     # protection against HTTP response splitting attack
     if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
         raise ValueError, 'invalid characters in header'
-        
+
     if unique is True:
         for h, v in ctx.headers:
             if h.lower() == hdr.lower(): return
-    
+
     ctx.headers.append((hdr, value))
-    
+
 def rawinput(method=None):
     """Returns storage object with GET or POST arguments.
     """
     method = method or "both"
     from cStringIO import StringIO
 
-    def dictify(fs): 
+    def dictify(fs):
         # hack to make web.input work with enctype='text/plain.
         if fs.list is None:
-            fs.list = [] 
+            fs.list = []
 
         return dict([(k, fs[k]) for k in fs.keys()])
-    
+
     e = ctx.env.copy()
     a = b = {}
-    
+
     if method.lower() in ['both', 'post', 'put']:
         if e['REQUEST_METHOD'] in ['POST', 'PUT']:
             if e.get('CONTENT_TYPE', '').lower().startswith('multipart/'):
-                # since wsgi.input is directly passed to cgi.FieldStorage, 
+                # since wsgi.input is directly passed to cgi.FieldStorage,
                 # it can not be called multiple times. Saving the FieldStorage
                 # object in ctx to allow calling web.input multiple times.
                 a = ctx.get('_fieldstorage')
@@ -324,7 +344,7 @@ def rawinput(method=None):
 
 def input(*requireds, **defaults):
     """
-    Returns a `storage` object with the GET and POST arguments. 
+    Returns a `storage` object with the GET and POST arguments.
     See `storify` for how `requireds` and `defaults` work.
     """
     _method = defaults.pop('_method', 'both')
@@ -360,10 +380,10 @@ def setcookie(name, value, expires='', domain=None,
     if httponly:
         value += '; httponly'
     header('Set-Cookie', value)
-        
+
 def decode_cookie(value):
-    r"""Safely decodes a cookie value to unicode. 
-    
+    r"""Safely decodes a cookie value to unicode.
+
     Tries us-ascii, utf-8 and io8859 encodings, in that order.
 
     >>> decode_cookie('')
@@ -387,7 +407,7 @@ def decode_cookie(value):
 
 def parse_cookies(http_cookie):
     r"""Parse a HTTP_COOKIE header and return dict of cookie names and decoded values.
-        
+
     >>> sorted(parse_cookies('').items())
     []
     >>> sorted(parse_cookies('a=1').items())
@@ -436,18 +456,18 @@ def parse_cookies(http_cookie):
 
 def cookies(*requireds, **defaults):
     r"""Returns a `storage` object with all the request cookies in it.
-    
+
     See `storify` for how `requireds` and `defaults` work.
 
     This is forgiving on bad HTTP_COOKIE input, it tries to parse at least
     the cookies it can.
-    
+
     The values are converted to unicode if _unicode=True is passed.
     """
-    # If _unicode=True is specified, use decode_cookie to convert cookie value to unicode 
+    # If _unicode=True is specified, use decode_cookie to convert cookie value to unicode
     if defaults.get("_unicode") is True:
         defaults['_unicode'] = decode_cookie
-        
+
     # parse cookie string and cache the result for next time.
     if '_parsed_cookies' not in ctx:
         http_cookie = ctx.env.get("HTTP_COOKIE", "")
@@ -463,18 +483,18 @@ def debug(*args):
     """
     Prints a prettyprinted version of `args` to stderr.
     """
-    try: 
+    try:
         out = ctx.environ['wsgi.errors']
-    except: 
+    except:
         out = sys.stderr
     for arg in args:
         print >> out, pprint.pformat(arg)
     return ''
 
 def _debugwrite(x):
-    try: 
+    try:
         out = ctx.environ['wsgi.errors']
-    except: 
+    except:
         out = sys.stderr
     out.write(x)
 debug.write = _debugwrite
@@ -483,7 +503,7 @@ ctx = context = threadeddict()
 
 ctx.__doc__ = """
 A `storage` object containing various information about the request:
-  
+
 `environ` (aka `env`)
    : A dictionary containing the standard WSGI environment variables.
 
@@ -501,7 +521,7 @@ A `storage` object containing various information about the request:
 
 `path`
    : The path request.
-   
+
 `query`
    : If there are no query arguments, the empty string. Otherwise, a `?` followed
      by the query string.

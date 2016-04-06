@@ -748,7 +748,7 @@ class DB:
 
         return xjoin(sql, nout)
 
-    def insert(self, tablename, seqname=None, _test=False, **values): 
+    def insert(self, tablename, seqname=None, _test=False, statement="INSERT", **values): 
         """
         Inserts `values` into `tablename`. Returns current sequence ID.
         Set `seqname` to the ID if it's not the default, or to `False`
@@ -768,9 +768,9 @@ class DB:
         if values:
             _keys = SQLQuery.join(values.keys(), ', ')
             _values = SQLQuery.join([sqlparam(v) for v in values.values()], ', ')
-            sql_query = "INSERT INTO %s " % tablename + q(_keys) + ' VALUES ' + q(_values)
+            sql_query = "%s INTO %s " % (statement, tablename) + q(_keys) + ' VALUES ' + q(_values)
         else:
-            sql_query = SQLQuery(self._get_insert_default_values_query(tablename))
+            sql_query = SQLQuery(self._get_insert_default_values_query(statement, tablename))
 
         if _test: return sql_query
         
@@ -796,10 +796,10 @@ class DB:
             self.ctx.commit()
         return out
         
-    def _get_insert_default_values_query(self, table):
-        return "INSERT INTO %s DEFAULT VALUES" % table
+    def _get_insert_default_values_query(self, statement, table):
+        return "%s INTO %s DEFAULT VALUES" % (statement, table)
 
-    def multiple_insert(self, tablename, values, seqname=None, _test=False):
+    def multiple_insert(self, tablename, values, seqname=None, _test=False, statement="INSERT"):
         """
         Inserts multiple rows into `tablename`. The `values` must be a list of dictioanries, 
         one for each row to be inserted, each with the same set of keys.
@@ -817,7 +817,7 @@ class DB:
             return []
             
         if not self.supports_multiple_insert:
-            out = [self.insert(tablename, seqname=seqname, _test=_test, **v) for v in values]
+            out = [self.insert(tablename, seqname=seqname, _test=_test, statement=statement, **v) for v in values]
             if seqname is False:
                 return None
             else:
@@ -830,7 +830,7 @@ class DB:
             if v.keys() != keys:
                 raise ValueError, 'Not all rows have the same keys'
 
-        sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
+        sql_query = SQLQuery('%s INTO %s (%s) VALUES ' % (statement, tablename, ', '.join(keys)))
 
         for i, row in enumerate(values):
             if i != 0:
@@ -1002,8 +1002,8 @@ class MySQLDB(DB):
     def _process_insert_query(self, query, tablename, seqname):
         return query, SQLQuery('SELECT last_insert_id();')
         
-    def _get_insert_default_values_query(self, table):
-        return "INSERT INTO %s () VALUES()" % table
+    def _get_insert_default_values_query(self, statement, table):
+        return "%s INTO %s () VALUES()" % (statement, table)
 
 def import_driver(drivers, preferred=None):
     """Import the first available driver or preferred driver.

@@ -1513,7 +1513,7 @@ class _EmailMessage:
             import boto.ses
             c = boto.ses.SESConnection(
               aws_access_key_id=webapi.config.get('aws_access_key_id'),
-              aws_secret_access_key=web.api.config.get('aws_secret_access_key'))
+              aws_secret_access_key=webapi.config.get('aws_secret_access_key'))
             c.send_raw_email(self.from_address, message_text, self.recipients)
         else:
             sendmail = webapi.config.get('sendmail_path', '/usr/sbin/sendmail')

@@ -4,6 +4,12 @@ Database API
 """
 from __future__ import print_function
 from .utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
+import datetime, time, os, urllib
+
+try:
+    from urllib import parse as urlparse
+except ImportError:
+    import urlparse
 
 try:
     # db module can work independent of web.py

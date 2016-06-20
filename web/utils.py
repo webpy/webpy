@@ -636,10 +636,10 @@ class IterBetter:
     It is also possible to get the first value of the iterator or None.
 
         >>> c = iterbetter(iter([3, 4, 5]))
-        >>> print c.first()
+        >>> print(c.first())
         3
         >>> c = iterbetter(iter([]))
-        >>> print c.first()
+        >>> print(c.first())
         None
 
     For boolean test, IterBetter peeps at first value in the itertor without effecting the iteration.

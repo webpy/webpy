@@ -4,7 +4,7 @@ Database API
 """
 from __future__ import print_function
 from .utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
-import datetime, time, os, urllib
+import datetime, time, os, urllib, re
 
 try:
     from urllib import parse as urlparse
@@ -26,6 +26,10 @@ __all__ = [
   "SQLLiteral", "sqlliteral",
   "database", 'DB',
 ]
+
+TOKEN = '[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)[jJ])|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)|(0[xX][\\da-fA-F]+[lL]?|0[bB][01]+[lL]?|(0[oO][0-7]+)|(0[0-7]*)[lL]?|[1-9]\\d*[lL]?))|((\\*\\*=?|>>=?|<<=?|<>|!=|//=?|[+\\-*/%&|^=<>]=?|~)|[][(){}]|(\\r?\\n|[:;.,`@]))|([uUbB]?[rR]?\'[^\\n\'\\\\]*(?:\\\\.[^\\n\'\\\\]*)*\'|[uUbB]?[rR]?"[^\\n"\\\\]*(?:\\\\.[^\\n"\\\\]*)*")|[a-zA-Z_]\\w*)'
+
+tokenprog = re.compile(TOKEN)
 
 class UnknownDB(Exception):
     """raised for unsupported dbms"""
@@ -1209,8 +1213,6 @@ def _interpolate(format):
 
     from <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
-    from tokenize import tokenprog
-
     def matchorfail(text, pos):
         match = tokenprog.match(text, pos)
         if match is None:

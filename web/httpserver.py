@@ -11,8 +11,19 @@ from .py3helpers import PY2
 
 if PY2:
     from SimpleHTTPServer import SimpleHTTPRequestHandler
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 else:
-    from http.server import SimpleHTTPRequestHandler
+    from http.server import HTTPServer, SimpleHTTPRequestHandler, BaseHTTPRequestHandler
+
+try:
+    from urllib import parse as urlparse
+except ImportError:
+    import urlparse
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 __all__ = ["runsimple"]
 
@@ -31,7 +42,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     # Used under the modified BSD license:
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
-    import SimpleHTTPServer, SocketServer, BaseHTTPServer, urlparse
+    import SocketServer
     import socket, errno
     import traceback
 
@@ -127,9 +138,9 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
             # Send the data
             self.wfile.write(data)
 
-    class WSGIServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+    class WSGIServer(SocketServer.ThreadingMixIn, HTTPServer):
         def __init__(self, func, server_address):
-            BaseHTTPServer.HTTPServer.__init__(self, 
+            HTTPServer.HTTPServer.__init__(self, 
                                                server_address, 
                                                WSGIHandler)
             self.app = func
@@ -170,7 +181,7 @@ def WSGIServer(server_address, wsgi_app):
     """Creates CherryPy WSGI server listening at `server_address` to serve `wsgi_app`.
     This function can be overwritten to customize the webserver or use a different webserver.
     """
-    import wsgiserver
+    from . import wsgiserver
     
     # Default values of wsgiserver.ssl_adapters uses cherrypy.wsgiserver
     # prefix. Overwriting it make it work with web.wsgiserver.
@@ -235,7 +246,6 @@ class StaticApp(SimpleHTTPRequestHandler):
                               environ.get('REMOTE_PORT','-')
         self.command = environ.get('REQUEST_METHOD', '-')
 
-        from cStringIO import StringIO
         self.wfile = StringIO() # for capturing error
 
         try:
@@ -293,9 +303,7 @@ class LogMiddleware:
         self.app = app
         self.format = '%s - - [%s] "%s %s %s" - %s'
     
-        from BaseHTTPServer import BaseHTTPRequestHandler
-        import StringIO
-        f = StringIO.StringIO()
+        f = StringIO()
         
         class FakeSocket:
             def makefile(self, *a):

@@ -4,6 +4,8 @@ from __future__ import print_function
 import webtest
 import web
 
+from web.py3helpers import PY2
+
 
 class DBTest(webtest.TestCase):
     dbname = 'postgres'
@@ -61,12 +63,12 @@ class DBTest(webtest.TestCase):
         except:
             pass
         self.db.select('person')
-        
+
     def testNestedTransactions(self):
         t1 = self.db.transaction()
         self.db.insert('person', False, name='user1')
-        self.assertRows(1)        
-        
+        self.assertRows(1)
+
         t2 = self.db.transaction()
         self.db.insert('person', False, name='user2')
         self.assertRows(2)  
@@ -97,10 +99,11 @@ class DBTest(webtest.TestCase):
         assert db.select("person", where="name='b'").list()
 
     def test_result_is_unicode(self):
+        #TODO : not sure this test has still meaning with Py3
         db = webtest.setup_database(self.dbname)
         self.db.insert('person', False, name='user')
         name = db.select('person')[0].name
-        self.assertEquals(type(name), unicode)
+        self.assertEquals(type(name), unicode if PY2 else str)
 
     def test_result_is_true(self):
         db = webtest.setup_database(self.dbname)

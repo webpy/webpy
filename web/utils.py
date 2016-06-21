@@ -352,7 +352,11 @@ def safestr(obj, encoding='utf-8'):
         >>> safestr(2)
         '2'
     """
-    if isinstance(obj, text_type):
+
+    #TODO : added "and PY2" because in Py3 encode always returns a byte variable
+    #but the funcion's goal is to return a verified string.
+    #I'm not sure about all the effects of this change, it needs peer-review.
+    if isinstance(obj, text_type) and PY2:
         return obj.encode(encoding)
     elif isinstance(obj, bytes):
         return obj
@@ -666,7 +670,7 @@ class IterBetter:
         of None when there are no elements.
         """
         try:
-            return iter(self).next()
+            return next(iter(self))
         except StopIteration:
             return default
 
@@ -675,7 +679,7 @@ class IterBetter:
             yield self._head
 
         while 1:    
-            yield self.i.next()
+            yield next(self.i)
             self.c += 1
 
     def __getitem__(self, i):
@@ -684,11 +688,11 @@ class IterBetter:
             raise IndexError("already passed "+str(i))
         try:
             while i > self.c: 
-                self.i.next()
+                next(self.i)
                 self.c += 1
             # now self.c == i
             self.c += 1
-            return self.i.next()
+            return next(self.i)
         except StopIteration: 
             raise IndexError(str(i))
             
@@ -699,7 +703,7 @@ class IterBetter:
             return True
         else:
             try:
-                self._head = self.i.next()
+                self._head = next(self.i)
             except StopIteration:
                 return False
             else:
@@ -713,7 +717,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
     def next():
         while True:
             try:
-                return it.next()
+                return next(it)
             except StopIteration:
                 raise
             except:

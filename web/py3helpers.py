@@ -24,9 +24,11 @@ else:
 if PY2:
     text_type = unicode
     string_types = (str, unicode)
+    numeric_types = (int, long)
 else:
     text_type = str
     string_types = (str,)
+    numeric_types = (int,)
 
 # imap
 if PY2:

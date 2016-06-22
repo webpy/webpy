@@ -5,7 +5,7 @@ Web application
 from __future__ import print_function
 
 from . import webapi as web
-from . import webapi, wsgi, utils
+from . import webapi, wsgi, utils, browser
 from .debugerror import debugerror
 from . import httpserver
 from .utils import lstrips, safeunicode
@@ -241,7 +241,6 @@ class application:
         return response
 
     def browser(self):
-        import browser
         return browser.AppBrowser(self)
 
     def handle(self):

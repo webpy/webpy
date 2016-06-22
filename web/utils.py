@@ -152,6 +152,8 @@ def storify(mapping, *requireds, **defaults):
             value = getvalue(value)
         if isinstance(defaults.get(key), list) and not isinstance(value, list):
             value = [value]
+
+        
         setattr(stor, key, value)
 
     for (key, value) in iteritems(defaults):
@@ -353,8 +355,8 @@ def safestr(obj, encoding='utf-8'):
         '2'
     """
 
-    #TODO : added "and PY2" because in Py3 encode always returns a byte variable
-    #but the funcion's goal is to return a verified string.
+    #TODO : added "and PY2" because in Py3 "encode" always returns a byte variable
+    #but the funcion's goal is to return a safe string.
     #I'm not sure about all the effects of this change, it needs peer-review.
     if isinstance(obj, text_type) and PY2:
         return obj.encode(encoding)
@@ -363,7 +365,15 @@ def safestr(obj, encoding='utf-8'):
     elif is_iter(obj):
         return imap(safestr, obj)
     else:
+        try:
+            str(obj)
+        except TypeError:
+            print("YOLOOOOOOO")
+            print(type(obj))
         return str(obj)
+
+if not PY2:
+    safeunicode = safestr
 
 # for backward-compatibility
 utf8 = safestr
@@ -1257,13 +1267,13 @@ class ThreadedDict(threadlocal):
         return self.__dict__.items()
 
     def iteritems(self):
-        return self.__dict__.iteritems()
+        return iteritems(self.__dict__)
 
     def keys(self):
         return self.__dict__.keys()
 
     def iterkeys(self):
-        return self.__dict__.iterkeys()
+        return iterkeys(self.__dict__)
 
     iter = iterkeys
 
@@ -1271,7 +1281,7 @@ class ThreadedDict(threadlocal):
         return self.__dict__.values()
 
     def itervalues(self):
-        return self.__dict__.itervalues()
+        return itervalues(self.__dict__)
 
     def pop(self, key, *args):
         return self.__dict__.pop(key, *args)

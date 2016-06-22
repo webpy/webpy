@@ -21,9 +21,9 @@ except ImportError:
     import urlparse
 
 try:
-    from StringIO import StringIO
-except ImportError:
     from io import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 __all__ = ["runsimple"]
 

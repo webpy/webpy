@@ -5,6 +5,13 @@ import threading
 import web
 import urllib
 
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
+
+from web.py3helpers import PY2
+
 data = """
 import web
 
@@ -221,19 +228,30 @@ class ApplicationTest(webtest.TestCase):
         app = web.application(urls, locals())
         
         def f(name):
-            path = '/?' + urllib.urlencode({"name": name.encode('utf-8')})
+            path = '/?' + urlencode({"name": name.encode('utf-8')})
             self.assertEquals(app.request(path).data, repr(name))
             
         f(u'\u1234')
         f(u'foo')
 
         response = app.request('/', method='POST', data=dict(name='foo'))
-        self.assertEquals(response.data, "{'name': u'foo'}")
+
+        if PY2:
+            self.assertEquals(response.data, "{'name': u'foo'}")
+        else:
+            self.assertEquals(response.data, "{'name': 'foo'}")
+
         
-        data = '--boundary\r\nContent-Disposition: form-data; name="x"\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
+        data = '--boundary\r\nContent-Disposition: form-data; name="x"\r\n\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
         headers = {'Content-Type': 'multipart/form-data; boundary=boundary'}
         response = app.request('/multipart', method="POST", data=data, headers=headers)
-        self.assertEquals(response.data, 'a')
+
+
+        if PY2:
+            self.assertEquals(response.data, 'a')
+        else:
+            self.assertEquals(response.data, str(b'a'))
+
         
     def testCustomNotFound(self):
         urls_a = ("/", "a")
@@ -307,7 +325,9 @@ class ApplicationTest(webtest.TestCase):
             return app.request(path).data
                 
         self.assertEquals(f('/?x=2'), '/?x=1')
-        self.assertEquals(f('/?y=1&y=2&x=2'), '/?y=1&y=2&x=1')
+
+        p = f('/?y=1&y=2&x=2')
+        self.assertTrue(p == '/?y=1&y=2&x=1' or p == '/?x=1&y=1&y=2')
         
     def test_setcookie(self):
         urls = (

@@ -271,7 +271,7 @@ class Parser:
             extended_expr()
         
         def identifier():
-            tokens.next()
+            next(tokens)
         
         def extended_expr():
             lookahead = tokens.lookahead()
@@ -289,18 +289,18 @@ class Parser:
             from token import NAME # python token constants
             dot = tokens.lookahead()
             if tokens.lookahead2().type == NAME:
-                tokens.next() # consume dot
+                next(tokens) # consume dot
                 identifier()
                 extended_expr()
         
         def paren_expr():
-            begin = tokens.next().value
+            begin = next(tokens).value
             end = parens[begin]
             while True:
                 if tokens.lookahead().value in parens:
                     paren_expr()
                 else:
-                    t = tokens.next()
+                    t = next(tokens)
                     if t.value == end:
                         break
             return
@@ -317,7 +317,7 @@ class Parser:
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            readline = iter([text]).next
+            readline = lambda: next(iter([text]))
             end = None
             for t in tokenize.generate_tokens(readline):
                 t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
@@ -343,7 +343,7 @@ class Parser:
 
             def _next(self):
                 try:
-                    return self.iteritems.next()
+                    return next(self.iteritems)
                 except StopIteration:
                     return None
                 
@@ -352,10 +352,12 @@ class Parser:
                     self.items.append(self._next())
                 return self.items[self.position+1]
                     
-            def next(self):
+            def __next__(self):
                 self.current_item = self.lookahead()
                 self.position += 1
                 return self.current_item
+
+            next = __next__ #Needed for Py2 compatibility
 
         tokens = BetterIter(get_tokens(text))
                 
@@ -387,12 +389,12 @@ class Parser:
             >>> python_lookahead(' x = 1')
             ' '
         """
-        readline = iter([text]).next
+        readline = lambda: next(iter([text]))
         tokens = tokenize.generate_tokens(readline)
-        return tokens.next()[1]
+        return next(tokens)[1]
         
     def python_tokens(self, text):
-        readline = iter([text]).next
+        readline = lambda: next(iter([text]))
         tokens = tokenize.generate_tokens(readline)
         return [t[1] for t in tokens]
         
@@ -481,7 +483,7 @@ class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
     def __init__(self, text):
         self.text = text
-        readline = iter([text]).next
+        readline = lambda: next(iter([text]))
         self.tokens = tokenize.generate_tokens(readline)
         self.index = 0
         
@@ -497,7 +499,7 @@ class PythonTokenizer:
         """
         try:
             while True:
-                t = self.next()
+                t = next(self)
                 if t.value == delim:
                     break
                 elif t.value == '(':
@@ -520,11 +522,13 @@ class PythonTokenizer:
             # if this error is ignored, then it will be caught when compiling the python code.
             return
     
-    def next(self):
-        type, t, begin, end, line = self.tokens.next()
+    def __next__(self):
+        type, t, begin, end, line = next(self.tokens)
         row, col = end
         self.index = col
         return storage(type=type, value=t, begin=begin, end=end)
+
+    next = __next__ #needed for Py2 compatibility
         
 class DefwithNode:
     def __init__(self, defwith, suite):
@@ -813,6 +817,7 @@ class BaseTemplate:
     def _compile(self, code):
         env = self.make_env(self._globals or {}, self._builtins)
         exec(code, env)
+        #__template__ is a global function declared when executing "code"
         return env['__template__']
 
     def __call__(self, *a, **kw):
@@ -886,10 +891,10 @@ class Template(BaseTemplate):
                 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        import webapi as web
+        from . import webapi as web
         if 'headers' in web.ctx and self.content_type:
             web.header('Content-Type', self.content_type, unique=True)
-            
+
         return BaseTemplate.__call__(self, *a, **kw)
         
     def generate_code(text, filename, parser=None):
@@ -935,8 +940,9 @@ class Template(BaseTemplate):
         if not sys.platform.startswith('java'):
             try:
                 import compiler
-                ast = compiler.parse(code)
-                SafeVisitor().walk(ast, filename)
+                ast_node = compiler.parse(code)
+
+                SafeVisitor().walk(ast_node, filename)
             except ImportError:
                 warnings.warn("Unabled to import compiler module. Unable to check templates for safety.")
         else:
@@ -1307,11 +1313,23 @@ class TemplateResult(MutableMapping):
     
     def __str__(self):
         self._prepare_body()
-        return self["__body__"].encode('utf-8')
+        return self["__body__"]#.encode('utf-8') TODO needs testing
+        #In Py3 using "encode" will return bytes and not str
+        #Removing "encode" may induce errors with Py2, TBD
         
     def __repr__(self):
         self._prepare_body()
         return "<TemplateResult: %s>" % self._d
+
+    def __len__(self):
+        return self._d.__len__()
+
+    def __iter__(self):
+        for i in self._d.__iter__():
+            if i == "__body__":
+                self._prepare_body()
+            yield i
+
 
 def test():
     r"""Doctest for testing template module.

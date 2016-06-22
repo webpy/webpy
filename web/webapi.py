@@ -32,12 +32,16 @@ __all__ = [
 import sys, cgi, pprint, urllib
 from .utils import storage, storify, threadeddict, dictadd, intget, safestr
 
-from .py3helpers import PY2, urljoin
+from .py3helpers import PY2, urljoin, string_types
 
-if PY2:
-    from Cookie import Morsel
-else:
+try:
+    from urllib.parse import unquote, quote
     from http.cookies import Morsel
+except ImportError:
+    from urllib import unquote, quote
+    from Cookie import Morsel
+
+from io import StringIO, BytesIO
 
 config = storage()
 config.__doc__ = """
@@ -307,7 +311,6 @@ def rawinput(method=None):
     """Returns storage object with GET or POST arguments.
     """
     method = method or "both"
-    from cStringIO import StringIO
 
     def dictify(fs):
         # hack to make web.input work with enctype='text/plain.
@@ -331,7 +334,10 @@ def rawinput(method=None):
                     a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
                     ctx._fieldstorage = a
             else:
-                fp = StringIO(data())
+                d = data()
+                if PY2 and isinstance(d, unicode):
+                    d = d.encode('utf-8')
+                fp = BytesIO(d)
                 a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
             a = dictify(a)
 
@@ -374,8 +380,8 @@ def setcookie(name, value, expires='', domain=None,
     """Sets a cookie."""
     morsel = Morsel()
     name, value = safestr(name), safestr(value)
-    morsel.set(name, value, urllib.quote(value))
-    if expires < 0:
+    morsel.set(name, value, quote(value))
+    if isinstance(expires, int) and expires < 0:
         expires = -1000000000
     morsel['expires'] = expires
     morsel['path'] = path or ctx.homepath+'/'
@@ -450,7 +456,7 @@ def parse_cookies(http_cookie):
                     cookie.load(attr_value)
                 except Cookie.CookieError:
                     pass
-        cookies = dict([(k, urllib.unquote(v.value)) for k, v in cookie.iteritems()])
+        cookies = dict([(k, unquote(v.value)) for k, v in cookie.iteritems()])
     else:
         # HTTP_COOKIE doesn't have quotes, use fast cookie parsing
         cookies = {}
@@ -458,7 +464,7 @@ def parse_cookies(http_cookie):
             key_value = key_value.split('=', 1)
             if len(key_value) == 2:
                 key, value = key_value
-                cookies[key.strip()] = urllib.unquote(value.strip())
+                cookies[key.strip()] = unquote(value.strip())
     return cookies
 
 def cookies(*requireds, **defaults):

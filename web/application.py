@@ -6,10 +6,10 @@ from __future__ import print_function
 
 from . import webapi as web
 from . import webapi, wsgi, utils
-from . import debugerror
+from .debugerror import debugerror
 from . import httpserver
 from .utils import lstrips, safeunicode
-from .py3helpers import iteritems, string_types
+from .py3helpers import iteritems, string_types, is_generator
 import sys
 
 import urllib
@@ -20,6 +20,22 @@ import types
 from inspect import isclass
 
 import wsgiref.handlers
+
+try:
+    from urllib.parse import splitquery, urlencode, quote, unquote
+except ImportError:
+    from urllib import splitquery, urlencode, quote, unquote
+
+try:
+    from importlib import reload #Since Py 3.4 reload is in importlib
+except ImportError:
+    try:
+        from imp import reload #Since Py 3.0 and before 3.4 reload is in imp
+    except ImportError:
+        pass #Before Py 3.0 reload is a global function
+
+from io import StringIO, BytesIO
+
 
 __all__ = [
     "application", "auto_application",
@@ -183,7 +199,7 @@ class application:
             'your user-agent is a small jumping bean/1.0 (compatible)'
 
         """
-        path, maybe_query = urllib.splitquery(localpart)
+        path, maybe_query = splitquery(localpart)
         query = maybe_query or ""
         
         if 'env' in kw:
@@ -204,20 +220,24 @@ class application:
 
         if method not in ["HEAD", "GET"]:
             data = data or ''
-            import StringIO
+
             if isinstance(data, dict):
-                q = urllib.urlencode(data)
+                q = urlencode(data)
             else:
                 q = data
-            env['wsgi.input'] = StringIO.StringIO(q)
-            if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
+
+            env['wsgi.input'] = BytesIO(q.encode('utf-8'))
+            if 'CONTENT_LENGTH' not in env:
+            #if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
                 env['CONTENT_LENGTH'] = len(q)
         response = web.storage()
         def start_response(status, headers):
             response.status = status
             response.headers = dict(headers)
             response.header_items = headers
-        response.data = "".join(self.wsgifunc()(env, start_response))
+
+        data = self.wsgifunc()(env, start_response)
+        response.data = "".join((str(x) for x in data))
         return response
 
     def browser(self):
@@ -257,14 +277,12 @@ class application:
             # so we need to do an iteration
             # and save the result for later
             try:
-                firstchunk = iterator.next()
+                firstchunk = next(iterator)
             except StopIteration:
                 firstchunk = ''
 
             return itertools.chain([firstchunk], iterator)    
                                 
-        def is_generator(x): return x and hasattr(x, 'next')
-        
         def wsgi(env, start_resp):
             # clear threadlocal to avoid inteference of previous requests
             self._cleanup()
@@ -290,7 +308,7 @@ class application:
             
             def cleanup():
                 self._cleanup()
-                yield b'' # force this function to be a generator
+                yield '' # force this function to be a generator
                             
             return itertools.chain(result, cleanup())
 
@@ -406,7 +424,7 @@ class application:
             ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], ctx.homepath)
             # Apache and CherryPy webservers unquote the url but lighttpd doesn't. 
             # unquote explicitly for lighttpd to make ctx.path uniform across all servers.
-            ctx.path = urllib.unquote(ctx.path)
+            ctx.path = unquote(ctx.path)
 
         if env.get('QUERY_STRING'):
             ctx.query = '?' + env.get('QUERY_STRING', '')
@@ -513,14 +531,13 @@ class application:
         if parent:
             return parent.internalerror()
         elif web.config.get('debug'):
-            import debugerror
-            return debugerror.debugerror()
+            return debugerror()
         else:
             return web._InternalError()
 
 class auto_application(application):
     """Application similar to `application` but urls are constructed 
-    automatiacally using metaclass.
+    automatically using metaclass.
 
         >>> app = auto_application()
         >>> class hello(app.page):
@@ -582,7 +599,7 @@ class subdomain_application(application):
         
     def _match(self, mapping, value):
         for pat, what in mapping:
-            if isinstance(what, basestring):
+            if isinstance(what, string_types):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)
@@ -618,22 +635,22 @@ def unloadhook(h):
     def processor(handler):
         try:
             result = handler()
-            is_generator = result and hasattr(result, 'next')
+            is_gen = is_generator(result)
         except:
             # run the hook even when handler raises some exception
             h()
             raise
 
-        if is_generator:
+        if is_gen:
             return wrap(result)
         else:
             h()
             return result
             
     def wrap(result):
-        def next():
+        def next_hook():
             try:
-                return result.next()
+                return next(result)
             except:
                 # call the hook at the and of iterator
                 h()
@@ -641,7 +658,7 @@ def unloadhook(h):
 
         result = iter(result)
         while True:
-            yield next()
+            yield next_hook()
             
     return processor
 

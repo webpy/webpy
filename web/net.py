@@ -15,6 +15,8 @@ import datetime
 import re
 import socket
 
+from .py3helpers import PY2
+
 def validip6addr(address):
     """
     Returns True if `address` is a valid IPv6 address.
@@ -231,10 +233,15 @@ def websafe(val):
     """
     if val is None:
         return u''
-    elif isinstance(val, str):
-        val = val.decode('utf-8')
-    elif not isinstance(val, unicode):
-        val = unicode(val)
+
+    if PY2:
+        if isinstance(val, str):
+            val = val.decode('utf-8')
+        elif not isinstance(val, unicode):
+            val = unicode(val)
+    else:
+        if isinstance(val, bytes):
+            val = val.decode('utf-8')
         
     return htmlquote(val)
 

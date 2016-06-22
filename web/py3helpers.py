@@ -30,8 +30,13 @@ else:
     string_types = (str,)
     numeric_types = (int,)
 
+if PY2:
+    is_generator = lambda x: x and hasattr(x, 'next')
+else:
+    is_generator = lambda x: x and hasattr(x, '__next__')
+
 # imap
 if PY2:
-	from itertools import imap
+    from itertools import imap
 else:
-	imap = map
+    imap = map

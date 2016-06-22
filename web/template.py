@@ -317,7 +317,8 @@ class Parser:
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            readline = lambda: next(iter([text]))
+            i = iter([text])
+            readline = lambda: next(i)
             end = None
             for t in tokenize.generate_tokens(readline):
                 t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
@@ -389,12 +390,14 @@ class Parser:
             >>> python_lookahead(' x = 1')
             ' '
         """
-        readline = lambda: next(iter([text]))
+        i = iter([text])
+        readline = lambda: next(i)
         tokens = tokenize.generate_tokens(readline)
         return next(tokens)[1]
         
     def python_tokens(self, text):
-        readline = lambda: next(iter([text]))
+        i = iter([text])
+        readline = lambda: next(i)
         tokens = tokenize.generate_tokens(readline)
         return [t[1] for t in tokens]
         
@@ -483,7 +486,8 @@ class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
     def __init__(self, text):
         self.text = text
-        readline = lambda: next(iter([text]))
+        i = iter([text])
+        readline = lambda: next(i)
         self.tokens = tokenize.generate_tokens(readline)
         self.index = 0
         

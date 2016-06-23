@@ -701,7 +701,7 @@ class IterBetter:
             
     def __nonzero__(self):
         if hasattr(self, "__len__"):
-            return len(self) != 0
+            return self.__len__() != 0
         elif hasattr(self, "_head"):
             return True
         else:

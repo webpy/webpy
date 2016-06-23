@@ -27,6 +27,7 @@ Grammar:
     expr -> '$' pyexpr | '$(' pyexpr ')' | '${' pyexpr '}'
     pyexpr -> <python expression>
 """
+from __future__ import print_function
 
 __all__ = [
     "Template",
@@ -45,7 +46,7 @@ import warnings
 from .utils import storage, safeunicode, safestr, re_compile
 from .webapi import config
 from .net import websafe
-from .py3helpers import PY2
+from .py3helpers import PY2, iteritems
 
 if PY2:
     from UserDict import DictMixin
@@ -750,7 +751,7 @@ class ForLoop:
     
         >>> loop = ForLoop()
         >>> for x in loop.setup(['a', 'b', 'c']):
-        ...     print loop.index, loop.revindex, loop.parity, x
+        ...     print(loop.index, loop.revindex, loop.parity, x)
         ...
         1 3 odd a
         2 2 even b
@@ -1246,9 +1247,7 @@ class TemplateResult(MutableMapping):
     seemlessly when __body__ is accessed.
     
         >>> d = TemplateResult(__body__='hello, world', x='foo')
-        >>> d
-        <TemplateResult: {'__body__': 'hello, world', 'x': 'foo'}>
-        >>> print d
+        >>> print(d)
         hello, world
         >>> d.x
         'foo'
@@ -1343,7 +1342,7 @@ def test():
         >>> class TestResult:
         ...     def __init__(self, t): self.t = t
         ...     def __getattr__(self, name): return getattr(self.t, name)
-        ...     def __repr__(self): return repr(unicode(self))
+        ...     def __repr__(self): return repr(unicode(self.t) if PY2 else str(self.t))
         ...
         >>> def t(code, **keywords):
         ...     tmpl = Template(code, **keywords)
@@ -1399,7 +1398,7 @@ def test():
         u'1\n'
         >>> t('$for x in [1, 2, 3]: $x')()
         u'1\n2\n3\n'
-        >>> t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1})
+        >>> t('$def with (d)\n$for k, v in d.items(): $k')({1: 1})
         u'1\n'
         >>> t('$for x in [1, 2, 3]:\n\t$x')()
         u'    1\n    2\n    3\n'
@@ -1424,7 +1423,7 @@ def test():
         u'1\n'
         >>> t('$ a = [1]\n$a[0]')()
         u'1\n'
-        >>> t('$ a = {1: 1}\n$a.keys()[0]')()
+        >>> t('$ a = {1: 1}\n$list(a.keys())[0]')()
         u'1\n'
         >>> t('$ a = []\n$if not a: 1')()
         u'1\n'
@@ -1525,7 +1524,7 @@ def test():
 
         >>> t('$for i in range(10)[1:5]:\n    $i')()
         u'1\n2\n3\n4\n'
-        >>> t("$for k, v in {'a': 1, 'b': 2}.items():\n    $k $v")()
+        >>> t("$for k, v in sorted({'a': 1, 'b': 2}.items()):\n    $k $v", globals={'sorted':sorted})()
         u'a 1\nb 2\n'
         >>> t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
         Traceback (most recent call last):

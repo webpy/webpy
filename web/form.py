@@ -24,7 +24,7 @@ class Form(object):
     
         >>> f = Form(Textbox("x"))
         >>> f.render()
-        u'<table>\n    <tr><th><label for="x">x</label></th><td><input type="text" id="x" name="x"/></td></tr>\n</table>'
+        u'<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text"/></td></tr>\n</table>'
     """
     def __init__(self, *inputs, **kw):
         self.inputs = inputs
@@ -178,13 +178,13 @@ class AttributeList(dict):
     
     >>> a = AttributeList(type='text', name='x', value=20)
     >>> a
-    <attrs: 'type="text" name="x" value="20"'>
+    <attrs: 'name="x" type="text" value="20"'>
     """
     def copy(self):
         return AttributeList(self)
         
     def __str__(self):
-        return " ".join(['%s="%s"' % (k, net.websafe(v)) for k, v in self.items()])
+        return " ".join(['%s="%s"' % (k, net.websafe(v)) for k, v in sorted(self.items())])
         
     def __repr__(self):
         return '<attrs: %s>' % repr(str(self))
@@ -193,9 +193,9 @@ class Textbox(Input):
     """Textbox input.
     
         >>> Textbox(name='foo', value='bar').render()
-        u'<input type="text" id="foo" value="bar" name="foo"/>'
+        u'<input id="foo" name="foo" type="text" value="bar"/>'
         >>> Textbox(name='foo', value=0).render()
-        u'<input type="text" id="foo" value="0" name="foo"/>'
+        u'<input id="foo" name="foo" type="text" value="0"/>'
     """        
     def get_type(self):
         return 'text'
@@ -204,7 +204,7 @@ class Password(Input):
     """Password input.
 
         >>> Password(name='password', value='secret').render()
-        u'<input type="password" id="password" value="secret" name="password"/>'
+        u'<input id="password" name="password" type="password" value="secret"/>'
     """
     
     def get_type(self):
@@ -319,14 +319,14 @@ class Checkbox(Input):
     """Checkbox input.
 
     >>> Checkbox('foo', value='bar', checked=True).render()
-    u'<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     >>> Checkbox('foo', value='bar').render()
-    u'<input type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     >>> c = Checkbox('foo', value='bar')
     >>> c.validate('on')
     True
     >>> c.render()
-    u'<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     """
     def __init__(self, name, *validators, **attrs):
         self.checked = attrs.pop('checked', False)
@@ -358,7 +358,7 @@ class Button(Input):
     >>> Button("save").render()
     u'<button id="save" name="save">save</button>'
     >>> Button("action", value="save", html="<b>Save Changes</b>").render()
-    u'<button id="action" value="save" name="action"><b>Save Changes</b></button>'
+    u'<button id="action" name="action" value="save"><b>Save Changes</b></button>'
     """
     def __init__(self, name, *validators, **attrs):
         super(Button, self).__init__(name, *validators, **attrs)
@@ -376,7 +376,7 @@ class Hidden(Input):
     """Hidden Input.
     
         >>> Hidden(name='foo', value='bar').render()
-        u'<input type="hidden" id="foo" value="bar" name="foo"/>'
+        u'<input id="foo" name="foo" type="hidden" value="bar"/>'
     """
     def is_hidden(self):
         return True
@@ -388,7 +388,7 @@ class File(Input):
     """File input.
     
         >>> File(name='f').render()
-        u'<input type="file" id="f" name="f"/>'
+        u'<input id="f" name="f" type="file"/>'
     """
     def get_type(self):
         return 'file'

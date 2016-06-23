@@ -15,6 +15,11 @@ import datetime
 import re
 import socket
 
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
+
 from .py3helpers import PY2
 
 def validip6addr(address):
@@ -164,9 +169,15 @@ def urlquote(val):
         '%E2%80%BD'
     """
     if val is None: return ''
-    if not isinstance(val, unicode): val = str(val)
-    else: val = val.encode('utf-8')
-    return urllib.quote(val)
+
+    if PY2:
+        if isinstance(val, unicode):
+            val = val.encode('utf-8')
+        else:
+            val = str(val)
+    else:
+        val = str(val).encode('utf-8')
+    return quote(val)
 
 def httpdate(date_obj):
     """
@@ -242,7 +253,9 @@ def websafe(val):
     else:
         if isinstance(val, bytes):
             val = val.decode('utf-8')
-        
+        elif not isinstance(val, str):
+            val = str(val)
+    
     return htmlquote(val)
 
 if __name__ == "__main__":

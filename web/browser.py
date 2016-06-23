@@ -76,6 +76,7 @@ class Browser:
     def do_request(self, req):
         if DEBUG:
             print('requesting', req.get_method(), req.get_full_url())
+
         opener = self.build_opener()
         opener.add_handler(self._cookie_processor)
         try:
@@ -89,6 +90,7 @@ class Browser:
         self.status = self._response.code
         self._forms = None
         self.form = None
+
         return self.get_response()
 
     def open(self, url, data=None, headers={}):
@@ -258,8 +260,15 @@ class AppHandler(HTTPHandler):
         pass
 
     def _make_response(self, result, url):
+
         data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
-        headers = HTTPMessage(StringIO(data))
+
+        if PY2:
+            headers = HTTPMessage(StringIO(data))
+        else:
+            import email
+            headers = email.message_from_string(data)
+
         response = addinfourl(StringIO(result.data), headers, url)
         code, msg = result.status.split(None, 1)
         response.code, response.msg = int(code), msg

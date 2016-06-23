@@ -15,6 +15,7 @@ from hashlib import sha1
 
 from . import utils
 from . import webapi as web
+from .py3helpers import PY2
 
 __all__ = [
     'Session', 'SessionExpired',
@@ -77,6 +78,7 @@ class Session(object):
 
     def _processor(self, handler):
         """Application processor to setup session for every request"""
+
         self._cleanup()
         self._load()
 
@@ -150,7 +152,9 @@ class Session(object):
             rand = os.urandom(16)
             now = time.time()
             secret_key = self._config.secret_key
-            session_id = sha1("%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key))
+
+            hashable = "%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key)
+            session_id = sha1(hashable if PY2 else hashable.encode('utf-8')) #TODO maybe a better way to deal with this, without using an if-statement
             session_id = session_id.hexdigest()
             if session_id not in self.store:
                 break
@@ -241,8 +245,9 @@ class DiskStore(Store):
 
     def __getitem__(self, key):
         path = self._get_path(key)
+
         if os.path.exists(path): 
-            pickled = open(path).read()
+            pickled = open(path, 'rb').read()
             return self.decode(pickled)
         else:
             raise KeyError(key)
@@ -251,7 +256,7 @@ class DiskStore(Store):
         path = self._get_path(key)
         pickled = self.encode(value)    
         try:
-            f = open(path, 'w')
+            f = open(path, 'wb')
             try:
                 f.write(pickled)
             finally: 

@@ -17,8 +17,10 @@ else:
 
 try:
     from urllib import parse as urlparse
+    from urllib.parse import unquote
 except ImportError:
     import urlparse
+    from urllib import unquote
 
 try:
     from io import StringIO
@@ -291,7 +293,7 @@ class StaticMiddleware:
             return self.app(environ, start_response)
 
     def normpath(self, path):
-        path2 = posixpath.normpath(urllib.unquote(path))
+        path2 = posixpath.normpath(unquote(path))
         if path.endswith("/"):
             path2 += "/"
         return path2

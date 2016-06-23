@@ -534,6 +534,15 @@ class application:
         else:
             return web._InternalError()
 
+def with_metaclass(mcls):
+    def decorator(cls):
+        body = vars(cls).copy()
+        # clean out class body
+        body.pop('__dict__', None)
+        body.pop('__weakref__', None)
+        return mcls(cls.__name__, cls.__bases__, body)
+    return decorator
+
 class auto_application(application):
     """Application similar to `application` but urls are constructed 
     automatically using metaclass.
@@ -563,9 +572,10 @@ class auto_application(application):
                 if path is not None:
                     self.add_mapping(path, klass)
 
-        class page:
+
+        @with_metaclass(metapage) #little hack needed or Py2 and Py3 compatibility
+        class page():
             path = None
-            __metaclass__ = metapage
 
         self.page = page
 

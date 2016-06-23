@@ -12,7 +12,7 @@ __all__ = [
   "iters", 
   "rstrips", "lstrips", "strips", 
   "safeunicode", "safestr", "utf8",
-  "TimeoutError", "timelimit",
+  "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
   "group", "uniq", "iterview",
@@ -39,6 +39,11 @@ import datetime
 from threading import local as threadlocal
 
 from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 class Storage(dict):
     """
@@ -112,14 +117,6 @@ def storify(mapping, *requireds, **defaults):
         >>> storify({}, a={}).a
         {}
         
-    Optionally, keyword parameter `_unicode` can be passed to convert all values to unicode.
-    
-        >>> storify({'x': 'a'}, _unicode=True)
-        <Storage {'x': u'a'}>
-        >>> storify({'x': storage(value='a')}, x={}, _unicode=True)
-        <Storage {'x': <Storage {'value': 'a'}>}>
-        >>> storify({'x': storage(value='a')}, _unicode=True)
-        <Storage {'x': u'a'}>
     """
     _unicode = defaults.pop('_unicode', False)
 
@@ -176,8 +173,10 @@ class Counter(storage):
         >>> c.add('x')
         >>> c.add('x')
         >>> c.add('y')
-        >>> c
-        <Counter {'y': 1, 'x': 5}>
+        >>> c['y']
+        1
+        >>> c['x']
+        5
         >>> c.most()
         ['x']
     """
@@ -365,11 +364,6 @@ def safestr(obj, encoding='utf-8'):
     elif is_iter(obj):
         return imap(safestr, obj)
     else:
-        try:
-            str(obj)
-        except TypeError:
-            print("YOLOOOOOOO")
-            print(type(obj))
         return str(obj)
 
 if not PY2:
@@ -378,7 +372,6 @@ if not PY2:
 # for backward-compatibility
 utf8 = safestr
     
-class TimeoutError(Exception): pass
 def timelimit(timeout):
     """
     A decorator to limit a function to `timeout` seconds, raising `TimeoutError`
@@ -392,7 +385,7 @@ def timelimit(timeout):
         >>> timelimit(.1)(meaningoflife)()
         Traceback (most recent call last):
             ...
-        TimeoutError: took too long
+        RuntimeError: took too long
         >>> timelimit(1)(meaningoflife)()
         42
 
@@ -421,7 +414,7 @@ def timelimit(timeout):
             c = Dispatch()
             c.join(timeout)
             if c.isAlive():
-                raise TimeoutError('took too long')
+                raise RuntimeError('took too long')
             if c.error:
                 raise c.error[1]
             return c.result
@@ -719,6 +712,8 @@ class IterBetter:
             else:
                 return True
 
+    __bool__ = __nonzero__
+
 iterbetter = IterBetter
 
 def safeiter(it, cleanup=None, ignore_errors=True):
@@ -881,7 +876,7 @@ def datestr(then, now=None):
         >>> d = datetime(1970, 5, 1)
         >>> datestr(d, now=d)
         '0 microseconds ago'
-        >>> for t, v in {
+        >>> for t, v in iteritems({
         ...   timedelta(microseconds=1): '1 microsecond ago',
         ...   timedelta(microseconds=2): '2 microseconds ago',
         ...   -timedelta(microseconds=1): '1 microsecond from now',
@@ -891,7 +886,7 @@ def datestr(then, now=None):
         ...   timedelta(seconds=2*60): '2 minutes ago',
         ...   timedelta(seconds=2*60*60): '2 hours ago',
         ...   timedelta(days=2): '2 days ago',
-        ... }.iteritems():
+        ... }):
         ...     assert datestr(d, now=d+t) == v
         >>> datestr(datetime(1970, 1, 1), now=d)
         'January  1'
@@ -1088,8 +1083,6 @@ class CaptureStdout:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args, **keywords):
-        from cStringIO import StringIO
-        # Not threadsafe!
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
@@ -1115,21 +1108,18 @@ class Profile:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args): ##, **kw):   kw unused
-        import hotshot, hotshot.stats, os, tempfile ##, time already imported
+        import cProfile, pstats, os, tempfile ##, time already imported
         f, filename = tempfile.mkstemp()
         os.close(f)
         
-        prof = hotshot.Profile(filename)
+        prof = cProfile.Profile()
 
         stime = time.time()
         result = prof.runcall(self.func, *args)
         stime = time.time() - stime
-        prof.close()
 
-        import cStringIO
-        out = cStringIO.StringIO()
-        stats = hotshot.stats.load(filename)
-        stats.stream = out
+        out = StringIO()
+        stats = pstats.Stats(prof, stream=out)
         stats.strip_dirs()
         stats.sort_stats('time', 'calls')
         stats.print_stats(40)
@@ -1199,7 +1189,7 @@ def tryall(context, prefix=None):
         
     print('-'*40)
     print('results:')
-    for (key, value) in results.iteritems():
+    for (key, value) in iteritems(results):
         print(' '*2, str(key)+':', value)
         
 class ThreadedDict(threadlocal):
@@ -1305,11 +1295,13 @@ threadeddict = ThreadedDict
 def autoassign(self, locals):
     """
     Automatically assigns local variables to `self`.
-    
+   
         >>> self = storage()
         >>> autoassign(self, dict(a=1, b=2))
-        >>> self
-        <Storage {'a': 1, 'b': 2}>
+        >>> self.a
+        1
+        >>> self.b
+        2
     
     Generally used in `__init__` methods, as in:
 

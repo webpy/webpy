@@ -1525,10 +1525,17 @@ def test():
         u'1\n2\n3\n4\n'
         >>> t("$for k, v in sorted({'a': 1, 'b': 2}.items()):\n    $k $v", globals={'sorted':sorted})()
         u'a 1\nb 2\n'
-        >>> t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
-        Traceback (most recent call last):
+
+    Test for syntax error.
+
+        >>> try:
+        ...     t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
+        ... except SyntaxError:
+        ...     print("OK")
+        ... else:
+        ...     print("Expected SyntaxError")
         ...
-        SyntaxError: invalid syntax
+        OK
 
     Test datetime.
 

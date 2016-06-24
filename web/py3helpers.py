@@ -31,9 +31,9 @@ else:
     numeric_types = (int,)
 
 if PY2:
-    is_generator = lambda x: x and hasattr(x, 'next')
+    is_iter = lambda x: x and hasattr(x, 'next')
 else:
-    is_generator = lambda x: x and hasattr(x, '__next__')
+    is_iter = lambda x: x and hasattr(x, '__next__')
 
 # imap
 if PY2:

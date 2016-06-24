@@ -239,8 +239,6 @@ def websafe(val):
         u''
         >>> websafe(u'\u203d') == u'\u203d'
         True
-        >>> websafe('\xe2\x80\xbd') == u'\u203d'
-        True
     """
     if val is None:
         return u''

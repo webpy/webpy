@@ -9,7 +9,7 @@ from . import webapi, wsgi, utils, browser
 from .debugerror import debugerror
 from . import httpserver
 from .utils import lstrips, safeunicode
-from .py3helpers import iteritems, string_types, is_generator
+from .py3helpers import iteritems, string_types, is_iter
 import sys
 
 import urllib
@@ -293,7 +293,7 @@ class application:
                     raise web.nomethod()
 
                 result = self.handle_with_processors()
-                if is_generator(result):
+                if is_iter(result):
                     result = peep(result)
                 else:
                     result = [result]
@@ -644,7 +644,7 @@ def unloadhook(h):
     def processor(handler):
         try:
             result = handler()
-            is_gen = is_generator(result)
+            is_gen = is_iter(result)
         except:
             # run the hook even when handler raises some exception
             h()

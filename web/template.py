@@ -932,14 +932,15 @@ class Template(BaseTemplate):
         try:
             # compile the code first to report the errors, if any, with the filename
             compiled_code = compile(code, filename, 'exec')
-        except SyntaxError as e:
+        except SyntaxError as err:
             # display template line that caused the error along with the traceback.
-            try:
-                e.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
-                    (repr(e.filename), e.lineno, get_source_line(e.filename, e.lineno-1))
-            except: 
-                pass
+            # this works in Py3 but not Py2, duh ? TODO
+            err.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
+                (repr(err.filename), err.lineno, get_source_line(err.filename, err.lineno-1))
+
+
             raise
+
         
         # make sure code is safe - but not with jython, it doesn't have a working compiler module
         if not sys.platform.startswith('java'):
@@ -1447,8 +1448,6 @@ def test():
     
         >>> t('$def with (a)\n$a')(u'\u203d')
         u'\u203d\n'
-        >>> t('$def with (a)\n$a')(u'\u203d'.encode('utf-8'))
-        u'\u203d\n'
         >>> t(u'$def with (a)\n$a $:a')(u'\u203d')
         u'\u203d \u203d\n'
         >>> t(u'$def with ()\nfoo')()
@@ -1527,9 +1526,13 @@ def test():
         >>> t("$for k, v in sorted({'a': 1, 'b': 2}.items()):\n    $k $v", globals={'sorted':sorted})()
         u'a 1\nb 2\n'
         >>> t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
-        Traceback (most recent call last):
-            ...
-        SyntaxError: invalid syntax
+	Traceback (most recent call last):
+	...
+	SyntaxError: invalid syntax
+	<BLANKLINE>
+	Template traceback:
+	    File '<template>', line 6
+		None
 
     Test datetime.
 

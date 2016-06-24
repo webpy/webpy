@@ -11,7 +11,7 @@ __all__ = [
   "Counter", "counter",
   "iters", 
   "rstrips", "lstrips", "strips", 
-  "safeunicode", "safestr", "utf8",
+  "safeunicode", "safestr",
   "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
@@ -38,7 +38,7 @@ import subprocess
 import datetime
 from threading import local as threadlocal
 
-from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap
+from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap, is_iter
 
 try:
     from StringIO import StringIO
@@ -335,43 +335,27 @@ def safeunicode(obj, encoding='utf-8'):
     else:
         return unicode(obj)
 
-if PY2:
-    def is_iter(obj):
-        return hasattr(obj, 'next')
-else:
-    def is_iter(obj):
-        return hasattr(obj, '__next__')
-
 def safestr(obj, encoding='utf-8'):
     r"""
     Converts any given object to utf-8 encoded string. 
     
         >>> safestr('hello')
         'hello'
-        >>> safestr(u'\u1234')
-        '\xe1\x88\xb4'
         >>> safestr(2)
         '2'
     """
 
-    #TODO : added "and PY2" because in Py3 "encode" always returns a byte variable
-    #but the funcion's goal is to return a safe string.
-    #I'm not sure about all the effects of this change, it needs peer-review.
-    if isinstance(obj, text_type) and PY2:
+    if PY2 and isinstance(obj, unicode):
         return obj.encode(encoding)
-    elif isinstance(obj, bytes):
-        return obj
     elif is_iter(obj):
         return imap(safestr, obj)
     else:
         return str(obj)
 
 if not PY2:
+    #Since Python3, utf-8 encoded strings and unicode strings are the same thing
     safeunicode = safestr
 
-# for backward-compatibility
-utf8 = safestr
-    
 def timelimit(timeout):
     """
     A decorator to limit a function to `timeout` seconds, raising `TimeoutError`

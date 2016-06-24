@@ -2,8 +2,7 @@ language: python
 python:
   - "2.6"
   - "2.7"
-#  - "3.1"
-#  - "3.2"
+  - "3.5"
 install: pip install -r test/requirements.txt --use-mirrors; if [ $TRAVIS_PYTHON_VERSION == 2* ] ; then pip install -r test/requirements2.txt --use-mirrors; fi
 script: python test/alltests.py
 before_install:

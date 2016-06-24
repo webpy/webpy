@@ -1530,10 +1530,6 @@ def test():
         Traceback (most recent call last):
         ...
         SyntaxError: invalid syntax
-        <BLANKLINE>
-        Template traceback:
-            File '<template>', line 6
-                None
 
     Test datetime.
 

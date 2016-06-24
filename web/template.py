@@ -1527,13 +1527,13 @@ def test():
         >>> t("$for k, v in sorted({'a': 1, 'b': 2}.items()):\n    $k $v", globals={'sorted':sorted})()
         u'a 1\nb 2\n'
         >>> t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
-	Traceback (most recent call last):
-	...
-	SyntaxError: invalid syntax
-	<BLANKLINE>
-	Template traceback:
-	    File '<template>', line 6
-		None
+        Traceback (most recent call last):
+        ...
+        SyntaxError: invalid syntax
+        <BLANKLINE>
+        Template traceback:
+            File '<template>', line 6
+                None
 
     Test datetime.
 

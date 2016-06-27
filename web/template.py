@@ -42,6 +42,7 @@ import sys
 import glob
 import re
 import warnings
+import ast
 
 from .utils import storage, safeunicode, safestr, re_compile
 from .webapi import config
@@ -942,17 +943,9 @@ class Template(BaseTemplate):
             raise
 
         
-        # make sure code is safe - but not with jython, it doesn't have a working compiler module
-        if not sys.platform.startswith('java'):
-            try:
-                import compiler
-                ast_node = compiler.parse(code)
-
-                SafeVisitor().walk(ast_node, filename)
-            except ImportError:
-                warnings.warn("Unabled to import compiler module. Unable to check templates for safety.")
-        else:
-            warnings.warn("SECURITY ISSUE: You are using Jython, which does not support checking templates for safety. Your templates can execute arbitrary code.")
+        # make sure code is safe 
+        ast_node = ast.parse(code, filename)
+        SafeVisitor().walk(ast_node, filename)
 
         return compiled_code
         
@@ -1132,40 +1125,12 @@ class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
     pass
 
-# Enumerate all the allowed AST nodes
-ALLOWED_AST_NODES = [
-    "Add", "And",
-#   "AssAttr",
-    "AssList", "AssName", "AssTuple",
-#   "Assert",
-    "Assign", "AugAssign",
-#   "Backquote",
-    "Bitand", "Bitor", "Bitxor", "Break",
-    "CallFunc","Class", "Compare", "Const", "Continue",
-    "Decorators", "Dict", "Discard", "Div",
-    "Ellipsis", "EmptyNode",
-#   "Exec",
-    "Expression", "FloorDiv", "For",
-#   "From",
-    "Function", 
-    "GenExpr", "GenExprFor", "GenExprIf", "GenExprInner",
-    "Getattr", 
-#   "Global", 
-    "If", "IfExp",
-#   "Import",
-    "Invert", "Keyword", "Lambda", "LeftShift",
-    "List", "ListComp", "ListCompFor", "ListCompIf", "Mod",
-    "Module",
-    "Mul", "Name", "Not", "Or", "Pass", "Power",
-#   "Print", "Printnl", "Raise",
-    "Return", "RightShift", "Slice", "Sliceobj",
-    "Stmt", "Sub", "Subscript",
-#   "TryExcept", "TryFinally",
-    "Tuple", "UnaryAdd", "UnarySub",
-    "While", "With", "Yield",
+DISALLOWED_AST_NODES = [
+    "Assert", "Exec", "From", "Global", "Import", "Print",
+    "Raise", "Try", "Except"
 ]
 
-class SafeVisitor(object):
+class SafeVisitor(ast.NodeVisitor):
     """
     Make sure code is safe by walking through the AST.
     
@@ -1197,18 +1162,12 @@ class SafeVisitor(object):
         if fn:
             fn(node, *args)
         else:
-            if nodename not in ALLOWED_AST_NODES:
+            if nodename in DISALLOWED_AST_NODES:
                 self.fail(node, *args)
-            
-        for child in node.getChildNodes():
-            self.visit(child, *args)
-
-    def visitName(self, node, *args):
-        "Disallow any attempts to access a restricted attr."
-        #self.assert_attr(node.getChildren()[0], node)
-        pass
         
-    def visitGetattr(self, node, *args):
+        ast.NodeVisitor.generic_visit(self, node)
+
+    def visit_Getattr(self, node, *args):
         "Disallow any attempts to access a restricted attribute."
         self.assert_attr(node.attrname, node)
             

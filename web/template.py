@@ -1317,9 +1317,10 @@ class TemplateResult(MutableMapping):
     
     def __str__(self):
         self._prepare_body()
-        return self["__body__"]#.encode('utf-8') TODO needs testing
-        #In Py3 using "encode" will return bytes and not str
-        #Removing "encode" may induce errors with Py2, TBD
+        if PY2:
+            return self["__body__"].encode('utf-8') 
+        else:
+            return self["__body__"]
         
     def __repr__(self):
         self._prepare_body()

@@ -27,6 +27,7 @@ Grammar:
     expr -> '$' pyexpr | '$(' pyexpr ')' | '${' pyexpr '}'
     pyexpr -> <python expression>
 """
+from __future__ import print_function
 
 __all__ = [
     "Template",
@@ -40,12 +41,21 @@ import os
 import sys
 import glob
 import re
-from UserDict import DictMixin
 import warnings
 
-from utils import storage, safeunicode, safestr, re_compile
-from webapi import config
-from net import websafe
+from .utils import storage, safeunicode, safestr, re_compile
+from .webapi import config
+from .net import websafe
+from .py3helpers import PY2, iteritems
+
+if PY2:
+    from UserDict import DictMixin
+
+    # Make a new-style class
+    class MutableMapping(object, DictMixin):
+        pass
+else:
+    from collections import MutableMapping
 
 def splitline(text):
     r"""
@@ -262,7 +272,7 @@ class Parser:
             extended_expr()
         
         def identifier():
-            tokens.next()
+            next(tokens)
         
         def extended_expr():
             lookahead = tokens.lookahead()
@@ -280,18 +290,18 @@ class Parser:
             from token import NAME # python token constants
             dot = tokens.lookahead()
             if tokens.lookahead2().type == NAME:
-                tokens.next() # consume dot
+                next(tokens) # consume dot
                 identifier()
                 extended_expr()
         
         def paren_expr():
-            begin = tokens.next().value
+            begin = next(tokens).value
             end = parens[begin]
             while True:
                 if tokens.lookahead().value in parens:
                     paren_expr()
                 else:
-                    t = tokens.next()
+                    t = next(tokens)
                     if t.value == end:
                         break
             return
@@ -308,7 +318,8 @@ class Parser:
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            readline = iter([text]).next
+            i = iter([text])
+            readline = lambda: next(i)
             end = None
             for t in tokenize.generate_tokens(readline):
                 t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
@@ -334,7 +345,7 @@ class Parser:
 
             def _next(self):
                 try:
-                    return self.iteritems.next()
+                    return next(self.iteritems)
                 except StopIteration:
                     return None
                 
@@ -343,10 +354,12 @@ class Parser:
                     self.items.append(self._next())
                 return self.items[self.position+1]
                     
-            def next(self):
+            def __next__(self):
                 self.current_item = self.lookahead()
                 self.position += 1
                 return self.current_item
+
+            next = __next__ #Needed for Py2 compatibility
 
         tokens = BetterIter(get_tokens(text))
                 
@@ -378,12 +391,14 @@ class Parser:
             >>> python_lookahead(' x = 1')
             ' '
         """
-        readline = iter([text]).next
+        i = iter([text])
+        readline = lambda: next(i)
         tokens = tokenize.generate_tokens(readline)
-        return tokens.next()[1]
+        return next(tokens)[1]
         
     def python_tokens(self, text):
-        readline = iter([text]).next
+        i = iter([text])
+        readline = lambda: next(i)
         tokens = tokenize.generate_tokens(readline)
         return [t[1] for t in tokens]
         
@@ -466,13 +481,14 @@ class Parser:
         if keyword in self.statement_nodes:
             return self.statement_nodes[keyword](stmt, block, begin_indent)
         else:
-            raise ParseError, 'Unknown statement: %s' % repr(keyword)
+            raise ParseError('Unknown statement: %s' % repr(keyword))
         
 class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
     def __init__(self, text):
         self.text = text
-        readline = iter([text]).next
+        i = iter([text])
+        readline = lambda: next(i)
         self.tokens = tokenize.generate_tokens(readline)
         self.index = 0
         
@@ -488,7 +504,7 @@ class PythonTokenizer:
         """
         try:
             while True:
-                t = self.next()
+                t = next(self)
                 if t.value == delim:
                     break
                 elif t.value == '(':
@@ -511,11 +527,13 @@ class PythonTokenizer:
             # if this error is ignored, then it will be caught when compiling the python code.
             return
     
-    def next(self):
-        type, t, begin, end, line = self.tokens.next()
+    def __next__(self):
+        type, t, begin, end, line = next(self.tokens)
         row, col = end
         self.index = col
         return storage(type=type, value=t, begin=begin, end=end)
+
+    next = __next__ #needed for Py2 compatibility
         
 class DefwithNode:
     def __init__(self, defwith, suite):
@@ -721,8 +739,11 @@ TEMPLATE_BUILTIN_NAMES = [
     "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-import __builtin__
-TEMPLATE_BUILTINS = dict([(name, getattr(__builtin__, name)) for name in TEMPLATE_BUILTIN_NAMES if name in __builtin__.__dict__])
+if PY2:
+    import __builtin__ as builtins
+else:
+    import builtins
+TEMPLATE_BUILTINS = dict([(name, getattr(builtins, name)) for name in TEMPLATE_BUILTIN_NAMES if name in builtins.__dict__])
 
 class ForLoop:
     """
@@ -730,7 +751,7 @@ class ForLoop:
     
         >>> loop = ForLoop()
         >>> for x in loop.setup(['a', 'b', 'c']):
-        ...     print loop.index, loop.revindex, loop.parity, x
+        ...     print(loop.index, loop.revindex, loop.parity, x)
         ...
         1 3 odd a
         2 2 even b
@@ -745,7 +766,7 @@ class ForLoop:
         
     def __getattr__(self, name):
         if self._ctx is None:
-            raise AttributeError, name
+            raise AttributeError(name)
         else:
             return getattr(self._ctx, name)
         
@@ -801,6 +822,7 @@ class BaseTemplate:
     def _compile(self, code):
         env = self.make_env(self._globals or {}, self._builtins)
         exec(code, env)
+        #__template__ is a global function declared when executing "code"
         return env['__template__']
 
     def __call__(self, *a, **kw):
@@ -874,10 +896,10 @@ class Template(BaseTemplate):
                 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        import webapi as web
+        from . import webapi as web
         if 'headers' in web.ctx and self.content_type:
             web.header('Content-Type', self.content_type, unique=True)
-            
+
         return BaseTemplate.__call__(self, *a, **kw)
         
     def generate_code(text, filename, parser=None):
@@ -910,21 +932,23 @@ class Template(BaseTemplate):
         try:
             # compile the code first to report the errors, if any, with the filename
             compiled_code = compile(code, filename, 'exec')
-        except SyntaxError, e:
+        except SyntaxError as err:
             # display template line that caused the error along with the traceback.
-            try:
-                e.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
-                    (repr(e.filename), e.lineno, get_source_line(e.filename, e.lineno-1))
-            except: 
-                pass
+            # this works in Py3 but not Py2, duh ? TODO
+            err.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
+                (repr(err.filename), err.lineno, get_source_line(err.filename, err.lineno-1))
+
+
             raise
+
         
         # make sure code is safe - but not with jython, it doesn't have a working compiler module
         if not sys.platform.startswith('java'):
             try:
                 import compiler
-                ast = compiler.parse(code)
-                SafeVisitor().walk(ast, filename)
+                ast_node = compiler.parse(code)
+
+                SafeVisitor().walk(ast_node, filename)
             except ImportError:
                 warnings.warn("Unabled to import compiler module. Unable to check templates for safety.")
         else:
@@ -998,7 +1022,7 @@ class Render:
         elif kind == 'file':
             return Template(open(path).read(), filename=path, **self._keywords)
         else:
-            raise AttributeError, "No template named " + name            
+            raise AttributeError("No template named " + name)
 
     def _findfile(self, path_prefix): 
         p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
@@ -1161,7 +1185,7 @@ class SafeVisitor(object):
         self.visit(ast)
         
         if self.errors:        
-            raise SecurityError, '\n'.join([str(err) for err in self.errors])
+            raise SecurityError('\n'.join([str(err) for err in self.errors]))
         
     def visit(self, node, *args):
         "Recursively validate node and all of its children."
@@ -1209,7 +1233,7 @@ class SafeVisitor(object):
         e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
         self.errors.append(e)
 
-class TemplateResult(object, DictMixin):
+class TemplateResult(MutableMapping):
     """Dictionary like object for storing template output.
     
     The result of a template execution is usally a string, but sometimes it
@@ -1224,9 +1248,7 @@ class TemplateResult(object, DictMixin):
     seemlessly when __body__ is accessed.
     
         >>> d = TemplateResult(__body__='hello, world', x='foo')
-        >>> d
-        <TemplateResult: {'__body__': 'hello, world', 'x': 'foo'}>
-        >>> print d
+        >>> print(d)
         hello, world
         >>> d.x
         'foo'
@@ -1277,8 +1299,8 @@ class TemplateResult(object, DictMixin):
     def __getattr__(self, key): 
         try:
             return self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
 
     def __setattr__(self, key, value): 
         self[key] = value
@@ -1286,8 +1308,8 @@ class TemplateResult(object, DictMixin):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
         
     def __unicode__(self):
         self._prepare_body()
@@ -1295,11 +1317,21 @@ class TemplateResult(object, DictMixin):
     
     def __str__(self):
         self._prepare_body()
-        return self["__body__"].encode('utf-8')
+        return self["__body__"]
         
     def __repr__(self):
         self._prepare_body()
         return "<TemplateResult: %s>" % self._d
+
+    def __len__(self):
+        return self._d.__len__()
+
+    def __iter__(self):
+        for i in self._d.__iter__():
+            if i == "__body__":
+                self._prepare_body()
+            yield i
+
 
 def test():
     r"""Doctest for testing template module.
@@ -1309,7 +1341,7 @@ def test():
         >>> class TestResult:
         ...     def __init__(self, t): self.t = t
         ...     def __getattr__(self, name): return getattr(self.t, name)
-        ...     def __repr__(self): return repr(unicode(self))
+        ...     def __repr__(self): return repr(unicode(self.t) if PY2 else str(self.t))
         ...
         >>> def t(code, **keywords):
         ...     tmpl = Template(code, **keywords)
@@ -1365,7 +1397,7 @@ def test():
         u'1\n'
         >>> t('$for x in [1, 2, 3]: $x')()
         u'1\n2\n3\n'
-        >>> t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1})
+        >>> t('$def with (d)\n$for k, v in d.items(): $k')({1: 1})
         u'1\n'
         >>> t('$for x in [1, 2, 3]:\n\t$x')()
         u'    1\n    2\n    3\n'
@@ -1390,7 +1422,7 @@ def test():
         u'1\n'
         >>> t('$ a = [1]\n$a[0]')()
         u'1\n'
-        >>> t('$ a = {1: 1}\n$a.keys()[0]')()
+        >>> t('$ a = {1: 1}\n$list(a.keys())[0]')()
         u'1\n'
         >>> t('$ a = []\n$if not a: 1')()
         u'1\n'
@@ -1413,8 +1445,6 @@ def test():
     Test unicode.
     
         >>> t('$def with (a)\n$a')(u'\u203d')
-        u'\u203d\n'
-        >>> t('$def with (a)\n$a')(u'\u203d'.encode('utf-8'))
         u'\u203d\n'
         >>> t(u'$def with (a)\n$a $:a')(u'\u203d')
         u'\u203d \u203d\n'
@@ -1491,12 +1521,19 @@ def test():
 
         >>> t('$for i in range(10)[1:5]:\n    $i')()
         u'1\n2\n3\n4\n'
-        >>> t("$for k, v in {'a': 1, 'b': 2}.items():\n    $k $v")()
+        >>> t("$for k, v in sorted({'a': 1, 'b': 2}.items()):\n    $k $v", globals={'sorted':sorted})()
         u'a 1\nb 2\n'
-        >>> t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
-        Traceback (most recent call last):
-            ...
-        SyntaxError: invalid syntax
+
+    Test for syntax error.
+
+        >>> try:
+        ...     t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
+        ... except SyntaxError:
+        ...     print("OK")
+        ... else:
+        ...     print("Expected SyntaxError")
+        ...
+        OK
 
     Test datetime.
 

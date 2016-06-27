@@ -1,6 +1,11 @@
 """DB test"""
+from __future__ import print_function
+
 import webtest
 import web
+
+from web.py3helpers import PY2
+
 
 class DBTest(webtest.TestCase):
     dbname = 'postgres'
@@ -19,8 +24,8 @@ class DBTest(webtest.TestCase):
         try:
             webtest.setup_database(self.dbname, driver=self.driver)
             return True
-        except ImportError, e:
-            print >> web.debug, str(e), "(ignoring %s)" % self.__class__.__name__
+        except ImportError as e:
+            print(str(e), "(ignoring %s)" % self.__class__.__name__, file=web.debug)
             return False
     
     def testUnicode(self):
@@ -58,12 +63,12 @@ class DBTest(webtest.TestCase):
         except:
             pass
         self.db.select('person')
-        
+
     def testNestedTransactions(self):
         t1 = self.db.transaction()
         self.db.insert('person', False, name='user1')
-        self.assertRows(1)        
-        
+        self.assertRows(1)
+
         t2 = self.db.transaction()
         self.db.insert('person', False, name='user2')
         self.assertRows(2)  
@@ -94,10 +99,11 @@ class DBTest(webtest.TestCase):
         assert db.select("person", where="name='b'").list()
 
     def test_result_is_unicode(self):
+        #TODO : not sure this test has still meaning with Py3
         db = webtest.setup_database(self.dbname)
         self.db.insert('person', False, name='user')
         name = db.select('person')[0].name
-        self.assertEquals(type(name), unicode)
+        self.assertEquals(type(name), unicode if PY2 else str)
 
     def test_result_is_true(self):
         db = webtest.setup_database(self.dbname)
@@ -169,15 +175,15 @@ def is_test(cls):
     return inspect.isclass(cls) and webtest.TestCase in inspect.getmro(cls)
 
 # ignore db tests when the required db adapter is not found.
-for t in globals().values():
+for t in list(globals().values()):
     if is_test(t) and not t('_testable')._testable():
         del globals()[t.__name__]
 del t
 
 try:
     import DBUtils
-except ImportError, e:
-    print >> web.debug, str(e) + "(ignoring testPooling)"
+except ImportError as e:
+    print(str(e) + "(ignoring testPooling)", file=web.debug)
 
 if __name__ == '__main__':
     webtest.main()

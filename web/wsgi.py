@@ -5,11 +5,11 @@ WSGI Utilities
 
 import os, sys
 
-import http
-import webapi as web
-from utils import listget, intget
-from net import validaddr, validip
-import httpserver
+from . import http
+from . import webapi as web
+from .utils import listget, intget
+from .net import validaddr, validip
+from . import httpserver
     
 def runfcgi(func, addr=('localhost', 8000)):
     """Runs a WSGI function as a FastCGI server."""
@@ -27,11 +27,11 @@ def runwsgi(func):
     as appropriate based on context and `sys.argv`.
     """
     
-    if os.environ.has_key('SERVER_SOFTWARE'): # cgi
+    if 'SERVER_SOFTWARE' in os.environ: # cgi
         os.environ['FCGI_FORCE_CGI'] = 'Y'
 
-    if (os.environ.has_key('PHP_FCGI_CHILDREN') #lighttpd fastcgi
-      or os.environ.has_key('SERVER_SOFTWARE')):
+    if ('PHP_FCGI_CHILDREN' in os.environ #lighttpd fastcgi
+      or 'SERVER_SOFTWARE') in os.environ:
         return runfcgi(func, None)
     
     if 'fcgi' in sys.argv or 'fastcgi' in sys.argv:
@@ -53,7 +53,7 @@ def runwsgi(func):
     
     
     server_addr = validip(listget(sys.argv, 1, ''))
-    if os.environ.has_key('PORT'): # e.g. Heroku
+    if 'PORT' in os.environ: # e.g. Heroku
         server_addr = ('0.0.0.0', intget(os.environ['PORT']))
     
     return httpserver.runsimple(func, server_addr)
@@ -64,8 +64,8 @@ def _is_dev_mode():
     argv = getattr(sys, "argv", [])
 
     # quick hack to check if the program is running in dev mode.
-    if os.environ.has_key('SERVER_SOFTWARE') \
-        or os.environ.has_key('PHP_FCGI_CHILDREN') \
+    if 'SERVER_SOFTWARE' in os.environ \
+        or 'PHP_FCGI_CHILDREN' in os.environ \
         or 'fcgi' in argv or 'fastcgi' in argv \
         or 'mod_wsgi' in argv:
             return False

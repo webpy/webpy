@@ -1,13 +1,33 @@
-__all__ = ["runsimple"]
+from __future__ import print_function
 
 import sys, os
-from SimpleHTTPServer import SimpleHTTPRequestHandler
 import urllib
 import posixpath
 
-import webapi as web
-import net
-import utils
+from . import webapi as web
+from . import net
+from . import utils
+from .py3helpers import PY2
+
+if PY2:
+    from SimpleHTTPServer import SimpleHTTPRequestHandler
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+else:
+    from http.server import HTTPServer, SimpleHTTPRequestHandler, BaseHTTPRequestHandler
+
+try:
+    from urllib import parse as urlparse
+    from urllib.parse import unquote
+except ImportError:
+    import urlparse
+    from urllib import unquote
+
+try:
+    from io import StringIO
+except ImportError:
+    from StringIO import StringIO
+
+__all__ = ["runsimple"]
 
 def runbasic(func, server_address=("0.0.0.0", 8080)):
     """
@@ -24,7 +44,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     # Used under the modified BSD license:
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
-    import SimpleHTTPServer, SocketServer, BaseHTTPServer, urlparse
+    import SocketServer
     import socket, errno
     import traceback
 
@@ -72,15 +92,15 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                     finally:
                         if hasattr(result, 'close'): 
                             result.close()
-                except socket.error, socket_err:
+                except socket.error as socket_err:
                     # Catch common network errors and suppress them
                     if (socket_err.args[0] in \
                        (errno.ECONNABORTED, errno.EPIPE)): 
                         return
-                except socket.timeout, socket_timeout: 
+                except socket.timeout as socket_timeout: 
                     return
             except:
-                print >> web.debug, traceback.format_exc(),
+                print(traceback.format_exc(), file=web.debug)
 
             if (not self.wsgi_sent_headers):
                 # We must write out something!
@@ -120,15 +140,15 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
             # Send the data
             self.wfile.write(data)
 
-    class WSGIServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+    class WSGIServer(SocketServer.ThreadingMixIn, HTTPServer):
         def __init__(self, func, server_address):
-            BaseHTTPServer.HTTPServer.__init__(self, 
+            HTTPServer.HTTPServer.__init__(self, 
                                                server_address, 
                                                WSGIHandler)
             self.app = func
             self.serverShuttingDown = 0
 
-    print "http://%s:%d/" % server_address
+    print("http://%s:%d/" % server_address)
     WSGIServer(func, server_address).serve_forever()
 
 # The WSGIServer instance. 
@@ -149,9 +169,9 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     server = WSGIServer(server_address, func)
 
     if server.ssl_adapter:
-        print "https://%s:%d/" % server_address
+        print("https://%s:%d/" % server_address)
     else:
-        print "http://%s:%d/" % server_address
+        print("http://%s:%d/" % server_address)
 
     try:
         server.start()
@@ -163,7 +183,7 @@ def WSGIServer(server_address, wsgi_app):
     """Creates CherryPy WSGI server listening at `server_address` to serve `wsgi_app`.
     This function can be overwritten to customize the webserver or use a different webserver.
     """
-    import wsgiserver
+    from . import wsgiserver
     
     # Default values of wsgiserver.ssl_adapters uses cherrypy.wsgiserver
     # prefix. Overwriting it make it work with web.wsgiserver.
@@ -228,7 +248,6 @@ class StaticApp(SimpleHTTPRequestHandler):
                               environ.get('REMOTE_PORT','-')
         self.command = environ.get('REQUEST_METHOD', '-')
 
-        from cStringIO import StringIO
         self.wfile = StringIO() # for capturing error
 
         try:
@@ -239,7 +258,7 @@ class StaticApp(SimpleHTTPRequestHandler):
             if etag == client_etag:
                 self.send_response(304, "Not Modified")
                 self.start_response(self.status, self.headers)
-                raise StopIteration
+                raise StopIteration()
         except OSError:
             pass # Probably a 404
 
@@ -274,7 +293,7 @@ class StaticMiddleware:
             return self.app(environ, start_response)
 
     def normpath(self, path):
-        path2 = posixpath.normpath(urllib.unquote(path))
+        path2 = posixpath.normpath(unquote(path))
         if path.endswith("/"):
             path2 += "/"
         return path2
@@ -286,9 +305,7 @@ class LogMiddleware:
         self.app = app
         self.format = '%s - - [%s] "%s %s %s" - %s'
     
-        from BaseHTTPServer import BaseHTTPRequestHandler
-        import StringIO
-        f = StringIO.StringIO()
+        f = StringIO()
         
         class FakeSocket:
             def makefile(self, *a):
@@ -316,4 +333,4 @@ class LogMiddleware:
         time = self.log_date_time_string()
 
         msg = self.format % (host, time, protocol, method, req, status)
-        print >> outfile, utils.safestr(msg)
+        print(utils.safestr(msg), file=outfile)

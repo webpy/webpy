@@ -65,7 +65,7 @@ class SessionTest(webtest.TestCase):
         b = self.app.browser()
         b.open("/redirect")
         b.open("/session/request_token")
-        assert b.data == '123'
+        self.assertEquals(b.data, '123')
 
 class DBSessionTest(SessionTest):
     """Session test with db store."""

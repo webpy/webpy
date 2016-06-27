@@ -3,14 +3,16 @@
 General Utilities
 (part of web.py)
 """
+from __future__ import print_function
+
 
 __all__ = [
   "Storage", "storage", "storify", 
   "Counter", "counter",
   "iters", 
   "rstrips", "lstrips", "strips", 
-  "safeunicode", "safestr", "utf8",
-  "TimeoutError", "timelimit",
+  "safeunicode", "safestr",
+  "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
   "group", "uniq", "iterview",
@@ -32,22 +34,16 @@ __all__ = [
 
 import re, sys, time, threading, itertools, traceback, os
 
-try:
-    import subprocess
-except ImportError: 
-    subprocess = None
+import subprocess
+import datetime
+from threading import local as threadlocal
 
-try: import datetime
-except ImportError: pass
+from .py3helpers import PY2, itervalues, iteritems, text_type, string_types, imap, is_iter
 
-try: set
-except NameError:
-    from sets import Set as set
-    
 try:
-    from threading import local as threadlocal
+    from StringIO import StringIO
 except ImportError:
-    from python23 import threadlocal
+    from io import StringIO
 
 class Storage(dict):
     """
@@ -72,8 +68,8 @@ class Storage(dict):
     def __getattr__(self, key): 
         try:
             return self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
     
     def __setattr__(self, key, value): 
         self[key] = value
@@ -81,8 +77,8 @@ class Storage(dict):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
     
     def __repr__(self):     
         return '<Storage ' + dict.__repr__(self) + '>'
@@ -121,14 +117,6 @@ def storify(mapping, *requireds, **defaults):
         >>> storify({}, a={}).a
         {}
         
-    Optionally, keyword parameter `_unicode` can be passed to convert all values to unicode.
-    
-        >>> storify({'x': 'a'}, _unicode=True)
-        <Storage {'x': u'a'}>
-        >>> storify({'x': storage(value='a')}, x={}, _unicode=True)
-        <Storage {'x': <Storage {'value': 'a'}>}>
-        >>> storify({'x': storage(value='a')}, _unicode=True)
-        <Storage {'x': u'a'}>
     """
     _unicode = defaults.pop('_unicode', False)
 
@@ -161,9 +149,11 @@ def storify(mapping, *requireds, **defaults):
             value = getvalue(value)
         if isinstance(defaults.get(key), list) and not isinstance(value, list):
             value = [value]
+
+        
         setattr(stor, key, value)
 
-    for (key, value) in defaults.iteritems():
+    for (key, value) in iteritems(defaults):
         result = value
         if hasattr(stor, key): 
             result = stor[key]
@@ -183,8 +173,10 @@ class Counter(storage):
         >>> c.add('x')
         >>> c.add('x')
         >>> c.add('y')
-        >>> c
-        <Counter {'y': 1, 'x': 5}>
+        >>> c['y']
+        1
+        >>> c['x']
+        5
         >>> c.most()
         ['x']
     """
@@ -194,13 +186,13 @@ class Counter(storage):
     
     def most(self):
         """Returns the keys with maximum count."""
-        m = max(self.itervalues())
-        return [k for k, v in self.iteritems() if v == m]
+        m = max(itervalues(self))
+        return [k for k, v in iteritems(self) if v == m]
         
     def least(self):
         """Returns the keys with mininum count."""
         m = min(self.itervalues())
-        return [k for k, v in self.iteritems() if v == m]
+        return [k for k, v in iteritems(self) if v == m]
 
     def percent(self, key):
        """Returns what percentage a certain key is of all entries.
@@ -258,19 +250,7 @@ class Counter(storage):
        
 counter = Counter
 
-iters = [list, tuple]
-import __builtin__
-if hasattr(__builtin__, 'set'):
-    iters.append(set)
-if hasattr(__builtin__, 'frozenset'):
-    iters.append(set)
-if sys.version_info < (2,6): # sets module deprecated in 2.6
-    try:
-        from sets import Set
-        iters.append(Set)
-    except ImportError: 
-        pass
-    
+iters = [list, tuple, set, frozenset]
 class _hack(tuple): pass
 iters = _hack(iters)
 iters.__doc__ = """
@@ -291,7 +271,7 @@ def _strips(direction, text, remove):
         if text.endswith(remove):   
             return text[:-len(remove)]
     else: 
-        raise ValueError, "Direction needs to be r or l."
+        raise ValueError("Direction needs to be r or l.")
     return text
 
 def rstrips(text, remove):
@@ -342,41 +322,40 @@ def safeunicode(obj, encoding='utf-8'):
         u'\u1234'
     """
     t = type(obj)
-    if t is unicode:
+    if t is text_type:
         return obj
-    elif t is str:
+    elif t is bytes:
         return obj.decode(encoding)
     elif t in [int, float, bool]:
         return unicode(obj)
-    elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
-        return unicode(obj)
+    #elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
+    #    return unicode(obj)
+    #else:
+    #    return str(obj).decode(encoding)
     else:
-        return str(obj).decode(encoding)
-    
+        return unicode(obj)
+
 def safestr(obj, encoding='utf-8'):
     r"""
     Converts any given object to utf-8 encoded string. 
     
         >>> safestr('hello')
         'hello'
-        >>> safestr(u'\u1234')
-        '\xe1\x88\xb4'
         >>> safestr(2)
         '2'
     """
-    if isinstance(obj, unicode):
+
+    if PY2 and isinstance(obj, unicode):
         return obj.encode(encoding)
-    elif isinstance(obj, str):
-        return obj
-    elif hasattr(obj, 'next'): # iterator
-        return itertools.imap(safestr, obj)
+    elif is_iter(obj):
+        return imap(safestr, obj)
     else:
         return str(obj)
 
-# for backward-compatibility
-utf8 = safestr
-    
-class TimeoutError(Exception): pass
+if not PY2:
+    #Since Python3, utf-8 encoded strings and unicode strings are the same thing
+    safeunicode = safestr
+
 def timelimit(timeout):
     """
     A decorator to limit a function to `timeout` seconds, raising `TimeoutError`
@@ -390,7 +369,7 @@ def timelimit(timeout):
         >>> timelimit(.1)(meaningoflife)()
         Traceback (most recent call last):
             ...
-        TimeoutError: took too long
+        RuntimeError: took too long
         >>> timelimit(1)(meaningoflife)()
         42
 
@@ -419,9 +398,9 @@ def timelimit(timeout):
             c = Dispatch()
             c.join(timeout)
             if c.isAlive():
-                raise TimeoutError, 'took too long'
+                raise RuntimeError('took too long')
             if c.error:
-                raise c.error[0], c.error[1]
+                raise c.error[1]
             return c.result
         return _2
     return _1
@@ -543,8 +522,8 @@ def group(seq, size):
         [[1, 2], [3, 4], [5]]
     """
     def take(seq, n):
-        for i in xrange(n):
-            yield seq.next()
+        for i in range(n):
+            yield next(seq)
 
     if not hasattr(seq, 'next'):  
         seq = iter(seq)
@@ -648,10 +627,10 @@ class IterBetter:
     It is also possible to get the first value of the iterator or None.
 
         >>> c = iterbetter(iter([3, 4, 5]))
-        >>> print c.first()
+        >>> print(c.first())
         3
         >>> c = iterbetter(iter([]))
-        >>> print c.first()
+        >>> print(c.first())
         None
 
     For boolean test, IterBetter peeps at first value in the itertor without effecting the iteration.
@@ -678,7 +657,7 @@ class IterBetter:
         of None when there are no elements.
         """
         try:
-            return iter(self).next()
+            return next(iter(self))
         except StopIteration:
             return default
 
@@ -687,35 +666,37 @@ class IterBetter:
             yield self._head
 
         while 1:    
-            yield self.i.next()
+            yield next(self.i)
             self.c += 1
 
     def __getitem__(self, i):
         #todo: slices
         if i < self.c: 
-            raise IndexError, "already passed "+str(i)
+            raise IndexError("already passed "+str(i))
         try:
             while i > self.c: 
-                self.i.next()
+                next(self.i)
                 self.c += 1
             # now self.c == i
             self.c += 1
-            return self.i.next()
+            return next(self.i)
         except StopIteration: 
-            raise IndexError, str(i)
+            raise IndexError(str(i))
             
     def __nonzero__(self):
         if hasattr(self, "__len__"):
-            return len(self) != 0
+            return self.__len__() != 0
         elif hasattr(self, "_head"):
             return True
         else:
             try:
-                self._head = self.i.next()
+                self._head = next(self.i)
             except StopIteration:
                 return False
             else:
                 return True
+
+    __bool__ = __nonzero__
 
 iterbetter = IterBetter
 
@@ -725,7 +706,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
     def next():
         while True:
             try:
-                return it.next()
+                return next(it)
             except StopIteration:
                 raise
             except:
@@ -751,7 +732,7 @@ def dictreverse(mapping):
         >>> dictreverse({1: 2, 3: 4})
         {2: 1, 4: 3}
     """
-    return dict([(value, key) for (key, value) in mapping.iteritems()])
+    return dict([(value, key) for (key, value) in iteritems(mapping)])
 
 def dictfind(dictionary, element):
     """
@@ -763,7 +744,7 @@ def dictfind(dictionary, element):
         3
         >>> dictfind(d, 5)
     """
-    for (key, value) in dictionary.iteritems():
+    for (key, value) in iteritems(dictionary):
         if element is value: 
             return key
 
@@ -779,7 +760,7 @@ def dictfindall(dictionary, element):
         []
     """
     res = []
-    for (key, value) in dictionary.iteritems():
+    for (key, value) in iteritems(dictionary):
         if element is value:
             res.append(key)
     return res
@@ -879,7 +860,7 @@ def datestr(then, now=None):
         >>> d = datetime(1970, 5, 1)
         >>> datestr(d, now=d)
         '0 microseconds ago'
-        >>> for t, v in {
+        >>> for t, v in iteritems({
         ...   timedelta(microseconds=1): '1 microsecond ago',
         ...   timedelta(microseconds=2): '2 microseconds ago',
         ...   -timedelta(microseconds=1): '1 microsecond from now',
@@ -889,7 +870,7 @@ def datestr(then, now=None):
         ...   timedelta(seconds=2*60): '2 minutes ago',
         ...   timedelta(seconds=2*60*60): '2 hours ago',
         ...   timedelta(days=2): '2 days ago',
-        ... }.iteritems():
+        ... }):
         ...     assert datestr(d, now=d+t) == v
         >>> datestr(datetime(1970, 1, 1), now=d)
         'January  1'
@@ -1077,7 +1058,7 @@ class CaptureStdout:
     Captures everything `func` prints to stdout and returns it instead.
     
         >>> def idiot():
-        ...     print "foo"
+        ...     print("foo")
         >>> capturestdout(idiot)()
         'foo\\n'
     
@@ -1086,8 +1067,6 @@ class CaptureStdout:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args, **keywords):
-        from cStringIO import StringIO
-        # Not threadsafe!
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
@@ -1113,21 +1092,18 @@ class Profile:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args): ##, **kw):   kw unused
-        import hotshot, hotshot.stats, os, tempfile ##, time already imported
+        import cProfile, pstats, os, tempfile ##, time already imported
         f, filename = tempfile.mkstemp()
         os.close(f)
         
-        prof = hotshot.Profile(filename)
+        prof = cProfile.Profile()
 
         stime = time.time()
         result = prof.runcall(self.func, *args)
         stime = time.time() - stime
-        prof.close()
 
-        import cStringIO
-        out = cStringIO.StringIO()
-        stats = hotshot.stats.load(filename)
-        stats.stream = out
+        out = StringIO()
+        stats = pstats.Stats(prof, stream=out)
         stats.strip_dirs()
         stats.sort_stats('time', 'calls')
         stats.print_stats(40)
@@ -1180,25 +1156,25 @@ def tryall(context, prefix=None):
     """
     context = context.copy() # vars() would update
     results = {}
-    for (key, value) in context.iteritems():
+    for (key, value) in iteritems(context):
         if not hasattr(value, '__call__'): 
             continue
         if prefix and not key.startswith(prefix): 
             continue
-        print key + ':',
+        print(key + ':', end=" ")
         try:
             r = value()
             dictincr(results, r)
-            print r
+            print(r)
         except:
-            print 'ERROR'
+            print('ERROR')
             dictincr(results, 'ERROR')
-            print '   ' + '\n   '.join(traceback.format_exc().split('\n'))
+            print('   ' + '\n   '.join(traceback.format_exc().split('\n')))
         
-    print '-'*40
-    print 'results:'
-    for (key, value) in results.iteritems():
-        print ' '*2, str(key)+':', value
+    print('-'*40)
+    print('results:')
+    for (key, value) in iteritems(results):
+        print(' '*2, str(key)+':', value)
         
 class ThreadedDict(threadlocal):
     """
@@ -1265,13 +1241,13 @@ class ThreadedDict(threadlocal):
         return self.__dict__.items()
 
     def iteritems(self):
-        return self.__dict__.iteritems()
+        return iteritems(self.__dict__)
 
     def keys(self):
         return self.__dict__.keys()
 
     def iterkeys(self):
-        return self.__dict__.iterkeys()
+        return iterkeys(self.__dict__)
 
     iter = iterkeys
 
@@ -1279,7 +1255,7 @@ class ThreadedDict(threadlocal):
         return self.__dict__.values()
 
     def itervalues(self):
-        return self.__dict__.itervalues()
+        return itervalues(self.__dict__)
 
     def pop(self, key, *args):
         return self.__dict__.pop(key, *args)
@@ -1303,17 +1279,19 @@ threadeddict = ThreadedDict
 def autoassign(self, locals):
     """
     Automatically assigns local variables to `self`.
-    
+   
         >>> self = storage()
         >>> autoassign(self, dict(a=1, b=2))
-        >>> self
-        <Storage {'a': 1, 'b': 2}>
+        >>> self.a
+        1
+        >>> self.b
+        2
     
     Generally used in `__init__` methods, as in:
 
         def __init__(self, foo, bar, baz=1): autoassign(self, locals())
     """
-    for (key, value) in locals.iteritems():
+    for (key, value) in iteritems(locals):
         if key == 'self': 
             continue
         setattr(self, key, value)
@@ -1336,7 +1314,7 @@ def to36(q):
         ValueError: must supply a positive integer
     
     """
-    if q < 0: raise ValueError, "must supply a positive integer"
+    if q < 0: raise ValueError("must supply a positive integer")
     letters = "0123456789abcdefghijklmnopqrstuvwxyz"
     converted = []
     while q != 0:
@@ -1396,7 +1374,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             filename = os.path.basename(a)
             mail.attach(filename, content, None)
         else:
-            raise ValueError, "Invalid attachment: %s" % repr(a)
+            raise ValueError("Invalid attachment: %s" % repr(a))
             
     mail.send()
 
@@ -1468,7 +1446,7 @@ class _EmailMessage:
         self.message.attach(msg)
 
     def prepare_message(self):
-        for k, v in self.headers.iteritems():
+        for k, v in iteritems(self.headers):
             if k.lower() == "content-type":
                 self.message.set_type(v)
             else:
@@ -1524,17 +1502,10 @@ class _EmailMessage:
                 
             cmd = [sendmail, '-f', self.from_address] + self.recipients
 
-            if subprocess:
-                p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-                p.stdin.write(message_text)
-                p.stdin.close()
-                p.wait()
-            else:
-                i, o = os.popen2(cmd)
-                i.write(message)
-                i.close()
-                o.close()
-                del i, o
+            p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            p.stdin.write(message_text)
+            p.stdin.close()
+            p.wait()
                 
     def __repr__(self):
         return "<EmailMessage>"

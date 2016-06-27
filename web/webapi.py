@@ -2,6 +2,7 @@
 Web API (wrapper around WSGI)
 (from web.py)
 """
+from __future__ import print_function
 
 __all__ = [
     "config",
@@ -28,8 +29,19 @@ __all__ = [
     "internalerror",
 ]
 
-import sys, cgi, Cookie, pprint, urlparse, urllib
-from utils import storage, storify, threadeddict, dictadd, intget, safestr
+import sys, cgi, pprint, urllib
+from .utils import storage, storify, threadeddict, dictadd, intget, safestr
+
+from .py3helpers import PY2, urljoin, string_types
+
+try:
+    from urllib.parse import unquote, quote
+    from http.cookies import Morsel
+except ImportError:
+    from urllib import unquote, quote
+    from Cookie import Morsel
+
+from io import StringIO, BytesIO
 
 config = storage()
 config.__doc__ = """
@@ -75,7 +87,7 @@ class Redirect(HTTPError):
         `url` is joined with the base URL so that things like
         `redirect("about") will work properly.
         """
-        newloc = urlparse.urljoin(ctx.path, url)
+        newloc = urljoin(ctx.path, url)
 
         if newloc.startswith('/'):
             if absolute:
@@ -288,8 +300,7 @@ def header(hdr, value, unique=False):
     hdr, value = safestr(hdr), safestr(value)
     # protection against HTTP response splitting attack
     if '\n' in hdr or '\r' in hdr or '\n' in value or '\r' in value:
-        raise ValueError, 'invalid characters in header'
-
+        raise ValueError('invalid characters in header')
     if unique is True:
         for h, v in ctx.headers:
             if h.lower() == hdr.lower(): return
@@ -300,7 +311,6 @@ def rawinput(method=None):
     """Returns storage object with GET or POST arguments.
     """
     method = method or "both"
-    from cStringIO import StringIO
 
     def dictify(fs):
         # hack to make web.input work with enctype='text/plain.
@@ -324,7 +334,10 @@ def rawinput(method=None):
                     a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
                     ctx._fieldstorage = a
             else:
-                fp = StringIO(data())
+                d = data()
+                if PY2 and isinstance(d, unicode):
+                    d = d.encode('utf-8')
+                fp = BytesIO(d)
                 a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
             a = dictify(a)
 
@@ -365,10 +378,10 @@ def data():
 def setcookie(name, value, expires='', domain=None,
               secure=False, httponly=False, path=None):
     """Sets a cookie."""
-    morsel = Cookie.Morsel()
+    morsel = Morsel()
     name, value = safestr(name), safestr(value)
-    morsel.set(name, value, urllib.quote(value))
-    if expires < 0:
+    morsel.set(name, value, quote(value))
+    if isinstance(expires, int) and expires < 0:
         expires = -1000000000
     morsel['expires'] = expires
     morsel['path'] = path or ctx.homepath+'/'
@@ -443,7 +456,7 @@ def parse_cookies(http_cookie):
                     cookie.load(attr_value)
                 except Cookie.CookieError:
                     pass
-        cookies = dict([(k, urllib.unquote(v.value)) for k, v in cookie.iteritems()])
+        cookies = dict([(k, unquote(v.value)) for k, v in cookie.iteritems()])
     else:
         # HTTP_COOKIE doesn't have quotes, use fast cookie parsing
         cookies = {}
@@ -451,7 +464,7 @@ def parse_cookies(http_cookie):
             key_value = key_value.split('=', 1)
             if len(key_value) == 2:
                 key, value = key_value
-                cookies[key.strip()] = urllib.unquote(value.strip())
+                cookies[key.strip()] = unquote(value.strip())
     return cookies
 
 def cookies(*requireds, **defaults):
@@ -477,7 +490,7 @@ def cookies(*requireds, **defaults):
         return storify(ctx._parsed_cookies, *requireds, **defaults)
     except KeyError:
         badrequest()
-        raise StopIteration
+        raise StopIteration()
 
 def debug(*args):
     """
@@ -488,7 +501,7 @@ def debug(*args):
     except:
         out = sys.stderr
     for arg in args:
-        print >> out, pprint.pformat(arg)
+        print(pprint.pformat(arg), file=out)
     return ''
 
 def _debugwrite(x):

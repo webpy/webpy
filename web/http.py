@@ -10,10 +10,17 @@ __all__ = [
   "profiler",
 ]
 
-import sys, os, threading, urllib, urlparse
-try: import datetime
-except ImportError: pass
-import net, utils, webapi as web
+import sys, os, threading, urllib
+import datetime
+from . import net, utils, webapi as web
+
+from .py3helpers import iteritems
+
+try:
+    from urllib.parse import urlencode as urllib_urlencode
+except ImportError:
+    from urllib import urlencode as urllib_urlencode
+
 
 def prefixurl(base=''):
     """
@@ -100,7 +107,7 @@ def urlencode(query, doseq=0):
             return utils.safestr(value)
         
     query = dict([(k, convert(v, doseq)) for k, v in query.items()])
-    return urllib.urlencode(query, doseq=doseq)
+    return urllib_urlencode(query, doseq=doseq)
 
 def changequery(query=None, **kw):
     """
@@ -110,7 +117,7 @@ def changequery(query=None, **kw):
     """
     if query is None:
         query = web.rawinput(method='get')
-    for k, v in kw.iteritems():
+    for k, v in iteritems(kw):
         if v is None:
             query.pop(k, None)
         else:

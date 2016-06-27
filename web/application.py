@@ -9,7 +9,7 @@ from . import webapi, wsgi, utils, browser
 from .debugerror import debugerror
 from . import httpserver
 from .utils import lstrips, safeunicode
-from .py3helpers import iteritems, string_types, is_iter
+from .py3helpers import iteritems, string_types, is_iter, PY2, text_type
 import sys
 
 import urllib
@@ -54,7 +54,7 @@ class application:
         ...     def GET(self): return "hello"
         >>>
         >>> app.request("/hello").data
-        'hello'
+        u'hello'
     """
     def __init__(self, mapping=(), fvars={}, autoreload=None):
         if autoreload is None:
@@ -146,7 +146,7 @@ class application:
             ...
             >>> app.add_processor(hello)
             >>> app.request("/web.py").data
-            'hello, web.py'
+            u'hello, web.py'
         """
         self.processors.append(processor)
 
@@ -164,7 +164,7 @@ class application:
             ...
             >>> response = app.request("/hello")
             >>> response.data
-            'hello'
+            u'hello'
             >>> response.status
             '200 OK'
             >>> response.headers['Content-Type']
@@ -196,7 +196,7 @@ class application:
             >>> app.request('/ua', headers = {
             ...      'User-Agent': 'a small jumping bean/1.0 (compatible)'
             ... }).data
-            'your user-agent is a small jumping bean/1.0 (compatible)'
+            u'your user-agent is a small jumping bean/1.0 (compatible)'
 
         """
         path, maybe_query = splitquery(localpart)
@@ -237,7 +237,7 @@ class application:
             response.header_items = headers
 
         data = self.wsgifunc()(env, start_response)
-        response.data = "".join((str(x) for x in data))
+        response.data = "".join((x.decode('utf-8') for x in data))
         return response
 
     def browser(self):
@@ -300,14 +300,21 @@ class application:
             except web.HTTPError as e:
                 result = [e.data]
 
-            result = web.safestr(iter(result))
+            def build_result(result):
+                for r in result:
+                    if isinstance(r, string_types):
+                        yield r.encode('utf-8')
+                    else:
+                        yield text_type(r).encode('utf-8')
+
+            result = build_result(result)
 
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)
             
             def cleanup():
                 self._cleanup()
-                yield '' # force this function to be a generator
+                yield b'' # force this function to be a generator
                             
             return itertools.chain(result, cleanup())
 
@@ -555,9 +562,9 @@ class auto_application(application):
         ...     path = '/foo/.*'
         ...     def GET(self): return "foo"
         >>> app.request("/hello").data
-        'hello, world'
+        u'hello, world'
         >>> app.request('/foo/bar').data
-        'foo'
+        u'foo'
     """
     def __init__(self):
         application.__init__(self)
@@ -594,12 +601,12 @@ class subdomain_application(application):
         >>> mapping = (r"hello\.example\.com", app)
         >>> app2 = subdomain_application(mapping)
         >>> app2.request("/hello", host="hello.example.com").data
-        'hello'
+        u'hello'
         >>> response = app2.request("/hello", host="something.example.com")
         >>> response.status
         '404 Not Found'
         >>> response.data
-        'not found'
+        u'not found'
     """
     def handle(self):
         host = web.ctx.host.split(':')[0] #strip port

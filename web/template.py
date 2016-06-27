@@ -1317,10 +1317,7 @@ class TemplateResult(MutableMapping):
     
     def __str__(self):
         self._prepare_body()
-        if PY2:
-            return self["__body__"].encode('utf-8') 
-        else:
-            return self["__body__"]
+        return self["__body__"]
         
     def __repr__(self):
         self._prepare_body()

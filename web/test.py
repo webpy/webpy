@@ -5,6 +5,8 @@ import unittest, doctest
 import sys, re
 import web
 
+from .py3helpers import PY2
+
 TestCase = unittest.TestCase
 TestSuite = unittest.TestSuite
 
@@ -24,13 +26,16 @@ def module_suite(module, classnames=None):
 #Source : Dirkjan Ochtman (https://dirkjan.ochtman.nl/writing/2014/07/06/single-source-python-23-doctests.html)
 class Py23DocChecker(doctest.OutputChecker):
     def check_output(self, want, got, optionflags):
-        if sys.version_info[0] > 2:
+        if not PY2:
             #Differences between unicode strings representations : u"foo" -> "foo"
             want = re.sub("u'(.*?)'", "'\\1'", want) 
             want = re.sub('u"(.*?)"', '"\\1"', want)
 
             #NameError message has changed
             want = want.replace('NameError: global name', 'NameError: name')
+        else:
+            want = re.sub("^b'(.*?)'", "'\\1'", want) 
+            want = re.sub('^b"(.*?)"', '"\\1"', want)
         return doctest.OutputChecker.check_output(self, want, got, optionflags)
 
 def doctest_suite(module_names):

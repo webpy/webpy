@@ -34,7 +34,7 @@ except ImportError:
     except ImportError:
         pass #Before Py 3.0 reload is a global function
 
-from io import StringIO, BytesIO
+from io import BytesIO
 
 
 __all__ = [
@@ -54,7 +54,7 @@ class application:
         ...     def GET(self): return "hello"
         >>>
         >>> app.request("/hello").data
-        u'hello'
+        b'hello'
     """
     def __init__(self, mapping=(), fvars={}, autoreload=None):
         if autoreload is None:
@@ -146,7 +146,7 @@ class application:
             ...
             >>> app.add_processor(hello)
             >>> app.request("/web.py").data
-            u'hello, web.py'
+            b'hello, web.py'
         """
         self.processors.append(processor)
 
@@ -164,7 +164,7 @@ class application:
             ...
             >>> response = app.request("/hello")
             >>> response.data
-            u'hello'
+            b'hello'
             >>> response.status
             '200 OK'
             >>> response.headers['Content-Type']
@@ -196,7 +196,7 @@ class application:
             >>> app.request('/ua', headers = {
             ...      'User-Agent': 'a small jumping bean/1.0 (compatible)'
             ... }).data
-            u'your user-agent is a small jumping bean/1.0 (compatible)'
+            b'your user-agent is a small jumping bean/1.0 (compatible)'
 
         """
         path, maybe_query = splitquery(localpart)
@@ -237,7 +237,7 @@ class application:
             response.header_items = headers
 
         data = self.wsgifunc()(env, start_response)
-        response.data = "".join((x.decode('utf-8') for x in data))
+        response.data = b"".join(data)
         return response
 
     def browser(self):
@@ -302,10 +302,15 @@ class application:
 
             def build_result(result):
                 for r in result:
-                    if isinstance(r, string_types):
-                        yield r.encode('utf-8')
+                    if PY2:
+                        yield utils.safestr(r)
                     else:
-                        yield text_type(r).encode('utf-8')
+                        if isinstance(r, bytes):
+                            yield r
+                        elif isinstance(r, string_types):
+                            yield r.encode('utf-8')
+                        else:
+                            yield str(r).encode('utf-8')
 
             result = build_result(result)
 
@@ -562,9 +567,9 @@ class auto_application(application):
         ...     path = '/foo/.*'
         ...     def GET(self): return "foo"
         >>> app.request("/hello").data
-        u'hello, world'
+        b'hello, world'
         >>> app.request('/foo/bar').data
-        u'foo'
+        b'foo'
     """
     def __init__(self):
         application.__init__(self)
@@ -601,12 +606,12 @@ class subdomain_application(application):
         >>> mapping = (r"hello\.example\.com", app)
         >>> app2 = subdomain_application(mapping)
         >>> app2.request("/hello", host="hello.example.com").data
-        u'hello'
+        b'hello'
         >>> response = app2.request("/hello", host="something.example.com")
         >>> response.status
         '404 Not Found'
         >>> response.data
-        u'not found'
+        b'not found'
     """
     def handle(self):
         host = web.ctx.host.split(':')[0] #strip port

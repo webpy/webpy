@@ -36,11 +36,11 @@ class SessionTest(webtest.TestCase):
         
     def testSession(self):
         b = self.app.browser() 
-        self.assertEquals(b.open('/count').read(), '1')
-        self.assertEquals(b.open('/count').read(), '2')
-        self.assertEquals(b.open('/count').read(), '3')
+        self.assertEquals(b.open('/count').read(), b'1')
+        self.assertEquals(b.open('/count').read(), b'2')
+        self.assertEquals(b.open('/count').read(), b'3')
         b.open('/reset')
-        self.assertEquals(b.open('/count').read(), '1')
+        self.assertEquals(b.open('/count').read(), b'1')
 
     def testParallelSessions(self):
         b1 = self.app.browser()
@@ -49,23 +49,23 @@ class SessionTest(webtest.TestCase):
         b1.open('/count')
         
         for i in range(1, 10):
-            self.assertEquals(b1.open('/count').read(), str(i+1))
-            self.assertEquals(b2.open('/count').read(), str(i))
+            self.assertEquals(b1.open('/count').read(), str(i+1).encode('utf8'))
+            self.assertEquals(b2.open('/count').read(), str(i).encode('utf8'))
 
     def testBadSessionId(self):
         b = self.app.browser()
-        self.assertEquals(b.open('/count').read(), '1')
-        self.assertEquals(b.open('/count').read(), '2')
+        self.assertEquals(b.open('/count').read(), b'1')
+        self.assertEquals(b.open('/count').read(), b'2')
         
         cookie = b.cookiejar._cookies['0.0.0.0']['/']['webpy_session_id']
         cookie.value = '/etc/password'
-        self.assertEquals(b.open('/count').read(), '1')
+        self.assertEquals(b.open('/count').read(), b'1')
 
     def testRedirect(self):
         b = self.app.browser()
         b.open("/redirect")
         b.open("/session/request_token")
-        self.assertEquals(b.data, '123')
+        self.assertEquals(b.data, b'123')
 
 class DBSessionTest(SessionTest):
     """Session test with db store."""

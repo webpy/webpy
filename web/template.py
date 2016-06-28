@@ -947,6 +947,7 @@ class Template(BaseTemplate):
         ast_node = ast.parse(code, filename)
         SafeVisitor().walk(ast_node, filename)
 
+
         return compiled_code
         
 class CompiledTemplate(Template):
@@ -1125,10 +1126,22 @@ class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
     pass
 
-DISALLOWED_AST_NODES = [
-    "Assert", "Exec", "From", "Global", "Import", "Print",
-    "Raise", "Try", "Except"
-]
+
+ALLOWED_AST_NODES = ['Interactive', 'Expression', 'Suite', 'FunctionDef',
+    'ClassDef', 'Return', 'Delete', 'Assign', 'AugAssign', 'alias',
+    #'Print',
+    'For', 'While', 'If', 'With', 'comprehension','NameConstant', 'arg',
+    #'Raise', 'TryExcept', 'TryFinally', 'Assert', 'Import',
+    #'ImportFrom', 'Exec', 'Global',
+    'Expr', 'Pass', 'Break', 'Continue', 'BoolOp', 'BinOp', 'UnaryOp', 
+    'Lambda', 'IfExp', 'Dict', 'Module', 'arguments', 'keyword',
+    'Set', 'ListComp', 'SetComp', 'DictComp', 'GeneratorExp', 'Yield',
+    'Compare', 'Call', 'Repr', 'Num', 'Str', 'Attribute', 'Subscript',
+    'Name', 'List', 'Tuple', 'Load', 'Store', 'Del', 'AugLoad', 'AugStore',
+    'Param', 'Ellipsis', 'Slice', 'ExtSlice', 'Index', 'And', 'Or', 'Add',
+    'Sub', 'Mult', 'Div', 'Mod', 'Pow', 'LShift', 'RShift', 'BitOr', 'BitXor',
+    'BitAnd', 'FloorDiv', 'Invert', 'Not', 'UAdd', 'USub', 'Eq', 'NotEq',
+    'Lt', 'LtE', 'Gt', 'GtE', 'Is', 'IsNot', 'In', 'NotIn', 'ExceptHandler']
 
 class SafeVisitor(ast.NodeVisitor):
     """
@@ -1156,13 +1169,15 @@ class SafeVisitor(ast.NodeVisitor):
         "Recursively validate node and all of its children."
         def classname(obj):
             return obj.__class__.__name__
+
         nodename = classname(node)
-        fn = getattr(self, 'visit' + nodename, None)
+
+        fn = getattr(self, 'visit_' + nodename, None)
         
         if fn:
             fn(node, *args)
         else:
-            if nodename in DISALLOWED_AST_NODES:
+            if nodename not in ALLOWED_AST_NODES:
                 self.fail(node, *args)
         
         ast.NodeVisitor.generic_visit(self, node)
@@ -1276,7 +1291,10 @@ class TemplateResult(MutableMapping):
     
     def __str__(self):
         self._prepare_body()
-        return self["__body__"]
+        if PY2:
+            return self["__body__"].encode('utf-8')
+        else:
+            return self["__body__"]
         
     def __repr__(self):
         self._prepare_body()

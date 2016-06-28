@@ -3,6 +3,7 @@
 """
 from .utils import re_compile
 from .net import htmlunquote
+from io import BytesIO, StringIO
 
 import copy
 
@@ -22,7 +23,6 @@ else:
     get_type = lambda x: x.type
 
 try: #Py3
-    from io import StringIO
     from http.client import HTTPMessage
     from urllib.request import HTTPHandler, HTTPCookieProcessor, build_opener, Request, HTTPError
     from urllib.request import build_opener as urllib_build_opener
@@ -30,7 +30,6 @@ try: #Py3
     from http.cookiejar import CookieJar
     from urllib.response import addinfourl
 except ImportError:  #Py2
-    from StringIO import StringIO
     from httplib import HTTPMessage
     from urllib import addinfourl
     from urllib2 import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
@@ -112,7 +111,7 @@ class Browser:
 
     def get_response(self):
         """Returns a copy of the current response."""
-        return addinfourl(StringIO(self.data), self._response.info(), self._response.geturl())
+        return addinfourl(BytesIO(self.data), self._response.info(), self._response.geturl())
 
     def get_soup(self):
         """Returns beautiful soup of the current document."""
@@ -264,12 +263,12 @@ class AppHandler(HTTPHandler):
         data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
 
         if PY2:
-            headers = HTTPMessage(StringIO(data))
+            headers = HTTPMessage(BytesIO(data))
         else:
             import email
             headers = email.message_from_string(data)
 
-        response = addinfourl(StringIO(result.data), headers, url)
+        response = addinfourl(BytesIO(result.data), headers, url)
         code, msg = result.status.split(None, 1)
         response.code, response.msg = int(code), msg
         return response

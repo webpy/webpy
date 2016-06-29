@@ -23,9 +23,9 @@ except ImportError:
     from urllib import unquote
 
 try:
-    from io import StringIO
+    from io import BytesIO
 except ImportError:
-    from StringIO import StringIO
+    from StringIO import BytesIO
 
 __all__ = ["runsimple"]
 
@@ -230,7 +230,8 @@ class StaticApp(SimpleHTTPRequestHandler):
         self.start_response = start_response
 
     def send_response(self, status, msg=""):
-        self.status = str(status) + " " + msg
+        #the int(status) call is needed because in Py3 status is an enum.IntEnum and we need the integer behind
+        self.status = str(int(status)) + " " + msg
 
     def send_header(self, name, value):
         self.headers.append((name, value))
@@ -248,7 +249,7 @@ class StaticApp(SimpleHTTPRequestHandler):
                               environ.get('REMOTE_PORT','-')
         self.command = environ.get('REQUEST_METHOD', '-')
 
-        self.wfile = StringIO() # for capturing error
+        self.wfile = BytesIO() # for capturing error
 
         try:
             path = self.translate_path(self.path)
@@ -305,7 +306,7 @@ class LogMiddleware:
         self.app = app
         self.format = '%s - - [%s] "%s %s %s" - %s'
     
-        f = StringIO()
+        f = BytesIO()
         
         class FakeSocket:
             def makefile(self, *a):

@@ -14,7 +14,9 @@ def attrget(obj, attr, value=None):
         # Handle the case where has_key takes different number of arguments.
         # This is the case with Model objects on appengine. See #134
         pass
-    if hasattr(obj, attr):
+    if hasattr(obj, 'keys') and attr in obj.keys(): #needed for Py3, has_key doesn't exist anymore
+        return obj[attr]
+    elif hasattr(obj, attr):
         return getattr(obj, attr)
     return value
 
@@ -25,6 +27,10 @@ class Form(object):
         >>> f = Form(Textbox("x"))
         >>> f.render()
         u'<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text"/></td></tr>\n</table>'
+        >>> f.fill(x="42")
+        True
+        >>> f.render()
+        u'<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text" value="42"/></td></tr>\n</table>'
     """
     def __init__(self, *inputs, **kw):
         self.inputs = inputs

@@ -1395,9 +1395,9 @@ class _EmailMessage:
         bcc = listify(kw.get('bcc', []))
         recipients = to_address + cc + bcc
 
-        import email.Utils
-        self.from_address = email.Utils.parseaddr(from_address)[1]
-        self.recipients = [email.Utils.parseaddr(r)[1] for r in recipients]        
+        import email.utils
+        self.from_address = email.utils.parseaddr(from_address)[1]
+        self.recipients = [email.utils.parseaddr(r)[1] for r in recipients]
     
         self.headers = dictadd({
           'From': from_address,
@@ -1416,7 +1416,7 @@ class _EmailMessage:
         self.multipart = False
         
     def new_message(self):
-        from email.Message import Message
+        from email.message import Message
         return Message()
         
     def attach(self, filename, content, content_type=None):
@@ -1433,7 +1433,7 @@ class _EmailMessage:
         except:
             from email import Encoders as encoders
             
-        content_type = content_type or mimetypes.guess_type(filename)[0] or "applcation/octet-stream"
+        content_type = content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream"
         
         msg = self.new_message()
         msg.set_payload(content)
@@ -1456,13 +1456,13 @@ class _EmailMessage:
 
     def send(self):
         try:
-            import webapi
+            from . import webapi
         except ImportError:
             webapi = Storage(config=Storage())
 
         self.prepare_message()
         message_text = self.message.as_string()
-    
+
         if webapi.config.get('smtp_server'):
             server = webapi.config.get('smtp_server')
             port = webapi.config.get('smtp_port', 0)
@@ -1503,7 +1503,7 @@ class _EmailMessage:
             cmd = [sendmail, '-f', self.from_address] + self.recipients
 
             p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-            p.stdin.write(message_text)
+            p.stdin.write(message_text.encode('utf-8'))
             p.stdin.close()
             p.wait()
                 

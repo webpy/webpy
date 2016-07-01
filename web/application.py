@@ -111,8 +111,14 @@ class application:
         # Clearing up all thread-local state to avoid interefereing with subsequent requests.
         utils.ThreadedDict.clear_all()
 
+
     def init_mapping(self, mapping):
-        self.mapping = list(utils.group(mapping, 2))
+        if isinstance(mapping, tuple):
+            self.mapping = list(utils.group(mapping, 2))
+        elif hasattr(mapping, "__iter__") and hasattr(mapping, "append"):
+            self.mapping = mapping
+        else:
+            raise Exception("Invalid mapping object. Custom objects should implement at least the methods __iter__ and append.")
 
     def add_mapping(self, pattern, classname):
         self.mapping.append((pattern, classname))
@@ -436,6 +442,15 @@ class application:
                 raise web.nomethod(cls)
             tocall = getattr(cls(), meth)
             return tocall(*args)
+
+        def handle_object(obj):
+            meth = web.ctx.method
+            if meth == 'HEAD' and not hasattr(obj, meth):
+                meth = 'GET'
+            if not hasattr(obj, meth):
+                raise web.nomethod(obj)
+            tocall = getattr(obj, meth)
+            return tocall(*args)
             
         def is_class(o): return isinstance(o, (types.ClassType, type))
             
@@ -463,7 +478,7 @@ class application:
         elif hasattr(f, '__call__'):
             return f()
         else:
-            return web.notfound()
+            return handle_object(f)
 
     def _match(self, mapping, value):
         for pat, what in mapping:

@@ -343,5 +343,66 @@ class ApplicationTest(webtest.TestCase):
         thread.join(timeout=1)
         self.assertFalse(thread.isAlive())
 
+    def test_obj_mapping(self):
+        class Urls(object):
+            mapping = []
+            def __init__(self, mapping):
+                self.mapping = list(web.utils.group(mapping, 2))
+
+            def append(self, uri, f):
+                self.mapping.append((uri, f))
+
+            def __iter__(self):
+                for i in self.mapping:
+                    yield i
+
+        urls = Urls(('/','index'))
+        urls.append('/adder/(\d+)', 'adder')
+
+        class index:
+            def GET(self):
+                return "42"
+
+        class adder:
+            def POST(self, n):
+                return str(int(web.input().i)+42)
+
+        app = web.application(urls, locals())
+
+        response = app.request('/')
+        self.assertEquals(response.data, b"42")
+
+        response = app.request('/adder/42', method='POST', data=dict(i='7'))
+        self.assertEquals(response.data, b"49")
+
+    def test_obj_view(self):
+        class index(object):
+            def __init__(self, i):
+                self.i = i
+
+            def GET(self, k):
+                return str(self.i+int(k))
+
+        class adder:
+            def __init__(self, i):
+                self.i = i
+
+            def POST(self):
+                return str(int(web.input().k) + self.i)
+
+        urls = (
+            '/(\d+)', index(4),
+            '/adder/', adder(4),
+        )
+
+
+        app = web.application(urls, locals())
+
+        response = app.request('/5')
+        self.assertEquals(response.data, b"9")
+
+        response = app.request('/adder/', method='POST', data=dict(k='7'))
+        self.assertEquals(response.data, b"11")
+
 if __name__ == '__main__':
     webtest.main()

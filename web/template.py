@@ -947,7 +947,6 @@ class Template(BaseTemplate):
         ast_node = ast.parse(code, filename)
         SafeVisitor().walk(ast_node, filename)
 
-
         return compiled_code
         
 class CompiledTemplate(Template):
@@ -1126,17 +1125,16 @@ class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
     pass
 
-
 ALLOWED_AST_NODES = ['Interactive', 'Expression', 'Suite', 'FunctionDef',
     'ClassDef', 'Return', 'Delete', 'Assign', 'AugAssign', 'alias',
-    #'Print',
+    #'Print', 'Repr',
     'For', 'While', 'If', 'With', 'comprehension','NameConstant', 'arg',
     #'Raise', 'TryExcept', 'TryFinally', 'Assert', 'Import',
     #'ImportFrom', 'Exec', 'Global',
     'Expr', 'Pass', 'Break', 'Continue', 'BoolOp', 'BinOp', 'UnaryOp', 
     'Lambda', 'IfExp', 'Dict', 'Module', 'arguments', 'keyword',
     'Set', 'ListComp', 'SetComp', 'DictComp', 'GeneratorExp', 'Yield',
-    'Compare', 'Call', 'Repr', 'Num', 'Str', 'Attribute', 'Subscript',
+    'Compare', 'Call', 'Num', 'Str', 'Attribute', 'Subscript',
     'Name', 'List', 'Tuple', 'Load', 'Store', 'Del', 'AugLoad', 'AugStore',
     'Param', 'Ellipsis', 'Slice', 'ExtSlice', 'Index', 'And', 'Or', 'Add',
     'Sub', 'Mult', 'Div', 'Mod', 'Pow', 'LShift', 'RShift', 'BitOr', 'BitXor',
@@ -1148,65 +1146,78 @@ class SafeVisitor(ast.NodeVisitor):
     Make sure code is safe by walking through the AST.
     
     Code considered unsafe if:
-        * it has restricted AST nodes
+        * it has restricted AST nodes (only nodes defined in ALLOWED_AST_NODES are allowed)
+        * it is trying to assign to attributes
         * it is trying to access resricted attributes   
         
     Adopted from http://www.zafar.se/bkz/uploads/safe.txt (public domain, Babar K. Zafar)
+        * Using ast rather than compiler tree, for jython and Py3 support since Py2.6
+        * Simplified with ast.NodeVisitor class
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         "Initialize visitor by generating callbacks for all AST node types."
+        super(SafeVisitor, self).__init__(*args, **kwargs)
         self.errors = []
 
-    def walk(self, ast, filename):
+    def walk(self, tree, filename):
         "Validate each node in AST and raise SecurityError if the code is not safe."
         self.filename = filename
-        self.visit(ast)
-        
+        self.visit(tree)
         if self.errors:        
             raise SecurityError('\n'.join([str(err) for err in self.errors]))
-        
-    def visit(self, node, *args):
-        "Recursively validate node and all of its children."
-        def classname(obj):
-            return obj.__class__.__name__
+    
+    def generic_visit(self, node):
+        nodename = type(node).__name__
+        if nodename not in ALLOWED_AST_NODES:
+            self.fail_name(node, nodename)
+        super(SafeVisitor, self).generic_visit(node)
 
-        nodename = classname(node)
-
-        fn = getattr(self, 'visit_' + nodename, None)
-        
-        if fn:
-            fn(node, *args)
-        else:
-            if nodename not in ALLOWED_AST_NODES:
-                self.fail(node, *args)
-        
-        ast.NodeVisitor.generic_visit(self, node)
-
-    def visit_Getattr(self, node, *args):
-        "Disallow any attempts to access a restricted attribute."
-        self.assert_attr(node.attrname, node)
-            
-    def assert_attr(self, attrname, node):
+    def visit_Attribute(self, node):
+        attrname = self.get_node_attr(node)
         if self.is_unallowed_attr(attrname):
-            lineno = self.get_node_lineno(node)
-            e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
-            self.errors.append(e)
+            self.fail_attribute(node, attrname)
+        super(SafeVisitor, self).generic_visit(node)
 
+    def visit_Assign(self, node):
+        self.check_assign_targets(node)
+
+    def visit_AugAssign(self, node):
+        self.check_assign_target(node)
+
+    def check_assign_targets(self, node):
+        for target in node.targets:
+            self.check_assign_target(target)
+        super(SafeVisitor, self).generic_visit(node)
+
+    def check_assign_target(self, targetnode):
+        targetname = type(targetnode).__name__
+        if targetname == "Attribute":
+            attrname = self.get_node_attr(targetnode)
+            self.fail_attribute(targetnode, attrname)
+
+    # failure modes
+    def fail_name(self, node, nodename):
+        lineno = self.get_node_lineno(node)
+        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
+        self.errors.append(e)
+
+    def fail_attribute(self, node, attrname):
+        lineno = self.get_node_lineno(node)
+        e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
+        self.errors.append(e)
+        
+    # helpers
     def is_unallowed_attr(self, name):
         return name.startswith('_') \
             or name.startswith('func_') \
             or name.startswith('im_')
+
+    def get_node_attr(self, node):
+        return 'attr' in node._fields and node.attr or None
             
     def get_node_lineno(self, node):
         return (node.lineno) and node.lineno or 0
         
-    def fail(self, node, *args):
-        "Default callback for unallowed AST nodes."
-        lineno = self.get_node_lineno(node)
-        nodename = node.__class__.__name__
-        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
-        self.errors.append(e)
-
 class TemplateResult(MutableMapping):
     """Dictionary like object for storing template output.
     
@@ -1517,6 +1528,7 @@ def test():
         >>> import datetime
         >>> t("$def with (date)\n$date.strftime('%m %Y')")(datetime.datetime(2009, 1, 1))
         u'01 2009\n'
+
     """
     pass
             

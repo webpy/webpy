@@ -1,5 +1,30 @@
 # web.py changelog
 
+## 2016-07-08 0.38
+
+* Fixed failing tests in test/session.py when postgres is not installed. (tx Michael Diamond)
+* Fixed an error with Python 2.3 (tx Michael Diamond)
+* web.database now accepts a URL, $DATABASE_URL (fixes #171) (tx Aaron Swartz, we miss you)
+* support port use 'port' as keyword for postgres database with used eith pgdb (tx Sandesh Singh)
+* Fixes to FirebirdDB database (tx Ben Hanna)
+* Added a gaerun method to start application for google app engine (tx Matt Habel)
+* Better error message from `db.multiple_insert` when not all rows have the same keys (tx Ben Hoyt)
+* Allow custom messages for most errors (tx Shaun Sharples)
+* IPv6 support (tx Matthew of Boswell and zamabe)
+* Fixed sending email using Amazon SES (tx asldevi)
+* Fixed handling of long numbers in sqlify. closes #213. (tx cjrolo)
+* Escape HTML characters when emitting API docs. (tx Jeff Zellman)
+* Fixed an inconsistency in form.Dropdown when numbers are used for args and value. (tx Noprianto)
+* Fixed a potential remote exeution risk in `reparam` (tx Adrián Brav)
+* The where clause in db queries can be a dict now
+* Added `first` method to iterbetter
+* Fix to unexpected session when used with MySQL (tx suhashpatil)
+* Change dburl2dict to use urlparse and to support the simple case of just a database name. (tx Jeff Zellman)
+* Support '204 No Content' status code (tx Matteo Landi)
+* Support `451 Unavailable For Legal Reasons` status code(tx Yannik Robin Kettenbach)
+* Updates to documentation (tx goodrone, asldevi)
+
+
 ## 2012-06-26 0.37
 
 * Fixed datestr issue on Windows -- #155

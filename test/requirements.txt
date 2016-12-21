@@ -1,0 +1,4 @@
+psycopg2
+MySQL-python
+PyGreSQL
+DBUtils

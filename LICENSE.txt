@@ -1,0 +1,4 @@
+web.py is in the public domain; it can be used for whatever purpose with absolutely no restrictions.
+
+CherryPy WSGI server that is included in the web.py as web.wsgiserver is licensed under CherryPy License. See web/wsgiserver/LICENSE.txt for more details.
+

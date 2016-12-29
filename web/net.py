@@ -126,7 +126,7 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
             raise ValueError(':'.join(ip) + ' is not a valid IP address/port')
     elif len(ip) == 2:
         addr, port = ip
-        if not validipaddr(addr) and validipport(port):
+        if not validipaddr(addr) or not validipport(port):
             raise ValueError(':'.join(ip) + ' is not a valid IP address/port')
         port = int(port)
     else:

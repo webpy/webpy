@@ -925,7 +925,7 @@ class Template(BaseTemplate):
 
         def get_source_line(filename, lineno):
             try:
-                lines = open(filename, encoding='utf-8').read().splitlines()
+                lines = open(filename).read().splitlines()
                 return lines[lineno]
             except:
                 return None
@@ -1013,7 +1013,7 @@ class Render:
         if kind == 'dir':
             return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
         elif kind == 'file':
-            return Template(open(path, encoding='utf-8').read(), filename=path, **self._keywords)
+            return Template(open(path).read(), filename=path, **self._keywords)
         else:
             raise AttributeError("No template named " + name)
 
@@ -1075,7 +1075,7 @@ except ImportError:
 def frender(path, **keywords):
     """Creates a template from the given file path.
     """
-    return Template(open(path, encoding='utf-8').read(), filename=path, **keywords)
+    return Template(open(path).read(), filename=path, **keywords)
     
 def compile_templates(root):
     """Compiles templates to python code."""
@@ -1088,7 +1088,7 @@ def compile_templates(root):
             if d.startswith('.'):
                 dirnames.remove(d) # don't visit this dir
 
-        out = open(os.path.join(dirpath, '__init__.py'), 'w', encoding='utf-8')
+        out = open(os.path.join(dirpath, '__init__.py'), 'w')
         out.write('from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n')
         if dirnames:
             out.write("import " + ", ".join(dirnames))
@@ -1102,7 +1102,7 @@ def compile_templates(root):
             else:
                 name = f
                 
-            text = open(path, encoding='utf-8').read()
+            text = open(path).read()
             text = Template.normalize_text(text)
             code = Template.generate_code(text, path)
 
@@ -1115,7 +1115,7 @@ def compile_templates(root):
             out.write("join_ = %s._join; escape_ = %s._escape\n\n" % (name, name))
 
             # create template to make sure it compiles
-            t = Template(open(path, encoding='utf-8').read(), path)
+            t = Template(open(path).read(), path)
         out.close()
                 
 class ParseError(Exception):

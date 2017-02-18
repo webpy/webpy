@@ -164,8 +164,12 @@ def main(modules=None):
         print '<li><a href="#%(name)s">%(name)s</a></li>' % dict(name=name)
     print '</ul>' 
     for name in modules:
-        mod = __import__(name, {}, {}, 'x')
-        recurse_over(mod, name)
+        try:
+            mod = __import__(name, {}, {}, 'x')
+            recurse_over(mod, name)
+        except ImportError as e:
+            print >> sys.stderr, "Unable to import module %s (Error: %s)" % (name, e)
+            pass
     print '</div>'
         
 if __name__ == '__main__':

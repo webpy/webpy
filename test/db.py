@@ -23,6 +23,7 @@ class DBTest(webtest.TestCase):
     def _testable(self):
         try:
             webtest.setup_database(self.dbname, driver=self.driver)
+            print("Running tests for %s" % self.__class__.__name__, file=web.debug)
             return True
         except ImportError as e:
             print(str(e), "(ignoring %s)" % self.__class__.__name__, file=web.debug)
@@ -156,8 +157,9 @@ class SqliteTest(DBTest):
 class SqliteTest_pysqlite2(SqliteTest):
     driver = "pysqlite2.dbapi2"
 
-class MySQLTest(DBTest):
+class MySQLTest_MySQLdb(DBTest):
     dbname = "mysql"
+    driver = "MySQLdb"
     
     def setUp(self):
         self.db = webtest.setup_database(self.dbname)
@@ -167,6 +169,9 @@ class MySQLTest(DBTest):
     def testBoolean(self):
         # boolean datatype is not suppoted in MySQL (at least until v5.0)
         pass
+
+class MySQLTest_PyMySQL(MySQLTest_MySQLdb):
+    driver="pymysql"
 
 del DBTest
 

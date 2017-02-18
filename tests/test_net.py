@@ -1,6 +1,6 @@
 """
 py.test test suit for Network utilities
-(from web.py -> net.py)
+(from web -> net.py)
 """
 
 from __future__ import unicode_literals

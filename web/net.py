@@ -85,23 +85,24 @@ def validipport(port):
 def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
     """
     Returns `(ip_address, port)` from string `ip_addr_port`
-    >>> validip('1.2.3.4')
-    ('1.2.3.4', 8080)
-    >>> validip('80')
-    ('0.0.0.0', 80)
-    >>> validip('192.168.0.1:85')
-    ('192.168.0.1', 85)
-    >>> validip('::')
-    ('::', 8080)
-    >>> validip('[::]:88')
-    ('::', 88)
-    >>> validip('[::1]:80')
-    ('::1', 80)
+
+        >>> validip('1.2.3.4')
+        ('1.2.3.4', 8080)
+        >>> validip('80')
+        ('0.0.0.0', 80)
+        >>> validip('192.168.0.1:85')
+        ('192.168.0.1', 85)
+        >>> validip('::')
+        ('::', 8080)
+        >>> validip('[::]:88')
+        ('::', 88)
+        >>> validip('[::1]:80')
+        ('::1', 80)
 
     """
     addr = defaultaddr
     port = defaultport
-    
+
     #Matt Boswell's code to check for ipv6 first
     match = re.search(r'^\[([^]]+)\](?::(\d+))?$',ip) #check for [ipv6]:port
     if match:

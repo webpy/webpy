@@ -3,4 +3,4 @@ MySQL-python
 PyGreSQL
 DBUtils
 PyMySQL
-MySQLConnector
+mysql-connector

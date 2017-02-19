@@ -172,7 +172,8 @@ class MySQLTest_MySQLdb(DBTest):
 
 class MySQLTest_PyMySQL(MySQLTest_MySQLdb):
     driver="pymysql"
-
+class MySQLTest_MySQLConnector(MySQLTest_MySQLdb):
+    driver="mysql.connector"
 del DBTest
 
 def is_test(cls):

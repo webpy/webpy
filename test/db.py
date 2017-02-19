@@ -10,7 +10,7 @@ from web.py3helpers import PY2
 class DBTest(webtest.TestCase):
     dbname = 'postgres'
     driver = None
-    
+
     def setUp(self):
         self.db = webtest.setup_database(self.dbname, driver=self.driver)
         self.db.query("CREATE TABLE person (name text, email text, active boolean)")
@@ -19,7 +19,7 @@ class DBTest(webtest.TestCase):
         # there might be some error with the current connection, delete from a new connection
         self.db = webtest.setup_database(self.dbname, driver=self.driver)
         self.db.query('DROP TABLE person')
-        
+
     def _testable(self):
         try:
             webtest.setup_database(self.dbname, driver=self.driver)
@@ -28,15 +28,15 @@ class DBTest(webtest.TestCase):
         except ImportError as e:
             print(str(e), "(ignoring %s)" % self.__class__.__name__, file=web.debug)
             return False
-    
+
     def testUnicode(self):
         # Bug#177265: unicode queries throw errors
         self.db.select('person', where='name=$name', vars={'name': u'\xf4'})
-    
+
     def assertRows(self, n):
         result = self.db.select('person')
         self.assertEquals(len(list(result)), n)
-        
+
     def testCommit(self):
         t = self.db.transaction()
         self.db.insert('person', False, name='user1')
@@ -46,17 +46,17 @@ class DBTest(webtest.TestCase):
         self.db.insert('person', False, name='user2')
         self.db.insert('person', False, name='user3')
         t.commit()
-    
+
         self.assertRows(3)
-        
+
     def testRollback(self):
         t = self.db.transaction()
         self.db.insert('person', False, name='user1')
         self.db.insert('person', False, name='user2')
         self.db.insert('person', False, name='user3')
-        t.rollback()        
+        t.rollback()
         self.assertRows(0)
-        
+
     def testWrongQuery(self):
         # It should be possible to run a correct query after getting an error from a wrong query.
         try:
@@ -72,16 +72,16 @@ class DBTest(webtest.TestCase):
 
         t2 = self.db.transaction()
         self.db.insert('person', False, name='user2')
-        self.assertRows(2)  
+        self.assertRows(2)
         t2.rollback()
-        self.assertRows(1)  
+        self.assertRows(1)
         t3 = self.db.transaction()
         self.db.insert('person', False, name='user3')
-        self.assertRows(2)  
+        self.assertRows(2)
         t3.commit()
         t1.commit()
         self.assertRows(2)
-        
+
     def testPooling(self):
         # can't test pooling if DBUtils is not installed
         try:
@@ -119,11 +119,11 @@ class DBTest(webtest.TestCase):
             self.assertEquals(a, active)
         t(False)
         t(True)
-        
+
     def test_insert_default_values(self):
         db = webtest.setup_database(self.dbname)
         db.insert("person")
-    
+
     def test_where(self):
         db = webtest.setup_database(self.dbname)
         db.insert("person", False, name="Foo")
@@ -145,7 +145,7 @@ class PostgresTest_pgdb(PostgresTest):
 class SqliteTest(DBTest):
     dbname = "sqlite"
     driver = "sqlite3"
-    
+
     def testNestedTransactions(self):
         #nested transactions does not work with sqlite
         pass
@@ -160,7 +160,7 @@ class SqliteTest_pysqlite2(SqliteTest):
 class MySQLTest_MySQLdb(DBTest):
     dbname = "mysql"
     driver = "MySQLdb"
-    
+
     def setUp(self):
         self.db = webtest.setup_database(self.dbname)
         # In mysql, transactions are supported only with INNODB engine.
@@ -172,6 +172,9 @@ class MySQLTest_MySQLdb(DBTest):
 
 class MySQLTest_PyMySQL(MySQLTest_MySQLdb):
     driver="pymysql"
+
+class MySQLTest_MySQLConnector(MySQLTest_MySQLdb):
+    driver="mysql.connector"
 
 del DBTest
 

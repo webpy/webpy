@@ -1001,7 +1001,7 @@ class PostgresDB(DB):
 class MySQLDB(DB): 
     def __init__(self, **keywords):
 
-        db = import_driver(["MySQLdb", "pymysql"], preferred=keywords.pop('driver', None))
+        db = import_driver(["MySQLdb", "pymysql","mysql.connector"], preferred=keywords.pop('driver', None))
         if db.__name__ == "MySQLdb":
             if 'pw' in keywords:
                 keywords['passwd'] = keywords['pw']
@@ -1010,6 +1010,11 @@ class MySQLDB(DB):
             if 'pw' in keywords:
                 keywords['password'] = keywords['pw']
                 del keywords['pw']
+        if db.__name__ == "mysql.connector":
+            if 'pw' in keywords:
+                keywords['password'] = keywords['pw']
+                del keywords['pw']
+        
 
         if 'charset' not in keywords:
             keywords['charset'] = 'utf8'

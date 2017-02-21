@@ -376,7 +376,7 @@ def data():
     return ctx.data
 
 def setcookie(name, value, expires='', domain=None,
-              secure=False, httponly=False, path=None):
+              secure=False, httponly=False, path=None, samesite=None):
     """Sets a cookie."""
     morsel = Morsel()
     name, value = safestr(name), safestr(value)
@@ -389,9 +389,11 @@ def setcookie(name, value, expires='', domain=None,
         morsel['domain'] = domain
     if secure:
         morsel['secure'] = secure
-    value = morsel.OutputString()
     if httponly:
-        value += '; httponly'
+        morsel["httponly"] = True
+    value = morsel.OutputString()
+    if isinstance(samesite, basestring) and samesite.lower() in ["strict", "lax"]:
+        value += '; SameSite=' + samesite
     header('Set-Cookie', value)
 
 def decode_cookie(value):

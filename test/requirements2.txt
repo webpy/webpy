@@ -1,2 +1,3 @@
 pysqlite
 MySQL-python
+PyGreSQL

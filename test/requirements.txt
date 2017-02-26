@@ -1,6 +1,4 @@
 psycopg2
-MySQL-python
-PyGreSQL
-DBUtils
 PyMySQL
 mysql-connector
+DBUtils

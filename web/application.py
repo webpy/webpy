@@ -244,8 +244,8 @@ class application:
         return browser.AppBrowser(self)
 
     def handle(self):
-        fn, args = self._match(self.mapping, web.ctx.path)
-        return self._delegate(fn, self.fvars, args)
+        fn, args, kwargs = self._match(self.mapping, web.ctx.path)
+        return self._delegate(fn, self.fvars, args, kwargs)
         
     def handle_with_processors(self):
         def process(processors):
@@ -455,7 +455,7 @@ class application:
         
         ctx.app_stack = []
 
-    def _delegate(self, f, fvars, args=[]):
+    def _delegate(self, f, fvars, args=[], kwargs={}):
         def handle_class(cls):
             meth = web.ctx.method
             if meth == 'HEAD' and not hasattr(cls, meth):
@@ -463,7 +463,17 @@ class application:
             if not hasattr(cls, meth):
                 raise web.nomethod(cls)
             tocall = getattr(cls(), meth)
-            return tocall(*args)
+            import inspect
+            key_args = inspect.getargspec(tocall).args
+            #remove self
+            key_args.remove('self')
+            
+            for arg in key_args:
+                if arg in kwargs.keys():
+                    del kwargs[arg]
+            # remove from argument in args if it is mixed arguments with kwargs
+            new_args = args[:len(key_args)]
+            return tocall(*new_args, **kwargs)
             
         if f is None:
             raise web.notfound()
@@ -505,8 +515,8 @@ class application:
                 result = utils.re_compile(r'^%s\Z' % (pat,)).match(value)
                 
             if result: # it's a match
-                return what, [x for x in result.groups()]
-        return None, None
+                return what, [x for x in result.groups()], result.groupdict()
+        return None, None, None
         
     def _delegate_sub_application(self, dir, app):
         """Deletes request to sub application `app` rooted at the directory `dir`.

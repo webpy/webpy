@@ -892,6 +892,8 @@ class Template(BaseTemplate):
         
         # support fort \$ for backward-compatibility 
         text = text.replace(r'\$', '$$')
+        text = text.replace(r'$.', '$$.')
+        text = text.replace(r'$(', '$$(')
         return text
     normalize_text = staticmethod(normalize_text)
                 

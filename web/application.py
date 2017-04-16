@@ -712,7 +712,18 @@ def autodelegate(prefix=''):
         
         if hasattr(self, func):
             try:
-                return getattr(self, func)(*args)
+                import inspect
+                fn = getattr(self, func)
+                fn_args = inspect.getargspec(fn)
+                # assume self is an arg, but don't count it
+                fn_argc = len(fn_args.args) - 1
+                argc = len(args)
+
+                if (argc < fn_argc):
+                    args.extend([None for _ in range(fn_argc - argc)])
+
+                return fn(*args)
+
             except TypeError:
                 raise web.notfound()
         else:

@@ -31,7 +31,7 @@ def runwsgi(func):
         os.environ['FCGI_FORCE_CGI'] = 'Y'
 
     if ('PHP_FCGI_CHILDREN' in os.environ #lighttpd fastcgi
-      or 'SERVER_SOFTWARE') in os.environ:
+      or 'SERVER_SOFTWARE' in os.environ):
         return runfcgi(func, None)
     
     if 'fcgi' in sys.argv or 'fastcgi' in sys.argv:

@@ -1,12 +1,12 @@
 """Browser to test web applications.
 (from web.py)
 """
-from utils import re_compile
-from net import htmlunquote
+from .utils import re_compile
+from .net import htmlunquote
 
-import httplib, urllib, urllib2
+import http.client, urllib.request, urllib.parse, urllib.error
 import copy
-from StringIO import StringIO
+from io import StringIO
 
 DEBUG = False
 
@@ -21,14 +21,14 @@ class BrowserError(Exception):
 
 class Browser:
     def __init__(self):
-        import cookielib
-        self.cookiejar = cookielib.CookieJar()
-        self._cookie_processor = urllib2.HTTPCookieProcessor(self.cookiejar)
+        import http.cookiejar
+        self.cookiejar = http.cookiejar.CookieJar()
+        self._cookie_processor = urllib.request.HTTPCookieProcessor(self.cookiejar)
         self.form = None
 
         self.url = "http://0.0.0.0:8080/"
         self.path = "/"
-        
+
         self.status = None
         self.data = None
         self._response = None
@@ -39,23 +39,23 @@ class Browser:
         self.cookiejar.clear()
 
     def build_opener(self):
-        """Builds the opener using urllib2.build_opener. 
+        """Builds the opener using urllib2.build_opener.
         Subclasses can override this function to prodive custom openers.
         """
-        return urllib2.build_opener()
+        return urllib.request.build_opener()
 
     def do_request(self, req):
         if DEBUG:
-            print 'requesting', req.get_method(), req.get_full_url()
+            print('requesting', req.get_method(), req.get_full_url())
         opener = self.build_opener()
         opener.add_handler(self._cookie_processor)
         try:
             self._response = opener.open(req)
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             self._response = e
 
         self.url = self._response.geturl()
-        self.path = urllib2.Request(self.url).get_selector()
+        self.path = urllib.request.Request(self.url).selector
         self.data = self._response.read()
         self.status = self._response.code
         self._forms = None
@@ -64,8 +64,8 @@ class Browser:
 
     def open(self, url, data=None, headers={}):
         """Opens the specified url."""
-        url = urllib.basejoin(self.url, url)
-        req = urllib2.Request(url, data, headers)
+        url = urllib.parse.urljoin(self.url, url)
+        req = urllib.request.Request(url, data, headers)
         return self.do_request(req)
 
     def show(self):
@@ -80,7 +80,7 @@ class Browser:
 
     def get_response(self):
         """Returns a copy of the current response."""
-        return urllib.addinfourl(StringIO(self.data), self._response.info(), self._response.geturl())
+        return urllib.request.addinfourl(StringIO(self.data), self._response.info(), self._response.geturl())
 
     def get_soup(self):
         """Returns beautiful soup of the current document."""
@@ -90,12 +90,12 @@ class Browser:
     def get_text(self, e=None):
         """Returns content of e or the current document as plain text."""
         e = e or self.get_soup()
-        return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, unicode)])
+        return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, str)])
 
     def _get_links(self):
         soup = self.get_soup()
         return [a for a in soup.findAll(name='a')]
-        
+
     def get_links(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
         """Returns all links in the document."""
         return self._filter_links(self._get_links(),
@@ -106,18 +106,18 @@ class Browser:
             links = self._filter_links(self.get_links(),
                 text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
             link = links and links[0]
-            
+
         if link:
             return self.open(link['href'])
         else:
             raise BrowserError("No link found")
-            
+
     def find_link(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
-        links = self._filter_links(self.get_links(), 
+        links = self._filter_links(self.get_links(),
             text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
         return links and links[0] or None
-            
-    def _filter_links(self, links, 
+
+    def _filter_links(self, links,
             text=None, text_regex=None,
             url=None, url_regex=None,
             predicate=None):
@@ -158,13 +158,13 @@ class Browser:
             forms = [f for f in forms if f.name == name]
         if predicate:
             forms = [f for f in forms if predicate(f)]
-            
+
         if forms:
             self.form = forms[index]
             return self.form
         else:
             raise BrowserError("No form selected.")
-        
+
     def submit(self, **kw):
         """submits the currently selected form."""
         if self.form is None:
@@ -180,11 +180,11 @@ class Browser:
 
 class AppBrowser(Browser):
     """Browser interface to test web.py apps.
-    
+
         b = AppBrowser(app)
         b.open('/')
         b.follow_link(text='Login')
-        
+
         b.select_form(name='login')
         b['username'] = 'joe'
         b['password'] = 'secret'
@@ -198,9 +198,9 @@ class AppBrowser(Browser):
         self.app = app
 
     def build_opener(self):
-        return urllib2.build_opener(AppHandler(self.app))
+        return urllib.request.build_opener(AppHandler(self.app))
 
-class AppHandler(urllib2.HTTPHandler):
+class AppHandler(urllib.request.HTTPHandler):
     """urllib2 handler to handle requests using web.py application."""
     handler_order = 100
 
@@ -209,28 +209,28 @@ class AppHandler(urllib2.HTTPHandler):
 
     def http_open(self, req):
         result = self.app.request(
-            localpart=req.get_selector(),
+            localpart=req.selector,
             method=req.get_method(),
-            host=req.get_host(),
-            data=req.get_data(),
+            host=req.host,
+            data=req.data,
             headers=dict(req.header_items()),
-            https=req.get_type() == "https"
+            https=req.type == "https"
         )
         return self._make_response(result, req.get_full_url())
 
     def https_open(self, req):
         return self.http_open(req)
-    
+
     try:
-        https_request = urllib2.HTTPHandler.do_request_
+        https_request = urllib.request.HTTPHandler.do_request_
     except AttributeError:
         # for python 2.3
         pass
 
     def _make_response(self, result, url):
         data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
-        headers = httplib.HTTPMessage(StringIO(data))
-        response = urllib.addinfourl(StringIO(result.data), headers, url)
+        headers = http.client.HTTPMessage(StringIO(data))
+        response = urllib.request.addinfourl(StringIO(str(result.data)), headers, url)
         code, msg = result.status.split(None, 1)
         response.code, response.msg = int(code), msg
         return response

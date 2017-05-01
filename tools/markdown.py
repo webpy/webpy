@@ -1,5 +1,6 @@
 #!/usr/bin/python
-import re, md5, sys, string
+import re, sys, string
+import hashlib
 
 """markdown.py: A Markdown-styled-text to HTML converter in Python.
 
@@ -34,7 +35,7 @@ def htmlquote(text):
 
 def semirandom(seed):
     x = 0
-    for c in md5.new(seed).digest(): x += ord(c)
+    for c in hashlib.md5(seed.encode()).hexdigest(): x += ord(c)
     return x / (255*16.)
 
 class _Markdown:
@@ -44,7 +45,7 @@ class _Markdown:
     escapechars = '\\`*_{}[]()>#+-.!'
     escapetable = {}
     for char in escapechars:
-        escapetable[char] = md5.new(char).hexdigest()
+        escapetable[char] = hashlib.md5(char.encode()).hexdigest()
     
     r_multiline = re.compile("\n{2,}")
     r_stripspace = re.compile(r"^[ \t]+$", re.MULTILINE)
@@ -154,7 +155,7 @@ class _Markdown:
 
     def _HashHTMLBlocks(self, text):
         def handler(m):
-            key = md5.new(m.group(1)).hexdigest()
+            key = hashlib.md5(m.group(1).encode()).hexdigest()
             self.html_blocks[key] = m.group(1)
             return "\n\n%s\n\n" % key
 
@@ -254,7 +255,7 @@ class _Markdown:
             title = self.titles.get(link_id, None)
                 
 
-            if self.urls.has_key(link_id):
+            if link_id in self.urls:
                 url = self.urls[link_id]
                 url = url.replace("*", self.escapetable["*"])
                 url = url.replace("_", self.escapetable["_"])
@@ -336,12 +337,12 @@ class _Markdown:
                 link_id = alt_text.lower()
 
             alt_text = alt_text.replace('"', "&quot;")
-            if self.urls.has_key(link_id):
+            if link_id in self.urls:
                 url = self.urls[link_id]
                 url = url.replace("*", self.escapetable["*"])
                 url = url.replace("_", self.escapetable["_"])
                 res = '''<img src="%s" alt="%s"''' % (htmlquote(url), htmlquote(alt_text))
-                if self.titles.has_key(link_id):
+                if link_id in self.titles:
                     title = self.titles[link_id]
                     title = title.replace("*", self.escapetable["*"])
                     title = title.replace("_", self.escapetable["_"])
@@ -377,7 +378,7 @@ class _Markdown:
     def _DoHeaders(self, text):
         def findheader(text, c, n):
             textl = text.split('\n')
-            for i in xrange(len(textl)):
+            for i in range(len(textl)):
                 if i >= len(textl): continue
                 count = textl[i].strip().count(c)
                 if count > 0 and count == len(textl[i].strip()) and textl[i+1].strip() == '' and textl[i-1].strip() != '':
@@ -557,17 +558,17 @@ class _Markdown:
         text = text.strip("\n")
         grafs = self.r_multiline.split(text)
 
-        for g in xrange(len(grafs)):
+        for g in range(len(grafs)):
             t = grafs[g].strip() #@@?
-            if not self.html_blocks.has_key(t):
+            if t not in self.html_blocks:
                 t = self._RunSpanGamut(t)
                 t = self.r_tabbed.sub(r"<p>", t)
                 t += "</p>"
                 grafs[g] = t
 
-        for g in xrange(len(grafs)):
+        for g in range(len(grafs)):
             t = grafs[g].strip()
-            if self.html_blocks.has_key(t):
+            if t in self.html_blocks:
                 grafs[g] = self.html_blocks[t]
         
         return "\n\n".join(grafs)
@@ -672,6 +673,6 @@ markdown = Markdown
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        print Markdown(open(sys.argv[1]).read())
+        print (Markdown(open(sys.argv[1]).read()))
     else:
-        print Markdown(sys.stdin.read())
+        print (Markdown(sys.stdin.read()))

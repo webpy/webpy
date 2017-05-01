@@ -58,11 +58,6 @@ def modified(date=None, etag=None):
     `True`, or otherwise it raises NotModified error. It also sets 
     `Last-Modified` and `ETag` output headers.
     """
-    try:
-        from __builtin__ import set
-    except ImportError:
-        # for python 2.3
-        from sets import Set as set
 
     n = set([x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(',')])
     m = net.parsehttpdate(web.ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
@@ -75,7 +70,7 @@ def modified(date=None, etag=None):
         # HTTP dates don't have sub-second precision
         if date-datetime.timedelta(seconds=1) <= m:
             validate = True
-    
+
     if date: lastmodified(date)
     if etag: web.header('ETag', '"' + etag + '"')
     if validate:
@@ -99,7 +94,7 @@ def urlencode(query, doseq=0):
             return utils.safestr(value)
         
     query = dict([(k, convert(v, doseq)) for k, v in query.items()])
-    return urllib.urlencode(query, doseq=doseq)
+    return urllib.parse.urlencode(query, doseq=doseq)
 
 def changequery(query=None, **kw):
     """
@@ -109,7 +104,7 @@ def changequery(query=None, **kw):
     """
     if query is None:
         query = web.rawinput(method='get')
-    for k, v in kw.iteritems():
+    for k, v in kw.items():
         if v is None:
             query.pop(k, None)
         else:

@@ -8,11 +8,10 @@ from . import webapi as web
 from . import webapi, wsgi, utils
 from . import debugerror
 from . import httpserver
-from .utils import lstrips, safeunicode
-from .py3helpers import iteritems, string_types
+from .utils import lstrips, safestr, safebytes
 import sys
-
-import urllib
+import imp
+import urllib.parse
 import traceback
 import itertools
 import os
@@ -38,7 +37,7 @@ class application:
         ...     def GET(self): return "hello"
         >>>
         >>> app.request("/hello").data
-        'hello'
+        b'hello'
     """
     def __init__(self, mapping=(), fvars={}, autoreload=None):
         if autoreload is None:
@@ -130,7 +129,7 @@ class application:
             ...
             >>> app.add_processor(hello)
             >>> app.request("/web.py").data
-            'hello, web.py'
+            b'hello, web.py'
         """
         self.processors.append(processor)
 
@@ -148,7 +147,7 @@ class application:
             ...
             >>> response = app.request("/hello")
             >>> response.data
-            'hello'
+            b'hello'
             >>> response.status
             '200 OK'
             >>> response.headers['Content-Type']
@@ -180,10 +179,10 @@ class application:
             >>> app.request('/ua', headers = {
             ...      'User-Agent': 'a small jumping bean/1.0 (compatible)'
             ... }).data
-            'your user-agent is a small jumping bean/1.0 (compatible)'
+            b'your user-agent is a small jumping bean/1.0 (compatible)'
 
         """
-        path, maybe_query = urllib.splitquery(localpart)
+        path, maybe_query = urllib.parse.splitquery(localpart)
         query = maybe_query or ""
         
         if 'env' in kw:
@@ -204,12 +203,12 @@ class application:
 
         if method not in ["HEAD", "GET"]:
             data = data or ''
-            import StringIO
+            from io import BytesIO
             if isinstance(data, dict):
-                q = urllib.urlencode(data)
+                q = urllib.parse.urlencode(data)
             else:
                 q = data
-            env['wsgi.input'] = StringIO.StringIO(q)
+            env['wsgi.input'] = BytesIO(q.encode())
             if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
                 env['CONTENT_LENGTH'] = len(q)
         response = web.storage()
@@ -217,11 +216,11 @@ class application:
             response.status = status
             response.headers = dict(headers)
             response.header_items = headers
-        response.data = "".join(self.wsgifunc()(env, start_response))
+        response.data = b''.join(self.wsgifunc()(env, start_response))
         return response
 
     def browser(self):
-        import browser
+        from . import browser
         return browser.AppBrowser(self)
 
     def handle(self):
@@ -257,13 +256,13 @@ class application:
             # so we need to do an iteration
             # and save the result for later
             try:
-                firstchunk = iterator.next()
+                firstchunk = iterator.__next__()
             except StopIteration:
                 firstchunk = ''
 
             return itertools.chain([firstchunk], iterator)    
                                 
-        def is_generator(x): return x and hasattr(x, 'next')
+        def is_generator(x): return x and hasattr(x, '__next__')
         
         def wsgi(env, start_resp):
             # clear threadlocal to avoid inteference of previous requests
@@ -283,7 +282,7 @@ class application:
             except web.HTTPError as e:
                 result = [e.data]
 
-            result = web.safestr(iter(result))
+            result = safebytes(iter(result)) #zw: safestr -> safebytes
 
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)
@@ -406,7 +405,7 @@ class application:
             ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], ctx.homepath)
             # Apache and CherryPy webservers unquote the url but lighttpd doesn't. 
             # unquote explicitly for lighttpd to make ctx.path uniform across all servers.
-            ctx.path = urllib.unquote(ctx.path)
+            ctx.path = urllib.parse.unquote(ctx.path)
 
         if env.get('QUERY_STRING'):
             ctx.query = '?' + env.get('QUERY_STRING', '')
@@ -415,7 +414,7 @@ class application:
 
         ctx.fullpath = ctx.path + ctx.query
         
-        for k, v in iteritems(ctx):
+        for k, v in ctx.items():
             # convert all string values to unicode values and replace 
             # malformed data with a suitable replacement marker.
             if isinstance(v, bytes):
@@ -442,7 +441,7 @@ class application:
             return f.handle_with_processors()
         elif isclass(f):
             return handle_class(f)
-        elif isinstance(f, string_types):
+        elif isinstance(f, str):
             if f.startswith('redirect '):
                 url = f.split(' ', 1)[1]
                 if web.ctx.method == "GET":
@@ -470,7 +469,7 @@ class application:
                     return f, None
                 else:
                     continue
-            elif isinstance(what, string_types):
+            elif isinstance(what, str):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)
@@ -513,8 +512,8 @@ class application:
         if parent:
             return parent.internalerror()
         elif web.config.get('debug'):
-            import debugerror
-            return debugerror.debugerror()
+            #from . import debugerror #zw
+            return debugerror()
         else:
             return web._InternalError()
 
@@ -530,9 +529,9 @@ class auto_application(application):
         ...     path = '/foo/.*'
         ...     def GET(self): return "foo"
         >>> app.request("/hello").data
-        'hello, world'
+        b'hello, world'
         >>> app.request('/foo/bar').data
-        'foo'
+        b'foo'
     """
     def __init__(self):
         application.__init__(self)
@@ -568,12 +567,12 @@ class subdomain_application(application):
         >>> mapping = (r"hello\.example\.com", app)
         >>> app2 = subdomain_application(mapping)
         >>> app2.request("/hello", host="hello.example.com").data
-        'hello'
+        b'hello'
         >>> response = app2.request("/hello", host="something.example.com")
         >>> response.status
         '404 Not Found'
         >>> response.data
-        'not found'
+        b'not found'
     """
     def handle(self):
         host = web.ctx.host.split(':')[0] #strip port
@@ -582,7 +581,7 @@ class subdomain_application(application):
         
     def _match(self, mapping, value):
         for pat, what in mapping:
-            if isinstance(what, basestring):
+            if isinstance(what, str):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)
@@ -618,7 +617,7 @@ def unloadhook(h):
     def processor(handler):
         try:
             result = handler()
-            is_generator = result and hasattr(result, 'next')
+            is_generator = result and hasattr(result, '__next__')
         except:
             # run the hook even when handler raises some exception
             h()
@@ -633,7 +632,7 @@ def unloadhook(h):
     def wrap(result):
         def next():
             try:
-                return result.next()
+                return result.__next__()
             except:
                 # call the hook at the and of iterator
                 h()
@@ -716,7 +715,7 @@ class Reloader:
             self.mtimes[mod] = mtime
         elif self.mtimes[mod] < mtime:
             try: 
-                reload(mod)
+                imp.reload(mod)
                 self.mtimes[mod] = mtime
             except ImportError: 
                 pass

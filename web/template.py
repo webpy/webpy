@@ -42,19 +42,11 @@ import glob
 import re
 import warnings
 
-from .utils import storage, safeunicode, safestr, re_compile
+from .utils import storage, re_compile, safestr
 from .webapi import config
 from .net import websafe
-from .py3helpers import PY2
 
-if PY2:
-    from UserDict import DictMixin
-
-    # Make a new-style class
-    class MutableMapping(object, DictMixin):
-        pass
-else:
-    from collections import MutableMapping
+from collections import MutableMapping
 
 def splitline(text):
     r"""
@@ -317,7 +309,7 @@ class Parser:
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            readline = iter([text]).next
+            readline = iter([text]).__next__
             end = None
             for t in tokenize.generate_tokens(readline):
                 t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
@@ -343,7 +335,7 @@ class Parser:
 
             def _next(self):
                 try:
-                    return self.iteritems.next()
+                    return self.iteritems.__next__()
                 except StopIteration:
                     return None
                 
@@ -387,12 +379,12 @@ class Parser:
             >>> python_lookahead(' x = 1')
             ' '
         """
-        readline = iter([text]).next
+        readline = iter([text]).__next__
         tokens = tokenize.generate_tokens(readline)
-        return tokens.next()[1]
+        return tokens.__next__()[1]
         
     def python_tokens(self, text):
-        readline = iter([text]).next
+        readline = iter([text]).__next__
         tokens = tokenize.generate_tokens(readline)
         return [t[1] for t in tokens]
         
@@ -481,7 +473,7 @@ class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
     def __init__(self, text):
         self.text = text
-        readline = iter([text]).next
+        readline = iter([text]).__next__
         self.tokens = tokenize.generate_tokens(readline)
         self.index = 0
         
@@ -521,7 +513,7 @@ class PythonTokenizer:
             return
     
     def next(self):
-        type, t, begin, end, line = self.tokens.next()
+        type, t, begin, end, line = self.tokens.__next__()
         row, col = end
         self.index = col
         return storage(type=type, value=t, begin=begin, end=end)
@@ -554,7 +546,7 @@ class TextNode:
         self.value = value
 
     def emit(self, indent, begin_indent=''):
-        return repr(safeunicode(self.value))
+        return repr(self.value)
         
     def __repr__(self):
         return 't' + repr(self.value)
@@ -722,7 +714,7 @@ KEYWORDS = [
 
 TEMPLATE_BUILTIN_NAMES = [
     "dict", "enumerate", "float", "int", "bool", "list", "long", "reversed", 
-    "set", "slice", "tuple", "xrange",
+    "set", "slice", "sorted", "tuple", "xrange",
     "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex", 
     "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
     "True", "False",
@@ -730,10 +722,7 @@ TEMPLATE_BUILTIN_NAMES = [
     "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-if PY2:
-    import __builtin__ as builtins
-else:
-    import builtins
+import builtins
 TEMPLATE_BUILTINS = dict([(name, getattr(builtins, name)) for name in TEMPLATE_BUILTIN_NAMES if name in builtins.__dict__])
 
 class ForLoop:
@@ -833,8 +822,8 @@ class BaseTemplate:
     def _escape(self, value, escape=False):
         if value is None: 
             value = ''
-            
-        value = safeunicode(value)
+        
+        value = safestr(value)
         if escape and self.filter:
             value = self.filter(value)
         return value
@@ -869,7 +858,11 @@ class Template(BaseTemplate):
         BaseTemplate.__init__(self, code=code, filename=filename, filter=filter, globals=globals, builtins=builtins)
         
     def normalize_text(text):
-        """Normalizes template text by correcting \r\n, tabs and BOM chars."""
+        """Normalizes template text by removing zero-width characters, correcting \r\n, tabs and BOM chars."""
+        ZERO_WIDTH_CHARS = ['\ufeff', '\u200b', '\u200c', '\u200d', '\u200e', '\u200f']
+        for c in ZERO_WIDTH_CHARS:
+            text = text.lstrip(c)
+        
         text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
         if not text.endswith('\n'):
             text += '\n'
@@ -886,7 +879,7 @@ class Template(BaseTemplate):
                 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        import webapi as web
+        from . import webapi as web
         if 'headers' in web.ctx and self.content_type:
             web.header('Content-Type', self.content_type, unique=True)
             
@@ -899,7 +892,7 @@ class Template(BaseTemplate):
                 
         # generate python code from the parse tree
         code = rootnode.emit(indent="").strip()
-        return safestr(code)
+        return code
         
     generate_code = staticmethod(generate_code)
     
@@ -934,9 +927,9 @@ class Template(BaseTemplate):
         # make sure code is safe - but not with jython, it doesn't have a working compiler module
         if not sys.platform.startswith('java'):
             try:
-                import compiler
-                ast = compiler.parse(code)
-                SafeVisitor().walk(ast, filename)
+                import ast
+                ast_node = ast.parse(code)
+                SafeVisitor().walk(ast_node, filename)
             except ImportError:
                 warnings.warn("Unabled to import compiler module. Unable to check templates for safety.")
         else:
@@ -1008,7 +1001,8 @@ class Render:
         if kind == 'dir':
             return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
         elif kind == 'file':
-            return Template(open(path).read(), filename=path, **self._keywords)
+            f = open(path, encoding = 'utf-8')
+            return Template(f.read(), filename=path, **self._keywords)
         else:
             raise AttributeError("No template named " + name)
 
@@ -1070,7 +1064,8 @@ except ImportError:
 def frender(path, **keywords):
     """Creates a template from the given file path.
     """
-    return Template(open(path).read(), filename=path, **keywords)
+    f = open(path, encoding='utf-8')
+    return Template(f.read(), filename=path, **keywords)
     
 def compile_templates(root):
     """Compiles templates to python code."""
@@ -1123,31 +1118,41 @@ class SecurityError(Exception):
 # Enumerate all the allowed AST nodes
 ALLOWED_AST_NODES = [
     "Add", "And",
+    "arg", "arguments",
 #   "AssAttr",
     "AssList", "AssName", "AssTuple",
 #   "Assert",
-    "Assign", "AugAssign",
+    "Assign", "AugAssign", "Attribute",
 #   "Backquote",
     "Bitand", "Bitor", "Bitxor", "Break",
-    "CallFunc","Class", "Compare", "Const", "Continue",
+    "BoolOp", "BinOp",
+    "Call", "CallFunc","Class", "Compare", "Const", "Continue", "comprehension",
     "Decorators", "Dict", "Discard", "Div",
     "Ellipsis", "EmptyNode",
 #   "Exec",
-    "Expression", "FloorDiv", "For",
+    "Expr",
+    "Expression",
+    "Eq",
+    "FloorDiv", "For",
 #   "From",
-    "Function", 
+#   "Function",
+    "FunctionDef",
     "GenExpr", "GenExprFor", "GenExprIf", "GenExprInner",
     "Getattr", 
 #   "Global", 
     "If", "IfExp",
 #   "Import",
-    "Invert", "Keyword", "Lambda", "LeftShift",
-    "List", "ListComp", "ListCompFor", "ListCompIf", "Mod",
+    "Index",
+    "IsNot",
+    "Invert", "Keyword", "keyword", "Lambda", "LeftShift",
+    "List", "ListComp", "ListCompFor", "ListCompIf", "Load", "Mod",
     "Module",
-    "Mul", "Name", "Not", "Or", "Pass", "Power",
+    "Mul", "Name", "Not", "NotEq", "Num", "Or", "Pass", "Power",
 #   "Print", "Printnl", "Raise",
     "Return", "RightShift", "Slice", "Sliceobj",
     "Stmt", "Sub", "Subscript",
+    "Store", "Str",
+    "UnaryOp", "USub",
 #   "TryExcept", "TryFinally",
     "Tuple", "UnaryAdd", "UnarySub",
     "While", "With", "Yield",
@@ -1167,12 +1172,12 @@ class SafeVisitor(object):
         "Initialize visitor by generating callbacks for all AST node types."
         self.errors = []
 
-    def walk(self, ast, filename):
+    def walk(self, ast_node, filename):
         "Validate each node in AST and raise SecurityError if the code is not safe."
         self.filename = filename
-        self.visit(ast)
+        self.visit(ast_node)
         
-        if self.errors:        
+        if self.errors:
             raise SecurityError('\n'.join([str(err) for err in self.errors]))
         
     def visit(self, node, *args):
@@ -1181,14 +1186,15 @@ class SafeVisitor(object):
             return obj.__class__.__name__
         nodename = classname(node)
         fn = getattr(self, 'visit' + nodename, None)
-        
+
         if fn:
             fn(node, *args)
         else:
             if nodename not in ALLOWED_AST_NODES:
                 self.fail(node, *args)
-            
-        for child in node.getChildNodes():
+
+        import ast
+        for child in ast.iter_child_nodes(node): #node.getChildNodes():
             self.visit(child, *args)
 
     def visitName(self, node, *args):
@@ -1212,7 +1218,10 @@ class SafeVisitor(object):
             or name.startswith('im_')
             
     def get_node_lineno(self, node):
-        return (node.lineno) and node.lineno or 0
+        if hasattr(node, 'lineno'):
+            return node.lineno
+        else:
+            return 0
         
     def fail(self, node, *args):
         "Default callback for unallowed AST nodes."
@@ -1255,6 +1264,13 @@ class TemplateResult(MutableMapping):
         self.__dict__["extend"] = self._parts.extend
         
         self._d.setdefault("__body__", None)
+    
+    def __iter__(self):
+        for k in self.keys():
+            yield k
+
+    def __len__(self):
+        return len(self.keys())
     
     def keys(self):
         return self._d.keys()
@@ -1300,14 +1316,10 @@ class TemplateResult(MutableMapping):
             del self[key]
         except KeyError as k:
             raise AttributeError(k)
-        
-    def __unicode__(self):
-        self._prepare_body()
-        return self["__body__"]
     
     def __str__(self):
         self._prepare_body()
-        return self["__body__"].encode('utf-8')
+        return self["__body__"]
         
     def __repr__(self):
         self._prepare_body()

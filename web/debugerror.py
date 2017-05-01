@@ -15,7 +15,7 @@ from .template import Template
 from .net import websafe
 from .utils import sendmail, safestr
 from . import webapi as web
-from .py3helpers import urljoin
+from urllib.parse import urljoin
 
 import os, os.path
 whereami = os.path.join(os.getcwd(), __file__)
@@ -130,8 +130,7 @@ $def with (exception_type, exception_value, frames)
 
 $def dicttable (d, kls='req', id=None):
     $ items = d and d.items() or []
-    $items.sort()
-    $:dicttable_items(items, kls, id)
+    $:dicttable_items(sorted(items), kls, id)
         
 $def dicttable_items(items, kls='req', id=None):
     $if items:
@@ -208,7 +207,7 @@ $:dicttable(web.input(_unicode=False))
 $:dicttable(web.cookies())
 
 <h3 id="meta-info">META</h3>
-$ newctx = [(k, v) for (k, v) in ctx.iteritems() if not k.startswith('_') and not isinstance(v, dict)]
+$ newctx = [(k, v) for (k, v) in ctx.items() if not k.startswith('_') and not isinstance(v, dict)]
 $:dicttable(dict(newctx))
 
 <h3 id="meta-info">ENVIRONMENT</h3>
@@ -235,7 +234,7 @@ def djangoerror():
         Returns (pre_context_lineno, pre_context, context_line, post_context).
         """
         try:
-            source = open(filename).readlines()
+            source = open(filename, encoding='utf-8').readlines()
             lower_bound = max(0, lineno - context_lines)
             upper_bound = lineno + context_lines
 
@@ -291,7 +290,7 @@ def djangoerror():
         
     t = djangoerror_r
     globals = {'ctx': web.ctx, 'web':web, 'dict':dict, 'str':str, 'prettify': prettify}
-    t.t.func_globals.update(globals)
+    t.t.__globals__.update(globals)
     return t(exception_type, exception_value, frames)
 
 def debugerror():

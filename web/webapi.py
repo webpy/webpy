@@ -36,10 +36,10 @@ from .py3helpers import PY2, urljoin, string_types
 
 try:
     from urllib.parse import unquote, quote
-    from http.cookies import Morsel
+    from http.cookies import Morsel, SimpleCookie
 except ImportError:
     from urllib import unquote, quote
-    from Cookie import Morsel
+    from Cookie import Morsel, SimpleCookie
 
 from io import StringIO, BytesIO
 
@@ -444,19 +444,19 @@ def parse_cookies(http_cookie):
     #print "parse_cookies"
     if '"' in http_cookie:
         # HTTP_COOKIE has quotes in it, use slow but correct cookie parsing
-        cookie = Cookie.SimpleCookie()
+        cookie = SimpleCookie()
         try:
             cookie.load(http_cookie)
         except Cookie.CookieError:
             # If HTTP_COOKIE header is malformed, try at least to load the cookies we can by
             # first splitting on ';' and loading each attr=value pair separately
-            cookie = Cookie.SimpleCookie()
+            cookie = SimpleCookie()
             for attr_value in http_cookie.split(';'):
                 try:
                     cookie.load(attr_value)
                 except Cookie.CookieError:
                     pass
-        cookies = dict([(k, unquote(v.value)) for k, v in cookie.iteritems()])
+        cookies = dict([(k, unquote(v.value)) for k, v in cookie.items()])
     else:
         # HTTP_COOKIE doesn't have quotes, use fast cookie parsing
         cookies = {}

@@ -353,6 +353,41 @@ class ApplicationTest(webtest.TestCase):
         self.assertEquals(f(''), 'foo=bar; Path=/')
         self.assertEquals(f('/admin'), 'foo=bar; Path=/admin/')
 
+    def test_getcookie_fast(self):
+        urls = (
+            '/', 'index',
+        )
+
+        class index:
+            def GET(self):
+                return web.cookies().get('x')
+        app = web.application(urls, locals())
+
+        def f(script_name=""):
+            response = app.request("/", env={"SCRIPT_NAME": script_name},
+                                   headers={'Cookie': 'x=1'})
+            return response.data
+
+        self.assertEquals(f(''), b'1')
+
+    def test_getcookie_slow(self):
+        urls = (
+            '/', 'index',
+        )
+
+        class index:
+            def GET(self):
+                return web.cookies().get('x')
+        app = web.application(urls, locals())
+
+        def f(script_name=""):
+            # HTTP_COOKIE has quotes in it.
+            response = app.request("/", env={"SCRIPT_NAME": script_name},
+                                   headers={'Cookie': 'x="1"'})
+            return response.data
+
+        self.assertEquals(f(''), b'1')
+
     def test_stopsimpleserver(self):
         urls = (
             '/', 'index',

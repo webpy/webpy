@@ -456,7 +456,7 @@ def parse_cookies(http_cookie):
                     cookie.load(attr_value)
                 except CookieError:
                     pass
-        cookies = dict([(k, unquote(v.value)) for k, v in cookie.iteritems()])
+        cookies = dict([(k, unquote(v.value)) for k, v in cookie.items()])
     else:
         # HTTP_COOKIE doesn't have quotes, use fast cookie parsing
         cookies = {}

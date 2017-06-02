@@ -5,6 +5,7 @@ Session Management
 
 import os, time, datetime, random, base64
 import os.path
+import threading
 from copy import deepcopy
 try:
     import cPickle as pickle
@@ -254,13 +255,15 @@ class DiskStore(Store):
 
     def __setitem__(self, key, value):
         path = self._get_path(key)
-        pickled = self.encode(value)    
+        pickled = self.encode(value)
         try:
-            f = open(path, 'wb')
+            tname = path+"."+threading.current_thread().getName()
+            f = open(tname, 'w')
             try:
                 f.write(pickled)
-            finally: 
+            finally:
                 f.close()
+                os.rename(tname, path) # atomary operation
         except IOError:
             pass
 

@@ -75,7 +75,8 @@ class Form(object):
         else: return ""
     
     def validates(self, source=None, _validate=True, **kw):
-        source = source or kw or web.input()
+        defaults = dict([(i.name, i.get_value()) for i in self.inputs])
+        source = source or kw or web.input(**defaults)
         out = True
         for i in self.inputs:
             v = attrget(source, i.name)

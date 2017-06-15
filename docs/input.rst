@@ -60,6 +60,25 @@ What if you have a URL which looks like `/page?id=1&id=2&id=3` or you have a for
             ids = data.id         # now, `ids` is a list with all the `id`s.
             ...
 
+Same trick works for forms
+
+::
+
+    myform = form.Form(
+        form.Dropdown(name="id", multiple="multiple", args=[("a", "a"), ("b", "b")], value=[]),
+        form.Button("submit", type="submit")
+        )
+
+    class index:
+        def GET(self):
+            form = myform()
+            web.header("Content-Type", "text/html")
+            res = ""
+            if form.validates():
+                res += "id = {}".format(repr(form["id"].value))
+            res += """<form method="GET">{}</form>""".format(form.render())
+            return res
+
 
 File uploads
 ------------

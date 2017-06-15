@@ -7,6 +7,7 @@ urls = (
     "/cookie", "cookie",
     "/setcookie", "setcookie",
     "/redirect", "redirect",
+    "/multiinput", "multiinput"
 )
 app = web.application(urls, globals())
 
@@ -35,6 +36,22 @@ class redirect:
         i = web.input(url='/')
         raise web.seeother(i.url)
 
+class multiinput:
+    def __init__(self):
+        self.form = web.form.Form(web.form.Dropdown(
+            name='a',
+            multiple='multiple',
+            args=[("foo", "description foo"), ("bar", "description bar")],
+            value=[]
+            ))
+
+    def GET(self):
+        form_instance = self.form()
+        if not form_instance.validates(): return "doesn't validate"
+        a = form_instance["a"].value
+        if type(a) is not list: return a
+        return ",".join(a)
+
 class BrowserTest(webtest.TestCase):
     def testCookies(self):
         b = app.browser()
@@ -59,6 +76,11 @@ class BrowserTest(webtest.TestCase):
         self.assertEquals(b.url, 'https://0.0.0.0:8080/')
         b.open('https://0.0.0.0:8080/redirect?url=/hello/foo')
         self.assertEquals(b.url, 'https://0.0.0.0:8080/hello/foo')
+
+    def testMultiInput(self):
+        b = app.browser()
+        b.open('https://0.0.0.0:8080/multiinput?a=foo&a=bar')
+        self.assertEquals(b.data, "foo,bar")
 
 if __name__ == "__main__":
     webtest.main()

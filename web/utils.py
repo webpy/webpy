@@ -976,6 +976,8 @@ def commify(n):
         '1'
         >>> commify(123)
         '123'
+        >>> commify(-123)
+        '-123'
         >>> commify(1234)
         '1,234'
         >>> commify(1234567890)
@@ -986,14 +988,21 @@ def commify(n):
         '1,234.5'
         >>> commify(1234.56789)
         '1,234.56789'
-        >>> commify('%.2f' % 1234.5)
-        '1,234.50'
+        >>> commify(' %.2f ' % -1234.5)
+        '-1,234.50'
         >>> commify(None)
         >>>
 
     """
     if n is None: return None
-    n = str(n)
+    n = str(n).strip()
+
+    if n.startswith('-'):
+        prefix = '-'
+        n = n[1:].strip()
+    else:
+        prefix = ''
+
     if '.' in n:
         dollars, cents = n.split('.')
     else:
@@ -1007,7 +1016,7 @@ def commify(n):
     out = ''.join(r)
     if cents:
         out += '.' + cents
-    return out
+    return prefix + out
 
 def dateify(datestring):
     """

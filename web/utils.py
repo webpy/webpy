@@ -132,20 +132,20 @@ def storify(mapping, *requireds, **defaults):
         if _unicode and isinstance(s, str): return to_unicode(s)
         else: return s
         
-    def getvalue(x):
+    def getvalue(x, isnotlist=True):
         if hasattr(x, 'file') and hasattr(x, 'value'):
-            return x.value
+            return x.value if isnotlist else x #if x is a item of a list, return x itself, to support multiple files uploading.
         elif hasattr(x, 'value'):
             return unicodify(x.value)
         else:
             return unicodify(x)
-    
+
     stor = Storage()
     for key in requireds + tuple(mapping.keys()):
         value = mapping[key]
         if isinstance(value, list):
             if isinstance(defaults.get(key), list):
-                value = [getvalue(x) for x in value]
+                value = [getvalue(x,False) for x in value]
             else:
                 value = value[-1]
         if not isinstance(defaults.get(key), dict):

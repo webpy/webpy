@@ -70,7 +70,11 @@ class application:
             def main_module_name():
                 mod = sys.modules['__main__']
                 file = getattr(mod, '__file__', None) # make sure this works even from python interpreter
-                return file and os.path.splitext(os.path.basename(file))[0]
+                package = getattr(mod, '__package__', None) # handles python -m package.app
+                if not file:
+                    return False
+                modname = os.path.splitext(os.path.basename(file))[0]
+                return "%s.%s" % (package, modname) if package else modname
 
             def modname(fvars):
                 """find name of the module name from fvars."""

@@ -1,4 +1,6 @@
+import os
 import webtest
+import shutil
 import time
 import threading
 
@@ -58,17 +60,40 @@ class ApplicationTest(webtest.TestCase):
         time.sleep(1)
         write('foo.py', data % dict(classname='c', output='c'))
         self.assertEquals(app.request('/').data, b'c')
-        
+
+    def test_reloader_nested(self):
+        try:
+            shutil.rmtree('testpackage')
+        except OSError:
+            pass
+        os.mkdir('testpackage')
+        write('testpackage/__init__.py', '')
+        write('testpackage/bar.py', data % dict(classname='a', output='a'))
+        import testpackage.bar
+        app = testpackage.bar.app
+
+        self.assertEquals(app.request('/').data, b'a')
+
+        # test class change
+        time.sleep(1)
+        write('testpackage/bar.py', data % dict(classname='a', output='b'))
+        self.assertEquals(app.request('/').data, b'b')
+
+        # test urls change
+        time.sleep(1)
+        write('testpackage/bar.py', data % dict(classname='c', output='c'))
+        self.assertEquals(app.request('/').data, b'c')
+
     def testUppercaseMethods(self):
         urls = ("/", "hello")
         app = web.application(urls, locals())
         class hello:
             def GET(self): return "hello"
             def internal(self): return "secret"
-            
+
         response = app.request('/', method='internal')
         self.assertEquals(response.status, '405 Method Not Allowed')
-        
+
     def testRedirect(self):
         urls = (
             "/a", "redirect /hello/",

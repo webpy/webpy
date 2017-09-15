@@ -28,6 +28,7 @@ Grammar:
     pyexpr -> <python expression>
 """
 from __future__ import print_function
+from io import open
 
 __all__ = [
     "Template",
@@ -1013,7 +1014,7 @@ class Render:
         if kind == 'dir':
             return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
         elif kind == 'file':
-            return Template(open(path).read(), filename=path, **self._keywords)
+            return Template(open(path, encoding='utf-8').read(), filename=path, **self._keywords)
         else:
             raise AttributeError("No template named " + name)
 

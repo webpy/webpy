@@ -124,8 +124,8 @@ class Form(object):
 class Input(object):
     """Generic input. Type attribute must be specified when called directly
 
-        >>> Input(name='foo', value='bar', type='number').render()
-        u'<input id="foo" name="foo" value="bar" type="number"/>'
+        >>> Input('foo', type='number', value="bar").render()
+        u'<input id="foo" name="foo" type="number" value="bar"/>'
     """
     def __init__(self, name, *validators, **attrs):
         self.name = name

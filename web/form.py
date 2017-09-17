@@ -122,6 +122,11 @@ class Form(object):
     d = property(_get_d)
 
 class Input(object):
+    """Generic input. Type attribute must be specified when called directly
+
+        >>> Input(name='foo', value='bar', type='number').render()
+        u'<input id="foo" name="foo" value="bar" type="number"/>'
+    """
     def __init__(self, name, *validators, **attrs):
         self.name = name
         self.validators = validators
@@ -132,6 +137,7 @@ class Input(object):
         self.pre = attrs.pop('pre', "")
         self.post = attrs.pop('post', "")
         self.note = None
+        self.type = attrs.pop('type', None)
         
         self.id = attrs.setdefault('id', self.get_default_id())
         
@@ -143,7 +149,10 @@ class Input(object):
         return False
         
     def get_type(self):
-        raise NotImplementedError()
+        if self.type != None:
+            return self.type
+        else:
+            raise AttributeError("missing attribute 'type'")
         
     def get_default_id(self):
         return self.name

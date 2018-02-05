@@ -129,6 +129,32 @@ class PostgresTest(DBTest):
     dbname = "postgres"
     driver = "psycopg2"
 
+    def test_limit_with_unsafe_value(self):
+        db = webtest.setup_database(self.dbname)
+        db.insert("person", False, name="Foo")
+        assert len(db.select("person").list()) == 1
+
+        try:
+            db.select("person", limit="1; DELETE FROM person;")
+        except StandardError:
+            # It is alright if the db engine rejects this query
+            pass
+
+        assert len(db.select("person").list()) == 1
+
+    def test_offset_with_unsafe_value(self):
+        db = webtest.setup_database(self.dbname)
+        db.insert("person", False, name="Foo")
+        assert len(db.select("person").list()) == 1
+
+        try:
+            db.select("person", offset="1; DELETE FROM person;")
+        except StandardError:
+            # It is alright if the db engine rejects this query
+            pass
+
+        assert len(db.select("person").list()) == 1
+
 class PostgresTest_psycopg(PostgresTest):
     driver = "psycopg"
 

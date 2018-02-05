@@ -125,7 +125,7 @@ class Parser:
             >>> read_var('var x=10\nfoo')
             (<var: x = 10>, 'foo')
             >>> read_var('var x: hello $name\nfoo')
-            (<var: x = join_(u'hello ', escape_(name, True))>, 'foo')
+            (<var: x = join_('hello ', escape_(name, True))>, 'foo')
         """
         line, text = splitline(text)
         tokens = self.python_tokens(line)
@@ -335,7 +335,7 @@ class Parser:
 
             def _next(self):
                 try:
-                    return self.iteritems.__next__()
+                    return next(self.iteritems)
                 except StopIteration:
                     return None
 
@@ -381,7 +381,7 @@ class Parser:
         """
         readline = iter([text]).__next__
         tokens = tokenize.generate_tokens(readline)
-        return tokens.__next__()[1]
+        return next(tokens)[1]
 
     def python_tokens(self, text):
         readline = iter([text]).__next__
@@ -513,7 +513,7 @@ class PythonTokenizer:
             return
 
     def next(self):
-        type, t, begin, end, line = self.tokens.__next__()
+        type, t, begin, end, line = next(self.tokens)
         row, col = end
         self.index = col
         return storage(type=type, value=t, begin=begin, end=end)
@@ -731,7 +731,7 @@ class ForLoop:
 
         >>> loop = ForLoop()
         >>> for x in loop.setup(['a', 'b', 'c']):
-        ...     print loop.index, loop.revindex, loop.parity, x
+        ...     print(loop.index, loop.revindex, loop.parity, x)
         ...
         1 3 odd a
         2 2 even b
@@ -1145,16 +1145,15 @@ ALLOWED_AST_NODES = [
     "Index",
     "IsNot",
     "Invert", "Keyword", "keyword", "Lambda", "LeftShift",
-    "List", "ListComp", "ListCompFor", "ListCompIf", "Load", "Mod",
-    "Module",
-    "Mul", "Name", "NameConstant","Not", "NotEq", "Num", "Or", "Pass", "Power",
+    "List", "ListComp", "ListCompFor", "ListCompIf", "Load", "Lt",
+    "Mod","Module", "Mult",
+    "Name", "NameConstant","Not", "NotEq", "Num", "Or", "Pass", "Power",
 #   "Print", "Printnl", "Raise",
-    "Return", "RightShift", "Slice", "Sliceobj",
-    "Stmt", "Sub", "Subscript",
-    "Store", "Str",
-    "UnaryOp", "USub",
+    "Return", "RightShift",
+    "Slice", "Sliceobj", "Stmt", "Sub", "Subscript", "Store", "Str",
+    "Tuple", 
 #   "TryExcept", "TryFinally",
-    "Tuple", "UnaryAdd", "UnarySub",
+    "UnaryAdd", "UnarySub", "UnaryOp", "USub",
     "While", "With", "Yield",
 ]
 
@@ -1247,14 +1246,14 @@ class TemplateResult(MutableMapping):
         >>> d = TemplateResult(__body__='hello, world', x='foo')
         >>> d
         <TemplateResult: {'__body__': 'hello, world', 'x': 'foo'}>
-        >>> print d
+        >>> print(d)
         hello, world
         >>> d.x
         'foo'
         >>> d = TemplateResult()
         >>> d.extend([u'hello', u'world'])
         >>> d
-        <TemplateResult: {'__body__': u'helloworld'}>
+        <TemplateResult: {'__body__': 'helloworld'}>
     """
     def __init__(self, *a, **kw):
         self.__dict__["_d"] = dict(*a, **kw)
@@ -1333,7 +1332,7 @@ def test():
         >>> class TestResult:
         ...     def __init__(self, t): self.t = t
         ...     def __getattr__(self, name): return getattr(self.t, name)
-        ...     def __repr__(self): return repr(unicode(self))
+        ...     def __repr__(self): return repr(str(self.t))
         ...
         >>> def t(code, **keywords):
         ...     tmpl = Template(code, **keywords)
@@ -1343,143 +1342,143 @@ def test():
     Simple tests.
 
         >>> t('1')()
-        u'1\n'
+        '1\n'
         >>> t('$def with ()\n1')()
-        u'1\n'
+        '1\n'
         >>> t('$def with (a)\n$a')(1)
-        u'1\n'
+        '1\n'
         >>> t('$def with (a=0)\n$a')(1)
-        u'1\n'
+        '1\n'
         >>> t('$def with (a=0)\n$a')(a=1)
-        u'1\n'
+        '1\n'
 
     Test complicated expressions.
 
         >>> t('$def with (x)\n$x.upper()')('hello')
-        u'HELLO\n'
+        'HELLO\n'
         >>> t('$(2 * 3 + 4 * 5)')()
-        u'26\n'
+        '26\n'
         >>> t('${2 * 3 + 4 * 5}')()
-        u'26\n'
+        '26\n'
         >>> t('$def with (limit)\nkeep $(limit)ing.')('go')
-        u'keep going.\n'
+        'keep going.\n'
         >>> t('$def with (a)\n$a.b[0]')(storage(b=[1]))
-        u'1\n'
+        '1\n'
 
     Test html escaping.
 
         >>> t('$def with (x)\n$x', filename='a.html')('<html>')
-        u'&lt;html&gt;\n'
+        '&lt;html&gt;\n'
         >>> t('$def with (x)\n$x', filename='a.txt')('<html>')
-        u'<html>\n'
+        '<html>\n'
 
     Test if, for and while.
 
         >>> t('$if 1: 1')()
-        u'1\n'
+        '1\n'
         >>> t('$if 1:\n    1')()
-        u'1\n'
+        '1\n'
         >>> t('$if 1:\n    1\\')()
-        u'1'
+        '1'
         >>> t('$if 0: 0\n$elif 1: 1')()
-        u'1\n'
+        '1\n'
         >>> t('$if 0: 0\n$elif None: 0\n$else: 1')()
-        u'1\n'
+        '1\n'
         >>> t('$if 0 < 1 and 1 < 2: 1')()
-        u'1\n'
+        '1\n'
         >>> t('$for x in [1, 2, 3]: $x')()
-        u'1\n2\n3\n'
-        >>> t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1})
-        u'1\n'
+        '1\n2\n3\n'
+        >>> t('$def with (d)\n$for k, v in d.items(): $k')({1: 1})
+        '1\n'
         >>> t('$for x in [1, 2, 3]:\n\t$x')()
-        u'    1\n    2\n    3\n'
+        '    1\n    2\n    3\n'
         >>> t('$def with (a)\n$while a and a.pop():1')([1, 2, 3])
-        u'1\n1\n1\n'
+        '1\n1\n1\n'
 
     The space after : must be ignored.
 
         >>> t('$if True: foo')()
-        u'foo\n'
+        'foo\n'
 
     Test loop.xxx.
 
         >>> t("$for i in range(5):$loop.index, $loop.parity")()
-        u'1, odd\n2, even\n3, odd\n4, even\n5, odd\n'
+        '1, odd\n2, even\n3, odd\n4, even\n5, odd\n'
         >>> t("$for i in range(2):\n    $for j in range(2):$loop.parent.parity $loop.parity")()
-        u'odd odd\nodd even\neven odd\neven even\n'
+        'odd odd\nodd even\neven odd\neven even\n'
 
     Test assignment.
 
         >>> t('$ a = 1\n$a')()
-        u'1\n'
+        '1\n'
         >>> t('$ a = [1]\n$a[0]')()
-        u'1\n'
-        >>> t('$ a = {1: 1}\n$a.keys()[0]')()
-        u'1\n'
+        '1\n'
+        >>> t('$ a = {1: 1}\n$list(a)[0]')()
+        '1\n'
         >>> t('$ a = []\n$if not a: 1')()
-        u'1\n'
+        '1\n'
         >>> t('$ a = {}\n$if not a: 1')()
-        u'1\n'
+        '1\n'
         >>> t('$ a = -1\n$a')()
-        u'-1\n'
+        '-1\n'
         >>> t('$ a = "1"\n$a')()
-        u'1\n'
+        '1\n'
 
     Test comments.
 
         >>> t('$# 0')()
-        u'\n'
+        '\n'
         >>> t('hello$#comment1\nhello$#comment2')()
-        u'hello\nhello\n'
+        'hello\nhello\n'
         >>> t('$#comment0\nhello$#comment1\nhello$#comment2')()
-        u'\nhello\nhello\n'
+        '\nhello\nhello\n'
 
     Test unicode.
 
         >>> t('$def with (a)\n$a')(u'\u203d')
-        u'\u203d\n'
+        '\u203d\n'
         >>> t('$def with (a)\n$a')(u'\u203d'.encode('utf-8'))
-        u'\u203d\n'
+        '\u203d\n'
         >>> t(u'$def with (a)\n$a $:a')(u'\u203d')
-        u'\u203d \u203d\n'
+        '\u203d \u203d\n'
         >>> t(u'$def with ()\nfoo')()
-        u'foo\n'
+        'foo\n'
         >>> def f(x): return x
         ...
         >>> t(u'$def with (f)\n$:f("x")')(f)
-        u'x\n'
+        'x\n'
         >>> t('$def with (f)\n$:f("x")')(f)
-        u'x\n'
+        'x\n'
 
     Test dollar escaping.
 
         >>> t("Stop, $$money isn't evaluated.")()
-        u"Stop, $money isn't evaluated.\n"
+        "Stop, $money isn't evaluated.\n"
         >>> t("Stop, \$money isn't evaluated.")()
-        u"Stop, $money isn't evaluated.\n"
+        "Stop, $money isn't evaluated.\n"
 
     Test space sensitivity.
 
         >>> t('$def with (x)\n$x')(1)
-        u'1\n'
+        '1\n'
         >>> t('$def with(x ,y)\n$x')(1, 1)
-        u'1\n'
+        '1\n'
         >>> t('$(1 + 2*3 + 4)')()
-        u'11\n'
+        '11\n'
 
     Make sure globals are working.
 
         >>> t('$x')()
         Traceback (most recent call last):
             ...
-        NameError: global name 'x' is not defined
+        NameError: name 'x' is not defined
         >>> t('$x', globals={'x': 1})()
-        u'1\n'
+        '1\n'
 
     Can't change globals.
 
         >>> t('$ x = 2\n$x', globals={'x': 1})()
-        u'2\n'
+        '2\n'
         >>> t('$ x = x + 1\n$x', globals={'x': 1})()
         Traceback (most recent call last):
             ...
@@ -1488,45 +1487,49 @@ def test():
     Make sure builtins are customizable.
 
         >>> t('$min(1, 2)')()
-        u'1\n'
+        '1\n'
         >>> t('$min(1, 2)', builtins={})()
         Traceback (most recent call last):
             ...
-        NameError: global name 'min' is not defined
+        NameError: name 'min' is not defined
 
     Test vars.
 
         >>> x = t('$var x: 1')()
         >>> x.x
-        u'1'
+        '1'
         >>> x = t('$var x = 1')()
         >>> x.x
         1
         >>> x = t('$var x:  \n    foo\n    bar')()
         >>> x.x
-        u'foo\nbar\n'
+        'foo\nbar\n'
 
     Test BOM chars.
 
         >>> t('\xef\xbb\xbf$def with(x)\n$x')('foo')
-        u'foo\n'
+        'foo\n'
 
     Test for with weird cases.
 
         >>> t('$for i in range(10)[1:5]:\n    $i')()
-        u'1\n2\n3\n4\n'
+        '1\n2\n3\n4\n'
         >>> t("$for k, v in {'a': 1, 'b': 2}.items():\n    $k $v")()
-        u'a 1\nb 2\n'
+        'a 1\nb 2\n'
         >>> t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
         Traceback (most recent call last):
             ...
         SyntaxError: invalid syntax
+        <BLANKLINE>
+        Template traceback:
+            File '<template>', line 6
+                None
 
     Test datetime.
 
         >>> import datetime
         >>> t("$def with (date)\n$date.strftime('%m %Y')")(datetime.datetime(2009, 1, 1))
-        u'01 2009\n'
+        '01 2009\n'
     """
     pass
 

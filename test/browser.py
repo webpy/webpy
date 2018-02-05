@@ -40,7 +40,7 @@ class BrowserTest(webtest.TestCase):
         b = app.browser()
         b.open('http://0.0.0.0/setcookie?x=1&y=2')
         b.open('http://0.0.0.0/cookie')
-        self.assertEquals(b.data, 'x,y')
+        self.assertEquals(b.data, b'x,y')
 
     def testNotfound(self):
         b = app.browser()

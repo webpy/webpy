@@ -6,7 +6,7 @@ from .net import htmlunquote
 
 import http.client, urllib.request, urllib.parse, urllib.error
 import copy
-from io import StringIO
+from io import BytesIO
 
 DEBUG = False
 
@@ -80,7 +80,7 @@ class Browser:
 
     def get_response(self):
         """Returns a copy of the current response."""
-        return urllib.request.addinfourl(StringIO(self.data), self._response.info(), self._response.geturl())
+        return urllib.request.addinfourl(BytesIO(self.data), self._response.info(), self._response.geturl())
 
     def get_soup(self):
         """Returns beautiful soup of the current document."""
@@ -229,8 +229,10 @@ class AppHandler(urllib.request.HTTPHandler):
 
     def _make_response(self, result, url):
         data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
-        headers = http.client.HTTPMessage(StringIO(data))
-        response = urllib.request.addinfourl(StringIO(str(result.data)), headers, url)
+        #headers = http.client.HTTPMessage(StringIO(data))
+        import email
+        headers = email.message_from_string(data)
+        response = urllib.request.addinfourl(BytesIO(result.data), headers, url)
         code, msg = result.status.split(None, 1)
         response.code, response.msg = int(code), msg
         return response

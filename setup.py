@@ -13,8 +13,12 @@ setup(name='web.py',
       maintainer='Anand Chitipothu',
       maintainer_email='anandology@gmail.com',
       url=' http://webpy.org/',
-      packages=['web', 'web.wsgiserver', 'web.contrib'],
+      packages=['web', 'web.contrib'],
       long_description="Think about the ideal way to write a web app. Write the code to make it happen.",
       license="Public domain",
       platforms=["any"],
+      python_requires='>=3.4.*',
+      install_requires=[
+        'cheroot>=6.0.0',
+        ],
      )

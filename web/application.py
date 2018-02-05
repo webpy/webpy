@@ -9,6 +9,8 @@ from . import webapi, wsgi, utils
 from . import debugerror
 from . import httpserver
 from .utils import lstrips, safestr, safebytes
+from . import browser
+
 import sys
 import imp
 import urllib.parse
@@ -17,7 +19,7 @@ import itertools
 import os
 import types
 from inspect import isclass
-
+from io import BytesIO
 import wsgiref.handlers
 
 __all__ = [
@@ -203,7 +205,6 @@ class application:
 
         if method not in ["HEAD", "GET"]:
             data = data or ''
-            from io import BytesIO
             if isinstance(data, dict):
                 q = urllib.parse.urlencode(data)
             else:
@@ -220,7 +221,6 @@ class application:
         return response
 
     def browser(self):
-        from . import browser
         return browser.AppBrowser(self)
 
     def handle(self):
@@ -256,7 +256,7 @@ class application:
             # so we need to do an iteration
             # and save the result for later
             try:
-                firstchunk = iterator.__next__()
+                firstchunk = next(iterator)
             except StopIteration:
                 firstchunk = ''
 
@@ -282,7 +282,7 @@ class application:
             except web.HTTPError as e:
                 result = [e.data]
 
-            result = safebytes(iter(result)) #zw: safestr -> safebytes
+            result = safebytes(iter(result))
 
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)
@@ -470,9 +470,11 @@ class application:
                 else:
                     continue
             elif isinstance(what, str):
-                what, result = utils.re_subm('^' + pat + '$', what, value)
+                #what, result = utils.re_subm('^' + pat + '$', what, value)
+                what, result = utils.re_subm(r'^%s\Z' % (pat,), what, value)
             else:
-                result = utils.re_compile('^' + pat + '$').match(value)
+                #result = utils.re_compile('^' + pat + '$').match(value)
+                result = utils.re_compile(r'^%s\Z' % (pat,)).match(value)
                 
             if result: # it's a match
                 return what, [x for x in result.groups()]
@@ -512,7 +514,6 @@ class application:
         if parent:
             return parent.internalerror()
         elif web.config.get('debug'):
-            #from . import debugerror #zw
             return debugerror()
         else:
             return web._InternalError()
@@ -546,9 +547,8 @@ class auto_application(application):
                 if path is not None:
                     self.add_mapping(path, klass)
 
-        class page:
+        class page(metaclass = metapage):
             path = None
-            __metaclass__ = metapage
 
         self.page = page
 

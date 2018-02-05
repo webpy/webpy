@@ -10,7 +10,7 @@ __all__ = [
   "htmlquote", "htmlunquote", "websafe",
 ]
 
-import urllib, time
+import urllib.request, time
 import datetime
 import re
 import socket
@@ -166,7 +166,7 @@ def urlquote(val):
     if val is None: return ''
     if not isinstance(val, str): val = str(val)
     else: val = val.encode('utf-8')
-    return urllib.quote(val)
+    return urllib.request.quote(val)
 
 def httpdate(date_obj):
     """
@@ -196,7 +196,7 @@ def htmlquote(text):
     Encodes `text` for raw use in HTML.
     
         >>> htmlquote(u"<'&\">")
-        u'&lt;&#39;&amp;&quot;&gt;'
+        '&lt;&#39;&amp;&quot;&gt;'
     """
     text = text.replace(u"&", u"&amp;") # Must be done first!
     text = text.replace(u"<", u"&lt;")
@@ -210,7 +210,7 @@ def htmlunquote(text):
     Decodes `text` that's HTML quoted.
 
         >>> htmlunquote(u'&lt;&#39;&amp;&quot;&gt;')
-        u'<\'&">'
+        '<\'&">'
     """
     text = text.replace(u"&quot;", u'"')
     text = text.replace(u"&#39;", u"'")
@@ -223,18 +223,18 @@ def websafe(val):
     r"""Converts `val` so that it is safe for use in Unicode HTML.
 
         >>> websafe("<'&\">")
-        u'&lt;&#39;&amp;&quot;&gt;'
+        '&lt;&#39;&amp;&quot;&gt;'
         >>> websafe(None)
-        u''
+        ''
         >>> websafe(u'\u203d')
-        u'\u203d'
-        >>> websafe('\xe2\x80\xbd')
-        u'\u203d'
+        '\u203d'
+        >>> websafe(b'\xe2\x80\xbd')
+        '\u203d'
     """
     if val is None:
-        return u''
-    elif isinstance(val, str):
-        val = val #.decode('utf-8')
+        return ''
+    elif isinstance(val, bytes):
+        val = val.decode('utf-8')
     elif not isinstance(val, str):
         val = str(val)
         

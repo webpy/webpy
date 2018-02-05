@@ -4,8 +4,9 @@ Database API
 """
 from __future__ import print_function
 
-import time, os, urllib.parse
+import time, os, urllib.parse, urllib.request
 import datetime
+
 from .utils import threadeddict, storage, iters, iterbetter, safestr, safebytes
 
 try:
@@ -321,7 +322,8 @@ def sqlify(obj):
     elif isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
     else:
-        if isinstance(obj, str): obj = obj.encode('utf8')
+        # if isinstance(obj, str):
+        #     obj = obj.encode('utf8')
         return repr(obj)
 
 def sqllist(lst): 
@@ -333,7 +335,7 @@ def sqllist(lst):
         >>> sqllist('a')
         'a'
         >>> sqllist(u'abc')
-        u'abc'
+        'abc'
     """
     if isinstance(lst, str): 
         return lst
@@ -377,9 +379,9 @@ def sqlwhere(dictionary, grouping=' AND '):
     Converts a `dictionary` to an SQL WHERE clause `SQLQuery`.
     
         >>> sqlwhere({'cust_id': 2, 'order_id':3})
-        <sql: 'order_id = 3 AND cust_id = 2'>
+        <sql: 'cust_id = 2 AND order_id = 3'>
         >>> sqlwhere({'cust_id': 2, 'order_id':3}, grouping=', ')
-        <sql: 'order_id = 3, cust_id = 2'>
+        <sql: 'cust_id = 2, order_id = 3'>
         >>> sqlwhere({'a': 'a', 'b': 'b'}).query()
         'a = %s AND b = %s'
     """
@@ -738,11 +740,11 @@ class DB:
             >>> db = DB(None, {})
             >>> q = db.insert('foo', name='bob', age=2, created=SQLLiteral('NOW()'), _test=True)
             >>> q
-            <sql: "INSERT INTO foo (age, name, created) VALUES (2, 'bob', NOW())">
+            <sql: "INSERT INTO foo (name, age, created) VALUES ('bob', 2, NOW())">
             >>> q.query()
-            'INSERT INTO foo (age, name, created) VALUES (%s, %s, NOW())'
+            'INSERT INTO foo (name, age, created) VALUES (%s, %s, NOW())'
             >>> q.values()
-            [2, 'bob']
+            ['bob', 2]
         """
         def q(x): return "(" + x + ")"
         
@@ -854,11 +856,11 @@ class DB:
             >>> q = db.update('foo', where='name = $name', name='bob', age=2,
             ...     created=SQLLiteral('NOW()'), vars=locals(), _test=True)
             >>> q
-            <sql: "UPDATE foo SET age = 2, name = 'bob', created = NOW() WHERE name = 'Joseph'">
+            <sql: "UPDATE foo SET name = 'bob', age = 2, created = NOW() WHERE name = 'Joseph'">
             >>> q.query()
-            'UPDATE foo SET age = %s, name = %s, created = NOW() WHERE name = %s'
+            'UPDATE foo SET name = %s, age = %s, created = NOW() WHERE name = %s'
             >>> q.values()
-            [2, 'bob', 'Joseph']
+            ['bob', 2, 'Joseph']
         """
         if vars is None: vars = {}
         where = self._where(where, vars)
@@ -965,6 +967,9 @@ class PostgresDB(DB):
 
 class MySQLDB(DB): 
     def __init__(self, **keywords):
+        # MySQLdb doesn't support Python3 yet. Use pymysql to manipulate.
+        import pymysql
+        pymysql.install_as_MySQLdb()
         import MySQLdb as db
         if 'pw' in keywords:
             keywords['passwd'] = keywords['pw']
@@ -1129,28 +1134,26 @@ def dburl2dict(url):
     """
     Takes a URL to a database and parses it into an equivalent dictionary.
     
-        >>> dburl2dict('postgres://james:day@serverfarm.example.net:5432/mygreatdb')
-        {'pw': 'day', 'dbn': 'postgres', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': '5432'}
-        >>> dburl2dict('postgres://james:day@serverfarm.example.net/mygreatdb')
-        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'day', 'dbn': 'postgres'}
-        >>> dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
-        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
+        >>> d = dburl2dict('postgres://james:day@serverfarm.example.net:5432/mygreatdb')
+        >>> d == {'pw': 'day', 'dbn': 'postgres', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': 5432}
+        True
+        >>> d = dburl2dict('postgres://james:day@serverfarm.example.net/mygreatdb')
+        >>> d == {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'day', 'dbn': 'postgres'}
+        True
+        >>> d = dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
+        >>> d == {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
+        True
     """
-    dbn, rest = url.split('://', 1)
-    user, rest = rest.split(':', 1)
-    pw, rest = rest.split('@', 1)
-    if ':' in rest:
-        host, rest = rest.split(':', 1)
-        port, rest = rest.split('/', 1)
-    else:
-        host, rest = rest.split('/', 1)
-        port = None
-    db = rest
-    
-    uq = urllib.parse.unquote
-    out = dict(dbn=dbn, user=uq(user), pw=uq(pw), host=uq(host), db=uq(db))
-    if port: out['port'] = port
-    return out
+    parts = urllib.parse.urlparse(urllib.request.unquote(url))
+
+    d = {'dbn': parts.scheme,
+            'user': parts.username,
+            'pw': parts.password,
+            'db': parts.path[1:],
+            'host': parts.hostname}
+    if parts.port:
+        d['port'] = parts.port
+    return d
 
 _databases = {}
 def database(dburl=None, **params):

@@ -10,7 +10,7 @@ __all__ = [
   "Counter", "counter",
   "iters", 
   "rstrips", "lstrips", "strips", 
-  "safebytes", "safestr", "utf8",
+  "safebytes", "safestr",
   "TimeoutError", "timelimit",
   "Memoize", "memoize",
   "re_compile", "re_subm",
@@ -36,6 +36,7 @@ import re, sys, time, threading, itertools, traceback, os
 import subprocess
 import datetime
 from threading import local as threadlocal
+from io import StringIO
 
 itervalues = lambda d: iter(d.values())
 iteritems = lambda d: iter(d.items())
@@ -101,6 +102,15 @@ def storify(mapping, *requireds, **defaults):
         [1]
         >>> storify({}, a=[]).a
         []
+        >>> import cgi
+        >>> storify({'file':[cgi.FieldStorage(),cgi.FieldStorage()]}, file=[]).file
+        [FieldStorage(None, None, []), FieldStorage(None, None, [])]
+        >>> storify({'file':cgi.FieldStorage()}, file=[]).file
+        [FieldStorage(None, None, [])]
+        >>> storify({'file':[cgi.FieldStorage(), cgi.FieldStorage()]},file={}).file
+        [FieldStorage(None, None, []), FieldStorage(None, None, [])]
+        >>> storify({'file':[cgi.FieldStorage(), cgi.FieldStorage()]}).file
+        FieldStorage(None, None, [])
     
     Similarly, if the value has a `value` attribute, `storify will return _its_
     value, unless the key appears in `defaults` as a dictionary.
@@ -115,11 +125,11 @@ def storify(mapping, *requireds, **defaults):
     Optionally, keyword parameter `_unicode` can be passed to convert all values to unicode.
     
         >>> storify({'x': 'a'}, _unicode=True)
-        <Storage {'x': u'a'}>
+        <Storage {'x': 'a'}>
         >>> storify({'x': storage(value='a')}, x={}, _unicode=True)
         <Storage {'x': <Storage {'value': 'a'}>}>
         >>> storify({'x': storage(value='a')}, _unicode=True)
-        <Storage {'x': u'a'}>
+        <Storage {'x': 'a'}>
     """
     _unicode = defaults.pop('_unicode', False)
 
@@ -132,9 +142,9 @@ def storify(mapping, *requireds, **defaults):
         if _unicode and isinstance(s, str): return to_unicode(s)
         else: return s
         
-    def getvalue(x, isnotlist=True):
+    def getvalue(x):
         if hasattr(x, 'file') and hasattr(x, 'value'):
-            return x.value if isnotlist else x #if x is a item of a list, return x itself, to support multiple files uploading.
+            return x
         elif hasattr(x, 'value'):
             return unicodify(x.value)
         else:
@@ -143,15 +153,16 @@ def storify(mapping, *requireds, **defaults):
     stor = Storage()
     for key in requireds + tuple(mapping.keys()):
         value = mapping[key]
-        if isinstance(value, list):
-            if isinstance(defaults.get(key), list):
-                value = [getvalue(x,False) for x in value]
+        if isinstance(defaults.get(key), list): # multiple inputs as defaults=[] expect.
+            if isinstance(value, list):
+                value = [getvalue(x) for x in value]
             else:
-                value = value[-1]
-        if not isinstance(defaults.get(key), dict):
-            value = getvalue(value)
-        if isinstance(defaults.get(key), list) and not isinstance(value, list):
-            value = [value]
+                value = [getvalue(value)]
+        elif not isinstance(defaults.get(key), dict): # single input
+            if isinstance(value, list):
+                value = getvalue(value[-1])
+            else:
+                value = getvalue(value)
         setattr(stor, key, value)
 
     for (key, value) in iteritems(defaults):
@@ -175,7 +186,7 @@ class Counter(storage):
         >>> c.add('x')
         >>> c.add('y')
         >>> c
-        <Counter {'y': 1, 'x': 5}>
+        <Counter {'x': 5, 'y': 1}>
         >>> c.most()
         ['x']
     """
@@ -332,7 +343,7 @@ def safestr(obj, encoding='utf-8'):
         >>> safestr('hello')
         'hello'
         >>> safestr(u'\u1234')
-        '\xe1\x88\xb4'
+        '\u1234'
         >>> safestr(2)
         '2'
     """
@@ -344,9 +355,6 @@ def safestr(obj, encoding='utf-8'):
         return map(safestr, obj)
     else:
         return str(obj) #
-
-# for backward-compatibility
-utf8 = safestr
     
 class TimeoutError(Exception): pass
 def timelimit(timeout):
@@ -362,7 +370,7 @@ def timelimit(timeout):
         >>> timelimit(.1)(meaningoflife)()
         Traceback (most recent call last):
             ...
-        TimeoutError: took too long
+        web.utils.TimeoutError: took too long
         >>> timelimit(1)(meaningoflife)()
         42
 
@@ -626,7 +634,7 @@ class IterBetter:
         [0, 1, 2, 3, 4]
         >>> c = iterbetter(iter([]))
         >>> bool(c)
-        False
+        True
         >>> list(c)
         []
     """
@@ -638,7 +646,7 @@ class IterBetter:
             yield self._head
 
         while 1:    
-            yield self.i.__next__()
+            yield next(self.i)
             self.c += 1
 
     def __getitem__(self, i):
@@ -647,11 +655,11 @@ class IterBetter:
             raise IndexError("already passed "+str(i))
         try:
             while i > self.c: 
-                self.i.__next__()
+                next(self.i)
                 self.c += 1
             # now self.c == i
             self.c += 1
-            return self.i.__next__()
+            return next(self.i)
         except StopIteration: 
             raise IndexError(str(i))
             
@@ -662,7 +670,7 @@ class IterBetter:
             return True
         else:
             try:
-                self._head = self.i.__next__()
+                self._head = next(self.i)
             except StopIteration:
                 return False
             else:
@@ -676,7 +684,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
     def next():
         while True:
             try:
-                return it.__next__()
+                return next(it)
             except StopIteration:
                 raise
             except:
@@ -840,7 +848,7 @@ def datestr(then, now=None):
         ...   timedelta(seconds=2*60): '2 minutes ago',
         ...   timedelta(seconds=2*60*60): '2 hours ago',
         ...   timedelta(days=2): '2 days ago',
-        ... }.iteritems():
+        ... }.items():
         ...     assert datestr(d, now=d+t) == v
         >>> datestr(datetime(1970, 1, 1), now=d)
         'January  1'
@@ -1037,8 +1045,6 @@ class CaptureStdout:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args, **keywords):
-        from cStringIO import StringIO
-        # Not threadsafe!
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
@@ -1064,21 +1070,16 @@ class Profile:
     def __init__(self, func): 
         self.func = func
     def __call__(self, *args): ##, **kw):   kw unused
-        import hotshot, hotshot.stats, os, tempfile ##, time already imported
-        f, filename = tempfile.mkstemp()
-        os.close(f)
+        import cProfile, pstats, os, tempfile ##, time already imported
         
-        prof = hotshot.Profile(filename)
+        prof = cProfile.Profile()
 
         stime = time.time()
         result = prof.runcall(self.func, *args)
         stime = time.time() - stime
-        prof.close()
 
-        import cStringIO
-        out = cStringIO.StringIO()
-        stats = hotshot.stats.load(filename)
-        stats.stream = out
+        out = StringIO()
+        stats = pstats.Stats(prof, stream = out)
         stats.strip_dirs()
         stats.sort_stats('time', 'calls')
         stats.print_stats(40)
@@ -1086,27 +1087,11 @@ class Profile:
 
         x =  '\n\ntook '+ str(stime) + ' seconds\n'
         x += out.getvalue()
-
-        # remove the tempfile
-        try:
-            os.remove(filename)
-        except IOError:
-            pass
             
         return result, x
 
 profile = Profile
 
-
-import traceback
-# hack for compatibility with Python 2.3:
-if not hasattr(traceback, 'format_exc'):
-    from cStringIO import StringIO
-    def format_exc(limit=None):
-        strbuf = StringIO()
-        traceback.print_exc(limit, strbuf)
-        return strbuf.getvalue()
-    traceback.format_exc = format_exc
 
 def tryall(context, prefix=None):
     """
@@ -1148,7 +1133,7 @@ def tryall(context, prefix=None):
         
     print('-'*40)
     print('results:')
-    for (key, value) in results.iteritems():
+    for (key, value) in results.items():
         print(' '*2, str(key)+':', value)
         
 class ThreadedDict(threadlocal):
@@ -1368,9 +1353,9 @@ class _EmailMessage:
         bcc = listify(kw.get('bcc', []))
         recipients = to_address + cc + bcc
 
-        import email.Utils
-        self.from_address = email.Utils.parseaddr(from_address)[1]
-        self.recipients = [email.Utils.parseaddr(r)[1] for r in recipients]        
+        import email.utils
+        self.from_address = email.utils.parseaddr(from_address)[1]
+        self.recipients = [email.utils.parseaddr(r)[1] for r in recipients]        
     
         self.headers = dictadd({
           'From': from_address,
@@ -1389,7 +1374,7 @@ class _EmailMessage:
         self.multipart = False
         
     def new_message(self):
-        from email.Message import Message
+        from email.message import Message
         return Message()
         
     def attach(self, filename, content, content_type=None):
@@ -1406,7 +1391,7 @@ class _EmailMessage:
         except:
             from email import Encoders as encoders
             
-        content_type = content_type or mimetypes.guess_type(filename)[0] or "applcation/octet-stream"
+        content_type = content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream"
         
         msg = self.new_message()
         msg.set_payload(content)
@@ -1429,7 +1414,7 @@ class _EmailMessage:
 
     def send(self):
         try:
-            import webapi
+            from . import webapi
         except ImportError:
             webapi = Storage(config=Storage())
 
@@ -1464,7 +1449,7 @@ class _EmailMessage:
             import boto.ses
             c = boto.ses.SESConnection(
               aws_access_key_id=webapi.config.get('aws_access_key_id'),
-              aws_secret_access_key=web.api.config.get('aws_secret_access_key'))
+              aws_secret_access_key=webapi.config.get('aws_secret_access_key'))
             c.send_raw_email(self.from_address, message_text, self.recipients)
         else:
             sendmail = webapi.config.get('sendmail_path', '/usr/sbin/sendmail')
@@ -1476,7 +1461,7 @@ class _EmailMessage:
             cmd = [sendmail, '-f', self.from_address] + self.recipients
 
             p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-            p.stdin.write(message_text)
+            p.stdin.write(message_text.encode())
             p.stdin.close()
             p.wait()
                 

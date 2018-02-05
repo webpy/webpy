@@ -166,16 +166,16 @@ def WSGIServer(server_address, wsgi_app):
     """Creates CherryPy WSGI server listening at `server_address` to serve `wsgi_app`.
     This function can be overwritten to customize the webserver or use a different webserver.
     """
-    from . import wsgiserver
+    from cheroot import wsgi
     
     # Default values of wsgiserver.ssl_adapters uses cherrypy.wsgiserver
     # prefix. Overwriting it make it work with web.wsgiserver.
-    wsgiserver.ssl_adapters = {
+    wsgi.server.ssl_adapters = {
         'builtin': 'web.wsgiserver.ssl_builtin.BuiltinSSLAdapter',
         'pyopenssl': 'web.wsgiserver.ssl_pyopenssl.pyOpenSSLAdapter',
     }
     
-    server = wsgiserver.CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
+    server = wsgi.Server(server_address, wsgi_app, server_name="localhost")
         
     def create_ssl_adapter(cert, key):
         # wsgiserver tries to import submodules as cherrypy.wsgiserver.foo.
@@ -183,9 +183,9 @@ def WSGIServer(server_address, wsgi_app):
         # Patching sys.modules temporarily to make it work.
         import types
         cherrypy = types.ModuleType('cherrypy')
-        cherrypy.wsgiserver = wsgiserver
+        cherrypy.wsgiserver = wsgi.server
         sys.modules['cherrypy'] = cherrypy
-        sys.modules['cherrypy.wsgiserver'] = wsgiserver
+        sys.modules['cherrypy.wsgiserver'] = wsgi.server
         
         from .wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
         adapter = pyOpenSSLAdapter(cert, key)
@@ -213,7 +213,11 @@ class StaticApp(SimpleHTTPRequestHandler):
         self.start_response = start_response
 
     def send_response(self, status, msg=""):
-        self.status = str(status) + " " + msg
+        # status' type is <enum 'HTTPStatus'> in python 3.6.*
+        if str(type(status)) == "<enum 'HTTPStatus'>":
+            self.status = str(int(status))+ " " + status.phrase
+        else:
+            self.status = str(status) + " " + msg
 
     def send_header(self, name, value):
         self.headers.append((name, value))

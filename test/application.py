@@ -307,7 +307,8 @@ class ApplicationTest(webtest.TestCase):
             return app.request(path).data
                 
         self.assertEquals(f('/?x=2'), b'/?x=1')
-        self.assertEquals(f('/?y=1&y=2&x=2'), b'/?y=1&y=2&x=1')
+        # dict dosen't remember the order of keys.
+        assert f('/?y=1&y=2&x=2') == b'/?y=1&y=2&x=1' or f('/?y=1&y=2&x=2') == b'/?x=1&y=1&y=2'
         
     def test_setcookie(self):
         urls = (

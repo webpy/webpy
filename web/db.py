@@ -743,8 +743,11 @@ class DB:
             ('WHERE', where),
             ('GROUP BY', group),
             ('ORDER BY', order),
-            ('LIMIT', limit),
-            ('OFFSET', offset))
+            # The limit and offset could be the values provided by
+            # the end-user and are potentially unsafe.
+            # Using them as parameters to avoid any risk.
+            ('LIMIT', limit and SQLParam(limit).sqlquery()),
+            ('OFFSET', offset and SQLParam(offset).sqlquery()))
     
     def gen_clause(self, sql, val, vars): 
         if isinstance(val, (int, long)):

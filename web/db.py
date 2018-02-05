@@ -4,9 +4,10 @@ Database API
 """
 from __future__ import print_function
 
-import time, os, urllib
+import time, os, urllib.parse, urllib.request
 import datetime
-from .utils import threadeddict, storage, iters, iterbetter, safestr, safeunicode
+
+from .utils import threadeddict, storage, iters, iterbetter, safestr, safebytes
 
 try:
     # db module can work independent of web.py
@@ -135,7 +136,7 @@ class SQLQuery(object):
         self.items.append(value)
 
     def __add__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, str):
             items = [other]
         elif isinstance(other, SQLQuery):
             items = other.items
@@ -144,7 +145,7 @@ class SQLQuery(object):
         return SQLQuery(self.items + items)
 
     def __radd__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, str):
             items = [other]
         else:
             return NotImplemented
@@ -152,7 +153,7 @@ class SQLQuery(object):
         return SQLQuery(items + self.items)
 
     def __iadd__(self, other):
-        if isinstance(other, (basestring, SQLParam)):
+        if isinstance(other, (str, SQLParam)):
             self.items.append(other)
         elif isinstance(other, SQLQuery):
             self.items.extend(other.items)
@@ -240,9 +241,6 @@ class SQLQuery(object):
         
     def __str__(self):
         return safestr(self._str())
-        
-    def __unicode__(self):
-        return safeunicode(self._str())
 
     def __repr__(self):
         return '<sql: %s>' % repr(str(self))
@@ -319,12 +317,13 @@ def sqlify(obj):
         return "'t'"
     elif obj is False:
         return "'f'"
-    elif isinstance(obj, long):
+    elif isinstance(obj, int):
         return str(obj)
     elif isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
     else:
-        if isinstance(obj, unicode): obj = obj.encode('utf8')
+        # if isinstance(obj, str):
+        #     obj = obj.encode('utf8')
         return repr(obj)
 
 def sqllist(lst): 
@@ -336,9 +335,9 @@ def sqllist(lst):
         >>> sqllist('a')
         'a'
         >>> sqllist(u'abc')
-        u'abc'
+        'abc'
     """
-    if isinstance(lst, basestring): 
+    if isinstance(lst, str): 
         return lst
     else:
         return ', '.join(lst)
@@ -380,9 +379,9 @@ def sqlwhere(dictionary, grouping=' AND '):
     Converts a `dictionary` to an SQL WHERE clause `SQLQuery`.
     
         >>> sqlwhere({'cust_id': 2, 'order_id':3})
-        <sql: 'order_id = 3 AND cust_id = 2'>
+        <sql: 'cust_id = 2 AND order_id = 3'>
         >>> sqlwhere({'cust_id': 2, 'order_id':3}, grouping=', ')
-        <sql: 'order_id = 3, cust_id = 2'>
+        <sql: 'cust_id = 2, order_id = 3'>
         >>> sqlwhere({'a': 'a', 'b': 'b'}).query()
         'a = %s AND b = %s'
     """
@@ -603,7 +602,7 @@ class DB:
         return query, params
     
     def _where(self, where, vars): 
-        if isinstance(where, (int, long)):
+        if isinstance(where, int):
             where = "id = " + sqlparam(where)
         #@@@ for backward-compatibility
         elif isinstance(where, (list, tuple)) and len(where) == 2:
@@ -690,7 +689,7 @@ class DB:
             <sql: 'SELECT * FROM foo'>
         """
         where_clauses = []
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             where_clauses.append(k + ' = ' + sqlquote(v))
             
         if where_clauses:
@@ -713,7 +712,7 @@ class DB:
             ('OFFSET', offset))
     
     def gen_clause(self, sql, val, vars): 
-        if isinstance(val, (int, long)):
+        if isinstance(val, int):
             if sql == 'WHERE':
                 nout = 'id = ' + sqlquote(val)
             else:
@@ -741,11 +740,11 @@ class DB:
             >>> db = DB(None, {})
             >>> q = db.insert('foo', name='bob', age=2, created=SQLLiteral('NOW()'), _test=True)
             >>> q
-            <sql: "INSERT INTO foo (age, name, created) VALUES (2, 'bob', NOW())">
+            <sql: "INSERT INTO foo (name, age, created) VALUES ('bob', 2, NOW())">
             >>> q.query()
-            'INSERT INTO foo (age, name, created) VALUES (%s, %s, NOW())'
+            'INSERT INTO foo (name, age, created) VALUES (%s, %s, NOW())'
             >>> q.values()
-            [2, 'bob']
+            ['bob', 2]
         """
         def q(x): return "(" + x + ")"
         
@@ -857,11 +856,11 @@ class DB:
             >>> q = db.update('foo', where='name = $name', name='bob', age=2,
             ...     created=SQLLiteral('NOW()'), vars=locals(), _test=True)
             >>> q
-            <sql: "UPDATE foo SET age = 2, name = 'bob', created = NOW() WHERE name = 'Joseph'">
+            <sql: "UPDATE foo SET name = 'bob', age = 2, created = NOW() WHERE name = 'Joseph'">
             >>> q.query()
-            'UPDATE foo SET age = %s, name = %s, created = NOW() WHERE name = %s'
+            'UPDATE foo SET name = %s, age = %s, created = NOW() WHERE name = %s'
             >>> q.values()
-            [2, 'bob', 'Joseph']
+            ['bob', 2, 'Joseph']
         """
         if vars is None: vars = {}
         where = self._where(where, vars)
@@ -968,6 +967,9 @@ class PostgresDB(DB):
 
 class MySQLDB(DB): 
     def __init__(self, **keywords):
+        # MySQLdb doesn't support Python3 yet. Use pymysql to manipulate.
+        import pymysql
+        pymysql.install_as_MySQLdb()
         import MySQLdb as db
         if 'pw' in keywords:
             keywords['passwd'] = keywords['pw']
@@ -1132,28 +1134,26 @@ def dburl2dict(url):
     """
     Takes a URL to a database and parses it into an equivalent dictionary.
     
-        >>> dburl2dict('postgres://james:day@serverfarm.example.net:5432/mygreatdb')
-        {'pw': 'day', 'dbn': 'postgres', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': '5432'}
-        >>> dburl2dict('postgres://james:day@serverfarm.example.net/mygreatdb')
-        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'day', 'dbn': 'postgres'}
-        >>> dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
-        {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
+        >>> d = dburl2dict('postgres://james:day@serverfarm.example.net:5432/mygreatdb')
+        >>> d == {'pw': 'day', 'dbn': 'postgres', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': 5432}
+        True
+        >>> d = dburl2dict('postgres://james:day@serverfarm.example.net/mygreatdb')
+        >>> d == {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'day', 'dbn': 'postgres'}
+        True
+        >>> d = dburl2dict('postgres://james:d%40y@serverfarm.example.net/mygreatdb')
+        >>> d == {'user': 'james', 'host': 'serverfarm.example.net', 'db': 'mygreatdb', 'pw': 'd@y', 'dbn': 'postgres'}
+        True
     """
-    dbn, rest = url.split('://', 1)
-    user, rest = rest.split(':', 1)
-    pw, rest = rest.split('@', 1)
-    if ':' in rest:
-        host, rest = rest.split(':', 1)
-        port, rest = rest.split('/', 1)
-    else:
-        host, rest = rest.split('/', 1)
-        port = None
-    db = rest
-    
-    uq = urllib.unquote
-    out = dict(dbn=dbn, user=uq(user), pw=uq(pw), host=uq(host), db=uq(db))
-    if port: out['port'] = port
-    return out
+    parts = urllib.parse.urlparse(urllib.request.unquote(url))
+
+    d = {'dbn': parts.scheme,
+            'user': parts.username,
+            'pw': parts.password,
+            'db': parts.path[1:],
+            'host': parts.hostname}
+    if parts.port:
+        d['port'] = parts.port
+    return d
 
 _databases = {}
 def database(dburl=None, **params):
@@ -1200,7 +1200,9 @@ def _interpolate(format):
 
     from <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
-    from tokenize import tokenprog
+    import re
+    from tokenize import Token
+    tokenprog = re.compile(Token)
 
     def matchorfail(text, pos):
         match = tokenprog.match(text, pos)

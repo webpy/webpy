@@ -19,8 +19,8 @@ class DBTest(webtest.TestCase):
         try:
             webtest.setup_database(self.dbname, driver=self.driver)
             return True
-        except ImportError, e:
-            print >> web.debug, str(e), "(ignoring %s)" % self.__class__.__name__
+        except ImportError as e:
+            print(web.debug, str(e), "(ignoring %s)" % self.__class__.__name__)
             return False
     
     def testUnicode(self):
@@ -97,7 +97,7 @@ class DBTest(webtest.TestCase):
         db = webtest.setup_database(self.dbname)
         self.db.insert('person', False, name='user')
         name = db.select('person')[0].name
-        self.assertEquals(type(name), unicode)
+        self.assertEquals(type(name), str)
 
     def test_result_is_true(self):
         db = webtest.setup_database(self.dbname)
@@ -169,15 +169,17 @@ def is_test(cls):
     return inspect.isclass(cls) and webtest.TestCase in inspect.getmro(cls)
 
 # ignore db tests when the required db adapter is not found.
-for t in globals().values():
+vs = list(globals().values())
+for t in vs:
     if is_test(t) and not t('_testable')._testable():
         del globals()[t.__name__]
+    
 del t
 
 try:
     import DBUtils
-except ImportError, e:
-    print >> web.debug, str(e) + "(ignoring testPooling)"
+except ImportError as e:
+    print(web.debug, str(e) + "(ignoring testPooling)")
 
 if __name__ == '__main__':
     webtest.main()

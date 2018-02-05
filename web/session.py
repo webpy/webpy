@@ -5,6 +5,7 @@ Session Management
 
 import os, time, datetime, random, base64
 import os.path
+
 from copy import deepcopy
 try:
     import cPickle as pickle
@@ -150,8 +151,8 @@ class Session(object):
             rand = os.urandom(16)
             now = time.time()
             secret_key = self._config.secret_key
-            session_id = sha1("%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key))
-            session_id = session_id.hexdigest()
+            seed = b"".join((rand, str(now).encode(), utils.safebytes(web.ctx.ip), secret_key.encode()))
+            session_id = sha1(seed).hexdigest()
             if session_id not in self.store:
                 break
         return session_id
@@ -198,11 +199,11 @@ class Store:
     def encode(self, session_dict):
         """encodes session dict as a string"""
         pickled = pickle.dumps(session_dict)
-        return base64.encodestring(pickled)
+        return base64.b64encode(pickled)
 
     def decode(self, session_data):
         """decodes the data to get back the session dict """
-        pickled = base64.decodestring(session_data)
+        pickled = base64.b64decode(session_data)
         return pickle.loads(pickled)
 
 class DiskStore(Store):
@@ -242,19 +243,19 @@ class DiskStore(Store):
     def __getitem__(self, key):
         path = self._get_path(key)
         if os.path.exists(path): 
-            pickled = open(path).read()
+            pickled = open(path, 'rb').read()
             return self.decode(pickled)
         else:
             raise KeyError(key)
 
     def __setitem__(self, key, value):
         path = self._get_path(key)
-        pickled = self.encode(value)    
+        pickled = self.encode(value)
         try:
-            f = open(path, 'w')
+            f = open(path, 'wb')
             try:
                 f.write(pickled)
-            finally: 
+            finally:
                 f.close()
         except IOError:
             pass
@@ -302,9 +303,9 @@ class DBStore(Store):
         pickled = self.encode(value)
         now = datetime.datetime.now()
         if key in self:
-            self.db.update(self.table, where="session_id=$key", data=pickled, vars=locals())
+            self.db.update(self.table, where="session_id=$key", data=pickled, atime=now, vars=locals())
         else:
-            self.db.insert(self.table, False, session_id=key, data=pickled )
+            self.db.insert(self.table, False, session_id=key, data=pickled, atime=now)
                 
     def __delitem__(self, key):
         self.db.delete(self.table, where="session_id=$key", vars=locals())

@@ -48,7 +48,7 @@ class Form(object):
             if i.is_hidden():
                 out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (html)
             else:
-                out += '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n' % (i.id, net.websafe(i.description), html)
+                out += '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n' % (net.websafe(i.id), net.websafe(i.description), html)
         out += "</table>"
         return out
         
@@ -57,7 +57,7 @@ class Form(object):
         out.append(self.rendernote(self.note)) 
         for i in self.inputs:
             if not i.is_hidden():
-                out.append('<label for="%s">%s</label>' % (i.id, net.websafe(i.description))) 
+                out.append('<label for="%s">%s</label>' % (net.websafe(i.id), net.websafe(i.description)))
             out.append(i.pre)
             out.append(i.render()) 
             out.append(self.rendernote(i.note))

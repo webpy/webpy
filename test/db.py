@@ -136,7 +136,7 @@ class PostgresTest(DBTest):
 
         try:
             db.select("person", limit="1; DELETE FROM person;")
-        except StandardError:
+        except db.db_module.Error:
             # It is alright if the db engine rejects this query
             pass
 
@@ -149,7 +149,7 @@ class PostgresTest(DBTest):
 
         try:
             db.select("person", offset="1; DELETE FROM person;")
-        except StandardError:
+        except db.db_module.Error:
             # It is alright if the db engine rejects this query
             pass
 

@@ -5,7 +5,7 @@ python:
   - "3.6"
   - "3.7-dev"
 install:
-    - pip install -r requirements.txt -r test/requirements.txt
+    - pip install -r requirements.txt -r test_requirements.txt
     - if [[ $TRAVIS_PYTHON_VERSION = 2* ]] ; then pip install -r test/requirements2.txt; fi
 script: ./runtests.sh
 before_install:

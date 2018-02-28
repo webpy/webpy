@@ -1,5 +1,10 @@
 # web.py changelog
 
+## 2018-02-28 0.39
+
+* Fixed a security issue with the form module (tx Orange Tsai)
+* Fixed a security issue with the db module (tx Adrián Brav and Orange Tsai)
+
 ## 2016-07-08 0.38
 
 * Fixed failing tests in test/session.py when postgres is not installed. (tx Michael Diamond)

@@ -1452,7 +1452,7 @@ def test_parser():
     def f(text, expected):
         p = Parser()
         nodes = list(p.parse(text))
-        print repr(text), nodes
+        print(repr(text), nodes)
         assert nodes == expected, "Expected %r" % expected
 
     f("Hello", [_Node("text", "Hello")])
@@ -1480,7 +1480,7 @@ def test_safeeval():
     def f(q, vars):
         return SafeEval().safeeval(q, vars)
 
-    print f("WHERE id=$id", {"id": 1}).items
+    print(f("WHERE id=$id", {"id": 1}).items)
     assert f("WHERE id=$id", {"id": 1}).items == ["WHERE id=", sqlparam(1)]
 
 if __name__ == "__main__":

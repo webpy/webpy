@@ -184,15 +184,7 @@ def WSGIServer(server_address, wsgi_app):
     This function can be overwritten to customize the webserver or use a different webserver.
     """
     from cheroot import wsgi
-
     server = wsgi.Server(server_address, wsgi_app, server_name="localhost")
-
-    # SSL backward compatibility
-    if (server.ssl_adapter is None and
-        getattr(server, 'ssl_certificate', None) and
-        getattr(server, 'ssl_private_key', None)):
-        server.ssl_adapter = create_ssl_adapter(server.ssl_certificate, server.ssl_private_key)
-
     server.nodelay = not sys.platform.startswith('java') # TCP_NODELAY isn't supported on the JVM
     return server
 

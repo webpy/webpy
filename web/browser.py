@@ -48,7 +48,7 @@ __all__ = [
 class BrowserError(Exception):
     pass
 
-class Browser:
+class Browser(object):
     def __init__(self):
         self.cookiejar = CookieJar()
         self._cookie_processor = HTTPCookieProcessor(self.cookiejar)
@@ -61,6 +61,10 @@ class Browser:
         self.data = None
         self._response = None
         self._forms = None
+
+    @property
+    def text(self):
+        return self.data.decode('utf-8')
 
     def reset(self):
         """Clears all cookies and history."""

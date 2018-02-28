@@ -1,7 +1,8 @@
-import webtest, web
+import unittest
+import web
 import threading, time
 
-class WSGITest(webtest.TestCase):
+class WSGITest(unittest.TestCase):
     def test_layers_unicode(self):
         urls = (
             '/', 'uni',
@@ -47,6 +48,3 @@ class WSGITest(webtest.TestCase):
 
         app.stop()
         thread.join()
-
-if __name__ == '__main__':
-    webtest.main()

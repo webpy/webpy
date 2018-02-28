@@ -1018,11 +1018,17 @@ class Render:
         else:
             raise AttributeError("No template named " + name)
 
-    def _findfile(self, path_prefix): 
+    def _findfile(self, path_prefix):
         p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
         p.sort() # sort the matches for deterministic order
+
+        # support templates without extension (#364)
+        # When no templates are found and a file is found with the exact name, use it.
+        if not p and os.path.exists(path_prefix):
+            p = [path_prefix]
+
         return p and p[0]
-            
+
     def _template(self, name):
         if self._cache is not None:
             if name not in self._cache:

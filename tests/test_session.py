@@ -1,8 +1,9 @@
-import webtest
+import unittest
 import web
 import tempfile
+import os
 
-class SessionTest(webtest.TestCase):
+class SessionTest(unittest.TestCase):
     def setUp(self):
         app = web.auto_application()
         session = self.make_session(app)
@@ -10,7 +11,7 @@ class SessionTest(webtest.TestCase):
             def GET(self):
                 session.count += 1
                 return str(session.count)
-        
+
         class reset(app.page):
             def GET(self):
                 session.kill()
@@ -25,17 +26,17 @@ class SessionTest(webtest.TestCase):
             path = "/session/(.*)"
             def GET(self, name):
                 return session[name]
-                
+
         self.app = app
         self.session = session
-        
+
     def make_session(self, app):
         dir = tempfile.mkdtemp()
         store = web.session.DiskStore(tempfile.mkdtemp())
         return web.session.Session(app, store, {'count': 0})
-        
+
     def testSession(self):
-        b = self.app.browser() 
+        b = self.app.browser()
         self.assertEquals(b.open('/count').read(), b'1')
         self.assertEquals(b.open('/count').read(), b'2')
         self.assertEquals(b.open('/count').read(), b'3')
@@ -45,9 +46,9 @@ class SessionTest(webtest.TestCase):
     def testParallelSessions(self):
         b1 = self.app.browser()
         b2 = self.app.browser()
-        
+
         b1.open('/count')
-        
+
         for i in range(1, 10):
             self.assertEquals(b1.open('/count').read(), str(i+1).encode('utf8'))
             self.assertEquals(b2.open('/count').read(), str(i).encode('utf8'))
@@ -56,7 +57,7 @@ class SessionTest(webtest.TestCase):
         b = self.app.browser()
         self.assertEquals(b.open('/count').read(), b'1')
         self.assertEquals(b.open('/count').read(), b'2')
-        
+
         cookie = b.cookiejar._cookies['0.0.0.0']['/']['webpy_session_id']
         cookie.value = '/etc/password'
         self.assertEquals(b.open('/count').read(), b'1')
@@ -70,9 +71,12 @@ class SessionTest(webtest.TestCase):
 class DBSessionTest(SessionTest):
     """Session test with db store."""
     def make_session(self, app):
-        db = webtest.setup_database("sqlite", "sqlite3")
+        if os.path.exists("webpy.db"):
+            os.remove("webpy.db")
+
+        db = web.database(dbn='sqlite', db='webpy.db')
         #db.printing = True
-        db.query("" 
+        db.query(""
             + "CREATE TABLE session ("
             + "    session_id char(128) unique not null,"
             + "    atime timestamp default (datetime('now','utc')),"
@@ -80,11 +84,3 @@ class DBSessionTest(SessionTest):
         )
         store = web.session.DBStore(db, 'session')
         return web.session.Session(app, store, {'count': 0})
-
-    def tearDown(self):
-        # there might be some error with the current connection, delete from a new connection
-        self.db = webtest.setup_database("sqlite","sqlite3")
-        self.db.query('DROP TABLE session')
-         
-if __name__ == "__main__":
-    webtest.main()

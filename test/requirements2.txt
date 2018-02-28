@@ -1,3 +1,0 @@
-pysqlite; python_version >= '2.7'
-MySQL-python
-PyGreSQL

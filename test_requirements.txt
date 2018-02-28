@@ -1,0 +1,5 @@
+psycopg2
+PyMySQL
+mysql-connector==2.1.4
+DBUtils
+pytest

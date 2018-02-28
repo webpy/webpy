@@ -7,7 +7,9 @@ python:
 install:
     - pip install -r requirements.txt -r test/requirements.txt
     - if [[ $TRAVIS_PYTHON_VERSION = 2* ]] ; then pip install -r test/requirements2.txt; fi
-script: python test/alltests.py
+script: 
+    - ./runtests.sh
+    - python test/alltests.py
 before_install:
   - "sudo mkdir -p /usr/include/postgresql/8.4/server"
 #  - 'sudo apt-get -o Dpkg::Options::="--force-overwrite" install python-profiler'

@@ -1,7 +1,7 @@
-import webtest
+import unittest
 import time
 import threading
-
+import sys
 import web
 import urllib
 
@@ -41,14 +41,14 @@ def write(filename, data):
     f.write(data)
     f.close()
 
-class ApplicationTest(webtest.TestCase):
+class ApplicationTest(unittest.TestCase):
     def test_reloader(self):
         write('foo.py', data % dict(classname='a', output='a'))
         import foo
         app = foo.app
-        
+
         self.assertEquals(app.request('/').data, b'a')
-        
+
         # test class change
         time.sleep(1)
         write('foo.py', data % dict(classname='a', output='b'))
@@ -360,6 +360,10 @@ class ApplicationTest(webtest.TestCase):
         class index:
             def GET(self):
                 pass
+
+        # reset command-line arguments
+        sys.argv = ["code.py"]
+
         app = web.application(urls, locals())
         thread = threading.Thread(target=app.run)
 
@@ -370,6 +374,3 @@ class ApplicationTest(webtest.TestCase):
         app.stop()
         thread.join(timeout=1)
         self.assertFalse(thread.isAlive())
-
-if __name__ == '__main__':
-    webtest.main()

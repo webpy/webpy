@@ -1016,7 +1016,7 @@ class CP_fileobject(socket._fileobject):
             try:
                 bytes_sent = self.send(data)
                 data = data[bytes_sent:]
-            except socket.error, e:
+            except (socket.error, e):
                 if e.args[0] not in socket_errors_nonblocking:
                     raise
 
@@ -1037,7 +1037,7 @@ class CP_fileobject(socket._fileobject):
                 data = self._sock.recv(size)
                 self.bytes_read += len(data)
                 return data
-            except socket.error, e:
+            except (socket.error, e):
                 if (e.args[0] not in socket_errors_nonblocking
                         and e.args[0] not in socket_error_eintr):
                     raise
@@ -1932,7 +1932,7 @@ class HTTPServer(object):
             af, socktype, proto, canonname, sa = res
             try:
                 self.bind(af, socktype, proto)
-            except socket.error, serr:
+            except (socket.error, serr):
                 msg = "%s -- (%s: %s)" % (msg, sa, serr)
                 if self.socket:
                     self.socket.close()
@@ -2283,7 +2283,7 @@ class WSGIGateway(Gateway):
         # exc_info tuple."
         if self.req.sent_headers:
             try:
-                raise exc_info[0], exc_info[1], exc_info[2]
+                raise (exc_info[0], exc_info[1], exc_info[2])
             finally:
                 exc_info = None
 

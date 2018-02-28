@@ -183,35 +183,9 @@ def WSGIServer(server_address, wsgi_app):
     """Creates CherryPy WSGI server listening at `server_address` to serve `wsgi_app`.
     This function can be overwritten to customize the webserver or use a different webserver.
     """
-    from . import wsgiserver
-    
-    # Default values of wsgiserver.ssl_adapters uses cherrypy.wsgiserver
-    # prefix. Overwriting it make it work with web.wsgiserver.
-    wsgiserver.ssl_adapters = {
-        'builtin': 'web.wsgiserver.ssl_builtin.BuiltinSSLAdapter',
-        'pyopenssl': 'web.wsgiserver.ssl_pyopenssl.pyOpenSSLAdapter',
-    }
-    
-    server = wsgiserver.CherryPyWSGIServer(server_address, wsgi_app, server_name="localhost")
-        
-    def create_ssl_adapter(cert, key):
-        # wsgiserver tries to import submodules as cherrypy.wsgiserver.foo.
-        # That doesn't work as not it is web.wsgiserver. 
-        # Patching sys.modules temporarily to make it work.
-        import types
-        cherrypy = types.ModuleType('cherrypy')
-        cherrypy.wsgiserver = wsgiserver
-        sys.modules['cherrypy'] = cherrypy
-        sys.modules['cherrypy.wsgiserver'] = wsgiserver
-        
-        from wsgiserver.ssl_pyopenssl import pyOpenSSLAdapter
-        adapter = pyOpenSSLAdapter(cert, key)
-        
-        # We are done with our work. Cleanup the patches.
-        del sys.modules['cherrypy']
-        del sys.modules['cherrypy.wsgiserver']
+    from cheroot import wsgi
 
-        return adapter
+    server = wsgi.Server(server_address, wsgi_app, server_name="localhost")
 
     # SSL backward compatibility
     if (server.ssl_adapter is None and

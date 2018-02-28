@@ -28,6 +28,7 @@ Grammar:
     pyexpr -> <python expression>
 """
 from __future__ import print_function
+from io import open
 
 __all__ = [
     "Template",

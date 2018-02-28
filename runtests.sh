@@ -1,3 +1,3 @@
 #! /bin/bash
 
-py.test tests/
+py.test tests $*

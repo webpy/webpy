@@ -515,6 +515,7 @@ class DB:
         # flag to enable/disable printing queries
         self.printing = config.get('debug_sql', config.get('debug', False))
         self.supports_multiple_insert = False
+        self.multiple_insert_seqname_returns_first_id = False
         
         try:
             import DBUtils
@@ -886,7 +887,10 @@ class DB:
 
         try: 
             out = db_cursor.fetchone()[0]
-            out = range(out-len(values)+1, out+1)        
+            if self.multiple_insert_seqname_returns_first_id:
+                out = range(out, out+len(values))        
+            else:
+                out = range(out-len(values)+1, out+1)        
         except Exception: 
             out = None
 
@@ -1043,6 +1047,7 @@ class MySQLDB(DB):
         self.dbname = "mysql"
         DB.__init__(self, db, keywords)
         self.supports_multiple_insert = True
+        self.multiple_insert_seqname_returns_first_id = True
         
     def _process_insert_query(self, query, tablename, seqname):
         return query, SQLQuery('SELECT last_insert_id();')

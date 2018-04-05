@@ -457,7 +457,7 @@ class Parser:
         keyword = self.python_lookahead(stmt)
         
         # if there is some thing left in the line
-        if line.strip():
+        if line.strip() and not line.lstrip().startswith('$#'):
             block = line.lstrip()
         else:
             def find_indent(text):

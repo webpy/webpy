@@ -22,7 +22,7 @@ class RouteTest(unittest.TestCase):
             return 'Hello Method'
             
         response = app.request('/method')
-        self.assertEquals(response.data, 'Hello Method')
+        self.assertEquals(response.data, b'Hello Method')
     
     def testHandlerClass(self):
         app = web.application()
@@ -33,7 +33,7 @@ class RouteTest(unittest.TestCase):
                 return 'Hello Class'
             
         response = app.request('/class')
-        self.assertEquals(response.data, 'Hello Class')
+        self.assertEquals(response.data, b'Hello Class')
     
     def testParameters(self):
         app = web.application()
@@ -44,4 +44,4 @@ class RouteTest(unittest.TestCase):
                 return 'Hello ' + name
             
         response = app.request('/hello/WebPy')
-        self.assertEquals(response.data, 'Hello WebPy')
+        self.assertEquals(response.data, b'Hello WebPy')

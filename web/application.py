@@ -132,6 +132,30 @@ class application:
     def add_mapping(self, pattern, classname):
         self.mapping.append((pattern, classname))
 
+    def route(self, pattern):
+        """
+        Add URL mapping using decorator
+        e.g @app.route("/hello")
+        >>> app = application()
+        >>> 
+        >>> @app.route("/method")
+        ... def test_method():
+            ...    return "Hello Method"
+            ... 
+        >>> app.request("/method").data
+            'Hello Method'
+        >>> @app.route("/class")
+        ... def test_class():
+            ...    return "Hello Class"
+            ... 
+            >>> app.request("/class").data
+            'Hello Class'
+        """
+        def decorator(fn):
+            self.mapping.append((pattern, fn))
+            return fn
+        return decorator
+
     def add_processor(self, processor):
         """
         Adds a processor to the application. 

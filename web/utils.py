@@ -664,10 +664,12 @@ class IterBetter:
     def __iter__(self): 
         if hasattr(self, "_head"):
             yield self._head
-
-        while 1:    
-            yield next(self.i)
+        
+        # Fix DeprecationWarning: generator raised StopIteration, see PEP479
+        for x in self.i:
+            yield x
             self.c += 1
+        return
 
     def __getitem__(self, i):
         #todo: slices

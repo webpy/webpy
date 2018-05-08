@@ -353,7 +353,7 @@ class Checkbox(Input):
         return '<input %s/>' % attrs
 
     def set_value(self, value):
-        self.checked = bool(value)
+        self.checked = value is not None and value is not False
 
     def get_value(self):
         return self.checked

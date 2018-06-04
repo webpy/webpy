@@ -2,12 +2,14 @@
 Web application
 (from web.py)
 """
-import webapi as web
-import webapi, wsgi, utils
-import debugerror
-import httpserver
+from __future__ import print_function
 
-from utils import lstrips, safeunicode
+from . import webapi as web
+from . import webapi, wsgi, utils, browser
+from .debugerror import debugerror
+from . import httpserver
+from .utils import lstrips, safeunicode
+from .py3helpers import iteritems, string_types, is_iter, PY2, text_type
 import sys
 
 import urllib
@@ -15,12 +17,25 @@ import traceback
 import itertools
 import os
 import types
-from exceptions import SystemExit
+from inspect import isclass
+
+import wsgiref.handlers
 
 try:
-    import wsgiref.handlers
+    from urllib.parse import splitquery, urlencode, quote, unquote
 except ImportError:
-    pass # don't break people with old Pythons
+    from urllib import splitquery, urlencode, quote, unquote
+
+try:
+    from importlib import reload #Since Py 3.4 reload is in importlib
+except ImportError:
+    try:
+        from imp import reload #Since Py 3.0 and before 3.4 reload is in imp
+    except ImportError:
+        pass #Before Py 3.0 reload is a global function
+
+from io import BytesIO
+
 
 __all__ = [
     "application", "auto_application",
@@ -39,7 +54,7 @@ class application:
         ...     def GET(self): return "hello"
         >>>
         >>> app.request("/hello").data
-        'hello'
+        b'hello'
     """
     def __init__(self, mapping=(), fvars={}, autoreload=None):
         if autoreload is None:
@@ -131,7 +146,7 @@ class application:
             ...
             >>> app.add_processor(hello)
             >>> app.request("/web.py").data
-            'hello, web.py'
+            b'hello, web.py'
         """
         self.processors.append(processor)
 
@@ -149,7 +164,7 @@ class application:
             ...
             >>> response = app.request("/hello")
             >>> response.data
-            'hello'
+            b'hello'
             >>> response.status
             '200 OK'
             >>> response.headers['Content-Type']
@@ -181,10 +196,10 @@ class application:
             >>> app.request('/ua', headers = {
             ...      'User-Agent': 'a small jumping bean/1.0 (compatible)'
             ... }).data
-            'your user-agent is a small jumping bean/1.0 (compatible)'
+            b'your user-agent is a small jumping bean/1.0 (compatible)'
 
         """
-        path, maybe_query = urllib.splitquery(localpart)
+        path, maybe_query = splitquery(localpart)
         query = maybe_query or ""
         
         if 'env' in kw:
@@ -205,24 +220,27 @@ class application:
 
         if method not in ["HEAD", "GET"]:
             data = data or ''
-            import StringIO
+
             if isinstance(data, dict):
-                q = urllib.urlencode(data)
+                q = urlencode(data)
             else:
                 q = data
-            env['wsgi.input'] = StringIO.StringIO(q)
-            if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
+
+            env['wsgi.input'] = BytesIO(q.encode('utf-8'))
+            if 'CONTENT_LENGTH' not in env:
+            #if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
                 env['CONTENT_LENGTH'] = len(q)
         response = web.storage()
         def start_response(status, headers):
             response.status = status
             response.headers = dict(headers)
             response.header_items = headers
-        response.data = "".join(self.wsgifunc()(env, start_response))
+
+        data = self.wsgifunc()(env, start_response)
+        response.data = b"".join(data)
         return response
 
     def browser(self):
-        import browser
         return browser.AppBrowser(self)
 
     def handle(self):
@@ -242,7 +260,7 @@ class application:
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                print >> web.debug, traceback.format_exc()
+                print(traceback.format_exc(), file=web.debug)
                 raise self.internalerror()
         
         # processors must be applied in the resvere order. (??)
@@ -258,14 +276,12 @@ class application:
             # so we need to do an iteration
             # and save the result for later
             try:
-                firstchunk = iterator.next()
+                firstchunk = next(iterator)
             except StopIteration:
                 firstchunk = ''
 
             return itertools.chain([firstchunk], iterator)    
                                 
-        def is_generator(x): return x and hasattr(x, 'next')
-        
         def wsgi(env, start_resp):
             # clear threadlocal to avoid inteference of previous requests
             self._cleanup()
@@ -277,21 +293,33 @@ class application:
                     raise web.nomethod()
 
                 result = self.handle_with_processors()
-                if is_generator(result):
+                if is_iter(result):
                     result = peep(result)
                 else:
                     result = [result]
-            except web.HTTPError, e:
+            except web.HTTPError as e:
                 result = [e.data]
 
-            result = web.safestr(iter(result))
+            def build_result(result):
+                for r in result:
+                    if PY2:
+                        yield utils.safestr(r)
+                    else:
+                        if isinstance(r, bytes):
+                            yield r
+                        elif isinstance(r, string_types):
+                            yield r.encode('utf-8')
+                        else:
+                            yield str(r).encode('utf-8')
+
+            result = build_result(result)
 
             status, headers = web.ctx.status, web.ctx.headers
             start_resp(status, headers)
             
             def cleanup():
                 self._cleanup()
-                yield '' # force this function to be a generator
+                yield b'' # force this function to be a generator
                             
             return itertools.chain(result, cleanup())
 
@@ -407,7 +435,7 @@ class application:
             ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], ctx.homepath)
             # Apache and CherryPy webservers unquote the url but lighttpd doesn't. 
             # unquote explicitly for lighttpd to make ctx.path uniform across all servers.
-            ctx.path = urllib.unquote(ctx.path)
+            ctx.path = unquote(ctx.path)
 
         if env.get('QUERY_STRING'):
             ctx.query = '?' + env.get('QUERY_STRING', '')
@@ -416,11 +444,11 @@ class application:
 
         ctx.fullpath = ctx.path + ctx.query
         
-        for k, v in ctx.iteritems():
+        for k, v in iteritems(ctx):
             # convert all string values to unicode values and replace 
             # malformed data with a suitable replacement marker.
-            if isinstance(v, str):
-                ctx[k] = v.decode('utf-8', 'replace') 
+            if isinstance(v, bytes):
+                ctx[k] = v.decode('utf-8', 'replace')
 
         # status must always be str
         ctx.status = '200 OK'
@@ -437,15 +465,13 @@ class application:
             tocall = getattr(cls(), meth)
             return tocall(*args)
             
-        def is_class(o): return isinstance(o, (types.ClassType, type))
-            
         if f is None:
             raise web.notfound()
         elif isinstance(f, application):
             return f.handle_with_processors()
-        elif is_class(f):
+        elif isclass(f):
             return handle_class(f)
-        elif isinstance(f, basestring):
+        elif isinstance(f, string_types):
             if f.startswith('redirect '):
                 url = f.split(' ', 1)[1]
                 if web.ctx.method == "GET":
@@ -473,10 +499,10 @@ class application:
                     return f, None
                 else:
                     continue
-            elif isinstance(what, basestring):
-                what, result = utils.re_subm('^' + pat + '$', what, value)
+            elif isinstance(what, string_types):
+                what, result = utils.re_subm(r'^%s\Z' % (pat,), what, value)
             else:
-                result = utils.re_compile('^' + pat + '$').match(value)
+                result = utils.re_compile(r'^%s\Z' % (pat,)).match(value)
                 
             if result: # it's a match
                 return what, [x for x in result.groups()]
@@ -516,14 +542,22 @@ class application:
         if parent:
             return parent.internalerror()
         elif web.config.get('debug'):
-            import debugerror
-            return debugerror.debugerror()
+            return debugerror()
         else:
             return web._InternalError()
 
+def with_metaclass(mcls):
+    def decorator(cls):
+        body = vars(cls).copy()
+        # clean out class body
+        body.pop('__dict__', None)
+        body.pop('__weakref__', None)
+        return mcls(cls.__name__, cls.__bases__, body)
+    return decorator
+
 class auto_application(application):
     """Application similar to `application` but urls are constructed 
-    automatiacally using metaclass.
+    automatically using metaclass.
 
         >>> app = auto_application()
         >>> class hello(app.page):
@@ -533,9 +567,9 @@ class auto_application(application):
         ...     path = '/foo/.*'
         ...     def GET(self): return "foo"
         >>> app.request("/hello").data
-        'hello, world'
+        b'hello, world'
         >>> app.request('/foo/bar').data
-        'foo'
+        b'foo'
     """
     def __init__(self):
         application.__init__(self)
@@ -550,9 +584,10 @@ class auto_application(application):
                 if path is not None:
                     self.add_mapping(path, klass)
 
-        class page:
+
+        @with_metaclass(metapage) #little hack needed or Py2 and Py3 compatibility
+        class page():
             path = None
-            __metaclass__ = metapage
 
         self.page = page
 
@@ -571,12 +606,12 @@ class subdomain_application(application):
         >>> mapping = (r"hello\.example\.com", app)
         >>> app2 = subdomain_application(mapping)
         >>> app2.request("/hello", host="hello.example.com").data
-        'hello'
+        b'hello'
         >>> response = app2.request("/hello", host="something.example.com")
         >>> response.status
         '404 Not Found'
         >>> response.data
-        'not found'
+        b'not found'
     """
     def handle(self):
         host = web.ctx.host.split(':')[0] #strip port
@@ -585,7 +620,7 @@ class subdomain_application(application):
         
     def _match(self, mapping, value):
         for pat, what in mapping:
-            if isinstance(what, basestring):
+            if isinstance(what, string_types):
                 what, result = utils.re_subm('^' + pat + '$', what, value)
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)
@@ -621,22 +656,22 @@ def unloadhook(h):
     def processor(handler):
         try:
             result = handler()
-            is_generator = result and hasattr(result, 'next')
+            is_gen = is_iter(result)
         except:
             # run the hook even when handler raises some exception
             h()
             raise
 
-        if is_generator:
+        if is_gen:
             return wrap(result)
         else:
             h()
             return result
             
     def wrap(result):
-        def next():
+        def next_hook():
             try:
-                return result.next()
+                return next(result)
             except:
                 # call the hook at the and of iterator
                 h()
@@ -644,7 +679,7 @@ def unloadhook(h):
 
         result = iter(result)
         while True:
-            yield next()
+            yield next_hook()
             
     return processor
 

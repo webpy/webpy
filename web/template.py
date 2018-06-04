@@ -27,6 +27,8 @@ Grammar:
     expr -> '$' pyexpr | '$(' pyexpr ')' | '${' pyexpr '}'
     pyexpr -> <python expression>
 """
+from __future__ import print_function
+from io import open
 
 __all__ = [
     "Template",
@@ -40,12 +42,22 @@ import os
 import sys
 import glob
 import re
-from UserDict import DictMixin
 import warnings
+import ast
 
-from utils import storage, safeunicode, safestr, re_compile
-from webapi import config
-from net import websafe
+from .utils import storage, safeunicode, safestr, re_compile
+from .webapi import config
+from .net import websafe
+from .py3helpers import PY2, iteritems
+
+if PY2:
+    from UserDict import DictMixin
+
+    # Make a new-style class
+    class MutableMapping(object, DictMixin):
+        pass
+else:
+    from collections import MutableMapping
 
 def splitline(text):
     r"""
@@ -262,7 +274,7 @@ class Parser:
             extended_expr()
         
         def identifier():
-            tokens.next()
+            next(tokens)
         
         def extended_expr():
             lookahead = tokens.lookahead()
@@ -280,18 +292,18 @@ class Parser:
             from token import NAME # python token constants
             dot = tokens.lookahead()
             if tokens.lookahead2().type == NAME:
-                tokens.next() # consume dot
+                next(tokens) # consume dot
                 identifier()
                 extended_expr()
         
         def paren_expr():
-            begin = tokens.next().value
+            begin = next(tokens).value
             end = parens[begin]
             while True:
                 if tokens.lookahead().value in parens:
                     paren_expr()
                 else:
-                    t = tokens.next()
+                    t = next(tokens)
                     if t.value == end:
                         break
             return
@@ -308,7 +320,8 @@ class Parser:
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            readline = iter([text]).next
+            i = iter([text])
+            readline = lambda: next(i)
             end = None
             for t in tokenize.generate_tokens(readline):
                 t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
@@ -334,7 +347,7 @@ class Parser:
 
             def _next(self):
                 try:
-                    return self.iteritems.next()
+                    return next(self.iteritems)
                 except StopIteration:
                     return None
                 
@@ -343,10 +356,12 @@ class Parser:
                     self.items.append(self._next())
                 return self.items[self.position+1]
                     
-            def next(self):
+            def __next__(self):
                 self.current_item = self.lookahead()
                 self.position += 1
                 return self.current_item
+
+            next = __next__ #Needed for Py2 compatibility
 
         tokens = BetterIter(get_tokens(text))
                 
@@ -378,12 +393,14 @@ class Parser:
             >>> python_lookahead(' x = 1')
             ' '
         """
-        readline = iter([text]).next
+        i = iter([text])
+        readline = lambda: next(i)
         tokens = tokenize.generate_tokens(readline)
-        return tokens.next()[1]
+        return next(tokens)[1]
         
     def python_tokens(self, text):
-        readline = iter([text]).next
+        i = iter([text])
+        readline = lambda: next(i)
         tokens = tokenize.generate_tokens(readline)
         return [t[1] for t in tokens]
         
@@ -466,13 +483,14 @@ class Parser:
         if keyword in self.statement_nodes:
             return self.statement_nodes[keyword](stmt, block, begin_indent)
         else:
-            raise ParseError, 'Unknown statement: %s' % repr(keyword)
+            raise ParseError('Unknown statement: %s' % repr(keyword))
         
 class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
     def __init__(self, text):
         self.text = text
-        readline = iter([text]).next
+        i = iter([text])
+        readline = lambda: next(i)
         self.tokens = tokenize.generate_tokens(readline)
         self.index = 0
         
@@ -488,7 +506,7 @@ class PythonTokenizer:
         """
         try:
             while True:
-                t = self.next()
+                t = next(self)
                 if t.value == delim:
                     break
                 elif t.value == '(':
@@ -511,11 +529,13 @@ class PythonTokenizer:
             # if this error is ignored, then it will be caught when compiling the python code.
             return
     
-    def next(self):
-        type, t, begin, end, line = self.tokens.next()
+    def __next__(self):
+        type, t, begin, end, line = next(self.tokens)
         row, col = end
         self.index = col
         return storage(type=type, value=t, begin=begin, end=end)
+
+    next = __next__ #needed for Py2 compatibility
         
 class DefwithNode:
     def __init__(self, defwith, suite):
@@ -721,8 +741,11 @@ TEMPLATE_BUILTIN_NAMES = [
     "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-import __builtin__
-TEMPLATE_BUILTINS = dict([(name, getattr(__builtin__, name)) for name in TEMPLATE_BUILTIN_NAMES if name in __builtin__.__dict__])
+if PY2:
+    import __builtin__ as builtins
+else:
+    import builtins
+TEMPLATE_BUILTINS = dict([(name, getattr(builtins, name)) for name in TEMPLATE_BUILTIN_NAMES if name in builtins.__dict__])
 
 class ForLoop:
     """
@@ -730,7 +753,7 @@ class ForLoop:
     
         >>> loop = ForLoop()
         >>> for x in loop.setup(['a', 'b', 'c']):
-        ...     print loop.index, loop.revindex, loop.parity, x
+        ...     print(loop.index, loop.revindex, loop.parity, x)
         ...
         1 3 odd a
         2 2 even b
@@ -745,7 +768,7 @@ class ForLoop:
         
     def __getattr__(self, name):
         if self._ctx is None:
-            raise AttributeError, name
+            raise AttributeError(name)
         else:
             return getattr(self._ctx, name)
         
@@ -801,6 +824,7 @@ class BaseTemplate:
     def _compile(self, code):
         env = self.make_env(self._globals or {}, self._builtins)
         exec(code, env)
+        #__template__ is a global function declared when executing "code"
         return env['__template__']
 
     def __call__(self, *a, **kw):
@@ -874,10 +898,10 @@ class Template(BaseTemplate):
                 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        import webapi as web
+        from . import webapi as web
         if 'headers' in web.ctx and self.content_type:
             web.header('Content-Type', self.content_type, unique=True)
-            
+
         return BaseTemplate.__call__(self, *a, **kw)
         
     def generate_code(text, filename, parser=None):
@@ -902,7 +926,7 @@ class Template(BaseTemplate):
 
         def get_source_line(filename, lineno):
             try:
-                lines = open(filename).read().splitlines()
+                lines = open(filename, encoding='utf-8').read().splitlines()
                 return lines[lineno]
             except:
                 return None
@@ -910,25 +934,19 @@ class Template(BaseTemplate):
         try:
             # compile the code first to report the errors, if any, with the filename
             compiled_code = compile(code, filename, 'exec')
-        except SyntaxError, e:
+        except SyntaxError as err:
             # display template line that caused the error along with the traceback.
-            try:
-                e.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
-                    (repr(e.filename), e.lineno, get_source_line(e.filename, e.lineno-1))
-            except: 
-                pass
+            # this works in Py3 but not Py2, duh ? TODO
+            err.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
+                (repr(err.filename), err.lineno, get_source_line(err.filename, err.lineno-1))
+
+
             raise
+
         
-        # make sure code is safe - but not with jython, it doesn't have a working compiler module
-        if not sys.platform.startswith('java'):
-            try:
-                import compiler
-                ast = compiler.parse(code)
-                SafeVisitor().walk(ast, filename)
-            except ImportError:
-                warnings.warn("Unabled to import compiler module. Unable to check templates for safety.")
-        else:
-            warnings.warn("SECURITY ISSUE: You are using Jython, which does not support checking templates for safety. Your templates can execute arbitrary code.")
+        # make sure code is safe 
+        ast_node = ast.parse(code, filename)
+        SafeVisitor().walk(ast_node, filename)
 
         return compiled_code
         
@@ -996,15 +1014,21 @@ class Render:
         if kind == 'dir':
             return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
         elif kind == 'file':
-            return Template(open(path).read(), filename=path, **self._keywords)
+            return Template(open(path, encoding='utf-8').read(), filename=path, **self._keywords)
         else:
-            raise AttributeError, "No template named " + name            
+            raise AttributeError("No template named " + name)
 
-    def _findfile(self, path_prefix): 
+    def _findfile(self, path_prefix):
         p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
         p.sort() # sort the matches for deterministic order
+
+        # support templates without extension (#364)
+        # When no templates are found and a file is found with the exact name, use it.
+        if not p and os.path.exists(path_prefix):
+            p = [path_prefix]
+
         return p and p[0]
-            
+
     def _template(self, name):
         if self._cache is not None:
             if name not in self._cache:
@@ -1058,7 +1082,7 @@ except ImportError:
 def frender(path, **keywords):
     """Creates a template from the given file path.
     """
-    return Template(open(path).read(), filename=path, **keywords)
+    return Template(open(path, encoding='utf-8').read(), filename=path, **keywords)
     
 def compile_templates(root):
     """Compiles templates to python code."""
@@ -1071,7 +1095,7 @@ def compile_templates(root):
             if d.startswith('.'):
                 dirnames.remove(d) # don't visit this dir
 
-        out = open(os.path.join(dirpath, '__init__.py'), 'w')
+        out = open(os.path.join(dirpath, '__init__.py'), 'w', encoding='utf-8')
         out.write('from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n')
         if dirnames:
             out.write("import " + ", ".join(dirnames))
@@ -1085,7 +1109,7 @@ def compile_templates(root):
             else:
                 name = f
                 
-            text = open(path).read()
+            text = open(path, encoding='utf-8').read()
             text = Template.normalize_text(text)
             code = Template.generate_code(text, path)
 
@@ -1098,7 +1122,7 @@ def compile_templates(root):
             out.write("join_ = %s._join; escape_ = %s._escape\n\n" % (name, name))
 
             # create template to make sure it compiles
-            t = Template(open(path).read(), path)
+            t = Template(open(path, encoding='utf-8').read(), path)
         out.close()
                 
 class ParseError(Exception):
@@ -1108,108 +1132,100 @@ class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
     pass
 
-# Enumerate all the allowed AST nodes
-ALLOWED_AST_NODES = [
-    "Add", "And",
-#   "AssAttr",
-    "AssList", "AssName", "AssTuple",
-#   "Assert",
-    "Assign", "AugAssign",
-#   "Backquote",
-    "Bitand", "Bitor", "Bitxor", "Break",
-    "CallFunc","Class", "Compare", "Const", "Continue",
-    "Decorators", "Dict", "Discard", "Div",
-    "Ellipsis", "EmptyNode",
-#   "Exec",
-    "Expression", "FloorDiv", "For",
-#   "From",
-    "Function", 
-    "GenExpr", "GenExprFor", "GenExprIf", "GenExprInner",
-    "Getattr", 
-#   "Global", 
-    "If", "IfExp",
-#   "Import",
-    "Invert", "Keyword", "Lambda", "LeftShift",
-    "List", "ListComp", "ListCompFor", "ListCompIf", "Mod",
-    "Module",
-    "Mul", "Name", "Not", "Or", "Pass", "Power",
-#   "Print", "Printnl", "Raise",
-    "Return", "RightShift", "Slice", "Sliceobj",
-    "Stmt", "Sub", "Subscript",
-#   "TryExcept", "TryFinally",
-    "Tuple", "UnaryAdd", "UnarySub",
-    "While", "With", "Yield",
-]
+ALLOWED_AST_NODES = ['Interactive', 'Expression', 'Suite', 'FunctionDef',
+    'ClassDef', 'Return', 'Delete', 'Assign', 'AugAssign', 'alias',
+    #'Print', 'Repr',
+    'For', 'While', 'If', 'With', 'comprehension','NameConstant', 'arg',
+    #'Raise', 'TryExcept', 'TryFinally', 'Assert', 'Import',
+    #'ImportFrom', 'Exec', 'Global',
+    'Expr', 'Pass', 'Break', 'Continue', 'BoolOp', 'BinOp', 'UnaryOp', 
+    'Lambda', 'IfExp', 'Dict', 'Module', 'arguments', 'keyword',
+    'Set', 'ListComp', 'SetComp', 'DictComp', 'GeneratorExp', 'Yield',
+    'Compare', 'Call', 'Num', 'Str', 'Attribute', 'Subscript',
+    'Name', 'List', 'Tuple', 'Load', 'Store', 'Del', 'AugLoad', 'AugStore',
+    'Param', 'Ellipsis', 'Slice', 'ExtSlice', 'Index', 'And', 'Or', 'Add',
+    'Sub', 'Mult', 'Div', 'Mod', 'Pow', 'LShift', 'RShift', 'BitOr', 'BitXor',
+    'BitAnd', 'FloorDiv', 'Invert', 'Not', 'UAdd', 'USub', 'Eq', 'NotEq',
+    'Lt', 'LtE', 'Gt', 'GtE', 'Is', 'IsNot', 'In', 'NotIn', 'ExceptHandler']
 
-class SafeVisitor(object):
+class SafeVisitor(ast.NodeVisitor):
     """
     Make sure code is safe by walking through the AST.
     
     Code considered unsafe if:
-        * it has restricted AST nodes
+        * it has restricted AST nodes (only nodes defined in ALLOWED_AST_NODES are allowed)
+        * it is trying to assign to attributes
         * it is trying to access resricted attributes   
         
     Adopted from http://www.zafar.se/bkz/uploads/safe.txt (public domain, Babar K. Zafar)
+        * Using ast rather than compiler tree, for jython and Py3 support since Py2.6
+        * Simplified with ast.NodeVisitor class
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         "Initialize visitor by generating callbacks for all AST node types."
+        super(SafeVisitor, self).__init__(*args, **kwargs)
         self.errors = []
 
-    def walk(self, ast, filename):
+    def walk(self, tree, filename):
         "Validate each node in AST and raise SecurityError if the code is not safe."
         self.filename = filename
-        self.visit(ast)
-        
+        self.visit(tree)
         if self.errors:        
-            raise SecurityError, '\n'.join([str(err) for err in self.errors])
-        
-    def visit(self, node, *args):
-        "Recursively validate node and all of its children."
-        def classname(obj):
-            return obj.__class__.__name__
-        nodename = classname(node)
-        fn = getattr(self, 'visit' + nodename, None)
-        
-        if fn:
-            fn(node, *args)
-        else:
-            if nodename not in ALLOWED_AST_NODES:
-                self.fail(node, *args)
-            
-        for child in node.getChildNodes():
-            self.visit(child, *args)
+            raise SecurityError('\n'.join([str(err) for err in self.errors]))
+    
+    def generic_visit(self, node):
+        nodename = type(node).__name__
+        if nodename not in ALLOWED_AST_NODES:
+            self.fail_name(node, nodename)
+        super(SafeVisitor, self).generic_visit(node)
 
-    def visitName(self, node, *args):
-        "Disallow any attempts to access a restricted attr."
-        #self.assert_attr(node.getChildren()[0], node)
-        pass
-        
-    def visitGetattr(self, node, *args):
-        "Disallow any attempts to access a restricted attribute."
-        self.assert_attr(node.attrname, node)
-            
-    def assert_attr(self, attrname, node):
+    def visit_Attribute(self, node):
+        attrname = self.get_node_attr(node)
         if self.is_unallowed_attr(attrname):
-            lineno = self.get_node_lineno(node)
-            e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
-            self.errors.append(e)
+            self.fail_attribute(node, attrname)
+        super(SafeVisitor, self).generic_visit(node)
 
+    def visit_Assign(self, node):
+        self.check_assign_targets(node)
+
+    def visit_AugAssign(self, node):
+        self.check_assign_target(node)
+
+    def check_assign_targets(self, node):
+        for target in node.targets:
+            self.check_assign_target(target)
+        super(SafeVisitor, self).generic_visit(node)
+
+    def check_assign_target(self, targetnode):
+        targetname = type(targetnode).__name__
+        if targetname == "Attribute":
+            attrname = self.get_node_attr(targetnode)
+            self.fail_attribute(targetnode, attrname)
+
+    # failure modes
+    def fail_name(self, node, nodename):
+        lineno = self.get_node_lineno(node)
+        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
+        self.errors.append(e)
+
+    def fail_attribute(self, node, attrname):
+        lineno = self.get_node_lineno(node)
+        e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
+        self.errors.append(e)
+        
+    # helpers
     def is_unallowed_attr(self, name):
         return name.startswith('_') \
             or name.startswith('func_') \
             or name.startswith('im_')
+
+    def get_node_attr(self, node):
+        return 'attr' in node._fields and node.attr or None
             
     def get_node_lineno(self, node):
         return (node.lineno) and node.lineno or 0
         
-    def fail(self, node, *args):
-        "Default callback for unallowed AST nodes."
-        lineno = self.get_node_lineno(node)
-        nodename = node.__class__.__name__
-        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
-        self.errors.append(e)
-
-class TemplateResult(object, DictMixin):
+class TemplateResult(MutableMapping):
     """Dictionary like object for storing template output.
     
     The result of a template execution is usally a string, but sometimes it
@@ -1224,9 +1240,7 @@ class TemplateResult(object, DictMixin):
     seemlessly when __body__ is accessed.
     
         >>> d = TemplateResult(__body__='hello, world', x='foo')
-        >>> d
-        <TemplateResult: {'__body__': 'hello, world', 'x': 'foo'}>
-        >>> print d
+        >>> print(d)
         hello, world
         >>> d.x
         'foo'
@@ -1277,8 +1291,8 @@ class TemplateResult(object, DictMixin):
     def __getattr__(self, key): 
         try:
             return self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
 
     def __setattr__(self, key, value): 
         self[key] = value
@@ -1286,8 +1300,8 @@ class TemplateResult(object, DictMixin):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
         
     def __unicode__(self):
         self._prepare_body()
@@ -1295,11 +1309,24 @@ class TemplateResult(object, DictMixin):
     
     def __str__(self):
         self._prepare_body()
-        return self["__body__"].encode('utf-8')
+        if PY2:
+            return self["__body__"].encode('utf-8')
+        else:
+            return self["__body__"]
         
     def __repr__(self):
         self._prepare_body()
         return "<TemplateResult: %s>" % self._d
+
+    def __len__(self):
+        return self._d.__len__()
+
+    def __iter__(self):
+        for i in self._d.__iter__():
+            if i == "__body__":
+                self._prepare_body()
+            yield i
+
 
 def test():
     r"""Doctest for testing template module.
@@ -1309,7 +1336,7 @@ def test():
         >>> class TestResult:
         ...     def __init__(self, t): self.t = t
         ...     def __getattr__(self, name): return getattr(self.t, name)
-        ...     def __repr__(self): return repr(unicode(self))
+        ...     def __repr__(self): return repr(unicode(self.t) if PY2 else str(self.t))
         ...
         >>> def t(code, **keywords):
         ...     tmpl = Template(code, **keywords)
@@ -1365,7 +1392,7 @@ def test():
         u'1\n'
         >>> t('$for x in [1, 2, 3]: $x')()
         u'1\n2\n3\n'
-        >>> t('$def with (d)\n$for k, v in d.iteritems(): $k')({1: 1})
+        >>> t('$def with (d)\n$for k, v in d.items(): $k')({1: 1})
         u'1\n'
         >>> t('$for x in [1, 2, 3]:\n\t$x')()
         u'    1\n    2\n    3\n'
@@ -1390,7 +1417,7 @@ def test():
         u'1\n'
         >>> t('$ a = [1]\n$a[0]')()
         u'1\n'
-        >>> t('$ a = {1: 1}\n$a.keys()[0]')()
+        >>> t('$ a = {1: 1}\n$list(a.keys())[0]')()
         u'1\n'
         >>> t('$ a = []\n$if not a: 1')()
         u'1\n'
@@ -1413,8 +1440,6 @@ def test():
     Test unicode.
     
         >>> t('$def with (a)\n$a')(u'\u203d')
-        u'\u203d\n'
-        >>> t('$def with (a)\n$a')(u'\u203d'.encode('utf-8'))
         u'\u203d\n'
         >>> t(u'$def with (a)\n$a $:a')(u'\u203d')
         u'\u203d \u203d\n'
@@ -1491,18 +1516,26 @@ def test():
 
         >>> t('$for i in range(10)[1:5]:\n    $i')()
         u'1\n2\n3\n4\n'
-        >>> t("$for k, v in {'a': 1, 'b': 2}.items():\n    $k $v")()
+        >>> t("$for k, v in sorted({'a': 1, 'b': 2}.items()):\n    $k $v", globals={'sorted':sorted})()
         u'a 1\nb 2\n'
-        >>> t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
-        Traceback (most recent call last):
-            ...
-        SyntaxError: invalid syntax
+
+    Test for syntax error.
+
+        >>> try:
+        ...     t("$for k, v in ({'a': 1, 'b': 2}.items():\n    $k $v")()
+        ... except SyntaxError:
+        ...     print("OK")
+        ... else:
+        ...     print("Expected SyntaxError")
+        ...
+        OK
 
     Test datetime.
 
         >>> import datetime
         >>> t("$def with (date)\n$date.strftime('%m %Y')")(datetime.datetime(2009, 1, 1))
         u'01 2009\n'
+
     """
     pass
             

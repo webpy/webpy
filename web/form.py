@@ -4,8 +4,7 @@ HTML forms
 """
 
 import copy, re
-import webapi as web
-import utils, net
+from . import utils, net, webapi as web
 
 def attrget(obj, attr, value=None):
     try:
@@ -15,7 +14,9 @@ def attrget(obj, attr, value=None):
         # Handle the case where has_key takes different number of arguments.
         # This is the case with Model objects on appengine. See #134
         pass
-    if hasattr(obj, attr):
+    if hasattr(obj, 'keys') and attr in obj.keys(): #needed for Py3, has_key doesn't exist anymore
+        return obj[attr]
+    elif hasattr(obj, attr):
         return getattr(obj, attr)
     return value
 
@@ -25,7 +26,11 @@ class Form(object):
     
         >>> f = Form(Textbox("x"))
         >>> f.render()
-        u'<table>\n    <tr><th><label for="x">x</label></th><td><input type="text" id="x" name="x"/></td></tr>\n</table>'
+        u'<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text"/></td></tr>\n</table>'
+        >>> f.fill(x="42")
+        True
+        >>> f.render()
+        u'<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text" value="42"/></td></tr>\n</table>'
     """
     def __init__(self, *inputs, **kw):
         self.inputs = inputs
@@ -48,7 +53,7 @@ class Form(object):
             if i.is_hidden():
                 out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (html)
             else:
-                out += '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n' % (i.id, net.websafe(i.description), html)
+                out += '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n' % (net.websafe(i.id), net.websafe(i.description), html)
         out += "</table>"
         return out
         
@@ -57,7 +62,7 @@ class Form(object):
         out.append(self.rendernote(self.note)) 
         for i in self.inputs:
             if not i.is_hidden():
-                out.append('<label for="%s">%s</label>' % (i.id, net.websafe(i.description))) 
+                out.append('<label for="%s">%s</label>' % (net.websafe(i.id), net.websafe(i.description)))
             out.append(i.pre)
             out.append(i.render()) 
             out.append(self.rendernote(i.note))
@@ -97,14 +102,14 @@ class Form(object):
     def __getitem__(self, i):
         for x in self.inputs:
             if x.name == i: return x
-        raise KeyError, i
+        raise KeyError(i)
 
     def __getattr__(self, name):
         # don't interfere with deepcopy
         inputs = self.__dict__.get('inputs') or []
         for x in inputs:
             if x.name == name: return x
-        raise AttributeError, name
+        raise AttributeError(name)
     
     def get(self, i, default=None):
         try:
@@ -138,7 +143,7 @@ class Input(object):
         return False
         
     def get_type(self):
-        raise NotImplementedError
+        raise NotImplementedError()
         
     def get_default_id(self):
         return self.name
@@ -179,13 +184,13 @@ class AttributeList(dict):
     
     >>> a = AttributeList(type='text', name='x', value=20)
     >>> a
-    <attrs: 'type="text" name="x" value="20"'>
+    <attrs: 'name="x" type="text" value="20"'>
     """
     def copy(self):
         return AttributeList(self)
         
     def __str__(self):
-        return " ".join(['%s="%s"' % (k, net.websafe(v)) for k, v in self.items()])
+        return " ".join(['%s="%s"' % (k, net.websafe(v)) for k, v in sorted(self.items())])
         
     def __repr__(self):
         return '<attrs: %s>' % repr(str(self))
@@ -194,9 +199,9 @@ class Textbox(Input):
     """Textbox input.
     
         >>> Textbox(name='foo', value='bar').render()
-        u'<input type="text" id="foo" value="bar" name="foo"/>'
+        u'<input id="foo" name="foo" type="text" value="bar"/>'
         >>> Textbox(name='foo', value=0).render()
-        u'<input type="text" id="foo" value="0" name="foo"/>'
+        u'<input id="foo" name="foo" type="text" value="0"/>'
     """        
     def get_type(self):
         return 'text'
@@ -205,7 +210,7 @@ class Password(Input):
     """Password input.
 
         >>> Password(name='password', value='secret').render()
-        u'<input type="password" id="password" value="secret" name="password"/>'
+        u'<input id="password" name="password" type="password" value="secret"/>'
     """
     
     def get_type(self):
@@ -253,7 +258,13 @@ class Dropdown(Input):
         else:
             value, desc = arg, arg 
 
-        if self.value == value or (isinstance(self.value, list) and value in self.value):
+        value = utils.safestr(value)
+        if isinstance(self.value, (tuple, list)):
+            s_value = [utils.safestr(x) for x in self.value]
+        else:
+            s_value = utils.safestr(self.value)
+        
+        if s_value == value or (isinstance(s_value, list) and value in s_value):
             select_p = ' selected="selected"'
         else:
             select_p = ''
@@ -314,14 +325,14 @@ class Checkbox(Input):
     """Checkbox input.
 
     >>> Checkbox('foo', value='bar', checked=True).render()
-    u'<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     >>> Checkbox('foo', value='bar').render()
-    u'<input type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     >>> c = Checkbox('foo', value='bar')
     >>> c.validate('on')
     True
     >>> c.render()
-    u'<input checked="checked" type="checkbox" id="foo_bar" value="bar" name="foo"/>'
+    u'<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     """
     def __init__(self, name, *validators, **attrs):
         self.checked = attrs.pop('checked', False)
@@ -353,7 +364,7 @@ class Button(Input):
     >>> Button("save").render()
     u'<button id="save" name="save">save</button>'
     >>> Button("action", value="save", html="<b>Save Changes</b>").render()
-    u'<button id="action" value="save" name="action"><b>Save Changes</b></button>'
+    u'<button id="action" name="action" value="save"><b>Save Changes</b></button>'
     """
     def __init__(self, name, *validators, **attrs):
         super(Button, self).__init__(name, *validators, **attrs)
@@ -371,7 +382,7 @@ class Hidden(Input):
     """Hidden Input.
     
         >>> Hidden(name='foo', value='bar').render()
-        u'<input type="hidden" id="foo" value="bar" name="foo"/>'
+        u'<input id="foo" name="foo" type="hidden" value="bar"/>'
     """
     def is_hidden(self):
         return True
@@ -383,7 +394,7 @@ class File(Input):
     """File input.
     
         >>> File(name='f').render()
-        u'<input type="file" id="f" name="f"/>'
+        u'<input id="f" name="f" type="file"/>'
     """
     def get_type(self):
         return 'file'

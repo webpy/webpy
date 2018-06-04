@@ -260,8 +260,7 @@ Then in the template ``foo.html``:
     more html
 
 This replaces the ``$:bar`` with the output of the ``render.bar()`` call
-(which is why it must be ``$:``/unfiltered, so
-`ccnp <http://www.buyitcert.com/ccnp.html>`__ that you get un-encoded
+(which is why it must be ``$:``/unfiltered, so that you get un-encoded
 HTML (unless you want something else of course)). You can pass variables
 in, in the same way:
 

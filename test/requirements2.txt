@@ -1,2 +1,0 @@
-pysqlite
-MySQL-python

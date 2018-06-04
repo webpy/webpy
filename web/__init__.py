@@ -3,7 +3,7 @@
 
 from __future__ import generators
 
-__version__ = "0.37"
+__version__ = "0.40-dev1"
 __author__ = [
     "Aaron Swartz <me@aaronsw.com>",
     "Anand Chitipothu <anandology@gmail.com>"
@@ -11,23 +11,23 @@ __author__ = [
 __license__ = "public domain"
 __contributors__ = "see http://webpy.org/changes"
 
-import utils, db, net, wsgi, http, webapi, httpserver, debugerror
-import template, form
+from . import utils, db, net, wsgi, http, webapi, httpserver, debugerror
+from . import template, form
 
-import session
+from . import session
 
-from utils import *
-from db import *
-from net import *
-from wsgi import *
-from http import *
-from webapi import *
-from httpserver import *
-from debugerror import *
-from application import *
-from browser import *
+from .utils import *
+from .db import *
+from .net import *
+from .wsgi import *
+from .http import *
+from .webapi import *
+from .httpserver import *
+from .debugerror import *
+from .application import *
+#from browser import *
 try:
-    import webopenid as openid
+    from . import webopenid as openid
 except ImportError:
     pass # requires openid module
 

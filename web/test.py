@@ -1,9 +1,11 @@
 """test utilities
 (part of web.py)
 """
-import unittest
-import sys, os
+import unittest, doctest
+import sys, re
 import web
+
+from .py3helpers import PY2
 
 TestCase = unittest.TestCase
 TestSuite = unittest.TestSuite
@@ -20,12 +22,27 @@ def module_suite(module, classnames=None):
     else:
         return unittest.TestLoader().loadTestsFromModule(module)
 
+#Little wrapper needed for automatically adapting doctests between Py2 and Py3
+#Source : Dirkjan Ochtman (https://dirkjan.ochtman.nl/writing/2014/07/06/single-source-python-23-doctests.html)
+class Py23DocChecker(doctest.OutputChecker):
+    def check_output(self, want, got, optionflags):
+        if not PY2:
+            #Differences between unicode strings representations : u"foo" -> "foo"
+            want = re.sub("u'(.*?)'", "'\\1'", want) 
+            want = re.sub('u"(.*?)"', '"\\1"', want)
+
+            #NameError message has changed
+            want = want.replace('NameError: global name', 'NameError: name')
+        else:
+            want = re.sub("^b'(.*?)'", "'\\1'", want) 
+            want = re.sub('^b"(.*?)"', '"\\1"', want)
+        return doctest.OutputChecker.check_output(self, want, got, optionflags)
+
 def doctest_suite(module_names):
     """Makes a test suite from doctests."""
-    import doctest
     suite = TestSuite()
     for mod in load_modules(module_names):
-        suite.addTest(doctest.DocTestSuite(mod))
+        suite.addTest(doctest.DocTestSuite(mod, checker=Py23DocChecker()))
     return suite
     
 def suite(module_names):

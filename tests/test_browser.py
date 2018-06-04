@@ -1,4 +1,4 @@
-import webtest
+import unittest
 import web
 
 urls = (
@@ -35,12 +35,12 @@ class redirect:
         i = web.input(url='/')
         raise web.seeother(i.url)
 
-class BrowserTest(webtest.TestCase):
+class BrowserTest(unittest.TestCase):
     def testCookies(self):
         b = app.browser()
         b.open('http://0.0.0.0/setcookie?x=1&y=2')
         b.open('http://0.0.0.0/cookie')
-        self.assertEquals(b.data, 'x,y')
+        self.assertEquals(b.text, 'x,y')
 
     def testNotfound(self):
         b = app.browser()
@@ -59,6 +59,3 @@ class BrowserTest(webtest.TestCase):
         self.assertEquals(b.url, 'https://0.0.0.0:8080/')
         b.open('https://0.0.0.0:8080/redirect?url=/hello/foo')
         self.assertEquals(b.url, 'https://0.0.0.0:8080/hello/foo')
-
-if __name__ == "__main__":
-    webtest.main()

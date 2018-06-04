@@ -10,15 +10,12 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-try:
-    import hashlib
-    sha1 = hashlib.sha1
-except ImportError:
-    import sha
-    sha1 = sha.new
 
-import utils
-import webapi as web
+from hashlib import sha1
+
+from . import utils
+from . import webapi as web
+from .py3helpers import PY2
 
 __all__ = [
     'Session', 'SessionExpired',
@@ -81,6 +78,7 @@ class Session(object):
 
     def _processor(self, handler):
         """Application processor to setup session for every request"""
+
         self._cleanup()
         self._load()
 
@@ -154,7 +152,9 @@ class Session(object):
             rand = os.urandom(16)
             now = time.time()
             secret_key = self._config.secret_key
-            session_id = sha1("%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key))
+
+            hashable = "%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key)
+            session_id = sha1(hashable if PY2 else hashable.encode('utf-8')) #TODO maybe a better way to deal with this, without using an if-statement
             session_id = session_id.hexdigest()
             if session_id not in self.store:
                 break
@@ -187,17 +187,17 @@ class Store:
     """Base class for session stores"""
 
     def __contains__(self, key):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def __getitem__(self, key):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def __setitem__(self, key, value):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def cleanup(self, timeout):
         """removes all the expired sessions"""
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def encode(self, session_dict):
         """encodes session dict as a string"""
@@ -236,7 +236,7 @@ class DiskStore(Store):
 
     def _get_path(self, key):
         if os.path.sep in key: 
-            raise ValueError, "Bad key: %s" % repr(key)
+            raise ValueError("Bad key: %s" % repr(key))
         return os.path.join(self.root, key)
     
     def __contains__(self, key):
@@ -245,17 +245,18 @@ class DiskStore(Store):
 
     def __getitem__(self, key):
         path = self._get_path(key)
+
         if os.path.exists(path): 
-            pickled = open(path).read()
+            pickled = open(path, 'rb').read()
             return self.decode(pickled)
         else:
-            raise KeyError, key
+            raise KeyError(key)
 
     def __setitem__(self, key, value):
         path = self._get_path(key)
         pickled = self.encode(value)    
         try:
-            f = open(path, 'w')
+            f = open(path, 'wb')
             try:
                 f.write(pickled)
             finally: 
@@ -298,7 +299,7 @@ class DBStore(Store):
             s = self.db.select(self.table, where="session_id=$key", vars=locals())[0]
             self.db.update(self.table, where="session_id=$key", atime=now, vars=locals())
         except IndexError:
-            raise KeyError
+            raise KeyError(key)
         else:
             return self.decode(s.data)
 
@@ -306,9 +307,9 @@ class DBStore(Store):
         pickled = self.encode(value)
         now = datetime.datetime.now()
         if key in self:
-            self.db.update(self.table, where="session_id=$key", data=pickled, vars=locals())
+            self.db.update(self.table, where="session_id=$key", data=pickled,atime=now,  vars=locals())
         else:
-            self.db.insert(self.table, False, session_id=key, data=pickled )
+            self.db.insert(self.table, False, session_id=key, atime=now, data=pickled )
                 
     def __delitem__(self, key):
         self.db.delete(self.table, where="session_id=$key", vars=locals())

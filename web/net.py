@@ -11,10 +11,16 @@ __all__ = [
 ]
 
 import urllib, time
-try: import datetime
-except ImportError: pass
+import datetime
 import re
 import socket
+
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
+
+from .py3helpers import PY2
 
 def validip6addr(address):
     """
@@ -31,7 +37,7 @@ def validip6addr(address):
     """
     try:
         socket.inet_pton(socket.AF_INET6, address)
-    except socket.error:
+    except (socket.error, AttributeError):
         return False
 
     return True
@@ -79,23 +85,24 @@ def validipport(port):
 def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
     """
     Returns `(ip_address, port)` from string `ip_addr_port`
-    >>> validip('1.2.3.4')
-    ('1.2.3.4', 8080)
-    >>> validip('80')
-    ('0.0.0.0', 80)
-    >>> validip('192.168.0.1:85')
-    ('192.168.0.1', 85)
-    >>> validip('::')
-    ('::', 8080)
-    >>> validip('[::]:88')
-    ('::', 88)
-    >>> validip('[::1]:80')
-    ('::1', 80)
+
+        >>> validip('1.2.3.4')
+        ('1.2.3.4', 8080)
+        >>> validip('80')
+        ('0.0.0.0', 80)
+        >>> validip('192.168.0.1:85')
+        ('192.168.0.1', 85)
+        >>> validip('::')
+        ('::', 8080)
+        >>> validip('[::]:88')
+        ('::', 88)
+        >>> validip('[::1]:80')
+        ('::1', 80)
 
     """
     addr = defaultaddr
     port = defaultport
-    
+
     #Matt Boswell's code to check for ipv6 first
     match = re.search(r'^\[([^]]+)\](?::(\d+))?$',ip) #check for [ipv6]:port
     if match:
@@ -117,14 +124,14 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
         elif validipport(ip[0]):
             port = int(ip[0])
         else:
-            raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
+            raise ValueError(':'.join(ip) + ' is not a valid IP address/port')
     elif len(ip) == 2:
         addr, port = ip
-        if not validipaddr(addr) and validipport(port):
-            raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
+        if not validipaddr(addr) or not validipport(port):
+            raise ValueError(':'.join(ip) + ' is not a valid IP address/port')
         port = int(port)
     else:
-        raise ValueError, ':'.join(ip) + ' is not a valid IP address/port'
+        raise ValueError(':'.join(ip) + ' is not a valid IP address/port')
     return (addr, port)
 
 def validaddr(string_):
@@ -163,9 +170,15 @@ def urlquote(val):
         '%E2%80%BD'
     """
     if val is None: return ''
-    if not isinstance(val, unicode): val = str(val)
-    else: val = val.encode('utf-8')
-    return urllib.quote(val)
+
+    if PY2:
+        if isinstance(val, unicode):
+            val = val.encode('utf-8')
+        else:
+            val = str(val)
+    else:
+        val = str(val).encode('utf-8')
+    return quote(val)
 
 def httpdate(date_obj):
     """
@@ -225,18 +238,23 @@ def websafe(val):
         u'&lt;&#39;&amp;&quot;&gt;'
         >>> websafe(None)
         u''
-        >>> websafe(u'\u203d')
-        u'\u203d'
-        >>> websafe('\xe2\x80\xbd')
-        u'\u203d'
+        >>> websafe(u'\u203d') == u'\u203d'
+        True
     """
     if val is None:
         return u''
-    elif isinstance(val, str):
-        val = val.decode('utf-8')
-    elif not isinstance(val, unicode):
-        val = unicode(val)
-        
+
+    if PY2:
+        if isinstance(val, str):
+            val = val.decode('utf-8')
+        elif not isinstance(val, unicode):
+            val = unicode(val)
+    else:
+        if isinstance(val, bytes):
+            val = val.decode('utf-8')
+        elif not isinstance(val, str):
+            val = str(val)
+    
     return htmlquote(val)
 
 if __name__ == "__main__":

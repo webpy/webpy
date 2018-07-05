@@ -523,7 +523,10 @@ def group(seq, size):
     """
     def take(seq, n):
         for i in range(n):
-            yield next(seq)
+            try:
+                yield next(seq)
+            except StopIteration:
+                return
 
     if not hasattr(seq, 'next'):  
         seq = iter(seq)
@@ -665,8 +668,11 @@ class IterBetter:
         if hasattr(self, "_head"):
             yield self._head
 
-        while 1:    
-            yield next(self.i)
+        while 1:
+            try:
+                yield next(self.i)
+            except StopIteration:
+                return
             self.c += 1
 
     def __getitem__(self, i):

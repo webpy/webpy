@@ -521,21 +521,7 @@ def group(seq, size):
         >>> list(group([1,2,3,4,5], 2))
         [[1, 2], [3, 4], [5]]
     """
-    def take(seq, n):
-        for i in range(n):
-            try:
-                yield next(seq)
-            except StopIteration:
-                return
-
-    if not hasattr(seq, 'next'):  
-        seq = iter(seq)
-    while True: 
-        x = list(take(seq, size))
-        if x:
-            yield x
-        else:
-            break
+    return (seq[i:i+size] for i in range(0, len(seq), size))
 
 def uniq(seq, key=None):
     """

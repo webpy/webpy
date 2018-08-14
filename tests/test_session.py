@@ -62,6 +62,15 @@ class SessionTest(unittest.TestCase):
         cookie.value = '/etc/password'
         self.assertEquals(b.open('/count').read(), b'1')
 
+    def testSlowCookies(self):
+        b = self.app.browser()
+        self.assertEquals(b.open('/count').read(), b'1')
+        self.assertEquals(b.open('/count').read(), b'2')
+
+        cookie = b.cookiejar._cookies['0.0.0.0']['/']['webpy_session_id']
+        cookie.value = '"/etc/password"'
+        self.assertEquals(b.open('/count').read(), b'1')
+
     def testRedirect(self):
         b = self.app.browser()
         b.open("/redirect")

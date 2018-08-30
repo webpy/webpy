@@ -227,6 +227,9 @@ class DiskStore(Store):
         KeyError: 'a'
     """
     def __init__(self, root):
+        from threading import RLock
+        self.lock = RLock()
+        
         # if the storage root doesn't exists, create it.
         if not os.path.exists(root):
             os.makedirs(
@@ -244,25 +247,33 @@ class DiskStore(Store):
         return os.path.exists(path)
 
     def __getitem__(self, key):
-        path = self._get_path(key)
-
-        if os.path.exists(path): 
-            pickled = open(path, 'rb').read()
-            return self.decode(pickled)
-        else:
-            raise KeyError(key)
+        try:
+            self.lock.acquire()
+            path = self._get_path(key)
+    
+            if os.path.exists(path): 
+                pickled = open(path, 'rb').read()
+                return self.decode(pickled)
+            else:
+                raise KeyError(key)
+        finally:
+            self.lock.release()
 
     def __setitem__(self, key, value):
-        path = self._get_path(key)
-        pickled = self.encode(value)    
         try:
-            f = open(path, 'wb')
+            self.lock.acquire()
+            path = self._get_path(key)
+            pickled = self.encode(value)    
             try:
-                f.write(pickled)
-            finally: 
-                f.close()
-        except IOError:
-            pass
+                f = open(path, 'wb')
+                try:
+                    f.write(pickled)
+                finally: 
+                    f.close()
+            except IOError:
+                pass
+        finally:
+            self.lock.release()
 
     def __delitem__(self, key):
         path = self._get_path(key)

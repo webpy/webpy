@@ -521,18 +521,7 @@ def group(seq, size):
         >>> list(group([1,2,3,4,5], 2))
         [[1, 2], [3, 4], [5]]
     """
-    def take(seq, n):
-        for i in range(n):
-            yield next(seq)
-
-    if not hasattr(seq, 'next'):  
-        seq = iter(seq)
-    while True: 
-        x = list(take(seq, size))
-        if x:
-            yield x
-        else:
-            break
+    return (seq[i:i+size] for i in range(0, len(seq), size))
 
 def uniq(seq, key=None):
     """
@@ -665,8 +654,11 @@ class IterBetter:
         if hasattr(self, "_head"):
             yield self._head
 
-        while 1:    
-            yield next(self.i)
+        while 1:
+            try:
+                yield next(self.i)
+            except StopIteration:
+                return
             self.c += 1
 
     def __getitem__(self, i):

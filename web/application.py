@@ -679,7 +679,10 @@ def unloadhook(h):
 
         result = iter(result)
         while True:
-            yield next_hook()
+            try:
+                yield next_hook()
+            except StopIteration:
+                return
             
     return processor
 

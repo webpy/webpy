@@ -47,17 +47,17 @@ class ApplicationTest(unittest.TestCase):
         import foo
         app = foo.app
 
-        self.assertEquals(app.request('/').data, b'a')
+        self.assertEqual(app.request('/').data, b'a')
 
         # test class change
         time.sleep(1)
         write('foo.py', data % dict(classname='a', output='b'))
-        self.assertEquals(app.request('/').data, b'b')
+        self.assertEqual(app.request('/').data, b'b')
 
         # test urls change
         time.sleep(1)
         write('foo.py', data % dict(classname='c', output='c'))
-        self.assertEquals(app.request('/').data, b'c')
+        self.assertEqual(app.request('/').data, b'c')
         
     def testUppercaseMethods(self):
         urls = ("/", "hello")
@@ -67,7 +67,7 @@ class ApplicationTest(unittest.TestCase):
             def internal(self): return "secret"
             
         response = app.request('/', method='internal')
-        self.assertEquals(response.status, '405 Method Not Allowed')
+        self.assertEqual(response.status, '405 Method Not Allowed')
         
     def testRedirect(self):
         urls = (
@@ -82,16 +82,16 @@ class ApplicationTest(unittest.TestCase):
                 return "hello " + name
             
         response = app.request('/a')
-        self.assertEquals(response.status, '301 Moved Permanently')
-        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/hello/')
+        self.assertEqual(response.status, '301 Moved Permanently')
+        self.assertEqual(response.headers['Location'], 'http://0.0.0.0:8080/hello/')
 
         response = app.request('/a?x=2')
-        self.assertEquals(response.status, '301 Moved Permanently')
-        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/hello/?x=2')
+        self.assertEqual(response.status, '301 Moved Permanently')
+        self.assertEqual(response.headers['Location'], 'http://0.0.0.0:8080/hello/?x=2')
 
         response = app.request('/b/foo?x=2')
-        self.assertEquals(response.status, '301 Moved Permanently')
-        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/hello/foo?x=2')
+        self.assertEqual(response.status, '301 Moved Permanently')
+        self.assertEqual(response.headers['Location'], 'http://0.0.0.0:8080/hello/foo?x=2')
 
     def test_routing(self):
         urls = (
@@ -104,8 +104,8 @@ class ApplicationTest(unittest.TestCase):
 
         app = web.application(urls, {"foo": foo})
 
-        self.assertEquals(app.request('/foo\n').data, b'not found')
-        self.assertEquals(app.request('/foo').data, b'foo')
+        self.assertEqual(app.request('/foo\n').data, b'not found')
+        self.assertEqual(app.request('/foo').data, b'foo')
         
     def test_subdirs(self):
         urls = (
@@ -125,13 +125,13 @@ class ApplicationTest(unittest.TestCase):
                 return "hello " + path
         app = web.application(urls, locals())
         
-        self.assertEquals(app.request('/blog/foo').data, b'blog foo')
-        self.assertEquals(app.request('/foo').data, b'hello foo')
+        self.assertEqual(app.request('/blog/foo').data, b'blog foo')
+        self.assertEqual(app.request('/foo').data, b'hello foo')
         
         def processor(handler):
             return web.ctx.path + ":" + handler()
         app.add_processor(processor)
-        self.assertEquals(app.request('/blog/foo').data, b'/blog/foo:blog foo')
+        self.assertEqual(app.request('/blog/foo').data, b'/blog/foo:blog foo')
     
     def test_subdomains(self):
         def create_app(name):
@@ -150,7 +150,7 @@ class ApplicationTest(unittest.TestCase):
         
         def test(host, expected_result):
             result = app.request('/', host=host)
-            self.assertEquals(result.data, expected_result)
+            self.assertEqual(result.data, expected_result)
             
         test('a.example.com', b'a')
         test('b.example.com', b'b')
@@ -179,16 +179,16 @@ class ApplicationTest(unittest.TestCase):
         app = web.application(urls, locals())
         
         response = app.request('/blog/foo')
-        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/login')
+        self.assertEqual(response.headers['Location'], 'http://0.0.0.0:8080/login')
         
         response = app.request('/blog/foo', env={'SCRIPT_NAME': '/x'})
-        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/x/login')
+        self.assertEqual(response.headers['Location'], 'http://0.0.0.0:8080/x/login')
 
         response = app.request('/blog/foo2')
-        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/blog/bar')
+        self.assertEqual(response.headers['Location'], 'http://0.0.0.0:8080/blog/bar')
         
         response = app.request('/blog/foo2', env={'SCRIPT_NAME': '/x'})
-        self.assertEquals(response.headers['Location'], 'http://0.0.0.0:8080/x/blog/bar')
+        self.assertEqual(response.headers['Location'], 'http://0.0.0.0:8080/x/blog/bar')
 
     def test_processors(self):
         urls = (
@@ -243,14 +243,14 @@ class ApplicationTest(unittest.TestCase):
         
         def f(name):
             path = '/?' + urlencode({"name": name.encode('utf-8')})
-            self.assertEquals(app.request(path).data.decode('utf-8'), repr(name))
+            self.assertEqual(app.request(path).data.decode('utf-8'), repr(name))
             
         f(u'\u1234')
         f(u'foo')
 
         response = app.request('/', method='POST', data=dict(name='foo'))
 
-        self.assertEquals(response.data, b"{'name': 'foo'}")
+        self.assertEqual(response.data, b"{'name': 'foo'}")
 
         
         data = '--boundary\r\nContent-Disposition: form-data; name="x"\r\n\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
@@ -258,7 +258,7 @@ class ApplicationTest(unittest.TestCase):
         response = app.request('/multipart', method="POST", data=data, headers=headers)
 
 
-        self.assertEquals(response.data, b'a')
+        self.assertEqual(response.data, b'a')
 
         
     def testCustomNotFound(self):
@@ -278,8 +278,8 @@ class ApplicationTest(unittest.TestCase):
         
         def assert_notfound(path, message):
             response = app.request(path)
-            self.assertEquals(response.status.split()[0], "404")
-            self.assertEquals(response.data, message)
+            self.assertEqual(response.status.split()[0], "404")
+            self.assertEqual(response.data, message)
             
         assert_notfound("/a/foo", b"not found 1")
         assert_notfound("/b/foo", b"not found")
@@ -289,11 +289,11 @@ class ApplicationTest(unittest.TestCase):
         assert_notfound("/b/foo", b"not found 2")
 
     def testIter(self):
-        self.assertEquals(app.request('/iter').data, b'hello, world')
-        self.assertEquals(app.request('/iter?name=web').data, b'hello, web')
+        self.assertEqual(app.request('/iter').data, b'hello, world')
+        self.assertEqual(app.request('/iter?name=web').data, b'hello, web')
 
-        self.assertEquals(app.request('/iter', method='POST').data, b'hello, world')
-        self.assertEquals(app.request('/iter', method='POST', data='name=web').data, b'hello, web')
+        self.assertEqual(app.request('/iter', method='POST').data, b'hello, world')
+        self.assertEqual(app.request('/iter', method='POST', data='name=web').data, b'hello, web')
 
     def testUnload(self):
         x = web.storage(a=0)
@@ -315,10 +315,10 @@ class ApplicationTest(unittest.TestCase):
         app.add_processor(web.unloadhook(unload))
 
         app.request('/foo')
-        self.assertEquals(x.a, 1)
+        self.assertEqual(x.a, 1)
 
         app.request('/bar')
-        self.assertEquals(x.a, 2)
+        self.assertEqual(x.a, 2)
         
     def test_changequery(self):
         urls = (
@@ -332,7 +332,7 @@ class ApplicationTest(unittest.TestCase):
         def f(path):
             return app.request(path).data
                 
-        self.assertEquals(f('/?x=2'), b'/?x=1')
+        self.assertEqual(f('/?x=2'), b'/?x=1')
 
         p = f('/?y=1&y=2&x=2')
         self.assertTrue(p == b'/?y=1&y=2&x=1' or p == b'/?x=1&y=1&y=2')
@@ -350,8 +350,8 @@ class ApplicationTest(unittest.TestCase):
             response = app.request("/", env={"SCRIPT_NAME": script_name})
             return response.headers['Set-Cookie']
         
-        self.assertEquals(f(''), 'foo=bar; Path=/')
-        self.assertEquals(f('/admin'), 'foo=bar; Path=/admin/')
+        self.assertEqual(f(''), 'foo=bar; Path=/')
+        self.assertEqual(f('/admin'), 'foo=bar; Path=/admin/')
 
     def test_stopsimpleserver(self):
         urls = (

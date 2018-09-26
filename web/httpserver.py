@@ -168,10 +168,13 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     
     server = WSGIServer(server_address, func)
 
-    if server.ssl_adapter:
-        print("https://%s:%d/" % server_address)
+    if '/' in server_address[0]:
+        print ("%s" % server_address)
     else:
-        print("http://%s:%d/" % server_address)
+        if server.ssl_adapter:
+            print("https://%s:%d/" % server_address)
+        else:
+            print("http://%s:%d/" % server_address)
 
     try:
         server.start()

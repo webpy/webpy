@@ -168,7 +168,7 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     
     server = WSGIServer(server_address, func)
 
-    if '/' in server_address[0]:
+    if server_address.startswith("/"): # unix socket
         print ("%s" % server_address)
     else:
         if server.ssl_adapter:

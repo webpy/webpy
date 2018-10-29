@@ -1,17 +1,29 @@
 language: python
 python:
-  - "2.7"
-  - "3.5"
-  - "3.6"
-  - "3.7-dev"
-install:
-    - pip install -r requirements.txt -r test_requirements.txt
-script: ./runtests.sh
+  - 2.7
+  - 3.4
+  - 3.5
+  - 3.6
+matrix:
+  allow_failures:
+    - python: 3.7
+  include:
+    - python: 3.7
+      dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
+      sudo: required  # required for Python 3.7 (travis-ci/travis-ci#9069)
 before_install:
-  - "sudo mkdir -p /usr/include/postgresql/8.4/server"
-#  - 'sudo apt-get -o Dpkg::Options::="--force-overwrite" install python-profiler'
+  - sudo mkdir -p /usr/include/postgresql/8.4/server
+# - 'sudo apt-get -o Dpkg::Options::="--force-overwrite" install python-profiler'
+install:
+  - pip install flake8 -r requirements.txt -r test_requirements.txt
 before_script:
-  - "psql -c 'create database webpy;' -U postgres"
+  # stop the build if there are Python syntax errors or undefined names
+  # TODO: When we have an answer to webpy/webpy#482 we should remove the --exclude
+  - flake8 . --count --exclude=./web/webapi.py --select=E901,E999,F821,F822,F823 --show-source --statistics
+  # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
+  - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+  - psql -c 'create database webpy;' -U postgres
   - mysql --user=root -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+script: ./runtests.sh
 notifications:
-  irc: "irc.freenode.org#webpy"
+  irc: irc.freenode.org#webpy

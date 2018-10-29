@@ -1,19 +1,22 @@
 from __future__ import print_function
 
-import sys, os
-import urllib
+import os
 import posixpath
+import sys
 
-from . import webapi as web
-from . import net
 from . import utils
-from .py3helpers import PY2
+from . import webapi as web
 
-if PY2:
+try:
+    from io import BytesIO
+except ImportError:
+    from StringIO import BytesIO
+
+try:
+    from http.server import HTTPServer, SimpleHTTPRequestHandler, BaseHTTPRequestHandler
+except ImportError:
     from SimpleHTTPServer import SimpleHTTPRequestHandler
     from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-else:
-    from http.server import HTTPServer, SimpleHTTPRequestHandler, BaseHTTPRequestHandler
 
 try:
     from urllib import parse as urlparse
@@ -21,11 +24,6 @@ try:
 except ImportError:
     import urlparse
     from urllib import unquote
-
-try:
-    from io import BytesIO
-except ImportError:
-    from StringIO import BytesIO
 
 __all__ = ["runsimple"]
 
@@ -48,7 +46,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     import socket, errno
     import traceback
 
-    class WSGIHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+    class WSGIHandler(SimpleHTTPRequestHandler):
         def run_wsgi_app(self):
             protocol, host, path, parameters, query, fragment = \
                 urlparse.urlparse('http://dummyhost%s' % self.path)
@@ -113,7 +111,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
 
         def do_GET(self):
             if self.path.startswith('/static/'):
-                SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+                SimpleHTTPRequestHandler.do_GET(self)
             else:
                 self.run_wsgi_app()
 

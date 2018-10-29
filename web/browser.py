@@ -1,15 +1,30 @@
 """Browser to test web applications.
 (from web.py)
 """
-from .utils import re_compile
+import os
+import webbrowser
+from io import BytesIO
+
 from .net import htmlunquote
-from io import BytesIO, StringIO
+from .py3helpers import PY2, text_type
+from .utils import re_compile
 
-import copy
+try:  # Py3
+    from http.client import HTTPMessage
+    from urllib.request import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
+    from urllib.request import build_opener as urllib_build_opener
+    from urllib.parse import urljoin
+    from http.cookiejar import CookieJar
+    from urllib.response import addinfourl
+except ImportError:  # Py2
+    from httplib import HTTPMessage
+    from urllib import addinfourl
+    from urllib2 import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
+    from urllib2 import build_opener as urllib_build_opener
+    from cookielib import CookieJar
+    from urlparse import urljoin
 
-from .py3helpers import PY2
-
-#Welcome to the Py2->Py3 httplib/urllib reorganization nightmare.
+# Welcome to the Py2->Py3 httplib/urllib reorganization nightmare.
 
 if PY2:
     get_selector = lambda x: x.get_selector()
@@ -21,21 +36,6 @@ else:
     get_host = lambda x: x.host
     get_data = lambda x: x.data
     get_type = lambda x: x.type
-
-try: #Py3
-    from http.client import HTTPMessage
-    from urllib.request import HTTPHandler, HTTPCookieProcessor, build_opener, Request, HTTPError
-    from urllib.request import build_opener as urllib_build_opener
-    from urllib.parse import urljoin
-    from http.cookiejar import CookieJar
-    from urllib.response import addinfourl
-except ImportError:  #Py2
-    from httplib import HTTPMessage
-    from urllib import addinfourl
-    from urllib2 import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
-    from urllib2 import build_opener as urllib_build_opener
-    from cookielib import CookieJar
-    from urlparse import urljoin
 
 DEBUG = False
 
@@ -56,7 +56,7 @@ class Browser(object):
 
         self.url = "http://0.0.0.0:8080/"
         self.path = "/"
-        
+
         self.status = None
         self.data = None
         self._response = None
@@ -71,7 +71,7 @@ class Browser(object):
         self.cookiejar.clear()
 
     def build_opener(self):
-        """Builds the opener using (urllib2/urllib.request).build_opener. 
+        """Builds the opener using (urllib2/urllib.request).build_opener.
         Subclasses can override this function to prodive custom openers.
         """
         return urllib_build_opener()
@@ -109,7 +109,6 @@ class Browser(object):
         f.write(self.data)
         f.close()
 
-        import webbrowser, os
         url = 'file://' + os.path.abspath('page.html')
         webbrowser.open(url)
 
@@ -125,12 +124,13 @@ class Browser(object):
     def get_text(self, e=None):
         """Returns content of e or the current document as plain text."""
         e = e or self.get_soup()
-        return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, unicode)])
+        return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator()
+                       if isinstance(c, text_type)])
 
     def _get_links(self):
         soup = self.get_soup()
         return [a for a in soup.findAll(name='a')]
-        
+
     def get_links(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
         """Returns all links in the document."""
         return self._filter_links(self._get_links(),
@@ -141,18 +141,18 @@ class Browser(object):
             links = self._filter_links(self.get_links(),
                 text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
             link = links and links[0]
-            
+
         if link:
             return self.open(link['href'])
         else:
             raise BrowserError("No link found")
-            
+
     def find_link(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
-        links = self._filter_links(self.get_links(), 
+        links = self._filter_links(self.get_links(),
             text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
         return links and links[0] or None
-            
-    def _filter_links(self, links, 
+
+    def _filter_links(self, links,
             text=None, text_regex=None,
             url=None, url_regex=None,
             predicate=None):
@@ -193,13 +193,13 @@ class Browser(object):
             forms = [f for f in forms if f.name == name]
         if predicate:
             forms = [f for f in forms if predicate(f)]
-            
+
         if forms:
             self.form = forms[index]
             return self.form
         else:
             raise BrowserError("No form selected.")
-        
+
     def submit(self, **kw):
         """submits the currently selected form."""
         if self.form is None:
@@ -215,11 +215,11 @@ class Browser(object):
 
 class AppBrowser(Browser):
     """Browser interface to test web.py apps.
-    
+
         b = AppBrowser(app)
         b.open('/')
         b.follow_link(text='Login')
-        
+
         b.select_form(name='login')
         b['username'] = 'joe'
         b['password'] = 'secret'
@@ -255,7 +255,7 @@ class AppHandler(HTTPHandler):
 
     def https_open(self, req):
         return self.http_open(req)
-    
+
     try:
         https_request = HTTPHandler.do_request_
     except AttributeError:

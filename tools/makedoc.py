@@ -3,6 +3,7 @@ Outputs web.py docs as html
 version 2.0: documents all code, and indents nicely.
 By Colin Rothwell (TheBoff)
 """
+from __future__ import print_function
 import sys
 import inspect
 import markdown
@@ -120,7 +121,7 @@ def recurse_over(ob, name, indent_level=0):
     
     indent = indent_level * indent_amount #Indents nicely
     ds_indent = indent + (indent_amount / 2)
-    if indent_level > 0: print indent_start % indent
+    if indent_level > 0: print(indent_start % indent)
     
     argstr = ''
     if ts.endswith(('function', 'method')):
@@ -140,9 +141,9 @@ def recurse_over(ob, name, indent_level=0):
     
     mlink = '<a name="%s">' % name if ts == 'module' else '' 
     mend = '</a>' if ts == 'module' else ''
-    print ''.join(('<p>', ts_css(ts), item_start % ts, ' ', mlink, name,
-                   websafe(argstr), mend, item_end, '<br />'))
-    print ''.join((indent_start % ds_indent, ds, indent_end, '</p>'))
+    print(''.join(('<p>', ts_css(ts), item_start % ts, ' ', mlink, name,
+                   websafe(argstr), mend, item_end, '<br />')))
+    print(''.join((indent_start % ds_indent, ds, indent_end, '</p>')))
     #Although ''.join looks wierd, it's alot faster is string addition    
     members = ''
     
@@ -152,25 +153,25 @@ def recurse_over(ob, name, indent_level=0):
     if not 'im_class' in members:    
         for name in members:
             recurse_over(getattr(ob, name), name, indent_level + 1)
-    if indent_level > 0: print indent_end
+    if indent_level > 0: print(indent_end)
 
 def main(modules=None):
     modules = modules or ALL_MODULES
-    print '<div>' #Stops markdown vandalising my html.
-    print css
-    print header
-    print '<ul>'
+    print('<div>') #Stops markdown vandalising my html.
+    print(css)
+    print(header)
+    print('<ul>')
     for name in modules:
-        print '<li><a href="#%(name)s">%(name)s</a></li>' % dict(name=name)
-    print '</ul>' 
+        print('<li><a href="#%(name)s">%(name)s</a></li>' % dict(name=name))
+    print('</ul>') 
     for name in modules:
         try:
             mod = __import__(name, {}, {}, 'x')
             recurse_over(mod, name)
         except ImportError as e:
-            print >> sys.stderr, "Unable to import module %s (Error: %s)" % (name, e)
+            print("Unable to import module %s (Error: %s)" % (name, e), file=sys.stderr)
             pass
-    print '</div>'
+    print('</div>')
         
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import web
 import simplejson, sudo
 urls = (
@@ -41,7 +42,7 @@ function receive(d) {
 
     def GET(self):
         web.header('Content-Type', 'text/html')
-        print self.page % self.form()
+        print(self.page % self.form())
     
     def POST(self):
         i = web.input()
@@ -53,7 +54,7 @@ function receive(d) {
         self._inFunc = False
         
         web.header('Content-Type', 'text/javascript')
-        print 'receive('+simplejson.dumps(self.updated)+');'
+        print('receive('+simplejson.dumps(self.updated)+');')
     
     def __setattr__(self, k, v):
         if self._inFunc and k != '_inFunc':

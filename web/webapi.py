@@ -4,6 +4,21 @@ Web API (wrapper around WSGI)
 """
 from __future__ import print_function
 
+import cgi
+import pprint
+import sys
+from io import BytesIO
+
+from .py3helpers import PY2, text_type, urljoin
+from .utils import dictadd, intget, safestr, storage, storify, threadeddict
+
+try:
+    from urllib.parse import unquote, quote
+    from http.cookies import CookieError, Morsel, SimpleCookie
+except ImportError:
+    from urllib import unquote, quote
+    from Cookie import CookieError, Morsel, SimpleCookie
+
 __all__ = [
     "config",
     "header", "debug",
@@ -28,20 +43,6 @@ __all__ = [
     "InternalError",
     "internalerror",
 ]
-
-import sys, cgi, pprint, urllib
-from .utils import storage, storify, threadeddict, dictadd, intget, safestr
-
-from .py3helpers import PY2, urljoin, string_types
-
-try:
-    from urllib.parse import unquote, quote
-    from http.cookies import Morsel
-except ImportError:
-    from urllib import unquote, quote
-    from Cookie import Morsel
-
-from io import StringIO, BytesIO
 
 config = storage()
 config.__doc__ = """
@@ -335,7 +336,7 @@ def rawinput(method=None):
                     ctx._fieldstorage = a
             else:
                 d = data()
-                if PY2 and isinstance(d, unicode):
+                if PY2 and isinstance(d, text_type):
                     d = d.encode('utf-8')
                 fp = BytesIO(d)
                 a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
@@ -444,19 +445,19 @@ def parse_cookies(http_cookie):
     #print "parse_cookies"
     if '"' in http_cookie:
         # HTTP_COOKIE has quotes in it, use slow but correct cookie parsing
-        cookie = Cookie.SimpleCookie()
+        cookie = SimpleCookie()
         try:
             cookie.load(http_cookie)
-        except Cookie.CookieError:
+        except CookieError:
             # If HTTP_COOKIE header is malformed, try at least to load the cookies we can by
             # first splitting on ';' and loading each attr=value pair separately
-            cookie = Cookie.SimpleCookie()
+            cookie = SimpleCookie()
             for attr_value in http_cookie.split(';'):
                 try:
                     cookie.load(attr_value)
-                except Cookie.CookieError:
+                except CookieError:
                     pass
-        cookies = dict([(k, unquote(v.value)) for k, v in cookie.iteritems()])
+        cookies = dict([(k, unquote(v.value)) for k, v in cookie.items()])
     else:
         # HTTP_COOKIE doesn't have quotes, use fast cookie parsing
         cookies = {}

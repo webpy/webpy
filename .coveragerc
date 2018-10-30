@@ -1,0 +1,5 @@
+[run]
+branch = 1
+# NOTE: cannot use package easily, without chdir (https://github.com/nedbat/coveragepy/issues/268).
+source = web/,tests/
+parallel = 1

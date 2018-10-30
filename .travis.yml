@@ -15,7 +15,7 @@ before_install:
   - sudo mkdir -p /usr/include/postgresql/8.4/server
 # - 'sudo apt-get -o Dpkg::Options::="--force-overwrite" install python-profiler'
 install:
-  - pip install flake8 -r requirements.txt -r test_requirements.txt
+  - pip install flake8 pytest-cov -r requirements.txt -r test_requirements.txt
 before_script:
   # stop the build if there are Python syntax errors or undefined names
   # TODO: When we have an answer to webpy/webpy#482 we should remove the --exclude
@@ -24,6 +24,10 @@ before_script:
   - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
   - psql -c 'create database webpy;' -U postgres
   - mysql --user=root -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
-script: ./runtests.sh
+script: pytest --cov --cov-report=term-missing --cov-report=xml
+after_success:
+  - |
+    flags=py${TRAVIS_PYTHON_VERSION//./}
+    bash <(curl -s https://codecov.io/bash) -Z -X gcov -X search -X xcode -X fix -X coveragepy -f coverage.xml -F "$flags"
 notifications:
   irc: irc.freenode.org#webpy

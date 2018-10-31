@@ -19,7 +19,7 @@ def background(func):
                 if k not in ['status', 'headers', 'output']:
                     try: del myctx[k]
                     except KeyError: pass
-        
+
         t = threading.Thread(target=newfunc)
         background.threaddb[id(t)] = t
         t.start()

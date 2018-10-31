@@ -29,11 +29,11 @@ __all__ = ["runsimple"]
 
 def runbasic(func, server_address=("0.0.0.0", 8080)):
     """
-    Runs a simple HTTP server hosting WSGI app `func`. The directory `static/` 
+    Runs a simple HTTP server hosting WSGI app `func`. The directory `static/`
     is hosted statically.
 
     Based on [WsgiServer][ws] from [Colin Stewart][cs].
-    
+
   [ws]: http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html
   [cs]: http://www.owlfish.com/
     """
@@ -85,17 +85,17 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                 try:
                     try:
                         for data in result:
-                            if data: 
+                            if data:
                                 self.wsgi_write_data(data)
                     finally:
-                        if hasattr(result, 'close'): 
+                        if hasattr(result, 'close'):
                             result.close()
                 except socket.error as socket_err:
                     # Catch common network errors and suppress them
                     if (socket_err.args[0] in \
-                       (errno.ECONNABORTED, errno.EPIPE)): 
+                       (errno.ECONNABORTED, errno.EPIPE)):
                         return
-                except socket.timeout as socket_timeout: 
+                except socket.timeout as socket_timeout:
                     return
             except:
                 print(traceback.format_exc(), file=web.debug)
@@ -115,7 +115,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
             else:
                 self.run_wsgi_app()
 
-        def wsgi_start_response(self, response_status, response_headers, 
+        def wsgi_start_response(self, response_status, response_headers,
                               exc_info=None):
             if (self.wsgi_sent_headers):
                 raise Exception \
@@ -140,8 +140,8 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
 
     class WSGIServer(SocketServer.ThreadingMixIn, HTTPServer):
         def __init__(self, func, server_address):
-            HTTPServer.HTTPServer.__init__(self, 
-                                               server_address, 
+            HTTPServer.HTTPServer.__init__(self,
+                                               server_address,
                                                WSGIHandler)
             self.app = func
             self.serverShuttingDown = 0
@@ -149,13 +149,13 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     print("http://%s:%d/" % server_address)
     WSGIServer(func, server_address).serve_forever()
 
-# The WSGIServer instance. 
+# The WSGIServer instance.
 # Made global so that it can be stopped in embedded mode.
 server = None
 
 def runsimple(func, server_address=("0.0.0.0", 8080)):
     """
-    Runs [CherryPy][cp] WSGI server hosting WSGI app `func`. 
+    Runs [CherryPy][cp] WSGI server hosting WSGI app `func`.
     The directory `static/` is hosted statically.
 
     [cp]: http://www.cherrypy.org
@@ -163,7 +163,7 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     global server
     func = StaticMiddleware(func)
     func = LogMiddleware(func)
-    
+
     server = WSGIServer(server_address, func)
 
     if '/' in server_address[0]:
@@ -250,7 +250,7 @@ class StaticMiddleware:
     def __init__(self, app, prefix='/static/'):
         self.app = app
         self.prefix = prefix
-        
+
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO', '')
         path = self.normpath(path)
@@ -266,22 +266,22 @@ class StaticMiddleware:
             path2 += "/"
         return path2
 
-    
+
 class LogMiddleware:
     """WSGI middleware for logging the status."""
     def __init__(self, app):
         self.app = app
         self.format = '%s - - [%s] "%s %s %s" - %s'
-    
+
         f = BytesIO()
-        
+
         class FakeSocket:
             def makefile(self, *a):
                 return f
-        
+
         # take log_date_time_string method from BaseHTTPRequestHandler
         self.log_date_time_string = BaseHTTPRequestHandler(FakeSocket(), None, None).log_date_time_string
-        
+
     def __call__(self, environ, start_response):
         def xstart_response(status, response_headers, *args):
             out = start_response(status, response_headers, *args)
@@ -289,13 +289,13 @@ class LogMiddleware:
             return out
 
         return self.app(environ, xstart_response)
-             
+
     def log(self, status, environ):
         outfile = environ.get('wsgi.errors', web.debug)
         req = environ.get('PATH_INFO', '_')
         protocol = environ.get('ACTUAL_SERVER_PROTOCOL', '-')
         method = environ.get('REQUEST_METHOD', '-')
-        host = "%s:%s" % (environ.get('REMOTE_ADDR','-'), 
+        host = "%s:%s" % (environ.get('REMOTE_ADDR','-'),
                           environ.get('REMOTE_PORT','-'))
 
         time = self.log_date_time_string()

@@ -28,13 +28,13 @@ class Py23DocChecker(doctest.OutputChecker):
     def check_output(self, want, got, optionflags):
         if not PY2:
             #Differences between unicode strings representations : u"foo" -> "foo"
-            want = re.sub("u'(.*?)'", "'\\1'", want) 
+            want = re.sub("u'(.*?)'", "'\\1'", want)
             want = re.sub('u"(.*?)"', '"\\1"', want)
 
             #NameError message has changed
             want = want.replace('NameError: global name', 'NameError: name')
         else:
-            want = re.sub("^b'(.*?)'", "'\\1'", want) 
+            want = re.sub("^b'(.*?)'", "'\\1'", want)
             want = re.sub('^b"(.*?)"', '"\\1"', want)
         return doctest.OutputChecker.check_output(self, want, got, optionflags)
 
@@ -44,7 +44,7 @@ def doctest_suite(module_names):
     for mod in load_modules(module_names):
         suite.addTest(doctest.DocTestSuite(mod, checker=Py23DocChecker()))
     return suite
-    
+
 def suite(module_names):
     """Creates a suite from multiple modules."""
     suite = TestSuite()

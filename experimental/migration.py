@@ -31,7 +31,7 @@ def setup_database():
         web.transact = transact
         web.rollback = rollback
         web.commit = commit
-        
+
 web.loadhooks = web.webapi.loadhooks = {}
 web._loadhooks = web.webapi._loadhooks = {}
 web.unloadhooks = web.webapi.unloadhooks = {}

@@ -5,10 +5,10 @@ import sys
 PY2 = sys.version_info[0] == 2
 
 # urljoin
-if PY2:
-    from urlparse import urljoin
-else:
+try:
     from urllib.parse import urljoin
+except ImportError:
+    from urlparse import urljoin  # noqa: F401
 
 # Dictionary iteration
 if PY2:
@@ -21,14 +21,14 @@ else:
     iteritems = lambda d: iter(d.items())
 
 # string and text types
-if PY2:
+try:
     text_type = unicode
     string_types = (str, unicode)
     numeric_types = (int, long)
-else:
+except NameError:
     text_type = str
-    string_types = (str,)
-    numeric_types = (int,)
+    string_types = (str, )
+    numeric_types = (int, )
 
 if PY2:
     is_iter = lambda x: x and hasattr(x, 'next')

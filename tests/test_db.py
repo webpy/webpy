@@ -1,19 +1,24 @@
 """DB test"""
 from __future__ import print_function
-import pytest
+
+import importlib
 import os
 import unittest
-import web
-import importlib
-import warnings
 
-from web.py3helpers import PY2
+import web
+
+try:
+    unicode        # Python 2
+except NameError:
+    unicode = str  # Python 3
+
 
 def try_import(name):
     try:
         return importlib.import_module(name)
     except ImportError:
         return None
+
 
 def requires_module(name):
     module = try_import(name)
@@ -142,7 +147,7 @@ class DBTest(unittest.TestCase):
         db = setup_database(self.dbname)
         self.db.insert('person', False, name='user')
         name = db.select('person')[0].name
-        self.assertEqual(type(name), unicode if PY2 else str)
+        self.assertEqual(type(name), unicode)
 
     def test_result_is_true(self):
         db = setup_database(self.dbname)
@@ -249,4 +254,3 @@ class MySQLTest_MySQLConnector(MySQLTest_MySQLdb):
     driver="mysql.connector"
 
 del DBTest
-

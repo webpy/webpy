@@ -3,6 +3,12 @@ import unittest
 from web.template import SecurityError, Template
 from web.py3helpers import PY2
 
+try:
+    unicode        # Python 2
+except NameError:
+    unicode = str  # Python 3
+
+
 class _TestResult:
     def __init__(self, t):
         self.t = t
@@ -11,7 +17,8 @@ class _TestResult:
         return getattr(self.t, name)
 
     def __repr__(self):
-        return repr(unicode(self.t) if PY2 else str(self.t))
+        return repr(unicode(self.t))
+
 
 def t(code, **keywords):
     tmpl = Template(code, **keywords)

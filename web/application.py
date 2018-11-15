@@ -721,7 +721,7 @@ class Reloader:
             try: 
                 reload(mod)
                 self.mtimes[mod] = mtime
-            except ImportError: 
+            except Exception:
                 pass
                 
 if __name__ == "__main__":

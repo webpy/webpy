@@ -412,10 +412,9 @@ def decode_cookie(value):
     # Py3
     try:
         unicode("", "utf-8")
-        ver = 2
     # Py2
     except NameError:
-        ver = 3
+        unicode = str
 
     try:
         # First try plain ASCII encoding

@@ -409,10 +409,10 @@ def decode_cookie(value):
     >>> decode_cookie('foo \xE9 bar')
     u'foo \xe9 bar'
     """
-    # Py3
+    # Py2
     try:
         unicode("", "utf-8")
-    # Py2
+    # Py3
     except NameError:
         unicode = str
 

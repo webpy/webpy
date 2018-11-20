@@ -409,15 +409,16 @@ def decode_cookie(value):
     >>> decode_cookie('foo \xE9 bar')
     u'foo \xe9 bar'
     """
+
     try:
         # First try plain ASCII encoding
-        return value.decode("us-ascii")
+        return unicode(value, 'us-ascii')
     except UnicodeError:
         # Then try UTF-8, and if that fails, ISO8859
         try:
-            return value.decode("utf-8")
+            return unicode(value, 'utf-8')
         except UnicodeError:
-            return value.decode("iso8859", "ignore")
+            return unicode(value, 'iso8859', 'ignore')
 
 def parse_cookies(http_cookie):
     r"""Parse a HTTP_COOKIE header and return dict of cookie names and decoded values.

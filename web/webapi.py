@@ -2,7 +2,7 @@
 Web API (wrapper around WSGI)
 (from web.py)
 """
-from __future__ import print_function, unicode_literals
+from __future__ import print_function
 
 import cgi
 import pprint
@@ -409,6 +409,13 @@ def decode_cookie(value):
     >>> decode_cookie('foo \xE9 bar')
     u'foo \xe9 bar'
     """
+    # Py3
+    try:
+        unicode("", "utf-8")
+        ver = 2
+    # Py2
+    except NameError:
+        ver = 3
 
     try:
         # First try plain ASCII encoding

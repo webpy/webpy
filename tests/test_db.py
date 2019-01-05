@@ -1,19 +1,24 @@
 """DB test"""
 from __future__ import print_function
-import pytest
+
+import importlib
 import os
 import unittest
-import web
-import importlib
-import warnings
 
-from web.py3helpers import PY2
+import web
+
+try:
+    unicode        # Python 2
+except NameError:
+    unicode = str  # Python 3
+
 
 def try_import(name):
     try:
         return importlib.import_module(name)
     except ImportError:
         return None
+
 
 def requires_module(name):
     module = try_import(name)
@@ -73,7 +78,7 @@ class DBTest(unittest.TestCase):
 
     def assertRows(self, n):
         result = self.db.select('person')
-        self.assertEquals(len(list(result)), n)
+        self.assertEqual(len(list(result)), n)
 
     def testCommit(self):
         t = self.db.transaction()
@@ -127,7 +132,7 @@ class DBTest(unittest.TestCase):
         except ImportError:
             return
         db = setup_database(self.dbname, pooling=True)
-        self.assertEquals(db.ctx.db.__class__.__module__, 'DBUtils.PooledDB')
+        self.assertEqual(db.ctx.db.__class__.__module__, 'DBUtils.PooledDB')
         db.select('person', limit=1)
 
     def test_multiple_insert(self):
@@ -142,19 +147,19 @@ class DBTest(unittest.TestCase):
         db = setup_database(self.dbname)
         self.db.insert('person', False, name='user')
         name = db.select('person')[0].name
-        self.assertEquals(type(name), unicode if PY2 else str)
+        self.assertEqual(type(name), unicode)
 
     def test_result_is_true(self):
         db = setup_database(self.dbname)
         self.db.insert('person', False, name='user')
-        self.assertEquals(bool(db.select('person')), True)
+        self.assertEqual(bool(db.select('person')), True)
 
     def testBoolean(self):
         def t(active):
             name ='name-%s' % active
             self.db.insert('person', False, name=name, active=active)
             a = self.db.select('person', where='name=$name', vars=locals())[0].active
-            self.assertEquals(a, active)
+            self.assertEqual(a, active)
         t(False)
         t(True)
 
@@ -249,4 +254,3 @@ class MySQLTest_MySQLConnector(MySQLTest_MySQLdb):
     driver="mysql.connector"
 
 del DBTest
-

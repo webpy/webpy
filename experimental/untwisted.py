@@ -1,3 +1,4 @@
+from __future__ import print_function
 import random
 
 from twisted.internet import reactor, defer
@@ -27,7 +28,7 @@ class Request(http.Request):
             f = web.lstrips(self.path, '/static/')
             assert '/' not in f
             #@@@ big security hole
-            self.write(file('static/' + f).read())
+            self.write(open('static/' + f).read())
             return self.finish()
 
         web.webapi._load(env)
@@ -59,7 +60,7 @@ def runtwisted(func):
     reactor.run()
 
 def newrun(inp, fvars):
-    print "Running on http://0.0.0.0:8086/"
+    print("Running on http://0.0.0.0:8086/")
     runtwisted(web.webpyfunc(inp, fvars, False))
 
 def iframe(url):
@@ -103,7 +104,7 @@ if __name__ == "__main__":
 
     class view:
         def GET(self):
-            print """
+            print("""
 <script type="text/javascript">
 function callback(item) {
   document.getElementById('content').innerHTML += "<p>" + item + "</p>";
@@ -120,7 +121,7 @@ function callback(item) {
   <input type="submit" value="send" />
 </form>
 <iframe id="foo" height="0" width="0" style="display: none" src="/js"/></iframe>
-            """
+            """)
         
     class js:
         def GET(self):

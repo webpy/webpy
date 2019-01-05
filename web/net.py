@@ -3,24 +3,26 @@ Network Utilities
 (from web.py)
 """
 
-__all__ = [
-  "validipaddr", "validip6addr", "validipport", "validip", "validaddr",
-  "urlquote",
-  "httpdate", "parsehttpdate", 
-  "htmlquote", "htmlunquote", "websafe",
-]
 
-import urllib, time
 import datetime
 import re
 import socket
+import time
+
+from .py3helpers import PY2, text_type
 
 try:
     from urllib.parse import quote
 except ImportError:
     from urllib import quote
 
-from .py3helpers import PY2
+__all__ = [
+  "validipaddr", "validip6addr", "validipport", "validip", "validaddr",
+  "urlquote",
+  "httpdate", "parsehttpdate",
+  "htmlquote", "htmlunquote", "websafe",
+]
+
 
 def validip6addr(address):
     """
@@ -45,7 +47,7 @@ def validip6addr(address):
 def validipaddr(address):
     """
     Returns True if `address` is a valid IPv4 address.
-    
+
         >>> validipaddr('192.168.1.1')
         True
         >>> validipaddr('192.168.1.800')
@@ -67,7 +69,7 @@ def validipaddr(address):
 def validipport(port):
     """
     Returns True if `port` is a valid IPv4 port.
-    
+
         >>> validipport('9000')
         True
         >>> validipport('foo')
@@ -137,7 +139,7 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
 def validaddr(string_):
     """
     Returns either (ip_address, port) or "/path/to/socket" from string_
-    
+
         >>> validaddr('/path/to/socket')
         '/path/to/socket'
         >>> validaddr('8000')
@@ -161,7 +163,7 @@ def validaddr(string_):
 def urlquote(val):
     """
     Quotes a string for use in a URL.
-    
+
         >>> urlquote('://?f=1&j=1')
         '%3A//%3Ff%3D1%26j%3D1'
         >>> urlquote(None)
@@ -172,7 +174,7 @@ def urlquote(val):
     if val is None: return ''
 
     if PY2:
-        if isinstance(val, unicode):
+        if isinstance(val, text_type):
             val = val.encode('utf-8')
         else:
             val = str(val)
@@ -183,7 +185,7 @@ def urlquote(val):
 def httpdate(date_obj):
     """
     Formats a datetime object for use in HTTP headers.
-    
+
         >>> import datetime
         >>> httpdate(datetime.datetime(1970, 1, 1, 1, 1, 1))
         'Thu, 01 Jan 1970 01:01:01 GMT'
@@ -206,7 +208,7 @@ def parsehttpdate(string_):
 def htmlquote(text):
     r"""
     Encodes `text` for raw use in HTML.
-    
+
         >>> htmlquote(u"<'&\">")
         u'&lt;&#39;&amp;&quot;&gt;'
     """
@@ -230,7 +232,7 @@ def htmlunquote(text):
     text = text.replace(u"&lt;", u"<")
     text = text.replace(u"&amp;", u"&") # Must be done last!
     return text
-    
+
 def websafe(val):
     r"""Converts `val` so that it is safe for use in Unicode HTML.
 
@@ -247,14 +249,14 @@ def websafe(val):
     if PY2:
         if isinstance(val, str):
             val = val.decode('utf-8')
-        elif not isinstance(val, unicode):
-            val = unicode(val)
+        elif not isinstance(val, text_type):
+            val = text_type(val)
     else:
         if isinstance(val, bytes):
             val = val.decode('utf-8')
         elif not isinstance(val, str):
             val = str(val)
-    
+
     return htmlquote(val)
 
 if __name__ == "__main__":

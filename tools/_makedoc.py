@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import web
 
@@ -7,7 +8,7 @@ class Parser:
         self.text = ''
         
     def go(self, pyfile):
-        for line in file(pyfile):
+        for line in open(pyfile):
             if self.mode == 'in def':
                 self.text += ' ' + line.strip()
                 if line.strip().endswith(':'):
@@ -60,22 +61,22 @@ class Parser:
         text = web.lstrips(text, 'def ')
         if text.startswith('_') or text.startswith('class _'):
             return False
-        print '`'+text.strip()+'`'
+        print('`'+text.strip()+'`')
         return True
     
     def docstring(self, text):
-        print '   :', text.strip()
-        print
+        print('   :', text.strip())
+        print()
     
     def header(self, text):
-        print '##', text.strip()
-        print
+        print('##', text.strip())
+        print()
         
 for pyfile in os.listdir('trunk/web'):
     if pyfile[-2:] == 'py':
-        print
-        print '## ' + pyfile
-        print
+        print()
+        print('## ' + pyfile)
+        print()
         Parser().go('trunk/web/' + pyfile)
-print '`ctx`\n   :',
-print '\n'.join('    '+x for x in web.ctx.__doc__.strip().split('\n'))
+print('`ctx`\n   :', end=' ')
+print('\n'.join('    '+x for x in web.ctx.__doc__.strip().split('\n')))

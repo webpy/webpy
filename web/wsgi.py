@@ -52,7 +52,7 @@ def runwsgi(func):
             return runscgi(func)
     
     
-    server_addr = validip(listget(sys.argv, 1, ''))
+    server_addr = validaddr(listget(sys.argv, 1, ''))
     if 'PORT' in os.environ: # e.g. Heroku
         server_addr = ('0.0.0.0', intget(os.environ['PORT']))
     

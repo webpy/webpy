@@ -1,4 +1,5 @@
 """Helpers functions to run log-running tasks."""
+import threading
 from web import utils
 from web import webapi as web
 
@@ -23,7 +24,7 @@ def background(func):
         background.threaddb[id(t)] = t
         t.start()
         web.ctx.headers = []
-        return seeother(changequery(_t=id(t)))
+        return web.seeother(web.changequery(_t=id(t)))
     return internal
 background.threaddb = {}
 
@@ -40,4 +41,3 @@ def backgrounder(func):
         else:
             return func(*a, **kw)
     return internal
-

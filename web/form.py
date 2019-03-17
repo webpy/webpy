@@ -206,6 +206,43 @@ class Textbox(Input):
     def get_type(self):
         return 'text'
 
+class Searchbox(Input):
+    """Search input
+
+        >>> Searchbox(name='foo', value='bar', list="foolist").render()
+        u'<input id="foo" list="foolist" name="foo" type="search" value="bar"/>'
+        >>> Searchbox(name='foo', value='bar', args=["bar1","bar2","bar3"], placeholder="Type or choose").render()
+        u'<datalist id="%s">\n  <option value="bar1" />\n  <option value="bar2" />\n  <option value="bar3" />\n</datalist>\n<input id="foo" list="foo_list" name="foo" placeholder="Type or choose" type="search" value="bar"/>'
+    """
+    def __init__(self, name, args=None, list=None, *validators, **attrs):
+        self.args = args
+        self.list = list
+        super(Searchbox, self).__init__(name, *validators, **attrs)
+
+    def get_type(self):
+        return 'search'
+
+    def render(self):
+        datalist = ''
+        if self.list is None:
+            self.list = self.name + "_list"
+        self.attrs['list'] = self.list
+        if self.args is not None:
+            datalist = self.render_datalist()
+        return datalist + super(Searchbox, self).render()
+
+    def render_datalist(self):
+        if self.args is None:
+            return ""
+
+        x = '<datalist id="%s">\n'
+
+        for arg in self.args:
+            x += '  <option value="%s" />\n' % arg
+
+        x += '</datalist>\n'
+        return x
+
 class Password(Input):
     """Password input.
 

@@ -168,7 +168,7 @@ class _NotFound(HTTPError):
     message = "not found"
     def __init__(self, message=None):
         status = '404 Not Found'
-        headers = {'Content-Type': 'text/html'}
+        headers = {'Content-Type': 'text/html; charset=utf-8'}
         HTTPError.__init__(self, status, headers, message or self.message)
 
 def NotFound(message=None):

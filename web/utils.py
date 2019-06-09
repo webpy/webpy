@@ -467,11 +467,14 @@ class Memoize:
         self.expires = expires
         self.background = background
         self.running = {}
+        self.running_lock = threading.Lock()
 
     def __call__(self, *args, **keywords):
         key = (args, tuple(keywords.items()))
-        if not self.running.get(key):
-            self.running[key] = threading.Lock()
+        with self.running_lock:
+            if not self.running.get(key):
+                self.running[key] = threading.Lock()
+
         def update(block=False):
             if self.running[key].acquire(block):
                 try:
@@ -490,7 +493,7 @@ class Memoize:
 
 memoize = Memoize
 
-re_compile = memoize(re.compile) #@@ threadsafe?
+re_compile = memoize(re.compile)
 re_compile.__doc__ = """
 A memoized version of re.compile.
 """

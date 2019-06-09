@@ -14,7 +14,7 @@ class pwt(object):
 <script src="/static/prototype.js"></script>
 <script src="/static/behaviour.js"></script>
 <script>
-Behaviour.register({'input': function (e) { 
+Behaviour.register({'input': function (e) {
     e.onmouseup = e.onkeyup = e.onchange = function () { send(e) }
 }})
 </script>
@@ -23,7 +23,7 @@ Behaviour.register({'input': function (e) {
 
 <script>
 function send(e) {
-    ajax =  new Ajax.Request(document.location, {method:'post', parameters: 
+    ajax =  new Ajax.Request(document.location, {method:'post', parameters:
       Form.serialize(document.forms.main)
     });
 }
@@ -43,19 +43,19 @@ function receive(d) {
     def GET(self):
         web.header('Content-Type', 'text/html')
         print(self.page % self.form())
-    
+
     def POST(self):
         i = web.input()
         if '_' in i: del i['_']
         #for k, v in i.iteritems(): setattr(self, k, v)
-        
+
         self._inFunc = True
         self.work(**i)
         self._inFunc = False
-        
+
         web.header('Content-Type', 'text/javascript')
         print('receive('+simplejson.dumps(self.updated)+');')
-    
+
     def __setattr__(self, k, v):
         if self._inFunc and k != '_inFunc':
             self.updated[k] = v
@@ -73,7 +73,7 @@ class sudoku(pwt):
             out += '<br />'
 
         return out
-    
+
     def work(self, **kw):
         values = dict((s, sudo.digits) for s in sudo.squares)
         for k, v in kw.iteritems():
@@ -89,7 +89,7 @@ class sudoku(pwt):
 class length(pwt):
     def form(self):
         return '<p id="output">&nbsp;</p><input type="range" name="n" value="0" />'
-    
+
     def work(self):
         self.output = ('a' * web.intget(self.n, 0) or '&nbsp;')
 

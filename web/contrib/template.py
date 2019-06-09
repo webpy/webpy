@@ -5,7 +5,7 @@ import os.path
 
 __all__ = [
     "render_cheetah", "render_genshi", "render_mako",
-    "cache", 
+    "cache",
 ]
 
 class render_cheetah:
@@ -24,13 +24,13 @@ class render_cheetah:
     def __getattr__(self, name):
         from Cheetah.Template import Template
         path = os.path.join(self.path, name + ".html")
-        
+
         def template(**kw):
             t = Template(file=path, searchList=[kw])
             return t.respond()
 
         return template
-    
+
 class render_genshi:
     """Rendering interface genshi templates.
     Example:
@@ -75,7 +75,7 @@ class render_genshi:
 
 class render_jinja:
     """Rendering interface to Jinja2 Templates
-    
+
     Example:
 
         render= render_jinja('templates')
@@ -88,13 +88,13 @@ class render_jinja:
         from jinja2 import Environment,FileSystemLoader
         self._lookup = Environment(loader=FileSystemLoader(*a, **kwargs), extensions=extensions)
         self._lookup.globals.update(globals)
-        
+
     def __getattr__(self, name):
         # Assuming all templates end with .html
         path = name + '.html'
         t = self._lookup.get_template(path)
         return t.render
-        
+
 class render_mako:
     """Rendering interface to Mako Templates.
 
@@ -115,7 +115,7 @@ class render_mako:
 
 class cache:
     """Cache for any rendering interface.
-    
+
     Example:
 
         render = cache(render_cheetah("templates/"))

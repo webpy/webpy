@@ -23,7 +23,7 @@ class Request(http.Request):
 
         for k, v in self.received_headers.iteritems():
             env['HTTP_' + k.upper()] = v
-        
+
         if self.path.startswith('/static/'):
             f = web.lstrips(self.path, '/static/')
             assert '/' not in f
@@ -71,13 +71,13 @@ def iframe(url):
 class Feed:
     def __init__(self):
         self.sessions = []
-    
+
     def subscribe(self):
         request = web.ctx.trequest
         self.sessions.append(request)
         request.connectionLost = lambda reason: self.sessions.remove(request)
         web.ctx.persist = True
-    
+
     def publish(self, text):
         for x in self.sessions:
             x.write(text)
@@ -86,11 +86,11 @@ class JSFeed(Feed):
     def __init__(self, callback="callback"):
         Feed.__init__(self)
         self.callback = callback
-        
+
     def publish(self, obj):
         web.debug("publishing")
-        Feed.publish(self, 
-          '<script type="text/javascript">window.parent.%s(%s)</script>' % (self.callback, simplejson.dumps(obj) + 
+        Feed.publish(self,
+          '<script type="text/javascript">window.parent.%s(%s)</script>' % (self.callback, simplejson.dumps(obj) +
           " " * 2048))
 
 if __name__ == "__main__":
@@ -122,14 +122,14 @@ function callback(item) {
 </form>
 <iframe id="foo" height="0" width="0" style="display: none" src="/js"/></iframe>
             """)
-        
+
     class js:
         def GET(self):
             mfeed.subscribe()
-    
+
     class send:
         def POST(self):
             mfeed.publish('<p>%s</p>' % web.input().text + (" " * 2048))
             web.seeother('/')
-    
+
     newrun(urls, globals())

@@ -39,7 +39,7 @@ doc_these = ( #These are the types of object that should be docced
     'instancemethod',
     'function',
     'type',
-    'property',    
+    'property',
 )
 
 not_these_names = ( #Any particular object names that shouldn't be doced
@@ -104,25 +104,25 @@ header = '''
 
 def type_string(ob):
     return str(type(ob)).split("'")[1]
-    
+
 def ts_css(text):
     """applies nice css to the type string"""
     return '<span class="ts">%s</span>' % text
-    
+
 def arg_string(func):
     """Returns a nice argstring for a function or method"""
     return inspect.formatargspec(*inspect.getargspec(func))
 
 def recurse_over(ob, name, indent_level=0):
-    ts = type_string(ob)    
+    ts = type_string(ob)
     if not ts in doc_these: return #stos what shouldn't be docced getting docced
-    if indent_level > 0 and ts == 'module': return #Stops it getting into the stdlib    
+    if indent_level > 0 and ts == 'module': return #Stops it getting into the stdlib
     if name in not_these_names: return #Stops things we don't want getting docced
-    
+
     indent = indent_level * indent_amount #Indents nicely
     ds_indent = indent + (indent_amount / 2)
     if indent_level > 0: print(indent_start % indent)
-    
+
     argstr = ''
     if ts.endswith(('function', 'method')):
         argstr = arg_string(ob)
@@ -134,23 +134,23 @@ def recurse_over(ob, name, indent_level=0):
         else:
             argstr = '(self)'
     if ts == 'instancemethod': ts = 'method' #looks much nicer
-    
+
     ds = inspect.getdoc(ob)
     if ds is None: ds = ''
     ds = markdown.Markdown(ds)
-    
-    mlink = '<a name="%s">' % name if ts == 'module' else '' 
+
+    mlink = '<a name="%s">' % name if ts == 'module' else ''
     mend = '</a>' if ts == 'module' else ''
     print(''.join(('<p>', ts_css(ts), item_start % ts, ' ', mlink, name,
                    websafe(argstr), mend, item_end, '<br />')))
     print(''.join((indent_start % ds_indent, ds, indent_end, '</p>')))
-    #Although ''.join looks wierd, it's alot faster is string addition    
+    #Although ''.join looks wierd, it's alot faster is string addition
     members = ''
-    
+
     if hasattr(ob, '__all__'): members = ob.__all__
-    else: members = [item for item in dir(ob) if not item.startswith('_')] 
-    
-    if not 'im_class' in members:    
+    else: members = [item for item in dir(ob) if not item.startswith('_')]
+
+    if not 'im_class' in members:
         for name in members:
             recurse_over(getattr(ob, name), name, indent_level + 1)
     if indent_level > 0: print(indent_end)
@@ -163,7 +163,7 @@ def main(modules=None):
     print('<ul>')
     for name in modules:
         print('<li><a href="#%(name)s">%(name)s</a></li>' % dict(name=name))
-    print('</ul>') 
+    print('</ul>')
     for name in modules:
         try:
             mod = __import__(name, {}, {}, 'x')
@@ -172,6 +172,6 @@ def main(modules=None):
             print("Unable to import module %s (Error: %s)" % (name, e), file=sys.stderr)
             pass
     print('</div>')
-        
+
 if __name__ == '__main__':
     main(sys.argv[1:])

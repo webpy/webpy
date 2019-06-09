@@ -5,7 +5,7 @@ Web application
 from __future__ import print_function
 
 from . import webapi as web
-from . import webapi, wsgi, utils, browser
+from . import wsgi, utils, browser
 from .debugerror import debugerror
 from . import httpserver
 from .utils import lstrips, safeunicode

@@ -5,6 +5,7 @@ python:
   - 3.6
   - 3.7
 services:
+  - mysql
   - postgresql
 before_install:
   - sudo mkdir -p /usr/include/postgresql/8.4/server

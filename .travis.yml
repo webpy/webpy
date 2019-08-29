@@ -4,6 +4,8 @@ python:
   - 3.5
   - 3.6
   - 3.7
+services:
+  - postgresql
 before_install:
   - sudo mkdir -p /usr/include/postgresql/8.4/server
 # - 'sudo apt-get -o Dpkg::Options::="--force-overwrite" install python-profiler'

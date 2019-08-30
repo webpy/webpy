@@ -836,7 +836,7 @@ class DB:
 
     def multiple_insert(self, tablename, values, seqname=None, _test=False):
         """
-        Inserts multiple rows into `tablename`. The `values` must be a list of dictioanries,
+        Inserts multiple rows into `tablename`. The `values` must be a list of dictionaries,
         one for each row to be inserted, each with the same set of keys.
         Returns the list of ids of the inserted rows.
         Set `seqname` to the ID if it's not the default, or to `False`

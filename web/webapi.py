@@ -63,7 +63,7 @@ class HTTPError(Exception):
 def _status_code(status, data=None, classname=None, docstring=None):
     if data is None:
         data = status.split(" ", 1)[1]
-    classname = status.split(" ", 1)[1].replace(' ', '') # 304 Not Modified -> NotModified
+    classname = status.split(" ", 1)[1].replace(' ', '')  # 304 Not Modified -> NotModified
     docstring = docstring or '`%s` status' % status
 
     def __init__(self, data=data, headers={}):
@@ -136,6 +136,7 @@ tempredirect = TempRedirect
 class BadRequest(HTTPError):
     """`400 Bad Request` error."""
     message = "bad request"
+
     def __init__(self, message=None):
         status = "400 Bad Request"
         headers = {'Content-Type': 'text/html'}
@@ -146,6 +147,7 @@ badrequest = BadRequest
 class Unauthorized(HTTPError):
     """`401 Unauthorized` error."""
     message = "unauthorized"
+
     def __init__(self, message=None):
         status = "401 Unauthorized"
         headers = {'Content-Type': 'text/html'}
@@ -156,6 +158,7 @@ unauthorized = Unauthorized
 class Forbidden(HTTPError):
     """`403 Forbidden` error."""
     message = "forbidden"
+
     def __init__(self, message=None):
         status = "403 Forbidden"
         headers = {'Content-Type': 'text/html'}
@@ -166,6 +169,7 @@ forbidden = Forbidden
 class _NotFound(HTTPError):
     """`404 Not Found` error."""
     message = "not found"
+
     def __init__(self, message=None):
         status = '404 Not Found'
         headers = {'Content-Type': 'text/html; charset=utf-8'}
@@ -203,6 +207,7 @@ nomethod = NoMethod
 class NotAcceptable(HTTPError):
     """`406 Not Acceptable` error."""
     message = "not acceptable"
+
     def __init__(self, message=None):
         status = "406 Not Acceptable"
         headers = {'Content-Type': 'text/html'}
@@ -213,6 +218,7 @@ notacceptable = NotAcceptable
 class Conflict(HTTPError):
     """`409 Conflict` error."""
     message = "conflict"
+
     def __init__(self, message=None):
         status = "409 Conflict"
         headers = {'Content-Type': 'text/html'}
@@ -223,6 +229,7 @@ conflict = Conflict
 class Gone(HTTPError):
     """`410 Gone` error."""
     message = "gone"
+
     def __init__(self, message=None):
         status = '410 Gone'
         headers = {'Content-Type': 'text/html'}
@@ -233,6 +240,7 @@ gone = Gone
 class PreconditionFailed(HTTPError):
     """`412 Precondition Failed` error."""
     message = "precondition failed"
+
     def __init__(self, message=None):
         status = "412 Precondition Failed"
         headers = {'Content-Type': 'text/html'}
@@ -243,6 +251,7 @@ preconditionfailed = PreconditionFailed
 class UnsupportedMediaType(HTTPError):
     """`415 Unsupported Media Type` error."""
     message = "unsupported media type"
+
     def __init__(self, message=None):
         status = "415 Unsupported Media Type"
         headers = {'Content-Type': 'text/html'}
@@ -252,7 +261,8 @@ unsupportedmediatype = UnsupportedMediaType
 
 class _UnavailableForLegalReasons(HTTPError):
     """`451 Unavailable For Legal Reasons` error."""
-    message="unavailable for legal reasons"
+    message = "unavailable for legal reasons"
+
     def __init__(self, message=None):
         status = "451 Unavailable For Legal Reasons"
         headers = {'Content-Type': 'text/html'}
@@ -304,7 +314,8 @@ def header(hdr, value, unique=False):
         raise ValueError('invalid characters in header')
     if unique is True:
         for h, v in ctx.headers:
-            if h.lower() == hdr.lower(): return
+            if h.lower() == hdr.lower():
+                return
 
     ctx.headers.append((hdr, value))
 
@@ -323,8 +334,8 @@ def rawinput(method=None):
     e = ctx.env.copy()
     a = b = {}
 
-    if method.lower() in ['both', 'post', 'put']:
-        if e['REQUEST_METHOD'] in ['POST', 'PUT']:
+    if method.lower() in ['both', 'post', 'put', 'patch']:
+        if e['REQUEST_METHOD'] in ['POST', 'PUT', 'PATCH']:
             if e.get('CONTENT_TYPE', '').lower().startswith('multipart/'):
                 # since wsgi.input is directly passed to cgi.FieldStorage,
                 # it can not be called multiple times. Saving the FieldStorage
@@ -364,7 +375,7 @@ def input(*requireds, **defaults):
     _method = defaults.pop('_method', 'both')
     out = rawinput(_method)
     try:
-        defaults.setdefault('_unicode', True) # force unicode conversion by default.
+        defaults.setdefault('_unicode', True)  # force unicode conversion by default.
         return storify(out, *requireds, **defaults)
     except KeyError:
         raise badrequest()

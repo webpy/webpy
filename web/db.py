@@ -34,11 +34,11 @@ except ImportError:
     config = storage()
 
 __all__ = [
-  "UnknownParamstyle", "UnknownDB", "TransactionError",
-  "sqllist", "sqlors", "reparam", "sqlquote",
-  "SQLQuery", "SQLParam", "sqlparam",
-  "SQLLiteral", "sqlliteral",
-  "database", 'DB',
+    "UnknownParamstyle", "UnknownDB", "TransactionError",
+    "sqllist", "sqlors", "reparam", "sqlquote",
+    "SQLQuery", "SQLParam", "sqlparam",
+    "SQLLiteral", "sqlliteral",
+    "database", 'DB',
 ]
 
 TOKEN = '[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)[jJ])|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)|(0[xX][\\da-fA-F]+[lL]?|0[bB][01]+[lL]?|(0[oO][0-7]+)|(0[0-7]*)[lL]?|[1-9]\\d*[lL]?))|((\\*\\*=?|>>=?|<<=?|<>|!=|//=?|[+\\-*/%&|^=<>]=?|~)|[][(){}]|(\\r?\\n|[:;.,`@]))|([uUbB]?[rR]?\'[^\\n\'\\\\]*(?:\\\\.[^\\n\'\\\\]*)*\'|[uUbB]?[rR]?"[^\\n"\\\\]*(?:\\\\.[^\\n"\\\\]*)*")|[a-zA-Z_]\\w*)'
@@ -54,11 +54,13 @@ class _ItplError(ValueError):
         ValueError.__init__(self)
         self.text = text
         self.pos = pos
+
     def __str__(self):
         return "unfinished expression in %s at char %d" % (
             repr(self.text), self.pos)
 
-class TransactionError(Exception): pass
+class TransactionError(Exception):
+    pass
 
 class UnknownParamstyle(Exception):
     """
@@ -112,7 +114,7 @@ class SQLParam(object):
     def __repr__(self):
         return '<param: %s>' % repr(self.value)
 
-sqlparam =  SQLParam
+sqlparam = SQLParam
 
 class SQLQuery(object):
     """
@@ -251,7 +253,7 @@ class SQLQuery(object):
                 target_items.append(sep)
             if isinstance(item, SQLQuery):
                 target_items.extend(item.items)
-            elif item == "": # joins with empty strings
+            elif item == "":  # joins with empty strings
                 continue
             else:
                 target_items.append(item)
@@ -320,7 +322,7 @@ def reparam(string_, dictionary):
     """
     return SafeEval().safeeval(string_, dictionary)
 
-    dictionary = dictionary.copy() # eval mucks with it
+    dictionary = dictionary.copy()  # eval mucks with it
     # disable builtins to avoid risk for remote code exection.
     dictionary['__builtins__'] = object()
     result = []
@@ -402,9 +404,9 @@ def sqlors(left, lst):
 
     if isinstance(lst, iters):
         return SQLQuery(['('] +
-          sum([[left, sqlparam(x), ' OR '] for x in lst], []) +
-          ['1=2)']
-        )
+                        sum([[left, sqlparam(x), ' OR '] for x in lst], []) +
+                        ['1=2)']
+                        )
     else:
         return left + sqlparam(lst)
 
@@ -539,7 +541,7 @@ class DB:
 
     def _load_context(self, ctx):
         ctx.dbq_count = 0
-        ctx.transactions = [] # stack of transactions
+        ctx.transactions = []  # stack of transactions
 
         if self.has_pooling:
             ctx.db = self._connect_with_pooling(self.keywords)
@@ -653,7 +655,7 @@ class DB:
     def _where_dict(self, where):
         where_clauses = []
 
-        for k, v in sorted(iteritems(where), key= lambda t:t[0]):
+        for k, v in sorted(iteritems(where), key=lambda t: t[0]):
             where_clauses.append(k + ' = ' + sqlquote(v))
         if where_clauses:
             return SQLQuery.join(where_clauses, " AND ")
@@ -674,27 +676,31 @@ class DB:
             >>> db.query("SELECT * FROM foo WHERE x = " + sqlquote('f'), _test=True)
             <sql: "SELECT * FROM foo WHERE x = 'f'">
         """
-        if vars is None: vars = {}
+        if vars is None:
+            vars = {}
 
         if not processed and not isinstance(sql_query, SQLQuery):
             sql_query = reparam(sql_query, vars)
 
-        if _test: return sql_query
+        if _test:
+            return sql_query
 
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, sql_query)
 
         if db_cursor.description:
             names = [x[0] for x in db_cursor.description]
+
             def iterwrapper():
                 row = db_cursor.fetchone()
                 while row:
                     yield storage(dict(zip(names, row)))
                     row = db_cursor.fetchone()
+
             out = iterbetter(iterwrapper())
             out.__len__ = lambda: int(db_cursor.rowcount)
-            out.list = lambda: [storage(dict(zip(names, x))) \
-                               for x in db_cursor.fetchall()]
+            out.list = lambda: [storage(dict(zip(names, x)))
+                                for x in db_cursor.fetchall()]
         else:
             out = db_cursor.rowcount
 
@@ -717,11 +723,16 @@ class DB:
             >>> db.select('foo', where={'id': 5}, _test=True)
             <sql: 'SELECT * FROM foo WHERE id = 5'>
         """
-        if vars is None: vars = {}
+        if vars is None:
+            vars = {}
+
         sql_clauses = self.sql_clauses(what, tables, where, group, order, limit, offset)
         clauses = [self.gen_clause(sql, val, vars) for sql, val in sql_clauses if val is not None]
         qout = SQLQuery.join(clauses)
-        if _test: return qout
+
+        if _test:
+            return qout
+
         return self.query(qout, processed=True)
 
     def where(self, table, what='*', order=None, group=None, limit=None,
@@ -738,9 +749,14 @@ class DB:
             <sql: 'SELECT * FROM foo'>
         """
         where = self._where_dict(kwargs)
-        return self.select(table, what=what, order=order,
-               group=group, limit=limit, offset=offset, _test=_test,
-               where=where)
+        return self.select(table,
+                           what=what,
+                           order=order,
+                           group=group,
+                           limit=limit,
+                           offset=offset,
+                           _test=_test,
+                           where=where)
 
     def sql_clauses(self, what, tables, where, group, order, limit, offset):
         return (
@@ -763,7 +779,7 @@ class DB:
                 nout = SQLQuery(val)
         #@@@
         elif isinstance(val, (list, tuple)) and len(val) == 2:
-            nout = SQLQuery(val[0], val[1]) # backwards-compatibility
+            nout = SQLQuery(val[0], val[1])  # backwards-compatibility
         elif sql == 'WHERE' and isinstance(val, dict):
             nout = self._where_dict(val)
         elif isinstance(val, SQLQuery):
@@ -772,8 +788,10 @@ class DB:
             nout = reparam(val, vars)
 
         def xjoin(a, b):
-            if a and b: return a + ' ' + b
-            else: return a or b
+            if a and b:
+                return a + ' ' + b
+            else:
+                return a or b
 
         return xjoin(sql, nout)
 
@@ -792,7 +810,8 @@ class DB:
             >>> q.values()
             [2, 'bob']
         """
-        def q(x): return "(" + x + ")"
+        def q(x):
+            return "(" + x + ")"
 
         if values:
             #needed for Py3 compatibility with the above doctests
@@ -804,12 +823,12 @@ class DB:
         else:
             sql_query = SQLQuery(self._get_insert_default_values_query(tablename))
 
-        if _test: return sql_query
+        if _test:
+            return sql_query
 
         db_cursor = self._db_cursor()
         if seqname is not False:
             sql_query = self._process_insert_query(sql_query, tablename, seqname)
-
 
         if isinstance(sql_query, tuple):
             # for some databases, a separate query has to be made to find
@@ -824,7 +843,6 @@ class DB:
             out = db_cursor.fetchone()[0]
         except Exception:
             out = None
-
 
         if not self.ctx.transactions:
             self.ctx.commit()
@@ -865,7 +883,8 @@ class DB:
             if v.keys() != keys:
                 raise ValueError('Not all rows have the same keys')
 
-        keys = sorted(keys) #enforce query order for the above doctest compatibility with Py3
+        # enforce query order for the above doctest compatibility with Py3
+        keys = sorted(keys)
 
         sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
 
@@ -874,7 +893,8 @@ class DB:
                 sql_query.append(", ")
             SQLQuery.join([SQLParam(row[k]) for k in keys], sep=", ", target=sql_query, prefix="(", suffix=")")
 
-        if _test: return sql_query
+        if _test:
+            return sql_query
 
         db_cursor = self._db_cursor()
         if seqname is not False:
@@ -899,7 +919,6 @@ class DB:
             self.ctx.commit()
         return out
 
-
     def update(self, tables, where, vars=None, _test=False, **values):
         """
         Update `tables` with clause `where` (interpolated using `vars`)
@@ -916,17 +935,19 @@ class DB:
             >>> q.values()
             [2, 'bob', 'Joseph']
         """
-        if vars is None: vars = {}
-        where = self._where(where, vars)
+        if vars is None:
+            vars = {}
 
+        where = self._where(where, vars)
         values = sorted(values.items(), key=lambda t: t[0])
 
         query = (
-          "UPDATE " + sqllist(tables) +
-          " SET " + sqlwhere(values, ', ') +
-          " WHERE " + where)
+            "UPDATE " + sqllist(tables) +
+            " SET " + sqlwhere(values, ', ') +
+            " WHERE " + where)
 
-        if _test: return query
+        if _test:
+            return query
 
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, query)
@@ -943,14 +964,20 @@ class DB:
             >>> db.delete('foo', where='name = $name', vars=locals(), _test=True)
             <sql: "DELETE FROM foo WHERE name = 'Joe'">
         """
-        if vars is None: vars = {}
+        if vars is None:
+            vars = {}
+
         where = self._where(where, vars)
 
         q = 'DELETE FROM ' + table
-        if using: q += ' USING ' + sqllist(using)
-        if where: q += ' WHERE ' + where
+        if using:
+            q += ' USING ' + sqllist(using)
 
-        if _test: return q
+        if where:
+            q += ' WHERE ' + where
+
+        if _test:
+            return q
 
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, q)
@@ -1024,7 +1051,9 @@ class PostgresDB(DB):
 class MySQLDB(DB):
     def __init__(self, **keywords):
 
-        db = import_driver(["MySQLdb", "pymysql","mysql.connector"], preferred=keywords.pop('driver', None))
+        db = import_driver(["MySQLdb", "pymysql", "mysql.connector"],
+                           preferred=keywords.pop('driver', None))
+
         if db.__name__ == "MySQLdb":
             if 'pw' in keywords:
                 keywords['passwd'] = keywords['pw']
@@ -1038,13 +1067,12 @@ class MySQLDB(DB):
                 keywords['password'] = keywords['pw']
                 del keywords['pw']
 
-
         if 'charset' not in keywords:
             keywords['charset'] = 'utf8'
         elif keywords['charset'] is None:
             del keywords['charset']
 
-        self.paramstyle = db.paramstyle = 'pyformat' # it's both, like psycopg
+        self.paramstyle = db.paramstyle = 'pyformat'  # it's both, like psycopg
         self.dbname = "mysql"
         DB.__init__(self, db, keywords)
         self.supports_multiple_insert = True
@@ -1081,7 +1109,7 @@ class SqliteDB(DB):
 
         self.paramstyle = db.paramstyle
         keywords['database'] = keywords.pop('db')
-        keywords['pooling'] = False # sqlite don't allows connections to be shared by threads
+        keywords['pooling'] = False  # sqlite don't allows connections to be shared by threads
         self.dbname = "sqlite"
         DB.__init__(self, db, keywords)
 
@@ -1113,7 +1141,7 @@ class FirebirdDB(DB):
 
     def delete(self, table, where=None, using=None, vars=None, _test=False):
         # firebird doesn't support using clause
-        using=None
+        using = None
         return DB.delete(self, table, where, using, vars, _test)
 
     def sql_clauses(self, what, tables, where, group, order, limit, offset):
@@ -1270,7 +1298,7 @@ def _interpolate(format):
         return match, match.end()
 
     namechars = "abcdefghijklmnopqrstuvwxyz" \
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
     chunks = []
     pos = 0
 
@@ -1298,7 +1326,7 @@ def _interpolate(format):
             match, pos = matchorfail(format, dollar + 1)
             while pos < len(format):
                 if format[pos] == "." and \
-                    pos + 1 < len(format) and format[pos + 1] in namechars:
+                   pos + 1 < len(format) and format[pos + 1] in namechars:
                     match, pos = matchorfail(format, pos + 1)
                 elif format[pos] in "([":
                     pos, level = pos + 1, 1
@@ -1328,10 +1356,10 @@ class _Node(object):
         self.second = second
 
     def __eq__(self, other):
-        return (isinstance(other, _Node)
-            and self.type == other.type
-            and self.first == other.first
-            and self.second == other.second)
+        return (isinstance(other, _Node) and
+                self.type == other.type and
+                self.first == other.first and
+                self.second == other.second)
 
     def __repr__(self):
         return "Node(%r, %r, %r)" % (self.type, self.first, self.second)
@@ -1342,7 +1370,7 @@ class Parser:
     Loosely based on <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
     namechars = "abcdefghijklmnopqrstuvwxyz" \
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
     def __init__(self):
         self.reset()
@@ -1373,7 +1401,7 @@ class Parser:
             # for supporting ${x.id}, for backward compataility
             elif nextchar == '{':
                 saved_pos = self.pos
-                self.pos = dollar+2 # skip "${"
+                self.pos = dollar+2  # skip "${"
                 expr = self.parse_expr()
                 if self.text[self.pos] == '}':
                     self.pos += 1
@@ -1410,7 +1438,8 @@ class Parser:
         self.pos = pos
         while self.pos < len(self.text):
             if self.text[self.pos] == "." and \
-                self.pos + 1 < len(self.text) and self.text[self.pos + 1] in self.namechars:
+               self.pos + 1 < len(self.text) and \
+               self.text[self.pos + 1] in self.namechars:
                 self.pos += 1
                 match, pos = self.match()
                 attr = match.group()
@@ -1464,21 +1493,15 @@ def test_parser():
     f("Hello $name", [_Node("text", "Hello "), _Node("param", "name")])
     f("Hello $name.foo", [
         _Node("text", "Hello "),
-        _Node("getattr",
-            _Node("param", "name"),
-            "foo")])
+        _Node("getattr", _Node("param", "name"), "foo")])
     f("WHERE id=$self.id LIMIT 1", [
         _Node("text", "WHERE id="),
-        _Node('getattr',
-            _Node('param', 'self', None),
-            'id'),
+        _Node('getattr', _Node('param', 'self', None), 'id'),
         _Node("text", " LIMIT 1")])
 
     f("WHERE id=$self['id'] LIMIT 1", [
         _Node("text", "WHERE id="),
-        _Node('getitem',
-            _Node('param', 'self', None),
-            _Node('literal', "'id'")),
+        _Node('getitem', _Node('param', 'self', None), _Node('literal', "'id'")),
         _Node("text", " LIMIT 1")])
 
 def test_safeeval():

@@ -14,8 +14,7 @@ install:
   - pip install flake8 pytest-cov -r requirements.txt -r test_requirements.txt
 before_script:
   # stop the build if there are Python syntax errors or undefined names
-  # TODO: When we have an answer to webpy/webpy#482 we should remove the --exclude
-  - flake8 . --count --exclude=./web/webapi.py --select=E9,F63,F72,F82 --show-source --statistics
+  - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
   # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
   - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
   - psql -c 'create database webpy;' -U postgres

@@ -410,6 +410,10 @@ def decode_cookie(value):
     u'foo \xe9 bar'
     """
     try:
+        unicode  # noqa: F823
+    except NameError:
+        unicode = str
+    try:
         # First try plain ASCII encoding
         return unicode(value, 'us-ascii')
     except UnicodeError:

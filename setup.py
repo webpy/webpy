@@ -12,10 +12,8 @@ setup(name='web.py',
       maintainer_email='anandology@gmail.com',
       url='http://webpy.org/',
       packages=['web', 'web.contrib'],
-      install_requires=[
-          'cheroot',
-      ],
+      install_requires=['cheroot'],
       long_description="Think about the ideal way to write a web app. Write the code to make it happen.",
       license="Public domain",
       platforms=["any"],
-     )
+      )

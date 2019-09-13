@@ -3,8 +3,11 @@ Session Management
 (from web.py)
 """
 
-import os, time, datetime, random, base64
+import os
 import os.path
+import time
+import datetime
+import base64
 from copy import deepcopy
 try:
     import cPickle as pickle
@@ -25,8 +28,8 @@ __all__ = [
 web.config.session_parameters = utils.storage({
     'cookie_name': 'webpy_session_id',
     'cookie_domain': None,
-    'cookie_path' : None,
-    'timeout': 86400, #24 * 60 * 60, # 24 hours in seconds
+    'cookie_path': None,
+    'timeout': 86400,  # 24 * 60 * 60, # 24 hours in seconds
     'ignore_expiry': True,
     'ignore_change_ip': True,
     'secret_key': 'fLjUfxqXtfNoIldA0A0J',
@@ -90,9 +93,6 @@ class Session(object):
     def _load(self):
         """Load the session from the store, by the id from cookie"""
         cookie_name = self._config.cookie_name
-        cookie_domain = self._config.cookie_domain
-        cookie_path = self._config.cookie_path
-        httponly = self._config.httponly
         self.session_id = web.cookies().get(cookie_name)
 
         # protection against session_id tampering
@@ -128,7 +128,7 @@ class Session(object):
         # check for change of IP
         if self.session_id and self.get('ip', None) != web.ctx.ip:
             if not self._config.ignore_change_ip:
-               return self.expired()
+                return self.expired()
 
     def _save(self):
         if not self.get('_killed'):
@@ -153,8 +153,9 @@ class Session(object):
             now = time.time()
             secret_key = self._config.secret_key
 
-            hashable = "%s%s%s%s" %(rand, now, utils.safestr(web.ctx.ip), secret_key)
-            session_id = sha1(hashable if PY2 else hashable.encode('utf-8')) #TODO maybe a better way to deal with this, without using an if-statement
+            hashable = "%s%s%s%s" % (rand, now, utils.safestr(web.ctx.ip), secret_key)
+            # TODO maybe a better way to deal with this, without using an if-statement
+            session_id = sha1(hashable if PY2 else hashable.encode('utf-8'))
             session_id = session_id.hexdigest()
             if session_id not in self.store:
                 break
@@ -229,9 +230,7 @@ class DiskStore(Store):
     def __init__(self, root):
         # if the storage root doesn't exists, create it.
         if not os.path.exists(root):
-            os.makedirs(
-                    os.path.abspath(root)
-                    )
+            os.makedirs(os.path.abspath(root))
         self.root = root
 
     def _get_path(self, key):
@@ -274,7 +273,7 @@ class DiskStore(Store):
         for f in os.listdir(self.root):
             path = self._get_path(f)
             atime = os.stat(path).st_atime
-            if now - atime > timeout :
+            if now - atime > timeout:
                 os.remove(path)
 
 class DBStore(Store):
@@ -307,15 +306,15 @@ class DBStore(Store):
         pickled = self.encode(value)
         now = datetime.datetime.now()
         if key in self:
-            self.db.update(self.table, where="session_id=$key", data=pickled,atime=now,  vars=locals())
+            self.db.update(self.table, where="session_id=$key", data=pickled, atime=now, vars=locals())
         else:
-            self.db.insert(self.table, False, session_id=key, atime=now, data=pickled )
+            self.db.insert(self.table, False, session_id=key, atime=now, data=pickled)
 
     def __delitem__(self, key):
         self.db.delete(self.table, where="session_id=$key", vars=locals())
 
     def cleanup(self, timeout):
-        timeout = datetime.timedelta(timeout/(24.0*60*60)) #timedelta takes numdays as arg
+        timeout = datetime.timedelta(timeout/(24.0*60*60))  # timedelta takes numdays as arg
         last_allowed_time = datetime.datetime.now() - timeout
         self.db.delete(self.table, where="$last_allowed_time > atime", vars=locals())
 
@@ -335,7 +334,7 @@ class ShelfStore:
 
     def __getitem__(self, key):
         atime, v = self.shelf[key]
-        self[key] = v # update atime
+        self[key] = v  # update atime
         return v
 
     def __setitem__(self, key, value):
@@ -351,9 +350,9 @@ class ShelfStore:
         now = time.time()
         for k in self.shelf.keys():
             atime, v = self.shelf[k]
-            if now - atime > timeout :
+            if now - atime > timeout:
                 del self[k]
 
-if __name__ == '__main__' :
+if __name__ == '__main__':
     import doctest
     doctest.testmod()

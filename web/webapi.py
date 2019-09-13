@@ -383,8 +383,11 @@ def input(*requireds, **defaults):
 def data():
     """Returns the data sent with the request."""
     if 'data' not in ctx:
-        cl = intget(ctx.env.get('CONTENT_LENGTH'), 0)
-        ctx.data = ctx.env['wsgi.input'].read(cl)
+        if ctx.env.get('HTTP_TRANSFER_ENCODING') == 'chunked':
+            ctx.data = ctx.env['wsgi.input'].read()
+        else:
+            cl = intget(ctx.env.get('CONTENT_LENGTH'), 0)
+            ctx.data = ctx.env['wsgi.input'].read(cl)
     return ctx.data
 
 def setcookie(name, value, expires='', domain=None,

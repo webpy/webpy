@@ -42,13 +42,12 @@ import os
 import sys
 import glob
 import re
-import warnings
 import ast
 
 from .utils import storage, safeunicode, safestr, re_compile
 from .webapi import config
 from .net import websafe
-from .py3helpers import PY2, iteritems
+from .py3helpers import PY2
 
 if PY2:
     from UserDict import DictMixin
@@ -446,6 +445,8 @@ class Parser:
         r"""
             >>> read_block_section = Parser().read_block_section
             >>> read_block_section('for i in range(10): hello $i\nfoo')
+            (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
+            >>> read_block_section('for i in range(10):  $# inline comment\n hello $i\nfoo')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
             >>> read_block_section('for i in range(10):\n        hello $i\n    foo', begin_indent='    ')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, '    foo')

@@ -1045,7 +1045,11 @@ class PostgresDB(DB):
 
     def _connect_with_pooling(self, keywords):
         conn = DB._connect_with_pooling(self, keywords)
-        conn._con._con.set_client_encoding('UTF8')
+        try:
+            conn._con._con.set_client_encoding('UTF8')
+        except AttributeError:
+            # fallback for pgdb driver
+            conn.cursor().execute("set client_encoding to 'UTF-8'")
         return conn
 
 class MySQLDB(DB):

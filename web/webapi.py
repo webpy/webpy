@@ -189,6 +189,8 @@ notfound = NotFound
 
 class NoMethod(HTTPError):
     """A `405 Method Not Allowed` error."""
+    message = "method not allowed"
+
     def __init__(self, cls=None):
         status = '405 Method Not Allowed'
         headers = {}
@@ -199,8 +201,7 @@ class NoMethod(HTTPError):
             methods = [method for method in methods if hasattr(cls, method)]
 
         headers['Allow'] = ', '.join(methods)
-        data = None
-        HTTPError.__init__(self, status, headers, data)
+        HTTPError.__init__(self, status, headers, self.message)
 
 nomethod = NoMethod
 

@@ -3,12 +3,12 @@ WSGI Utilities
 (from web.py)
 """
 
-import os, sys
+import os
+import sys
 
-from . import http
 from . import webapi as web
 from .utils import listget, intget
-from .net import validaddr, validip
+from .net import validaddr
 from . import httpserver
 
 def runfcgi(func, addr=('localhost', 8000)):
@@ -27,17 +27,20 @@ def runwsgi(func):
     as appropriate based on context and `sys.argv`.
     """
 
-    if 'SERVER_SOFTWARE' in os.environ: # cgi
+    if 'SERVER_SOFTWARE' in os.environ:  # cgi
         os.environ['FCGI_FORCE_CGI'] = 'Y'
 
-    if ('PHP_FCGI_CHILDREN' in os.environ #lighttpd fastcgi
-      or 'SERVER_SOFTWARE' in os.environ):
+    # PHP_FCGI_CHILDREN is used by lighttpd fastcgi
+    if ('PHP_FCGI_CHILDREN' in os.environ or 'SERVER_SOFTWARE' in os.environ):
         return runfcgi(func, None)
 
     if 'fcgi' in sys.argv or 'fastcgi' in sys.argv:
         args = sys.argv[1:]
-        if 'fastcgi' in args: args.remove('fastcgi')
-        elif 'fcgi' in args: args.remove('fcgi')
+        if 'fastcgi' in args:
+            args.remove('fastcgi')
+        elif 'fcgi' in args:
+            args.remove('fcgi')
+
         if args:
             return runfcgi(func, validaddr(args[0]))
         else:
@@ -51,9 +54,8 @@ def runwsgi(func):
         else:
             return runscgi(func)
 
-
     server_addr = validaddr(listget(sys.argv, 1, ''))
-    if 'PORT' in os.environ: # e.g. Heroku
+    if 'PORT' in os.environ:  # e.g. Heroku
         server_addr = ('0.0.0.0', intget(os.environ['PORT']))
 
     return httpserver.runsimple(func, server_addr)
@@ -65,10 +67,10 @@ def _is_dev_mode():
 
     # quick hack to check if the program is running in dev mode.
     if 'SERVER_SOFTWARE' in os.environ \
-        or 'PHP_FCGI_CHILDREN' in os.environ \
-        or 'fcgi' in argv or 'fastcgi' in argv \
-        or 'mod_wsgi' in argv:
-            return False
+       or 'PHP_FCGI_CHILDREN' in os.environ \
+       or 'fcgi' in argv or 'fastcgi' in argv \
+       or 'mod_wsgi' in argv:
+        return False
     return True
 
 # When running the builtin-server, enable debug mode if not already set.

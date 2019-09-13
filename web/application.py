@@ -8,31 +8,29 @@ from . import webapi as web
 from . import wsgi, utils, browser
 from .debugerror import debugerror
 from . import httpserver
-from .utils import lstrips, safeunicode
-from .py3helpers import iteritems, string_types, is_iter, PY2, text_type
+from .utils import lstrips
+from .py3helpers import iteritems, string_types, is_iter, PY2
 import sys
 
-import urllib
 import traceback
 import itertools
 import os
-import types
 from inspect import isclass
 
 import wsgiref.handlers
 
 try:
-    from urllib.parse import splitquery, urlencode, quote, unquote
+    from urllib.parse import splitquery, urlencode, unquote
 except ImportError:
-    from urllib import splitquery, urlencode, quote, unquote
+    from urllib import splitquery, urlencode, unquote
 
 try:
-    from importlib import reload #Since Py 3.4 reload is in importlib
+    from importlib import reload  # Since Py 3.4 reload is in importlib
 except ImportError:
     try:
-        from imp import reload #Since Py 3.0 and before 3.4 reload is in imp
+        from imp import reload  # Since Py 3.0 and before 3.4 reload is in imp
     except ImportError:
-        pass #Before Py 3.0 reload is a global function
+        pass  # Before Py 3.0 reload is a global function
 
 from io import BytesIO
 
@@ -69,7 +67,7 @@ class application:
         if autoreload:
             def main_module_name():
                 mod = sys.modules['__main__']
-                file = getattr(mod, '__file__', None) # make sure this works even from python interpreter
+                file = getattr(mod, '__file__', None)  # make sure this works even from python interpreter
                 return file and os.path.splitext(os.path.basename(file))[0]
 
             def modname(fvars):
@@ -227,10 +225,11 @@ class application:
                 q = data
 
             env['wsgi.input'] = BytesIO(q.encode('utf-8'))
-            if 'CONTENT_LENGTH' not in env:
             #if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
+            if 'CONTENT_LENGTH' not in env:
                 env['CONTENT_LENGTH'] = len(q)
         response = web.storage()
+
         def start_response(status, headers):
             response.status = status
             response.headers = dict(headers)
@@ -319,7 +318,7 @@ class application:
 
             def cleanup():
                 self._cleanup()
-                yield b'' # force this function to be a generator
+                yield b''  # force this function to be a generator
 
             return itertools.chain(result, cleanup())
 
@@ -387,8 +386,8 @@ class application:
         try:
             # check what version of python is running
             version = sys.version_info[:2]
-            major   = version[0]
-            minor   = version[1]
+            major = version[0]
+            minor = version[1]
 
             if major != 2:
                 raise EnvironmentError("Google App Engine only supports python 2.5 and 2.7")
@@ -504,7 +503,7 @@ class application:
             else:
                 result = utils.re_compile(r'^%s\Z' % (pat,)).match(value)
 
-            if result: # it's a match
+            if result:  # it's a match
                 return what, [x for x in result.groups()]
         return None, None
 
@@ -553,6 +552,7 @@ def with_metaclass(mcls):
         body.pop('__dict__', None)
         body.pop('__weakref__', None)
         return mcls(cls.__name__, cls.__bases__, body)
+
     return decorator
 
 class auto_application(application):
@@ -584,8 +584,7 @@ class auto_application(application):
                 if path is not None:
                     self.add_mapping(path, klass)
 
-
-        @with_metaclass(metapage) #little hack needed or Py2 and Py3 compatibility
+        @with_metaclass(metapage)  # little hack needed for Py2 and Py3 compatibility
         class page():
             path = None
 
@@ -614,7 +613,7 @@ class subdomain_application(application):
         b'not found'
     """
     def handle(self):
-        host = web.ctx.host.split(':')[0] #strip port
+        host = web.ctx.host.split(':')[0]  # strip port
         fn, args = self._match(self.mapping, host)
         return self._delegate(fn, self.fvars, args)
 
@@ -625,7 +624,7 @@ class subdomain_application(application):
             else:
                 result = utils.re_compile('^' + pat + '$').match(value)
 
-            if result: # it's a match
+            if result:  # it's a match
                 return what, [x for x in result.groups()]
         return None, None
 

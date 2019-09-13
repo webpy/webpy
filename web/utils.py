@@ -24,29 +24,29 @@ except ImportError:
     from io import StringIO
 
 __all__ = [
-  "Storage", "storage", "storify",
-  "Counter", "counter",
-  "iters",
-  "rstrips", "lstrips", "strips",
-  "safeunicode", "safestr",
-  "timelimit",
-  "Memoize", "memoize",
-  "re_compile", "re_subm",
-  "group", "uniq", "iterview",
-  "IterBetter", "iterbetter",
-  "safeiter", "safewrite",
-  "dictreverse", "dictfind", "dictfindall", "dictincr", "dictadd",
-  "requeue", "restack",
-  "listget", "intget", "datestr",
-  "numify", "denumify", "commify", "dateify",
-  "nthstr", "cond",
-  "CaptureStdout", "capturestdout", "Profile", "profile",
-  "tryall",
-  "ThreadedDict", "threadeddict",
-  "autoassign",
-  "to36",
-  "safemarkdown",
-  "sendmail"
+    "Storage", "storage", "storify",
+    "Counter", "counter",
+    "iters",
+    "rstrips", "lstrips", "strips",
+    "safeunicode", "safestr",
+    "timelimit",
+    "Memoize", "memoize",
+    "re_compile", "re_subm",
+    "group", "uniq", "iterview",
+    "IterBetter", "iterbetter",
+    "safeiter", "safewrite",
+    "dictreverse", "dictfind", "dictfindall", "dictincr", "dictadd",
+    "requeue", "restack",
+    "listget", "intget", "datestr",
+    "numify", "denumify", "commify", "dateify",
+    "nthstr", "cond",
+    "CaptureStdout", "capturestdout", "Profile", "profile",
+    "tryall",
+    "ThreadedDict", "threadeddict",
+    "autoassign",
+    "to36",
+    "safemarkdown",
+    "sendmail"
 ]
 
 
@@ -131,8 +131,10 @@ def storify(mapping, *requireds, **defaults):
         to_unicode = _unicode
 
     def unicodify(s):
-        if _unicode and isinstance(s, str): return to_unicode(s)
-        else: return s
+        if _unicode and isinstance(s, str):
+            return to_unicode(s)
+        else:
+            return s
 
     def getvalue(x):
         if hasattr(x, 'file') and hasattr(x, 'value'):
@@ -154,7 +156,6 @@ def storify(mapping, *requireds, **defaults):
             value = getvalue(value)
         if isinstance(defaults.get(key), list) and not isinstance(value, list):
             value = [value]
-
 
         setattr(stor, key, value)
 
@@ -200,7 +201,7 @@ class Counter(storage):
         return [k for k, v in iteritems(self) if v == m]
 
     def percent(self, key):
-       """Returns what percentage a certain key is of all entries.
+        """Returns what percentage a certain key is of all entries.
 
            >>> c = counter()
            >>> c.add('x')
@@ -211,8 +212,8 @@ class Counter(storage):
            0.75
            >>> c.percent('y')
            0.25
-       """
-       return float(self[key])/sum(self.values())
+        """
+        return float(self[key])/sum(self.values())
 
     def sorted_keys(self):
         """Returns keys sorted by value.
@@ -256,7 +257,9 @@ class Counter(storage):
 counter = Counter
 
 iters = [list, tuple, set, frozenset]
-class _hack(tuple): pass
+class _hack(tuple):
+    pass
+
 iters = _hack(iters)
 iters.__doc__ = """
 A list of iterable items (like lists, but not strings). Includes whichever
@@ -358,7 +361,7 @@ def safestr(obj, encoding='utf-8'):
         return str(obj)
 
 if not PY2:
-    #Since Python3, utf-8 encoded strings and unicode strings are the same thing
+    # Since Python3, utf-8 encoded strings and unicode strings are the same thing
     safeunicode = safestr
 
 def timelimit(timeout):
@@ -501,6 +504,7 @@ A memoized version of re.compile.
 class _re_subm_proxy:
     def __init__(self):
         self.match = None
+
     def __call__(self, match):
         self.match = match
         return ''
@@ -556,52 +560,52 @@ def uniq(seq, key=None):
     return result
 
 def iterview(x):
-   """
-   Takes an iterable `x` and returns an iterator over it
-   which prints its progress to stderr as it iterates through.
-   """
-   WIDTH = 70
+    """
+    Takes an iterable `x` and returns an iterator over it
+    which prints its progress to stderr as it iterates through.
+    """
+    WIDTH = 70
 
-   def plainformat(n, lenx):
-       return '%5.1f%% (%*d/%d)' % ((float(n)/lenx)*100, len(str(lenx)), n, lenx)
+    def plainformat(n, lenx):
+        return '%5.1f%% (%*d/%d)' % ((float(n)/lenx)*100, len(str(lenx)), n, lenx)
 
-   def bars(size, n, lenx):
-       val = int((float(n)*size)/lenx + 0.5)
-       if size - val:
-           spacing = ">" + (" "*(size-val))[1:]
-       else:
-           spacing = ""
-       return "[%s%s]" % ("="*val, spacing)
+    def bars(size, n, lenx):
+        val = int((float(n)*size)/lenx + 0.5)
+        if size - val:
+            spacing = ">" + (" "*(size-val))[1:]
+        else:
+            spacing = ""
+        return "[%s%s]" % ("="*val, spacing)
 
-   def eta(elapsed, n, lenx):
-       if n == 0:
-           return '--:--:--'
-       if n == lenx:
-           secs = int(elapsed)
-       else:
-           secs = int((elapsed/n) * (lenx-n))
-       mins, secs = divmod(secs, 60)
-       hrs, mins = divmod(mins, 60)
+    def eta(elapsed, n, lenx):
+        if n == 0:
+            return '--:--:--'
+        if n == lenx:
+            secs = int(elapsed)
+        else:
+            secs = int((elapsed/n) * (lenx-n))
+        mins, secs = divmod(secs, 60)
+        hrs, mins = divmod(mins, 60)
 
-       return '%02d:%02d:%02d' % (hrs, mins, secs)
+        return '%02d:%02d:%02d' % (hrs, mins, secs)
 
-   def format(starttime, n, lenx):
-       out = plainformat(n, lenx) + ' '
-       if n == lenx:
-           end = '     '
-       else:
-           end = ' ETA '
-       end += eta(time.time() - starttime, n, lenx)
-       out += bars(WIDTH - len(out) - len(end), n, lenx)
-       out += end
-       return out
+    def format(starttime, n, lenx):
+        out = plainformat(n, lenx) + ' '
+        if n == lenx:
+            end = '     '
+        else:
+            end = ' ETA '
+        end += eta(time.time() - starttime, n, lenx)
+        out += bars(WIDTH - len(out) - len(end), n, lenx)
+        out += end
+        return out
 
-   starttime = time.time()
-   lenx = len(x)
-   for n, y in enumerate(x):
-       sys.stderr.write('\r' + format(starttime, n, lenx))
-       yield y
-   sys.stderr.write('\r' + format(starttime, n+1, lenx) + '\n')
+    starttime = time.time()
+    lenx = len(x)
+    for n, y in enumerate(x):
+        sys.stderr.write('\r' + format(starttime, n, lenx))
+        yield y
+    sys.stderr.write('\r' + format(starttime, n+1, lenx) + '\n')
 
 class IterBetter:
     """
@@ -881,10 +885,13 @@ def datestr(then, now=None):
         ''
     """
     def agohence(n, what, divisor=None):
-        if divisor: n = n // divisor
+        if divisor:
+            n = n // divisor
 
-        out = str(abs(n)) + ' ' + what       # '2 day'
-        if abs(n) != 1: out += 's'           # '2 days'
+        out = str(abs(n)) + ' ' + what       # '2 days'
+        if abs(n) != 1:
+            out += 's'                       # '2 days'
+
         out += ' '                           # '2 days '
         if n < 0:
             out += 'from now'
@@ -894,10 +901,15 @@ def datestr(then, now=None):
 
     oneday = 24 * 60 * 60
 
-    if not then: return ""
-    if not now: now = datetime.datetime.utcnow()
+    if not then:
+        return ""
+
+    if not now:
+        now = datetime.datetime.utcnow()
+
     if type(now).__name__ == "DateTime":
         now = datetime.datetime.fromtimestamp(now)
+
     if type(then).__name__ == "DateTime":
         then = datetime.datetime.fromtimestamp(then)
     elif type(then).__name__ == "date":
@@ -906,7 +918,8 @@ def datestr(then, now=None):
     delta = now - then
     deltaseconds = int(delta.days * oneday + delta.seconds + delta.microseconds * 1e-06)
     deltadays = abs(deltaseconds) // oneday
-    if deltaseconds < 0: deltadays *= -1 # fix for oddity of floor
+    if deltaseconds < 0:
+        deltadays *= -1  # fix for oddity of floor
 
     if deltadays:
         if abs(deltadays) < 4:
@@ -929,7 +942,9 @@ def datestr(then, now=None):
             return agohence(deltaseconds, 'second')
 
     deltamicroseconds = delta.microseconds
-    if delta.days: deltamicroseconds = int(delta.microseconds - 1e6) # datetime oddity
+    if delta.days:
+        deltamicroseconds = int(delta.microseconds - 1e6)  # datetime oddity
+
     if abs(deltamicroseconds) > 1000:
         return agohence(deltamicroseconds, 'millisecond', 1000)
 
@@ -991,7 +1006,9 @@ def commify(n):
         >>>
 
     """
-    if n is None: return None
+    if n is None:
+        return None
+
     n = str(n).strip()
 
     if n.startswith('-'):
@@ -1041,7 +1058,8 @@ def nthstr(n):
     """
 
     assert n >= 0
-    if n % 100 in [11, 12, 13]: return '%sth' % n
+    if n % 100 in [11, 12, 13]:
+        return '%sth' % n
     return {1: '%sst', 2: '%snd', 3: '%srd'}.get(n % 10, '%sth') % n
 
 def cond(predicate, consequence, alternative=None):
@@ -1072,6 +1090,7 @@ class CaptureStdout:
     """
     def __init__(self, func):
         self.func = func
+
     def __call__(self, *args, **keywords):
         out = StringIO()
         oldstdout = sys.stdout
@@ -1097,8 +1116,12 @@ class Profile:
     """
     def __init__(self, func):
         self.func = func
-    def __call__(self, *args): ##, **kw):   kw unused
-        import cProfile, pstats, os, tempfile ##, time already imported
+
+    def __call__(self, *args):  # , **kw):   kw unused
+        import cProfile
+        import pstats
+        import os
+        import tempfile
         f, filename = tempfile.mkstemp()
         os.close(f)
 
@@ -1115,7 +1138,7 @@ class Profile:
         stats.print_stats(40)
         stats.print_callers()
 
-        x =  '\n\ntook '+ str(stime) + ' seconds\n'
+        x = '\n\ntook ' + str(stime) + ' seconds\n'
         x += out.getvalue()
 
         # remove the tempfile
@@ -1132,10 +1155,12 @@ profile = Profile
 # hack for compatibility with Python 2.3:
 if not hasattr(traceback, 'format_exc'):
     from cStringIO import StringIO
+
     def format_exc(limit=None):
         strbuf = StringIO()
         traceback.print_exc(limit, strbuf)
         return strbuf.getvalue()
+
     traceback.format_exc = format_exc
 
 def tryall(context, prefix=None):
@@ -1159,7 +1184,7 @@ def tryall(context, prefix=None):
     Then you can run `python test/stuff.py` and get the results of
     all the tests.
     """
-    context = context.copy() # vars() would update
+    context = context.copy()  # vars() would update
     results = {}
     for (key, value) in iteritems(context):
         if not hasattr(value, '__call__'):
@@ -1322,7 +1347,9 @@ def to36(q):
         ValueError: must supply a positive integer
 
     """
-    if q < 0: raise ValueError("must supply a positive integer")
+    if q < 0:
+        raise ValueError("must supply a positive integer")
+
     letters = "0123456789abcdefghijklmnopqrstuvwxyz"
     converted = []
     while q != 0:
@@ -1371,7 +1398,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
     for a in attachments:
         if isinstance(a, dict):
             mail.attach(a['filename'], a['content'], a.get('content_type'))
-        elif hasattr(a, 'read'): # file
+        elif hasattr(a, 'read'):  # file
             filename = os.path.basename(getattr(a, "name", ""))
             content_type = getattr(a, 'content_type', None)
             mail.attach(filename, a.read(), content_type)
@@ -1408,9 +1435,9 @@ class _EmailMessage:
         self.recipients = [email.utils.parseaddr(r)[1] for r in recipients]
 
         self.headers = dictadd({
-          'From': from_address,
-          'To': ", ".join(to_address),
-          'Subject': subject
+            'From': from_address,
+            'To': ", ".join(to_address),
+            'Subject': subject
         }, headers or {})
 
         if cc:
@@ -1498,8 +1525,8 @@ class _EmailMessage:
         elif webapi.config.get('email_engine') == 'aws':
             import boto.ses
             c = boto.ses.SESConnection(
-              aws_access_key_id=webapi.config.get('aws_access_key_id'),
-              aws_secret_access_key=webapi.config.get('aws_secret_access_key'))
+                aws_access_key_id=webapi.config.get('aws_access_key_id'),
+                aws_secret_access_key=webapi.config.get('aws_secret_access_key'))
             c.send_raw_email(message_text, self.from_address, self.recipients)
         else:
             sendmail = webapi.config.get('sendmail_path', '/usr/sbin/sendmail')

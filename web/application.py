@@ -428,7 +428,10 @@ class application:
         ctx.realhome = ctx.home
         ctx.ip = env.get('REMOTE_ADDR')
         ctx.method = env.get('REQUEST_METHOD')
-        ctx.path = bytes(env.get('PATH_INFO'), 'latin1').decode('utf-8')
+        if PY2:
+            ctx.path = env.get('PATH_INFO')
+        else:
+            ctx.path = env.get('PATH_INFO').encode('latin1').decode('utf8')
         # http://trac.lighttpd.net/trac/ticket/406 requires:
         if env.get('SERVER_SOFTWARE', '').startswith('lighttpd/'):
             ctx.path = lstrips(env.get('REQUEST_URI').split('?')[0], ctx.homepath)

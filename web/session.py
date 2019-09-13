@@ -131,11 +131,16 @@ class Session(object):
                 return self.expired()
 
     def _save(self):
-        if not self.get('_killed'):
+        current_values = dict(self._data)
+        del current_values['session_id']
+        del current_values['ip']
+
+        if not self.get('_killed') and current_values != self._initializer:
             self._setcookie(self.session_id)
             self.store[self.session_id] = dict(self._data)
         else:
-            self._setcookie(self.session_id, expires=-1)
+            if web.cookies().get(self._config.cookie_name):
+                self._setcookie(self.session_id, expires=-1)
 
     def _setcookie(self, session_id, expires='', **kw):
         cookie_name = self._config.cookie_name

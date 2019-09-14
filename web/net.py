@@ -17,10 +17,10 @@ except ImportError:
     from urllib import quote
 
 __all__ = [
-  "validipaddr", "validip6addr", "validipport", "validip", "validaddr",
-  "urlquote",
-  "httpdate", "parsehttpdate",
-  "htmlquote", "htmlunquote", "websafe",
+    "validipaddr", "validip6addr", "validipport", "validip", "validaddr",
+    "urlquote",
+    "httpdate", "parsehttpdate",
+    "htmlquote", "htmlunquote", "websafe",
 ]
 
 
@@ -50,6 +50,8 @@ def validipaddr(address):
 
         >>> validipaddr('192.168.1.1')
         True
+        >>> validipaddr('192.168. 1.1')
+        False
         >>> validipaddr('192.168.1.800')
         False
         >>> validipaddr('192.168.1')
@@ -59,7 +61,11 @@ def validipaddr(address):
         octets = address.split('.')
         if len(octets) != 4:
             return False
+
         for x in octets:
+            if ' ' in x:
+                return False
+
             if not (0 <= int(x) <= 255):
                 return False
     except ValueError:

@@ -3,18 +3,19 @@ HTML forms
 (part of web.py)
 """
 
-import copy, re
+import copy
+import re
 from . import utils, net, webapi as web
 
 def attrget(obj, attr, value=None):
     try:
-        if hasattr(obj, 'has_key') and obj.has_key(attr):
+        if hasattr(obj, 'has_key') and attr in obj:
             return obj[attr]
     except TypeError:
         # Handle the case where has_key takes different number of arguments.
         # This is the case with Model objects on appengine. See #134
         pass
-    if hasattr(obj, 'keys') and attr in obj.keys(): #needed for Py3, has_key doesn't exist anymore
+    if hasattr(obj, 'keys') and attr in obj.keys():  # needed for Py3, has_key doesn't exist anymore
         return obj[attr]
     elif hasattr(obj, attr):
         return getattr(obj, attr)
@@ -40,7 +41,8 @@ class Form(object):
 
     def __call__(self, x=None):
         o = copy.deepcopy(self)
-        if x: o.validates(x)
+        if x:
+            o.validates(x)
         return o
 
     def render(self):
@@ -71,8 +73,10 @@ class Form(object):
         return ''.join(out)
 
     def rendernote(self, note):
-        if note: return '<strong class="wrong">%s</strong>' % net.websafe(note)
-        else: return ""
+        if note:
+            return '<strong class="wrong">%s</strong>' % net.websafe(note)
+        else:
+            return ""
 
     def validates(self, source=None, _validate=True, **kw):
         source = source or kw or web.input()
@@ -101,14 +105,16 @@ class Form(object):
 
     def __getitem__(self, i):
         for x in self.inputs:
-            if x.name == i: return x
+            if x.name == i:
+                return x
         raise KeyError(i)
 
     def __getattr__(self, name):
         # don't interfere with deepcopy
         inputs = self.__dict__.get('inputs') or []
         for x in inputs:
-            if x.name == name: return x
+            if x.name == name:
+                return x
         raise AttributeError(name)
 
     def get(self, i, default=None):
@@ -117,7 +123,7 @@ class Form(object):
         except KeyError:
             return default
 
-    def _get_d(self): #@@ should really be form.attr, no?
+    def _get_d(self):  # @@ should really be form.attr, no?
         return utils.storage([(i.name, i.get_value()) for i in self.inputs])
     d = property(_get_d)
 
@@ -172,8 +178,10 @@ class Input(object):
         return '<input %s/>' % attrs
 
     def rendernote(self, note):
-        if note: return '<strong class="wrong">%s</strong>' % net.websafe(note)
-        else: return ""
+        if note:
+            return '<strong class="wrong">%s</strong>' % net.websafe(note)
+        else:
+            return ""
 
     def addatts(self):
         # add leading space for backward-compatibility
@@ -254,7 +262,7 @@ class Dropdown(Input):
 
     def _render_option(self, arg, indent='  '):
         if isinstance(arg, (tuple, list)):
-            value, desc= arg
+            value, desc = arg
         else:
             value, desc = arg, arg
 
@@ -293,8 +301,8 @@ class GroupedDropdown(Dropdown):
         for label, options in self.args:
             x += '  <optgroup label="%s">\n' % net.websafe(label)
             for arg in options:
-                x += self._render_option(arg, indent = '    ')
-            x +=  '  </optgroup>\n'
+                x += self._render_option(arg, indent='    ')
+            x += '  </optgroup>\n'
 
         x += '</select>\n'
         return x
@@ -308,7 +316,7 @@ class Radio(Input):
         x = '<span>'
         for arg in self.args:
             if isinstance(arg, (tuple, list)):
-                value, desc= arg
+                value, desc = arg
             else:
                 value, desc = arg, arg
             attrs = self.attrs.copy()
@@ -400,11 +408,17 @@ class File(Input):
         return 'file'
 
 class Validator:
-    def __deepcopy__(self, memo): return copy.copy(self)
-    def __init__(self, msg, test, jstest=None): utils.autoassign(self, locals())
+    def __deepcopy__(self, memo):
+        return copy.copy(self)
+
+    def __init__(self, msg, test, jstest=None):
+        utils.autoassign(self, locals())
+
     def valid(self, value):
-        try: return self.test(value)
-        except: return False
+        try:
+            return self.test(value)
+        except:
+            return False
 
 notnull = Validator("Required", bool)
 

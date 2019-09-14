@@ -16,6 +16,8 @@
 * Fixed notfound message is not utf-8 charset (fixes #500, tx @by-z)
 * Fixed error in creating pooled PostgresDB with pgdb driver (fixes #255,
   tx @PriceChild)
+* Fixed: IP address which contains space should not pass validation (fixes
+  #140, tx @chuangbo)
 
 ## 2018-02-28 0.39
 

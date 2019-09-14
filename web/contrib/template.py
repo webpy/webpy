@@ -62,9 +62,10 @@ class render_genshi:
             type = "text"
         else:
             cls = None
-            type = None
+            type = self._type
 
         t = self._loader.load(path, cls=cls)
+
         def template(**kw):
             stream = t.generate(**kw)
             if type:
@@ -85,7 +86,7 @@ class render_jinja:
         extensions = kwargs.pop('extensions', [])
         globals = kwargs.pop('globals', {})
 
-        from jinja2 import Environment,FileSystemLoader
+        from jinja2 import Environment, FileSystemLoader
         self._lookup = Environment(loader=FileSystemLoader(*a, **kwargs), extensions=extensions)
         self._lookup.globals.update(globals)
 

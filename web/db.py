@@ -10,8 +10,7 @@ import re
 import time
 
 from .py3helpers import PY2, iteritems, numeric_types, string_types, text_type
-from .utils import (iterbetter, iters, safestr, safeunicode, storage,
-                    threadeddict)
+from .utils import iterbetter, iters, safestr, safeunicode, storage, threadeddict
 
 try:
     from urllib import parse as urlparse
@@ -30,24 +29,37 @@ try:
     from .webapi import debug, config
 except ImportError:
     import sys
+
     debug = sys.stderr
     config = storage()
 
 __all__ = [
-    "UnknownParamstyle", "UnknownDB", "TransactionError",
-    "sqllist", "sqlors", "reparam", "sqlquote",
-    "SQLQuery", "SQLParam", "sqlparam",
-    "SQLLiteral", "sqlliteral",
-    "database", 'DB',
+    "UnknownParamstyle",
+    "UnknownDB",
+    "TransactionError",
+    "sqllist",
+    "sqlors",
+    "reparam",
+    "sqlquote",
+    "SQLQuery",
+    "SQLParam",
+    "sqlparam",
+    "SQLLiteral",
+    "sqlliteral",
+    "database",
+    "DB",
 ]
 
 TOKEN = '[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)[jJ])|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)|(0[xX][\\da-fA-F]+[lL]?|0[bB][01]+[lL]?|(0[oO][0-7]+)|(0[0-7]*)[lL]?|[1-9]\\d*[lL]?))|((\\*\\*=?|>>=?|<<=?|<>|!=|//=?|[+\\-*/%&|^=<>]=?|~)|[][(){}]|(\\r?\\n|[:;.,`@]))|([uUbB]?[rR]?\'[^\\n\'\\\\]*(?:\\\\.[^\\n\'\\\\]*)*\'|[uUbB]?[rR]?"[^\\n"\\\\]*(?:\\\\.[^\\n"\\\\]*)*")|[a-zA-Z_]\\w*)'
 
 tokenprog = re.compile(TOKEN)
 
+
 class UnknownDB(Exception):
     """raised for unsupported dbms"""
+
     pass
+
 
 class _ItplError(ValueError):
     def __init__(self, text, pos):
@@ -998,7 +1010,8 @@ class PostgresDB(DB):
         if 'pw' in keywords:
             keywords['password'] = keywords.pop('pw')
 
-        db_module = import_driver(["psycopg2", "psycopg", "pgdb"], preferred=keywords.pop('driver', None))
+        db_module = import_driver(["psycopg2", "psycopg", "pgdb"],
+                                  preferred=keywords.pop('driver', None))
         if db_module.__name__ == "psycopg2":
             import psycopg2.extensions
             psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
@@ -1102,7 +1115,8 @@ def import_driver(drivers, preferred=None):
 
 class SqliteDB(DB):
     def __init__(self, **keywords):
-        db = import_driver(["sqlite3", "pysqlite2.dbapi2", "sqlite"], preferred=keywords.pop('driver', None))
+        db = import_driver(["sqlite3", "pysqlite2.dbapi2", "sqlite"],
+                           preferred=keywords.pop('driver', None))
 
         if db.__name__ in ["sqlite3", "pysqlite2.dbapi2"]:
             db.paramstyle = 'qmark'
@@ -1129,6 +1143,7 @@ class SqliteDB(DB):
 class FirebirdDB(DB):
     """Firebird Database.
     """
+
     def __init__(self, **keywords):
         try:
             import kinterbasdb as db
@@ -1159,6 +1174,7 @@ class FirebirdDB(DB):
             ('GROUP BY', group),
             ('ORDER BY', order)
         )
+
 
 class MSSQLDB(DB):
     def __init__(self, **keywords):
@@ -1453,7 +1469,7 @@ class Parser:
                 saved_pos = self.pos
                 self.pos += 1
                 key = self.parse_expr()
-                if self.text[self.pos] == ']':
+                if self.text[self.pos] == "]":
                     self.pos += 1
                     expr = _Node("getitem", expr, key)
                 else:
@@ -1463,9 +1479,11 @@ class Parser:
                 break
         return expr
 
+
 class SafeEval(object):
     """Safe evaluator for binding params to db queries.
     """
+
     def safeeval(self, text, mapping):
         nodes = Parser().parse(text)
         return SQLQuery.join([self.eval_node(node, mapping) for node in nodes], "")
@@ -1482,7 +1500,9 @@ class SafeEval(object):
         elif node.type == "getattr":
             return getattr(self.eval_expr(node.first, mapping), node.second)
         elif node.type == "getitem":
-            return self.eval_expr(node.first, mapping)[self.eval_expr(node.second, mapping)]
+            return self.eval_expr(node.first, mapping)[
+                self.eval_expr(node.second, mapping)
+            ]
         elif node.type == "param":
             return mapping[node.first]
 
@@ -1515,8 +1535,10 @@ def test_safeeval():
     print(f("WHERE id=$id", {"id": 1}).items)
     assert f("WHERE id=$id", {"id": 1}).items == ["WHERE id=", sqlparam(1)]
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
     test_parser()
     test_safeeval()

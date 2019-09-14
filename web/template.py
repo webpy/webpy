@@ -32,9 +32,12 @@ from io import open
 
 __all__ = [
     "Template",
-    "Render", "render", "frender",
-    "ParseError", "SecurityError",
-    "test"
+    "Render",
+    "render",
+    "frender",
+    "ParseError",
+    "SecurityError",
+    "test",
 ]
 
 import tokenize
@@ -55,8 +58,11 @@ if PY2:
     # Make a new-style class
     class MutableMapping(object, DictMixin):
         pass
+
+
 else:
     from collections import MutableMapping
+
 
 def splitline(text):
     r"""
@@ -69,15 +75,17 @@ def splitline(text):
         >>> splitline('')
         ('', '')
     """
-    index = text.find('\n') + 1
+    index = text.find("\n") + 1
     if index:
         return text[:index], text[index:]
     else:
-        return text, ''
+        return text, ""
+
 
 class Parser:
     """Parser Base.
     """
+
     def __init__(self):
         self.statement_nodes = STATEMENT_NODES
         self.keywords = KEYWORDS
@@ -91,12 +99,12 @@ class Parser:
         return DefwithNode(defwith, suite)
 
     def read_defwith(self, text):
-        if text.startswith('$def with'):
+        if text.startswith("$def with"):
             defwith, text = splitline(text)
-            defwith = defwith[1:].strip() # strip $ and spaces
+            defwith = defwith[1:].strip()  # strip $ and spaces
             return defwith, text
         else:
-            return '', text
+            return "", text
 
     def read_section(self, text):
         r"""Reads one section from the given text.
@@ -111,18 +119,18 @@ class Parser:
 
         read_section('$for in range(10):\n    hello $i\nfoo)
         """
-        if text.lstrip(' ').startswith('$'):
-            index = text.index('$')
-            begin_indent, text2 = text[:index], text[index+1:]
+        if text.lstrip(" ").startswith("$"):
+            index = text.index("$")
+            begin_indent, text2 = text[:index], text[index + 1 :]
             ahead = self.python_lookahead(text2)
 
-            if ahead == 'var':
+            if ahead == "var":
                 return self.read_var(text2)
             elif ahead in self.statement_nodes:
                 return self.read_block_section(text2, begin_indent)
             elif ahead in self.keywords:
                 return self.read_keyword(text2)
-            elif ahead.strip() == '':
+            elif ahead.strip() == "":
                 # assignments starts with a space after $
                 # ex: $ a = b + 2
                 return self.read_assignment(text2)
@@ -140,30 +148,30 @@ class Parser:
         line, text = splitline(text)
         tokens = self.python_tokens(line)
         if len(tokens) < 4:
-            raise SyntaxError('Invalid var statement')
+            raise SyntaxError("Invalid var statement")
 
         name = tokens[1]
         sep = tokens[2]
         value = line.split(sep, 1)[1].strip()
 
-        if sep == '=':
-            pass # no need to process value
-        elif sep == ':':
-            #@@ Hack for backward-compatability
-            if tokens[3] == '\n': # multi-line var statement
-                block, text = self.read_indented_block(text, '    ')
+        if sep == "=":
+            pass  # no need to process value
+        elif sep == ":":
+            # @@ Hack for backward-compatability
+            if tokens[3] == "\n":  # multi-line var statement
+                block, text = self.read_indented_block(text, "    ")
                 lines = [self.readline(x)[0] for x in block.splitlines()]
                 nodes = []
                 for x in lines:
                     nodes.extend(x.nodes)
-                    nodes.append(TextNode('\n'))
-            else: # single-line var statement
+                    nodes.append(TextNode("\n"))
+            else:  # single-line var statement
                 linenode, _ = self.readline(value)
                 nodes = linenode.nodes
-            parts = [node.emit('') for node in nodes]
+            parts = [node.emit("") for node in nodes]
             value = "join_(%s)" % ", ".join(parts)
         else:
-            raise SyntaxError('Invalid var statement')
+            raise SyntaxError("Invalid var statement")
         return VarNode(name, value), text
 
     def read_suite(self, text):
@@ -193,7 +201,7 @@ class Parser:
         line, text = splitline(text)
 
         # supress new line if line ends with \
-        if line.endswith('\\\n'):
+        if line.endswith("\\\n"):
             line = line[:-2]
 
         nodes = []
@@ -212,16 +220,16 @@ class Parser:
             >>> read_node('$name')
             ($name, '')
         """
-        if text.startswith('$$'):
-            return TextNode('$'), text[2:]
-        elif text.startswith('$#'): # comment
+        if text.startswith("$$"):
+            return TextNode("$"), text[2:]
+        elif text.startswith("$#"):  # comment
             line, text = splitline(text)
-            return TextNode('\n'), text
-        elif text.startswith('$'):
-            text = text[1:] # strip $
-            if text.startswith(':'):
+            return TextNode("\n"), text
+        elif text.startswith("$"):
+            text = text[1:]  # strip $
+            if text.startswith(":"):
                 escape = False
-                text = text[1:] # strip :
+                text = text[1:]  # strip :
             else:
                 escape = True
             return self.read_expr(text, escape=escape)
@@ -235,9 +243,9 @@ class Parser:
             >>> read_text('hello $name')
             (t'hello ', '$name')
         """
-        index = text.find('$')
+        index = text.find("$")
         if index < 0:
-            return TextNode(text), ''
+            return TextNode(text), ""
         else:
             return TextNode(text[:index]), text[index:]
 
@@ -268,6 +276,7 @@ class Parser:
             >>> read_expr('a[1, 2][:3].f(1+2, "weird string[).", 3 + 4) done.')
             ($a[1, 2][:3].f(1+2, "weird string[).", 3 + 4), ' done.')
         """
+
         def simple_expr():
             identifier()
             extended_expr()
@@ -279,7 +288,7 @@ class Parser:
             lookahead = tokens.lookahead()
             if lookahead is None:
                 return
-            elif lookahead.value == '.':
+            elif lookahead.value == ".":
                 attr_access()
             elif lookahead.value in parens:
                 paren_expr()
@@ -288,10 +297,11 @@ class Parser:
                 return
 
         def attr_access():
-            from token import NAME # python token constants
+            from token import NAME  # python token constants
+
             dot = tokens.lookahead()
             if tokens.lookahead2().type == NAME:
-                next(tokens) # consume dot
+                next(tokens)  # consume dot
                 identifier()
                 extended_expr()
 
@@ -307,11 +317,7 @@ class Parser:
                         break
             return
 
-        parens = {
-            "(": ")",
-            "[": "]",
-            "{": "}"
-        }
+        parens = {"(": ")", "[": "]", "{": "}"}
 
         def get_tokens(text):
             """tokenize text using python tokenizer.
@@ -333,6 +339,7 @@ class Parser:
 
         class BetterIter:
             """Iterator like object with 2 support for 2 look aheads."""
+
             def __init__(self, items):
                 self.iteritems = iter(items)
                 self.items = []
@@ -351,16 +358,16 @@ class Parser:
                     return None
 
             def lookahead2(self):
-                if len(self.items) <= self.position+1:
+                if len(self.items) <= self.position + 1:
                     self.items.append(self._next())
-                return self.items[self.position+1]
+                return self.items[self.position + 1]
 
             def __next__(self):
                 self.current_item = self.lookahead()
                 self.position += 1
                 return self.current_item
 
-            next = __next__ #Needed for Py2 compatibility
+            next = __next__  # Needed for Py2 compatibility
 
         tokens = BetterIter(get_tokens(text))
 
@@ -415,16 +422,16 @@ class Parser:
             >>> read_indented_block('  a\n\n    b\nc', '  ')
             ('a\n\n  b\n', 'c')
         """
-        if indent == '':
-            return '', text
+        if indent == "":
+            return "", text
 
         block = ""
         while text:
             line, text2 = splitline(text)
             if line.strip() == "":
-                block += '\n'
+                block += "\n"
             elif line.startswith(indent):
-                block += line[len(indent):]
+                block += line[len(indent) :]
             else:
                 break
             text = text2
@@ -438,10 +445,10 @@ class Parser:
             ('for i in range(10):', ' hello $name')
         """
         tok = PythonTokenizer(text)
-        tok.consume_till(':')
-        return text[:tok.index], text[tok.index:]
+        tok.consume_till(":")
+        return text[: tok.index], text[tok.index :]
 
-    def read_block_section(self, text, begin_indent=''):
+    def read_block_section(self, text, begin_indent=""):
         r"""
             >>> read_block_section = Parser().read_block_section
             >>> read_block_section('for i in range(10): hello $i\nfoo')
@@ -458,19 +465,20 @@ class Parser:
         keyword = self.python_lookahead(stmt)
 
         # if there is some thing left in the line
-        if line.strip() and not line.lstrip().startswith('$#'):
+        if line.strip() and not line.lstrip().startswith("$#"):
             block = line.lstrip()
         else:
+
             def find_indent(text):
-                rx = re_compile('  +')
+                rx = re_compile("  +")
                 match = rx.match(text)
                 first_indent = match and match.group(0)
                 return first_indent or ""
 
             # find the indentation of the block by looking at the first line
-            first_indent = find_indent(text)[len(begin_indent):]
+            first_indent = find_indent(text)[len(begin_indent) :]
 
-            #TODO: fix this special case
+            # TODO: fix this special case
             if keyword == "code":
                 indent = begin_indent + first_indent
             else:
@@ -484,10 +492,12 @@ class Parser:
         if keyword in self.statement_nodes:
             return self.statement_nodes[keyword](stmt, block, begin_indent)
         else:
-            raise ParseError('Unknown statement: %s' % repr(keyword))
+            raise ParseError("Unknown statement: %s" % repr(keyword))
+
 
 class PythonTokenizer:
     """Utility wrapper over python tokenizer."""
+
     def __init__(self, text):
         self.text = text
         i = iter([text])
@@ -510,21 +520,21 @@ class PythonTokenizer:
                 t = next(self)
                 if t.value == delim:
                     break
-                elif t.value == '(':
-                    self.consume_till(')')
-                elif t.value == '[':
-                    self.consume_till(']')
-                elif t.value == '{':
-                    self.consume_till('}')
+                elif t.value == "(":
+                    self.consume_till(")")
+                elif t.value == "[":
+                    self.consume_till("]")
+                elif t.value == "{":
+                    self.consume_till("}")
 
                 # if end of line is found, it is an exception.
                 # Since there is no easy way to report the line number,
                 # leave the error reporting to the python parser later
-                #@@ This should be fixed.
-                if t.value == '\n':
+                # @@ This should be fixed.
+                if t.value == "\n":
                     break
         except:
-            #raise ParseError, "Expected %s, found end of line." % repr(delim)
+            # raise ParseError, "Expected %s, found end of line." % repr(delim)
 
             # raising ParseError doesn't show the line number.
             # if this error is ignored, then it will be caught when compiling the python code.
@@ -536,16 +546,17 @@ class PythonTokenizer:
         self.index = col
         return storage(type=type, value=t, begin=begin, end=end)
 
-    next = __next__ #needed for Py2 compatibility
+    next = __next__  # needed for Py2 compatibility
+
 
 class DefwithNode:
     def __init__(self, defwith, suite):
         if defwith:
-            self.defwith = defwith.replace('with', '__template__') + ':'
+            self.defwith = defwith.replace("with", "__template__") + ":"
             # offset 4 lines. for encoding, __lineoffset__, loop and self.
             self.defwith += "\n    __lineoffset__ = -4"
         else:
-            self.defwith = 'def __template__():'
+            self.defwith = "def __template__():"
             # offset 4 lines for encoding, __template__, __lineoffset__, loop and self.
             self.defwith += "\n    __lineoffset__ = -5"
 
@@ -561,52 +572,56 @@ class DefwithNode:
     def __repr__(self):
         return "<defwith: %s, %s>" % (self.defwith, self.suite)
 
+
 class TextNode:
     def __init__(self, value):
         self.value = value
 
-    def emit(self, indent, begin_indent=''):
+    def emit(self, indent, begin_indent=""):
         return repr(safeunicode(self.value))
 
     def __repr__(self):
-        return 't' + repr(self.value)
+        return "t" + repr(self.value)
+
 
 class ExpressionNode:
     def __init__(self, value, escape=True):
         self.value = value.strip()
 
         # convert ${...} to $(...)
-        if value.startswith('{') and value.endswith('}'):
-            self.value = '(' + self.value[1:-1] + ')'
+        if value.startswith("{") and value.endswith("}"):
+            self.value = "(" + self.value[1:-1] + ")"
 
         self.escape = escape
 
-    def emit(self, indent, begin_indent=''):
-        return 'escape_(%s, %s)' % (self.value, bool(self.escape))
+    def emit(self, indent, begin_indent=""):
+        return "escape_(%s, %s)" % (self.value, bool(self.escape))
 
     def __repr__(self):
         if self.escape:
-            escape = ''
+            escape = ""
         else:
-            escape = ':'
+            escape = ":"
         return "$%s%s" % (escape, self.value)
+
 
 class AssignmentNode:
     def __init__(self, code):
         self.code = code
 
-    def emit(self, indent, begin_indent=''):
+    def emit(self, indent, begin_indent=""):
         return indent + self.code + "\n"
 
     def __repr__(self):
         return "<assignment: %s>" % repr(self.code)
 
+
 class LineNode:
     def __init__(self, nodes):
         self.nodes = nodes
 
-    def emit(self, indent, text_indent='', name=''):
-        text = [node.emit('') for node in self.nodes]
+    def emit(self, indent, text_indent="", name=""):
+        text = [node.emit("") for node in self.nodes]
         if text_indent:
             text = [repr(text_indent)] + text
 
@@ -615,15 +630,17 @@ class LineNode:
     def __repr__(self):
         return "<line: %s>" % repr(self.nodes)
 
-INDENT = '    ' # 4 spaces
+
+INDENT = "    "  # 4 spaces
+
 
 class BlockNode:
-    def __init__(self, stmt, block, begin_indent=''):
+    def __init__(self, stmt, block, begin_indent=""):
         self.stmt = stmt
         self.suite = Parser().read_suite(block)
         self.begin_indent = begin_indent
 
-    def emit(self, indent, text_indent=''):
+    def emit(self, indent, text_indent=""):
         text_indent = self.begin_indent + text_indent
         out = indent + self.stmt + self.suite.emit(indent + INDENT, text_indent)
         return out
@@ -631,50 +648,58 @@ class BlockNode:
     def __repr__(self):
         return "<block: %s, %s>" % (repr(self.stmt), repr(self.suite))
 
+
 class ForNode(BlockNode):
-    def __init__(self, stmt, block, begin_indent=''):
+    def __init__(self, stmt, block, begin_indent=""):
         self.original_stmt = stmt
         tok = PythonTokenizer(stmt)
-        tok.consume_till('in')
-        a = stmt[:tok.index] # for i in
-        b = stmt[tok.index:-1] # rest of for stmt excluding :
-        stmt = a + ' loop.setup(' + b.strip() + '):'
+        tok.consume_till("in")
+        a = stmt[: tok.index]  # for i in
+        b = stmt[tok.index : -1]  # rest of for stmt excluding :
+        stmt = a + " loop.setup(" + b.strip() + "):"
         BlockNode.__init__(self, stmt, block, begin_indent)
 
     def __repr__(self):
         return "<block: %s, %s>" % (repr(self.original_stmt), repr(self.suite))
 
+
 class CodeNode:
-    def __init__(self, stmt, block, begin_indent=''):
+    def __init__(self, stmt, block, begin_indent=""):
         # compensate one line for $code:
         self.code = "\n" + block
 
-    def emit(self, indent, text_indent=''):
+    def emit(self, indent, text_indent=""):
         import re
-        rx = re.compile('^', re.M)
-        return rx.sub(indent, self.code).rstrip(' ')
+
+        rx = re.compile("^", re.M)
+        return rx.sub(indent, self.code).rstrip(" ")
 
     def __repr__(self):
         return "<code: %s>" % repr(self.code)
+
 
 class StatementNode:
     def __init__(self, stmt):
         self.stmt = stmt
 
-    def emit(self, indent, begin_indent=''):
+    def emit(self, indent, begin_indent=""):
         return indent + self.stmt
 
     def __repr__(self):
         return "<stmt: %s>" % repr(self.stmt)
 
+
 class IfNode(BlockNode):
     pass
+
 
 class ElseNode(BlockNode):
     pass
 
+
 class ElifNode(BlockNode):
     pass
+
 
 class DefNode(BlockNode):
     def __init__(self, *a, **kw):
@@ -688,10 +713,11 @@ class DefNode(BlockNode):
         code.code = "return self\n"
         self.suite.sections.append(code)
 
-    def emit(self, indent, text_indent=''):
+    def emit(self, indent, text_indent=""):
         text_indent = self.begin_indent + text_indent
         out = indent + self.stmt + self.suite.emit(indent + INDENT, text_indent)
         return indent + "__lineoffset__ -= 3\n" + out
+
 
 class VarNode:
     def __init__(self, name, value):
@@ -704,49 +730,82 @@ class VarNode:
     def __repr__(self):
         return "<var: %s = %s>" % (self.name, self.value)
 
+
 class SuiteNode:
     """Suite is a list of sections."""
+
     def __init__(self, sections):
         self.sections = sections
 
-    def emit(self, indent, text_indent=''):
+    def emit(self, indent, text_indent=""):
         return "\n" + "".join([s.emit(indent, text_indent) for s in self.sections])
 
     def __repr__(self):
         return repr(self.sections)
 
+
 STATEMENT_NODES = {
-    'for': ForNode,
-    'while': BlockNode,
-    'if': IfNode,
-    'elif': ElifNode,
-    'else': ElseNode,
-    'def': DefNode,
-    'code': CodeNode
+    "for": ForNode,
+    "while": BlockNode,
+    "if": IfNode,
+    "elif": ElifNode,
+    "else": ElseNode,
+    "def": DefNode,
+    "code": CodeNode,
 }
 
-KEYWORDS = [
-    "pass",
-    "break",
-    "continue",
-    "return"
-]
+KEYWORDS = ["pass", "break", "continue", "return"]
 
 TEMPLATE_BUILTIN_NAMES = [
-    "dict", "enumerate", "float", "int", "bool", "list", "long", "reversed",
-    "set", "slice", "tuple", "xrange",
-    "abs", "all", "any", "callable", "chr", "cmp", "divmod", "filter", "hex",
-    "id", "isinstance", "iter", "len", "max", "min", "oct", "ord", "pow", "range",
-    "True", "False",
+    "dict",
+    "enumerate",
+    "float",
+    "int",
+    "bool",
+    "list",
+    "long",
+    "reversed",
+    "set",
+    "slice",
+    "tuple",
+    "xrange",
+    "abs",
+    "all",
+    "any",
+    "callable",
+    "chr",
+    "cmp",
+    "divmod",
+    "filter",
+    "hex",
+    "id",
+    "isinstance",
+    "iter",
+    "len",
+    "max",
+    "min",
+    "oct",
+    "ord",
+    "pow",
+    "range",
+    "True",
+    "False",
     "None",
-    "__import__", # some c-libraries like datetime requires __import__ to present in the namespace
+    "__import__",  # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
 if PY2:
     import __builtin__ as builtins
 else:
     import builtins
-TEMPLATE_BUILTINS = dict([(name, getattr(builtins, name)) for name in TEMPLATE_BUILTIN_NAMES if name in builtins.__dict__])
+TEMPLATE_BUILTINS = dict(
+    [
+        (name, getattr(builtins, name))
+        for name in TEMPLATE_BUILTIN_NAMES
+        if name in builtins.__dict__
+    ]
+)
+
 
 class ForLoop:
     """
@@ -764,6 +823,7 @@ class ForLoop:
             ...
         AttributeError: index
     """
+
     def __init__(self):
         self._ctx = None
 
@@ -783,9 +843,11 @@ class ForLoop:
     def _pop(self):
         self._ctx = self._ctx.parent
 
+
 class ForLoopContext:
     """Stackable context for ForLoop to support nested for loops.
     """
+
     def __init__(self, forloop, parent):
         self._forloop = forloop
         self.parent = parent
@@ -802,14 +864,15 @@ class ForLoopContext:
             yield a
         self._forloop._pop()
 
-    index0 = property(lambda self: self.index-1)
+    index0 = property(lambda self: self.index - 1)
     first = property(lambda self: self.index == 1)
     last = property(lambda self: self.index == self.length)
     odd = property(lambda self: self.index % 2 == 1)
     even = property(lambda self: self.index % 2 == 0)
-    parity = property(lambda self: ['odd', 'even'][self.even])
+    parity = property(lambda self: ["odd", "even"][self.even])
     revindex0 = property(lambda self: self.length - self.index)
     revindex = property(lambda self: self.length - self.index + 1)
+
 
 class BaseTemplate:
     def __init__(self, code, filename, filter, globals, builtins):
@@ -820,52 +883,59 @@ class BaseTemplate:
         if code:
             self.t = self._compile(code)
         else:
-            self.t = lambda: ''
+            self.t = lambda: ""
 
     def _compile(self, code):
         env = self.make_env(self._globals or {}, self._builtins)
         exec(code, env)
-        #__template__ is a global function declared when executing "code"
-        return env['__template__']
+        # __template__ is a global function declared when executing "code"
+        return env["__template__"]
 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
         return self.t(*a, **kw)
 
     def make_env(self, globals, builtins):
-        return dict(globals,
+        return dict(
+            globals,
             __builtins__=builtins,
             ForLoop=ForLoop,
             TemplateResult=TemplateResult,
             escape_=self._escape,
-            join_=self._join
+            join_=self._join,
         )
+
     def _join(self, *items):
         return u"".join(items)
 
     def _escape(self, value, escape=False):
         if value is None:
-            value = ''
+            value = ""
 
         value = safeunicode(value)
         if escape and self.filter:
             value = self.filter(value)
         return value
 
+
 class Template(BaseTemplate):
     CONTENT_TYPES = {
-        '.html' : 'text/html; charset=utf-8',
-        '.xhtml' : 'application/xhtml+xml; charset=utf-8',
-        '.txt' : 'text/plain',
+        ".html": "text/html; charset=utf-8",
+        ".xhtml": "application/xhtml+xml; charset=utf-8",
+        ".txt": "text/plain",
     }
-    FILTERS = {
-        '.html': websafe,
-        '.xhtml': websafe,
-        '.xml': websafe
-    }
+    FILTERS = {".html": websafe, ".xhtml": websafe, ".xml": websafe}
     globals = {}
 
-    def __init__(self, text, filename='<template>', filter=None, globals=None, builtins=None, extensions=None):
+    def __init__(
+        self,
+        text,
+        filename="<template>",
+        filter=None,
+        globals=None,
+        builtins=None,
+        extensions=None,
+    ):
         self.extensions = extensions or []
         text = Template.normalize_text(text)
         code = self.compile_template(text, filename)
@@ -879,29 +949,38 @@ class Template(BaseTemplate):
         if builtins is None:
             builtins = TEMPLATE_BUILTINS
 
-        BaseTemplate.__init__(self, code=code, filename=filename, filter=filter, globals=globals, builtins=builtins)
+        BaseTemplate.__init__(
+            self,
+            code=code,
+            filename=filename,
+            filter=filter,
+            globals=globals,
+            builtins=builtins,
+        )
 
     def normalize_text(text):
         """Normalizes template text by correcting \r\n, tabs and BOM chars."""
-        text = text.replace('\r\n', '\n').replace('\r', '\n').expandtabs()
-        if not text.endswith('\n'):
-            text += '\n'
+        text = text.replace("\r\n", "\n").replace("\r", "\n").expandtabs()
+        if not text.endswith("\n"):
+            text += "\n"
 
         # ignore BOM chars at the begining of template
-        BOM = '\xef\xbb\xbf'
+        BOM = "\xef\xbb\xbf"
         if isinstance(text, str) and text.startswith(BOM):
-            text = text[len(BOM):]
+            text = text[len(BOM) :]
 
         # support fort \$ for backward-compatibility
-        text = text.replace(r'\$', '$$')
+        text = text.replace(r"\$", "$$")
         return text
+
     normalize_text = staticmethod(normalize_text)
 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
         from . import webapi as web
-        if 'headers' in web.ctx and self.content_type:
-            web.header('Content-Type', self.content_type, unique=True)
+
+        if "headers" in web.ctx and self.content_type:
+            web.header("Content-Type", self.content_type, unique=True)
 
         return BaseTemplate.__call__(self, *a, **kw)
 
@@ -923,27 +1002,30 @@ class Template(BaseTemplate):
         return p
 
     def compile_template(self, template_string, filename):
-        code = Template.generate_code(template_string, filename, parser=self.create_parser())
+        code = Template.generate_code(
+            template_string, filename, parser=self.create_parser()
+        )
 
         def get_source_line(filename, lineno):
             try:
-                lines = open(filename, encoding='utf-8').read().splitlines()
+                lines = open(filename, encoding="utf-8").read().splitlines()
                 return lines[lineno]
             except:
                 return None
 
         try:
             # compile the code first to report the errors, if any, with the filename
-            compiled_code = compile(code, filename, 'exec')
+            compiled_code = compile(code, filename, "exec")
         except SyntaxError as err:
             # display template line that caused the error along with the traceback.
             # this works in Py3 but not Py2, duh ? TODO
-            err.msg += '\n\nTemplate traceback:\n    File %s, line %s\n        %s' % \
-                (repr(err.filename), err.lineno, get_source_line(err.filename, err.lineno-1))
-
+            err.msg += "\n\nTemplate traceback:\n    File %s, line %s\n        %s" % (
+                repr(err.filename),
+                err.lineno,
+                get_source_line(err.filename, err.lineno - 1),
+            )
 
             raise
-
 
         # make sure code is safe
         ast_node = ast.parse(code, filename)
@@ -951,9 +1033,10 @@ class Template(BaseTemplate):
 
         return compiled_code
 
+
 class CompiledTemplate(Template):
     def __init__(self, f, filename):
-        Template.__init__(self, '', filename)
+        Template.__init__(self, "", filename)
         self.t = f
 
     def compile_template(self, *a):
@@ -961,6 +1044,7 @@ class CompiledTemplate(Template):
 
     def _compile(self, *a):
         return None
+
 
 class Render:
     """The most preferred way of using templates.
@@ -973,19 +1057,20 @@ class Render:
 
         render = web.template.render('templates', base='layout')
     """
-    def __init__(self, loc='templates', cache=None, base=None, **keywords):
+
+    def __init__(self, loc="templates", cache=None, base=None, **keywords):
         self._loc = loc
         self._keywords = keywords
 
         if cache is None:
-            cache = not config.get('debug', False)
+            cache = not config.get("debug", False)
 
         if cache:
             self._cache = {}
         else:
             self._cache = None
 
-        if base and not hasattr(base, '__call__'):
+        if base and not hasattr(base, "__call__"):
             # make base a function, so that it can be passed to sub-renders
             self._base = lambda page: self._template(base)(page)
         else:
@@ -993,35 +1078,42 @@ class Render:
 
     def _add_global(self, obj, name=None):
         """Add a global to this rendering instance."""
-        if 'globals' not in self._keywords: self._keywords['globals'] = {}
+        if "globals" not in self._keywords:
+            self._keywords["globals"] = {}
         if not name:
             name = obj.__name__
-        self._keywords['globals'][name] = obj
+        self._keywords["globals"][name] = obj
 
     def _lookup(self, name):
         path = os.path.join(self._loc, name)
         if os.path.isdir(path):
-            return 'dir', path
+            return "dir", path
         else:
             path = self._findfile(path)
             if path:
-                return 'file', path
+                return "file", path
             else:
-                return 'none', None
+                return "none", None
 
     def _load_template(self, name):
         kind, path = self._lookup(name)
 
-        if kind == 'dir':
-            return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
-        elif kind == 'file':
-            return Template(open(path, encoding='utf-8').read(), filename=path, **self._keywords)
+        if kind == "dir":
+            return Render(
+                path, cache=self._cache is not None, base=self._base, **self._keywords
+            )
+        elif kind == "file":
+            return Template(
+                open(path, encoding="utf-8").read(), filename=path, **self._keywords
+            )
         else:
             raise AttributeError("No template named " + name)
 
     def _findfile(self, path_prefix):
-        p = [f for f in glob.glob(path_prefix + '.*') if not f.endswith('~')] # skip backup files
-        p.sort() # sort the matches for deterministic order
+        p = [
+            f for f in glob.glob(path_prefix + ".*") if not f.endswith("~")
+        ]  # skip backup files
+        p.sort()  # sort the matches for deterministic order
 
         # support templates without extension (#364)
         # When no templates are found and a file is found with the exact name, use it.
@@ -1041,63 +1133,83 @@ class Render:
     def __getattr__(self, name):
         t = self._template(name)
         if self._base and isinstance(t, Template):
+
             def template(*a, **kw):
                 return self._base(t(*a, **kw))
+
             return template
         else:
             return self._template(name)
 
+
 class GAE_Render(Render):
     # Render gets over-written. make a copy here.
     super = Render
+
     def __init__(self, loc, *a, **kw):
         GAE_Render.super.__init__(self, loc, *a, **kw)
 
         import types
+
         if isinstance(loc, types.ModuleType):
             self.mod = loc
         else:
-            name = loc.rstrip('/').replace('/', '.')
-            self.mod = __import__(name, None, None, ['x'])
+            name = loc.rstrip("/").replace("/", ".")
+            self.mod = __import__(name, None, None, ["x"])
 
-        self.mod.__dict__.update(kw.get('builtins', TEMPLATE_BUILTINS))
+        self.mod.__dict__.update(kw.get("builtins", TEMPLATE_BUILTINS))
         self.mod.__dict__.update(Template.globals)
-        self.mod.__dict__.update(kw.get('globals', {}))
+        self.mod.__dict__.update(kw.get("globals", {}))
 
     def _load_template(self, name):
         t = getattr(self.mod, name)
         import types
+
         if isinstance(t, types.ModuleType):
-            return GAE_Render(t, cache=self._cache is not None, base=self._base, **self._keywords)
+            return GAE_Render(
+                t, cache=self._cache is not None, base=self._base, **self._keywords
+            )
         else:
             return t
+
 
 render = Render
 # setup render for Google App Engine.
 try:
     from google import appengine
+
     render = Render = GAE_Render
 except ImportError:
     pass
 
+
 def frender(path, **keywords):
     """Creates a template from the given file path.
     """
-    return Template(open(path, encoding='utf-8').read(), filename=path, **keywords)
+    return Template(open(path, encoding="utf-8").read(), filename=path, **keywords)
+
 
 def compile_templates(root):
     """Compiles templates to python code."""
-    re_start = re_compile('^', re.M)
+    re_start = re_compile("^", re.M)
 
     for dirpath, dirnames, filenames in os.walk(root):
-        filenames = [f for f in filenames if not f.startswith('.') and not f.endswith('~') and not f.startswith('__init__.py')]
+        filenames = [
+            f
+            for f in filenames
+            if not f.startswith(".")
+            and not f.endswith("~")
+            and not f.startswith("__init__.py")
+        ]
 
         for d in dirnames[:]:
-            if d.startswith('.'):
-                dirnames.remove(d) # don't visit this dir
+            if d.startswith("."):
+                dirnames.remove(d)  # don't visit this dir
 
-        out = open(os.path.join(dirpath, '__init__.py'), 'w', encoding='utf-8')
-        out.write('from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n')
+        out = open(os.path.join(dirpath, "__init__.py"), "w", encoding="utf-8")
+        out.write(
+            "from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n"
+        )
         if dirnames:
             out.write("import " + ", ".join(dirnames))
         out.write("\n")
@@ -1105,12 +1217,12 @@ def compile_templates(root):
         for f in filenames:
             path = os.path.join(dirpath, f)
 
-            if '.' in f:
-                name, _ = f.split('.', 1)
+            if "." in f:
+                name, _ = f.split(".", 1)
             else:
                 name = f
 
-            text = open(path, encoding='utf-8').read()
+            text = open(path, encoding="utf-8").read()
             text = Template.normalize_text(text)
             code = Template.generate_code(text, path)
 
@@ -1118,36 +1230,115 @@ def compile_templates(root):
 
             out.write(code)
 
-            out.write('\n\n')
-            out.write('%s = CompiledTemplate(%s, %s)\n' % (name, name, repr(path)))
+            out.write("\n\n")
+            out.write("%s = CompiledTemplate(%s, %s)\n" % (name, name, repr(path)))
             out.write("join_ = %s._join; escape_ = %s._escape\n\n" % (name, name))
 
             # create template to make sure it compiles
-            t = Template(open(path, encoding='utf-8').read(), path)
+            t = Template(open(path, encoding="utf-8").read(), path)
         out.close()
+
 
 class ParseError(Exception):
     pass
 
+
 class SecurityError(Exception):
     """The template seems to be trying to do something naughty."""
+
     pass
 
-ALLOWED_AST_NODES = ['Interactive', 'Expression', 'Suite', 'FunctionDef',
-    'ClassDef', 'Return', 'Delete', 'Assign', 'AugAssign', 'alias',
+
+ALLOWED_AST_NODES = [
+    "Interactive",
+    "Expression",
+    "Suite",
+    "FunctionDef",
+    "ClassDef",
+    "Return",
+    "Delete",
+    "Assign",
+    "AugAssign",
+    "alias",
     #'Print', 'Repr',
-    'For', 'While', 'If', 'With', 'comprehension','NameConstant', 'arg',
+    "For",
+    "While",
+    "If",
+    "With",
+    "comprehension",
+    "NameConstant",
+    "arg",
     #'Raise', 'TryExcept', 'TryFinally', 'Assert', 'Import',
     #'ImportFrom', 'Exec', 'Global',
-    'Expr', 'Pass', 'Break', 'Continue', 'BoolOp', 'BinOp', 'UnaryOp',
-    'Lambda', 'IfExp', 'Dict', 'Module', 'arguments', 'keyword',
-    'Set', 'ListComp', 'SetComp', 'DictComp', 'GeneratorExp', 'Yield',
-    'Compare', 'Call', 'Num', 'Str', 'Attribute', 'Subscript',
-    'Name', 'List', 'Tuple', 'Load', 'Store', 'Del', 'AugLoad', 'AugStore',
-    'Param', 'Ellipsis', 'Slice', 'ExtSlice', 'Index', 'And', 'Or', 'Add',
-    'Sub', 'Mult', 'Div', 'Mod', 'Pow', 'LShift', 'RShift', 'BitOr', 'BitXor',
-    'BitAnd', 'FloorDiv', 'Invert', 'Not', 'UAdd', 'USub', 'Eq', 'NotEq',
-    'Lt', 'LtE', 'Gt', 'GtE', 'Is', 'IsNot', 'In', 'NotIn', 'ExceptHandler']
+    "Expr",
+    "Pass",
+    "Break",
+    "Continue",
+    "BoolOp",
+    "BinOp",
+    "UnaryOp",
+    "Lambda",
+    "IfExp",
+    "Dict",
+    "Module",
+    "arguments",
+    "keyword",
+    "Set",
+    "ListComp",
+    "SetComp",
+    "DictComp",
+    "GeneratorExp",
+    "Yield",
+    "Compare",
+    "Call",
+    "Num",
+    "Str",
+    "Attribute",
+    "Subscript",
+    "Name",
+    "List",
+    "Tuple",
+    "Load",
+    "Store",
+    "Del",
+    "AugLoad",
+    "AugStore",
+    "Param",
+    "Ellipsis",
+    "Slice",
+    "ExtSlice",
+    "Index",
+    "And",
+    "Or",
+    "Add",
+    "Sub",
+    "Mult",
+    "Div",
+    "Mod",
+    "Pow",
+    "LShift",
+    "RShift",
+    "BitOr",
+    "BitXor",
+    "BitAnd",
+    "FloorDiv",
+    "Invert",
+    "Not",
+    "UAdd",
+    "USub",
+    "Eq",
+    "NotEq",
+    "Lt",
+    "LtE",
+    "Gt",
+    "GtE",
+    "Is",
+    "IsNot",
+    "In",
+    "NotIn",
+    "ExceptHandler",
+]
+
 
 class SafeVisitor(ast.NodeVisitor):
     """
@@ -1162,6 +1353,7 @@ class SafeVisitor(ast.NodeVisitor):
         * Using ast rather than compiler tree, for jython and Py3 support since Py2.6
         * Simplified with ast.NodeVisitor class
     """
+
     def __init__(self, *args, **kwargs):
         "Initialize visitor by generating callbacks for all AST node types."
         super(SafeVisitor, self).__init__(*args, **kwargs)
@@ -1172,7 +1364,7 @@ class SafeVisitor(ast.NodeVisitor):
         self.filename = filename
         self.visit(tree)
         if self.errors:
-            raise SecurityError('\n'.join([str(err) for err in self.errors]))
+            raise SecurityError("\n".join([str(err) for err in self.errors]))
 
     def generic_visit(self, node):
         nodename = type(node).__name__
@@ -1206,25 +1398,32 @@ class SafeVisitor(ast.NodeVisitor):
     # failure modes
     def fail_name(self, node, nodename):
         lineno = self.get_node_lineno(node)
-        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
+        e = SecurityError(
+            "%s:%d - execution of '%s' statements is denied"
+            % (self.filename, lineno, nodename)
+        )
         self.errors.append(e)
 
     def fail_attribute(self, node, attrname):
         lineno = self.get_node_lineno(node)
-        e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
+        e = SecurityError(
+            "%s:%d - access to attribute '%s' is denied"
+            % (self.filename, lineno, attrname)
+        )
         self.errors.append(e)
 
     # helpers
     def is_unallowed_attr(self, name):
-        return name.startswith('_') \
-            or name.startswith('func_') \
-            or name.startswith('im_')
+        return (
+            name.startswith("_") or name.startswith("func_") or name.startswith("im_")
+        )
 
     def get_node_attr(self, node):
-        return 'attr' in node._fields and node.attr or None
+        return "attr" in node._fields and node.attr or None
 
     def get_node_lineno(self, node):
         return (node.lineno) and node.lineno or 0
+
 
 class TemplateResult(MutableMapping):
     """Dictionary like object for storing template output.
@@ -1250,11 +1449,12 @@ class TemplateResult(MutableMapping):
         >>> d
         <TemplateResult: {'__body__': u'helloworld'}>
     """
+
     def __init__(self, *a, **kw):
         self.__dict__["_d"] = dict(*a, **kw)
-        self._d.setdefault("__body__", u'')
+        self._d.setdefault("__body__", u"")
 
-        self.__dict__['_parts'] = []
+        self.__dict__["_parts"] = []
         self.__dict__["extend"] = self._parts.extend
 
         self._d.setdefault("__body__", None)
@@ -1268,11 +1468,11 @@ class TemplateResult(MutableMapping):
         if self._parts:
             value = u"".join(self._parts)
             self._parts[:] = []
-            body = self._d.get('__body__')
+            body = self._d.get("__body__")
             if body:
-                self._d['__body__'] = body + value
+                self._d["__body__"] = body + value
             else:
-                self._d['__body__'] = value
+                self._d["__body__"] = value
 
     def __getitem__(self, name):
         if name == "__body__":
@@ -1311,7 +1511,7 @@ class TemplateResult(MutableMapping):
     def __str__(self):
         self._prepare_body()
         if PY2:
-            return self["__body__"].encode('utf-8')
+            return self["__body__"].encode("utf-8")
         else:
             return self["__body__"]
 
@@ -1540,10 +1740,13 @@ def test():
     """
     pass
 
+
 if __name__ == "__main__":
     import sys
-    if '--compile' in sys.argv:
+
+    if "--compile" in sys.argv:
         compile_templates(sys.argv[2])
     else:
         import doctest
+
         doctest.testmod()

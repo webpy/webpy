@@ -18,14 +18,19 @@ from . import webapi as web
 from .py3helpers import urljoin, PY2
 
 if PY2:
+
     def update_globals_template(t, globals):
         t.t.func_globals.update(globals)
+
+
 else:
+
     def update_globals_template(t, globals):
         t.t.__globals__.update(globals)
 
 
 import os, os.path
+
 whereami = os.path.join(os.getcwd(), __file__)
 whereami = os.path.sep.join(whereami.split(os.path.sep)[:-1])
 djangoerror_t = """\
@@ -236,6 +241,7 @@ $:dicttable(ctx.env)
 
 djangoerror_r = None
 
+
 def djangoerror():
     def _get_lines_from_file(filename, lineno, context_lines):
         """
@@ -247,11 +253,11 @@ def djangoerror():
             lower_bound = max(0, lineno - context_lines)
             upper_bound = lineno + context_lines
 
-            pre_context = \
-                [line.strip('\n') for line in source[lower_bound:lineno]]
-            context_line = source[lineno].strip('\n')
-            post_context = \
-                [line.strip('\n') for line in source[lineno + 1:upper_bound]]
+            pre_context = [line.strip("\n") for line in source[lower_bound:lineno]]
+            context_line = source[lineno].strip("\n")
+            post_context = [
+                line.strip("\n") for line in source[lineno + 1 : upper_bound]
+            ]
 
             return lower_bound, pre_context, context_line, post_context
         except (OSError, IOError, IndexError):
@@ -267,30 +273,35 @@ def djangoerror():
         # hack to get correct line number for templates
         lineno += tback.tb_frame.f_locals.get("__lineoffset__", 0)
 
-        pre_context_lineno, pre_context, context_line, post_context = \
-            _get_lines_from_file(filename, lineno, 7)
+        pre_context_lineno, pre_context, context_line, post_context = _get_lines_from_file(
+            filename, lineno, 7
+        )
 
-        if '__hidetraceback__' not in tback.tb_frame.f_locals:
-            frames.append(web.storage({
-                'tback': tback,
-                'filename': filename,
-                'function': function,
-                'lineno': lineno,
-                'vars': tback.tb_frame.f_locals,
-                'id': id(tback),
-                'pre_context': pre_context,
-                'context_line': context_line,
-                'post_context': post_context,
-                'pre_context_lineno': pre_context_lineno,
-            }))
+        if "__hidetraceback__" not in tback.tb_frame.f_locals:
+            frames.append(
+                web.storage(
+                    {
+                        "tback": tback,
+                        "filename": filename,
+                        "function": function,
+                        "lineno": lineno,
+                        "vars": tback.tb_frame.f_locals,
+                        "id": id(tback),
+                        "pre_context": pre_context,
+                        "context_line": context_line,
+                        "post_context": post_context,
+                        "pre_context_lineno": pre_context_lineno,
+                    }
+                )
+            )
         tback = tback.tb_next
     frames.reverse()
+
     def prettify(x):
         try:
             out = pprint.pformat(x)
         except Exception as e:
-            out = '[could not display: <' + e.__class__.__name__ + \
-                  ': '+str(e)+'>]'
+            out = "[could not display: <" + e.__class__.__name__ + ": " + str(e) + ">]"
         return out
 
     global djangoerror_r
@@ -298,9 +309,16 @@ def djangoerror():
         djangoerror_r = Template(djangoerror_t, filename=__file__, filter=websafe)
 
     t = djangoerror_r
-    globals = {'ctx': web.ctx, 'web':web, 'dict':dict, 'str':str, 'prettify': prettify}
+    globals = {
+        "ctx": web.ctx,
+        "web": web,
+        "dict": dict,
+        "str": str,
+        "prettify": prettify,
+    }
     update_globals_template(t, globals)
     return t(exception_type, exception_value, frames)
+
 
 def debugerror():
     """
@@ -311,6 +329,7 @@ def debugerror():
     designed by [Wilson Miner](http://wilsonminer.com/).)
     """
     return web._InternalError(djangoerror())
+
 
 def emailerrors(to_address, olderror, from_address=None):
     """
@@ -328,9 +347,9 @@ def emailerrors(to_address, olderror, from_address=None):
         tb = sys.exc_info()
         error_name = tb[0]
         error_value = tb[1]
-        tb_txt = ''.join(traceback.format_exception(*tb))
+        tb_txt = "".join(traceback.format_exception(*tb))
         path = web.ctx.path
-        request = web.ctx.method + ' ' + web.ctx.home + web.ctx.fullpath
+        request = web.ctx.method + " " + web.ctx.home + web.ctx.fullpath
 
         message = "\n%s\n\n%s\n\n" % (request, tb_txt)
 
@@ -339,19 +358,17 @@ def emailerrors(to_address, olderror, from_address=None):
             "the bugfixer <%s>" % to_address,
             "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
             message,
-            attachments=[
-                dict(filename="bug.html", content=safestr(djangoerror()))
-            ],
+            attachments=[dict(filename="bug.html", content=safestr(djangoerror()))],
         )
         return error
 
     return emailerrors_internal
 
+
 if __name__ == "__main__":
-    urls = (
-        '/', 'index'
-    )
+    urls = ("/", "index")
     from .application import application
+
     app = application(urls, globals())
     app.internalerror = debugerror
 

@@ -7,19 +7,23 @@ import copy
 import re
 from . import utils, net, webapi as web
 
+
 def attrget(obj, attr, value=None):
     try:
-        if hasattr(obj, 'has_key') and attr in obj:
+        if hasattr(obj, "has_key") and attr in obj:
             return obj[attr]
     except TypeError:
         # Handle the case where has_key takes different number of arguments.
         # This is the case with Model objects on appengine. See #134
         pass
-    if hasattr(obj, 'keys') and attr in obj.keys():  # needed for Py3, has_key doesn't exist anymore
+    if (
+        hasattr(obj, "keys") and attr in obj.keys()
+    ):  # needed for Py3, has_key doesn't exist anymore
         return obj[attr]
     elif hasattr(obj, attr):
         return getattr(obj, attr)
     return value
+
 
 class Form(object):
     r"""
@@ -33,11 +37,12 @@ class Form(object):
         >>> f.render()
         u'<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text" value="42"/></td></tr>\n</table>'
     """
+
     def __init__(self, *inputs, **kw):
         self.inputs = inputs
         self.valid = True
         self.note = None
-        self.validators = kw.pop('validators', [])
+        self.validators = kw.pop("validators", [])
 
     def __call__(self, x=None):
         o = copy.deepcopy(self)
@@ -46,16 +51,26 @@ class Form(object):
         return o
 
     def render(self):
-        out = ''
+        out = ""
         out += self.rendernote(self.note)
-        out += '<table>\n'
+        out += "<table>\n"
 
         for i in self.inputs:
-            html = utils.safeunicode(i.pre) + i.render() + self.rendernote(i.note) + utils.safeunicode(i.post)
+            html = (
+                utils.safeunicode(i.pre)
+                + i.render()
+                + self.rendernote(i.note)
+                + utils.safeunicode(i.post)
+            )
             if i.is_hidden():
-                out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (html)
+                out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (
+                    html
+                )
             else:
-                out += '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n' % (net.websafe(i.id), net.websafe(i.description), html)
+                out += (
+                    '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n'
+                    % (net.websafe(i.id), net.websafe(i.description), html)
+                )
         out += "</table>"
         return out
 
@@ -64,13 +79,16 @@ class Form(object):
         out.append(self.rendernote(self.note))
         for i in self.inputs:
             if not i.is_hidden():
-                out.append('<label for="%s">%s</label>' % (net.websafe(i.id), net.websafe(i.description)))
+                out.append(
+                    '<label for="%s">%s</label>'
+                    % (net.websafe(i.id), net.websafe(i.description))
+                )
             out.append(i.pre)
             out.append(i.render())
             out.append(self.rendernote(i.note))
             out.append(i.post)
-            out.append('\n')
-        return ''.join(out)
+            out.append("\n")
+        return "".join(out)
 
     def rendernote(self, note):
         if note:
@@ -111,7 +129,7 @@ class Form(object):
 
     def __getattr__(self, name):
         # don't interfere with deepcopy
-        inputs = self.__dict__.get('inputs') or []
+        inputs = self.__dict__.get("inputs") or []
         for x in inputs:
             if x.name == name:
                 return x
@@ -125,7 +143,9 @@ class Form(object):
 
     def _get_d(self):  # @@ should really be form.attr, no?
         return utils.storage([(i.name, i.get_value()) for i in self.inputs])
+
     d = property(_get_d)
+
 
 class Input(object):
     def __init__(self, name, *validators, **attrs):
@@ -133,17 +153,17 @@ class Input(object):
         self.validators = validators
         self.attrs = attrs = AttributeList(attrs)
 
-        self.description = attrs.pop('description', name)
-        self.value = attrs.pop('value', None)
-        self.pre = attrs.pop('pre', "")
-        self.post = attrs.pop('post', "")
+        self.description = attrs.pop("description", name)
+        self.value = attrs.pop("value", None)
+        self.pre = attrs.pop("pre", "")
+        self.post = attrs.pop("post", "")
         self.note = None
 
-        self.id = attrs.setdefault('id', self.get_default_id())
+        self.id = attrs.setdefault("id", self.get_default_id())
 
-        if 'class_' in attrs:
-            attrs['class'] = attrs['class_']
-            del attrs['class_']
+        if "class_" in attrs:
+            attrs["class"] = attrs["class_"]
+            del attrs["class_"]
 
     def is_hidden(self):
         return False
@@ -171,11 +191,11 @@ class Input(object):
 
     def render(self):
         attrs = self.attrs.copy()
-        attrs['type'] = self.get_type()
+        attrs["type"] = self.get_type()
         if self.value is not None:
-            attrs['value'] = self.value
-        attrs['name'] = self.name
-        return '<input %s/>' % attrs
+            attrs["value"] = self.value
+        attrs["name"] = self.name
+        return "<input %s/>" % attrs
 
     def rendernote(self, note):
         if note:
@@ -187,6 +207,7 @@ class Input(object):
         # add leading space for backward-compatibility
         return " " + str(self.attrs)
 
+
 class AttributeList(dict):
     """List of atributes of input.
 
@@ -194,14 +215,18 @@ class AttributeList(dict):
     >>> a
     <attrs: 'name="x" type="text" value="20"'>
     """
+
     def copy(self):
         return AttributeList(self)
 
     def __str__(self):
-        return " ".join(['%s="%s"' % (k, net.websafe(v)) for k, v in sorted(self.items())])
+        return " ".join(
+            ['%s="%s"' % (k, net.websafe(v)) for k, v in sorted(self.items())]
+        )
 
     def __repr__(self):
-        return '<attrs: %s>' % repr(str(self))
+        return "<attrs: %s>" % repr(str(self))
+
 
 class Textbox(Input):
     """Textbox input.
@@ -211,8 +236,10 @@ class Textbox(Input):
         >>> Textbox(name='foo', value=0).render()
         u'<input id="foo" name="foo" type="text" value="0"/>'
     """
+
     def get_type(self):
-        return 'text'
+        return "text"
+
 
 class Password(Input):
     """Password input.
@@ -222,7 +249,8 @@ class Password(Input):
     """
 
     def get_type(self):
-        return 'password'
+        return "password"
+
 
 class Textarea(Input):
     """Textarea input.
@@ -230,11 +258,13 @@ class Textarea(Input):
         >>> Textarea(name='foo', value='bar').render()
         u'<textarea id="foo" name="foo">bar</textarea>'
     """
+
     def render(self):
         attrs = self.attrs.copy()
-        attrs['name'] = self.name
-        value = net.websafe(self.value or '')
-        return '<textarea %s>%s</textarea>' % (attrs, value)
+        attrs["name"] = self.name
+        value = net.websafe(self.value or "")
+        return "<textarea %s>%s</textarea>" % (attrs, value)
+
 
 class Dropdown(Input):
     r"""Dropdown/select input.
@@ -244,23 +274,24 @@ class Dropdown(Input):
         >>> Dropdown(name='foo', args=[('a', 'aa'), ('b', 'bb'), ('c', 'cc')], value='b').render()
         u'<select id="foo" name="foo">\n  <option value="a">aa</option>\n  <option selected="selected" value="b">bb</option>\n  <option value="c">cc</option>\n</select>\n'
     """
+
     def __init__(self, name, args, *validators, **attrs):
         self.args = args
         super(Dropdown, self).__init__(name, *validators, **attrs)
 
     def render(self):
         attrs = self.attrs.copy()
-        attrs['name'] = self.name
+        attrs["name"] = self.name
 
-        x = '<select %s>\n' % attrs
+        x = "<select %s>\n" % attrs
 
         for arg in self.args:
             x += self._render_option(arg)
 
-        x += '</select>\n'
+        x += "</select>\n"
         return x
 
-    def _render_option(self, arg, indent='  '):
+    def _render_option(self, arg, indent="  "):
         if isinstance(arg, (tuple, list)):
             value, desc = arg
         else:
@@ -275,8 +306,12 @@ class Dropdown(Input):
         if s_value == value or (isinstance(s_value, list) and value in s_value):
             select_p = ' selected="selected"'
         else:
-            select_p = ''
-        return indent + '<option%s value="%s">%s</option>\n' % (select_p, net.websafe(value), net.websafe(desc))
+            select_p = ""
+        return indent + '<option%s value="%s">%s</option>\n' % (
+            select_p,
+            net.websafe(value),
+            net.websafe(desc),
+        )
 
 
 class GroupedDropdown(Dropdown):
@@ -288,24 +323,26 @@ class GroupedDropdown(Dropdown):
         u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="v">Volvo</option>\n    <option value="s">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="m">Mercedes</option>\n    <option selected="selected" value="a">Audi</option>\n  </optgroup>\n</select>\n'
 
     """
+
     def __init__(self, name, args, *validators, **attrs):
         self.args = args
         super(Dropdown, self).__init__(name, *validators, **attrs)
 
     def render(self):
         attrs = self.attrs.copy()
-        attrs['name'] = self.name
+        attrs["name"] = self.name
 
-        x = '<select %s>\n' % attrs
+        x = "<select %s>\n" % attrs
 
         for label, options in self.args:
             x += '  <optgroup label="%s">\n' % net.websafe(label)
             for arg in options:
-                x += self._render_option(arg, indent='    ')
-            x += '  </optgroup>\n'
+                x += self._render_option(arg, indent="    ")
+            x += "  </optgroup>\n"
 
-        x += '</select>\n'
+        x += "</select>\n"
         return x
+
 
 class Radio(Input):
     def __init__(self, name, args, *validators, **attrs):
@@ -313,21 +350,22 @@ class Radio(Input):
         super(Radio, self).__init__(name, *validators, **attrs)
 
     def render(self):
-        x = '<span>'
+        x = "<span>"
         for arg in self.args:
             if isinstance(arg, (tuple, list)):
                 value, desc = arg
             else:
                 value, desc = arg, arg
             attrs = self.attrs.copy()
-            attrs['name'] = self.name
-            attrs['type'] = 'radio'
-            attrs['value'] = value
+            attrs["name"] = self.name
+            attrs["type"] = "radio"
+            attrs["value"] = value
             if self.value == value:
-                attrs['checked'] = 'checked'
-            x += '<input %s/> %s' % (attrs, net.websafe(desc))
-        x += '</span>'
+                attrs["checked"] = "checked"
+            x += "<input %s/> %s" % (attrs, net.websafe(desc))
+        x += "</span>"
         return x
+
 
 class Checkbox(Input):
     """Checkbox input.
@@ -342,29 +380,31 @@ class Checkbox(Input):
     >>> c.render()
     u'<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     """
+
     def __init__(self, name, *validators, **attrs):
-        self.checked = attrs.pop('checked', False)
+        self.checked = attrs.pop("checked", False)
         Input.__init__(self, name, *validators, **attrs)
 
     def get_default_id(self):
         value = utils.safestr(self.value or "")
-        return self.name + '_' + value.replace(' ', '_')
+        return self.name + "_" + value.replace(" ", "_")
 
     def render(self):
         attrs = self.attrs.copy()
-        attrs['type'] = 'checkbox'
-        attrs['name'] = self.name
-        attrs['value'] = self.value
+        attrs["type"] = "checkbox"
+        attrs["name"] = self.name
+        attrs["value"] = self.value
 
         if self.checked:
-            attrs['checked'] = 'checked'
-        return '<input %s/>' % attrs
+            attrs["checked"] = "checked"
+        return "<input %s/>" % attrs
 
     def set_value(self, value):
         self.checked = bool(value)
 
     def get_value(self):
         return self.checked
+
 
 class Button(Input):
     """HTML Button.
@@ -374,17 +414,19 @@ class Button(Input):
     >>> Button("action", value="save", html="<b>Save Changes</b>").render()
     u'<button id="action" name="action" value="save"><b>Save Changes</b></button>'
     """
+
     def __init__(self, name, *validators, **attrs):
         super(Button, self).__init__(name, *validators, **attrs)
         self.description = ""
 
     def render(self):
         attrs = self.attrs.copy()
-        attrs['name'] = self.name
+        attrs["name"] = self.name
         if self.value is not None:
-            attrs['value'] = self.value
-        html = attrs.pop('html', None) or net.websafe(self.name)
-        return '<button %s>%s</button>' % (attrs, html)
+            attrs["value"] = self.value
+        html = attrs.pop("html", None) or net.websafe(self.name)
+        return "<button %s>%s</button>" % (attrs, html)
+
 
 class Hidden(Input):
     """Hidden Input.
@@ -392,11 +434,13 @@ class Hidden(Input):
         >>> Hidden(name='foo', value='bar').render()
         u'<input id="foo" name="foo" type="hidden" value="bar"/>'
     """
+
     def is_hidden(self):
         return True
 
     def get_type(self):
-        return 'hidden'
+        return "hidden"
+
 
 class File(Input):
     """File input.
@@ -404,8 +448,10 @@ class File(Input):
         >>> File(name='f').render()
         u'<input id="f" name="f" type="file"/>'
     """
+
     def get_type(self):
-        return 'file'
+        return "file"
+
 
 class Validator:
     def __deepcopy__(self, memo):
@@ -420,7 +466,9 @@ class Validator:
         except:
             return False
 
+
 notnull = Validator("Required", bool)
+
 
 class regexp(Validator):
     def __init__(self, rexp, msg):
@@ -430,6 +478,8 @@ class regexp(Validator):
     def valid(self, value):
         return bool(self.rexp.match(value))
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

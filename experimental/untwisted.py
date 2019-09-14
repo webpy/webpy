@@ -8,27 +8,28 @@ import simplejson
 
 import web
 
+
 class Request(http.Request):
     def process(self):
         self.content.seek(0, 0)
         env = {
-          'REMOTE_ADDR': self.client.host,
-          'REQUEST_METHOD': self.method,
-          'PATH_INFO': self.path,
-          'CONTENT_LENGTH': web.intget(self.getHeader('content-length'), 0),
-          'wsgi.input': self.content
+            "REMOTE_ADDR": self.client.host,
+            "REQUEST_METHOD": self.method,
+            "PATH_INFO": self.path,
+            "CONTENT_LENGTH": web.intget(self.getHeader("content-length"), 0),
+            "wsgi.input": self.content,
         }
-        if '?' in self.uri:
-            env['QUERY_STRING'] = self.uri.split('?', 1)[1]
+        if "?" in self.uri:
+            env["QUERY_STRING"] = self.uri.split("?", 1)[1]
 
         for k, v in self.received_headers.iteritems():
-            env['HTTP_' + k.upper()] = v
+            env["HTTP_" + k.upper()] = v
 
-        if self.path.startswith('/static/'):
-            f = web.lstrips(self.path, '/static/')
-            assert '/' not in f
-            #@@@ big security hole
-            self.write(open('static/' + f).read())
+        if self.path.startswith("/static/"):
+            f = web.lstrips(self.path, "/static/")
+            assert "/" not in f
+            # @@@ big security hole
+            self.write(open("static/" + f).read())
             return self.finish()
 
         web.webapi._load(env)
@@ -38,8 +39,9 @@ class Request(http.Request):
         for (h, v) in web.ctx.headers:
             self.setHeader(h, v)
         self.write(web.ctx.output)
-        if not web.ctx.get('persist'):
+        if not web.ctx.get("persist"):
             self.finish()
+
 
 class Server(http.HTTPFactory):
     def __init__(self, func):
@@ -49,24 +51,33 @@ class Server(http.HTTPFactory):
         """Generate a channel attached to this site.
         """
         channel = http.HTTPFactory.buildProtocol(self, addr)
+
         class MyRequest(Request):
             actualfunc = staticmethod(self.func)
+
         channel.requestFactory = MyRequest
         channel.site = self
         return channel
+
 
 def runtwisted(func):
     reactor.listenTCP(8086, Server(func))
     reactor.run()
 
+
 def newrun(inp, fvars):
     print("Running on http://0.0.0.0:8086/")
     runtwisted(web.webpyfunc(inp, fvars, False))
 
+
 def iframe(url):
-    return """
+    return (
+        """
     <iframe height="0" width="0" style="display: none" src="%s"/></iframe>
-    """ % url #("http://%s.ajaxpush.lh.theinfo.org:8086%s" % (random.random(), url))
+    """
+        % url
+    )  # ("http://%s.ajaxpush.lh.theinfo.org:8086%s" % (random.random(), url))
+
 
 class Feed:
     def __init__(self):
@@ -82,6 +93,7 @@ class Feed:
         for x in self.sessions:
             x.write(text)
 
+
 class JSFeed(Feed):
     def __init__(self, callback="callback"):
         Feed.__init__(self)
@@ -89,9 +101,12 @@ class JSFeed(Feed):
 
     def publish(self, obj):
         web.debug("publishing")
-        Feed.publish(self,
-          '<script type="text/javascript">window.parent.%s(%s)</script>' % (self.callback, simplejson.dumps(obj) +
-          " " * 2048))
+        Feed.publish(
+            self,
+            '<script type="text/javascript">window.parent.%s(%s)</script>'
+            % (self.callback, simplejson.dumps(obj) + " " * 2048),
+        )
+
 
 if __name__ == "__main__":
     mfeed = JSFeed()
@@ -106,7 +121,8 @@ if __name__ == "__main__":
 
     class view:
         def GET(self):
-            print("""
+            print(
+                """
 <script type="text/javascript">
 function callback(item) {
   document.getElementById('content').innerHTML += "<p>" + item + "</p>";
@@ -123,7 +139,8 @@ function callback(item) {
   <input type="submit" value="send" />
 </form>
 <iframe id="foo" height="0" width="0" style="display: none" src="/js"/></iframe>
-            """)
+            """
+            )
 
     class js:
         def GET(self):
@@ -131,7 +148,7 @@ function callback(item) {
 
     class send:
         def POST(self):
-            mfeed.publish('<p>%s</p>' % web.input().text + (" " * 2048))
-            web.seeother('/')
+            mfeed.publish("<p>%s</p>" % web.input().text + (" " * 2048))
+            web.seeother("/")
 
     newrun(urls, globals())

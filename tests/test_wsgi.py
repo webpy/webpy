@@ -2,11 +2,10 @@ import unittest
 import web
 import threading, time
 
+
 class WSGITest(unittest.TestCase):
     def test_layers_unicode(self):
-        urls = (
-            '/', 'uni',
-        )
+        urls = ("/", "uni")
 
         class uni:
             def GET(self):
@@ -19,22 +18,19 @@ class WSGITest(unittest.TestCase):
         time.sleep(0.5)
 
         b = web.browser.Browser()
-        r = b.open('/').read()
-        s = r.decode('utf8')
+        r = b.open("/").read()
+        s = r.decode("utf8")
         self.assertEqual(s, u"\u0C05\u0C06")
 
         app.stop()
         thread.join()
 
-
     def test_layers_bytes(self):
-        urls = (
-            '/', 'bytes',
-        )
+        urls = ("/", "bytes")
 
         class bytes:
             def GET(self):
-                return b'abcdef'
+                return b"abcdef"
 
         app = web.application(urls, locals())
 
@@ -43,16 +39,14 @@ class WSGITest(unittest.TestCase):
         time.sleep(0.5)
 
         b = web.browser.Browser()
-        r = b.open('/')
-        self.assertEqual(r.read(), b'abcdef')
+        r = b.open("/")
+        self.assertEqual(r.read(), b"abcdef")
 
         app.stop()
         thread.join()
 
     def test_unicode_url(self):
-        urls = (
-            '/([^/]+)', 'url_passthrough',
-        )
+        urls = ("/([^/]+)", "url_passthrough")
 
         class url_passthrough:
             def GET(self, arg):
@@ -65,9 +59,8 @@ class WSGITest(unittest.TestCase):
         time.sleep(0.5)
 
         b = web.browser.Browser()
-        r = b.open('/%E2%84%A6')
-        self.assertEqual(r.read(), b'\xE2\x84\xA6')
+        r = b.open("/%E2%84%A6")
+        self.assertEqual(r.read(), b"\xE2\x84\xA6")
 
         app.stop()
         thread.join()
-

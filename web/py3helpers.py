@@ -27,13 +27,13 @@ try:
     numeric_types = (int, long)
 except NameError:
     text_type = str
-    string_types = (str, )
-    numeric_types = (int, )
+    string_types = (str,)
+    numeric_types = (int,)
 
 if PY2:
-    is_iter = lambda x: x and hasattr(x, 'next')
+    is_iter = lambda x: x and hasattr(x, "next")
 else:
-    is_iter = lambda x: x and hasattr(x, '__next__')
+    is_iter = lambda x: x and hasattr(x, "__next__")
 
 # imap
 if PY2:

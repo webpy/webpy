@@ -9,6 +9,8 @@ urls = (
     "/setcookie", "setcookie",
     "/redirect", "redirect",
 )
+# fmt: on
+
 app = web.application(urls, globals())
 
 class index:

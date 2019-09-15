@@ -76,6 +76,8 @@ class ApplicationTest(unittest.TestCase):
             "/b/(.*)", r"redirect /hello/\1",
             "/hello/(.*)", "hello"
         )
+        # fmt: on
+
         app = web.application(urls, locals())
         class hello:
             def GET(self, name):
@@ -122,6 +124,8 @@ class ApplicationTest(unittest.TestCase):
             "/blog", app_blog,
             "/(.*)", "index"
         )
+        # fmt: on
+
         class index:
             def GET(self, path):
                 return "hello " + path
@@ -149,6 +153,8 @@ class ApplicationTest(unittest.TestCase):
             "b.example.com", create_app('b'),
             ".*.example.com", create_app('*')
         )
+        # fmt: on
+
         app = web.subdomain_application(urls, locals())
 
         def test(host, expected_result):
@@ -177,6 +183,8 @@ class ApplicationTest(unittest.TestCase):
             "/blog", app_blog,
             "/(.*)", "index"
         )
+        # fmt: on
+
         class index:
             def GET(self, path):
                 return "hello " + path
@@ -214,6 +222,8 @@ class ApplicationTest(unittest.TestCase):
             "/blog", app_blog,
             "/(.*)", "index"
         )
+        # fmt: on
+
         class index:
             def GET(self, path):
                 return "hello " + path
@@ -280,6 +290,8 @@ class ApplicationTest(unittest.TestCase):
             "/a", app_a,
             "/b", app_b
         )
+        # fmt: on
+
         app = web.application(urls, locals())
 
         def assert_notfound(path, message):
@@ -309,6 +321,8 @@ class ApplicationTest(unittest.TestCase):
             "/foo", "foo",
             "/bar", "bar"
         )
+        # fmt: on
+
         class foo:
             def GET(self):
                 return "foo"

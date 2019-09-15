@@ -7,6 +7,7 @@ urls = (
     '/sudo', 'sudoku',
     '/length', 'length',
 )
+# fmt: on
 
 
 class pwt(object):

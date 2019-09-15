@@ -98,10 +98,11 @@ if __name__ == "__main__":
 
     # fmt: off
     urls = (
-      '/', 'view',
-      '/js', 'js',
-      '/send', 'send'
+        '/', 'view',
+        '/js', 'js',
+        '/send', 'send'
     )
+    # fmt: on
 
     class view:
         def GET(self):

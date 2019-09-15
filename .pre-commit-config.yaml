@@ -5,7 +5,6 @@ repos:
     rev: stable
     hooks:
     - id: black
-      args: [--exclude, "docs/conf.py|tools/markdown.py", .]
 -   repo: https://gitlab.com/pycqa/flake8
     rev: '3.7.8'  # pick a git hash / tag to point to
     hooks:

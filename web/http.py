@@ -4,10 +4,14 @@ HTTP Utilities
 """
 
 __all__ = [
-    "expires", "lastmodified",
-    "prefixurl", "modified",
-    "changequery", "url",
-    "profiler", ]
+    "expires",
+    "lastmodified",
+    "prefixurl",
+    "modified",
+    "changequery",
+    "url",
+    "profiler",
+]
 
 import datetime
 
@@ -21,21 +25,21 @@ except ImportError:
     from urllib import urlencode as urllib_urlencode
 
 try:
-    xrange          # Python 2
+    xrange  # Python 2
 except NameError:
     xrange = range  # Python 3
 
 
-def prefixurl(base=''):
+def prefixurl(base=""):
     """
     Sorry, this function is really difficult to explain.
     Maybe some other time.
     """
-    url = web.ctx.path.lstrip('/')
-    for i in xrange(url.count('/')):
-        base += '../'
+    url = web.ctx.path.lstrip("/")
+    for i in xrange(url.count("/")):
+        base += "../"
     if not base:
-        base = './'
+        base = "./"
     return base
 
 
@@ -47,12 +51,12 @@ def expires(delta):
     if isinstance(delta, numeric_types):
         delta = datetime.timedelta(seconds=delta)
     date_obj = datetime.datetime.utcnow() + delta
-    web.header('Expires', net.httpdate(date_obj))
+    web.header("Expires", net.httpdate(date_obj))
 
 
 def lastmodified(date_obj):
     """Outputs a `Last-Modified` header for `datetime`."""
-    web.header('Last-Modified', net.httpdate(date_obj))
+    web.header("Last-Modified", net.httpdate(date_obj))
 
 
 def modified(date=None, etag=None):
@@ -79,11 +83,13 @@ def modified(date=None, etag=None):
         # for python 2.3
         from sets import Set as set
 
-    n = set([x.strip('" ') for x in web.ctx.env.get('HTTP_IF_NONE_MATCH', '').split(',')])
-    m = net.parsehttpdate(web.ctx.env.get('HTTP_IF_MODIFIED_SINCE', '').split(';')[0])
+    n = set(
+        [x.strip('" ') for x in web.ctx.env.get("HTTP_IF_NONE_MATCH", "").split(",")]
+    )
+    m = net.parsehttpdate(web.ctx.env.get("HTTP_IF_MODIFIED_SINCE", "").split(";")[0])
     validate = False
     if etag:
-        if '*' in n or etag in n:
+        if "*" in n or etag in n:
             validate = True
     if date and m:
         # we subtract a second because
@@ -94,7 +100,7 @@ def modified(date=None, etag=None):
     if date:
         lastmodified(date)
     if etag:
-        web.header('ETag', '"' + etag + '"')
+        web.header("ETag", '"' + etag + '"')
     if validate:
         raise web.notmodified()
     else:
@@ -110,6 +116,7 @@ def urlencode(query, doseq=0):
         >>> urlencode({'x': [1, 2]}, doseq=True)
         'x=1&x=2'
     """
+
     def convert(value, doseq=False):
         if doseq and isinstance(value, list):
             return [convert(v) for v in value]
@@ -127,7 +134,7 @@ def changequery(query=None, **kw):
     changed.
     """
     if query is None:
-        query = web.rawinput(method='get')
+        query = web.rawinput(method="get")
     for k, v in iteritems(kw):
         if v is None:
             query.pop(k, None)
@@ -135,7 +142,7 @@ def changequery(query=None, **kw):
             query[k] = v
     out = web.ctx.path
     if query:
-        out += '?' + urlencode(query, doseq=True)
+        out += "?" + urlencode(query, doseq=True)
     return out
 
 
@@ -152,7 +159,7 @@ def url(path=None, doseq=False, **kw):
         out = path
 
     if kw:
-        out += '?' + urlencode(kw, doseq=doseq)
+        out += "?" + urlencode(kw, doseq=doseq)
 
     return out
 
@@ -163,10 +170,12 @@ def profiler(app):
 
     def profile_internal(e, o):
         out, result = profile(app)(e, o)
-        return list(out) + ['<pre>' + net.websafe(result) + '</pre>']
+        return list(out) + ["<pre>" + net.websafe(result) + "</pre>"]
+
     return profile_internal
 
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

@@ -44,36 +44,39 @@ function receive(d) {
 """
 
     def GET(self):
-        web.header('Content-Type', 'text/html')
+        web.header("Content-Type", "text/html")
         print(self.page % self.form())
 
     def POST(self):
         i = web.input()
-        if '_' in i: del i['_']
-        #for k, v in i.iteritems(): setattr(self, k, v)
+        if "_" in i:
+            del i["_"]
+        # for k, v in i.iteritems(): setattr(self, k, v)
 
         self._inFunc = True
         self.work(**i)
         self._inFunc = False
 
-        web.header('Content-Type', 'text/javascript')
-        print('receive('+simplejson.dumps(self.updated)+');')
+        web.header("Content-Type", "text/javascript")
+        print("receive(" + simplejson.dumps(self.updated) + ");")
 
     def __setattr__(self, k, v):
-        if self._inFunc and k != '_inFunc':
+        if self._inFunc and k != "_inFunc":
             self.updated[k] = v
         object.__setattr__(self, k, v)
+
 
 class sudoku(pwt):
     def form(self):
         import sudo
-        out = ''
+
+        out = ""
         n = 0
         for i in range(9):
             for j in range(9):
                 out += '<input type="text" size="1" name="%s" />' % (sudo.squares[n])
                 n += 1
-            out += '<br />'
+            out += "<br />"
 
         return out
 
@@ -89,12 +92,14 @@ class sudoku(pwt):
 
         return values
 
+
 class length(pwt):
     def form(self):
         return '<p id="output">&nbsp;</p><input type="range" name="n" value="0" />'
 
     def work(self):
-        self.output = ('a' * web.intget(self.n, 0) or '&nbsp;')
+        self.output = "a" * web.intget(self.n, 0) or "&nbsp;"
+
 
 if __name__ == "__main__":
     web.run(urls, globals(), web.reloader)

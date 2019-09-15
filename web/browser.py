@@ -39,14 +39,12 @@ else:
 
 DEBUG = False
 
-__all__ = [
-    "BrowserError",
-    "Browser", "AppBrowser",
-    "AppHandler"
-]
+__all__ = ["BrowserError", "Browser", "AppBrowser", "AppHandler"]
+
 
 class BrowserError(Exception):
     pass
+
 
 class Browser(object):
     def __init__(self):
@@ -64,7 +62,7 @@ class Browser(object):
 
     @property
     def text(self):
-        return self.data.decode('utf-8')
+        return self.data.decode("utf-8")
 
     def reset(self):
         """Clears all cookies and history."""
@@ -78,7 +76,7 @@ class Browser(object):
 
     def do_request(self, req):
         if DEBUG:
-            print('requesting', req.get_method(), req.get_full_url())
+            print("requesting", req.get_method(), req.get_full_url())
 
         opener = self.build_opener()
         opener.add_handler(self._cookie_processor)
@@ -105,66 +103,113 @@ class Browser(object):
 
     def show(self):
         """Opens the current page in real web browser."""
-        f = open('page.html', 'w')
+        f = open("page.html", "w")
         f.write(self.data)
         f.close()
 
-        url = 'file://' + os.path.abspath('page.html')
+        url = "file://" + os.path.abspath("page.html")
         webbrowser.open(url)
 
     def get_response(self):
         """Returns a copy of the current response."""
-        return addinfourl(BytesIO(self.data), self._response.info(), self._response.geturl())
+        return addinfourl(
+            BytesIO(self.data), self._response.info(), self._response.geturl()
+        )
 
     def get_soup(self):
         """Returns beautiful soup of the current document."""
         import BeautifulSoup
+
         return BeautifulSoup.BeautifulSoup(self.data)
 
     def get_text(self, e=None):
         """Returns content of e or the current document as plain text."""
         e = e or self.get_soup()
-        return ''.join([htmlunquote(c) for c in e.recursiveChildGenerator()
-                       if isinstance(c, text_type)])
+        return "".join(
+            [
+                htmlunquote(c)
+                for c in e.recursiveChildGenerator()
+                if isinstance(c, text_type)
+            ]
+        )
 
     def _get_links(self):
         soup = self.get_soup()
-        return [a for a in soup.findAll(name='a')]
+        return [a for a in soup.findAll(name="a")]
 
-    def get_links(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
+    def get_links(
+        self, text=None, text_regex=None, url=None, url_regex=None, predicate=None
+    ):
         """Returns all links in the document."""
-        return self._filter_links(self._get_links(),
-            text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
+        return self._filter_links(
+            self._get_links(),
+            text=text,
+            text_regex=text_regex,
+            url=url,
+            url_regex=url_regex,
+            predicate=predicate,
+        )
 
-    def follow_link(self, link=None, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
+    def follow_link(
+        self,
+        link=None,
+        text=None,
+        text_regex=None,
+        url=None,
+        url_regex=None,
+        predicate=None,
+    ):
         if link is None:
-            links = self._filter_links(self.get_links(),
-                text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
+            links = self._filter_links(
+                self.get_links(),
+                text=text,
+                text_regex=text_regex,
+                url=url,
+                url_regex=url_regex,
+                predicate=predicate,
+            )
             link = links and links[0]
 
         if link:
-            return self.open(link['href'])
+            return self.open(link["href"])
         else:
             raise BrowserError("No link found")
 
-    def find_link(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
-        links = self._filter_links(self.get_links(),
-            text=text, text_regex=text_regex, url=url, url_regex=url_regex, predicate=predicate)
+    def find_link(
+        self, text=None, text_regex=None, url=None, url_regex=None, predicate=None
+    ):
+        links = self._filter_links(
+            self.get_links(),
+            text=text,
+            text_regex=text_regex,
+            url=url,
+            url_regex=url_regex,
+            predicate=predicate,
+        )
         return links and links[0] or None
 
-    def _filter_links(self, links,
-            text=None, text_regex=None,
-            url=None, url_regex=None,
-            predicate=None):
+    def _filter_links(
+        self,
+        links,
+        text=None,
+        text_regex=None,
+        url=None,
+        url_regex=None,
+        predicate=None,
+    ):
         predicates = []
         if text is not None:
             predicates.append(lambda link: link.string == text)
         if text_regex is not None:
-            predicates.append(lambda link: re_compile(text_regex).search(link.string or ''))
+            predicates.append(
+                lambda link: re_compile(text_regex).search(link.string or "")
+            )
         if url is not None:
-            predicates.append(lambda link: link.get('href') == url)
+            predicates.append(lambda link: link.get("href") == url)
         if url_regex is not None:
-            predicates.append(lambda link: re_compile(url_regex).search(link.get('href', '')))
+            predicates.append(
+                lambda link: re_compile(url_regex).search(link.get("href", ""))
+            )
         if predicate:
             predicate.append(predicate)
 
@@ -182,7 +227,10 @@ class Browser(object):
         """
         if self._forms is None:
             import ClientForm
-            self._forms = ClientForm.ParseResponse(self.get_response(), backwards_compat=False)
+
+            self._forms = ClientForm.ParseResponse(
+                self.get_response(), backwards_compat=False
+            )
         return self._forms
 
     def select_form(self, name=None, predicate=None, index=0):
@@ -213,6 +261,7 @@ class Browser(object):
     def __setitem__(self, key, value):
         self.form[key] = value
 
+
 class AppBrowser(Browser):
     """Browser interface to test web.py apps.
 
@@ -228,6 +277,7 @@ class AppBrowser(Browser):
         assert b.path == '/'
         assert 'Welcome joe' in b.get_text()
     """
+
     def __init__(self, app):
         Browser.__init__(self)
         self.app = app
@@ -235,8 +285,10 @@ class AppBrowser(Browser):
     def build_opener(self):
         return urllib_build_opener(AppHandler(self.app))
 
+
 class AppHandler(HTTPHandler):
     """urllib2 handler to handle requests using web.py application."""
+
     handler_order = 100
 
     def __init__(self, app):
@@ -249,7 +301,7 @@ class AppHandler(HTTPHandler):
             host=get_host(req),
             data=get_data(req),
             headers=dict(req.header_items()),
-            https=get_type(req) == "https"
+            https=get_type(req) == "https",
         )
         return self._make_response(result, req.get_full_url())
 
@@ -270,6 +322,7 @@ class AppHandler(HTTPHandler):
             headers = HTTPMessage(BytesIO(data))
         else:
             import email
+
             headers = email.message_from_string(data)
 
         response = addinfourl(BytesIO(result.data), headers, url)

@@ -96,11 +96,13 @@ class JSFeed(Feed):
 if __name__ == "__main__":
     mfeed = JSFeed()
 
+    # fmt: off
     urls = (
-      '/', 'view',
-      '/js', 'js',
-      '/send', 'send'
+        '/', 'view',
+        '/js', 'js',
+        '/send', 'send'
     )
+    # fmt: on
 
     class view:
         def GET(self):

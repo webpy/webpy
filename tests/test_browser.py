@@ -1,6 +1,7 @@
 import unittest
 import web
 
+# fmt: off
 urls = (
     "/", "index",
     "/hello/(.*)", "hello",
@@ -8,6 +9,8 @@ urls = (
     "/setcookie", "setcookie",
     "/redirect", "redirect",
 )
+# fmt: on
+
 app = web.application(urls, globals())
 
 class index:

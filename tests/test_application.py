@@ -70,6 +70,7 @@ class ApplicationTest(unittest.TestCase):
         self.assertEqual(response.status, '405 Method Not Allowed')
 
     def testRedirect(self):
+        # fmt: off
         urls = (
             "/a", "redirect /hello/",
             "/b/(.*)", r"redirect /hello/\1",
@@ -116,6 +117,7 @@ class ApplicationTest(unittest.TestCase):
                 return "blog " + path
         app_blog = web.application(urls, locals())
 
+        # fmt: off
         urls = (
             "/blog", app_blog,
             "/(.*)", "index"
@@ -141,6 +143,7 @@ class ApplicationTest(unittest.TestCase):
                     return name
             return web.application(urls, locals())
 
+        # fmt: off
         urls = (
             "a.example.com", create_app('a'),
             "b.example.com", create_app('b'),
@@ -169,6 +172,7 @@ class ApplicationTest(unittest.TestCase):
                     raise web.seeother('/bar')
         app_blog = web.application(urls, locals())
 
+        # fmt: off
         urls = (
             "/blog", app_blog,
             "/(.*)", "index"
@@ -205,6 +209,7 @@ class ApplicationTest(unittest.TestCase):
         app_blog = web.application(urls, locals())
         app_blog.add_processor(web.loadhook(f))
 
+        # fmt: off
         urls = (
             "/blog", app_blog,
             "/(.*)", "index"
@@ -270,6 +275,7 @@ class ApplicationTest(unittest.TestCase):
 
         app_a.notfound = lambda: web.HTTPError("404 Not Found", {}, "not found 1")
 
+        # fmt: off
         urls = (
             "/a", app_a,
             "/b", app_b
@@ -298,6 +304,7 @@ class ApplicationTest(unittest.TestCase):
     def testUnload(self):
         x = web.storage(a=0)
 
+        # fmt: off
         urls = (
             "/foo", "foo",
             "/bar", "bar"

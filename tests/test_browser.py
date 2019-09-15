@@ -1,6 +1,7 @@
 import unittest
 import web
 
+# fmt: off
 urls = (
     "/", "index",
     "/hello/(.*)", "hello",

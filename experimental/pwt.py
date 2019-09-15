@@ -1,6 +1,8 @@
 from __future__ import print_function
 import web
 import simplejson, sudo
+
+# fmt: off
 urls = (
     '/sudo', 'sudoku',
     '/length', 'length',

@@ -10,12 +10,16 @@ http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
 __all__ = ["debugerror", "djangoerror", "emailerrors"]
 
-import sys, pprint, traceback
+import os
+import os.path
+import sys
+import pprint
+import traceback
 from .template import Template
 from .net import websafe
 from .utils import sendmail, safestr
 from . import webapi as web
-from .py3helpers import urljoin, PY2
+from .py3helpers import PY2
 
 if PY2:
 
@@ -28,8 +32,6 @@ else:
     def update_globals_template(t, globals):
         t.t.__globals__.update(globals)
 
-
-import os, os.path
 
 whereami = os.path.join(os.getcwd(), __file__)
 whereami = os.path.sep.join(whereami.split(os.path.sep)[:-1])

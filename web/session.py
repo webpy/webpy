@@ -387,7 +387,7 @@ class ShelfStore:
 
     def cleanup(self, timeout):
         now = time.time()
-        for k in self.shelf.keys():
+        for k in self.shelf:
             atime, v = self.shelf[k]
             if now - atime > timeout:
                 del self[k]

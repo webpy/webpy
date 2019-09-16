@@ -420,7 +420,7 @@ def rawinput(method=None):
         if fs.list is None:
             fs.list = []
 
-        return dict([(k, fs[k]) for k in fs.keys()])
+        return dict([(k, fs[k]) for k in fs])
 
     e = ctx.env.copy()
     a = b = {}

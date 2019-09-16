@@ -290,6 +290,7 @@ class AppHandler(HTTPHandler):
     """urllib2 handler to handle requests using web.py application."""
 
     handler_order = 100
+    https_request = HTTPHandler.do_request_
 
     def __init__(self, app):
         self.app = app
@@ -307,12 +308,6 @@ class AppHandler(HTTPHandler):
 
     def https_open(self, req):
         return self.http_open(req)
-
-    try:
-        https_request = HTTPHandler.do_request_
-    except AttributeError:
-        # for python 2.3
-        pass
 
     def _make_response(self, result, url):
 

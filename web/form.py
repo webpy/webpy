@@ -17,7 +17,7 @@ def attrget(obj, attr, value=None):
         # This is the case with Model objects on appengine. See #134
         pass
     if (
-        hasattr(obj, "keys") and attr in obj.keys()
+        hasattr(obj, "keys") and attr in obj
     ):  # needed for Py3, has_key doesn't exist anymore
         return obj[attr]
     elif hasattr(obj, attr):

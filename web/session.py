@@ -28,6 +28,7 @@ web.config.session_parameters = utils.storage(
         "cookie_name": "webpy_session_id",
         "cookie_domain": None,
         "cookie_path": None,
+        "samesite": None,
         "timeout": 86400,  # 24 * 60 * 60, # 24 hours in seconds
         "ignore_expiry": True,
         "ignore_change_ip": True,
@@ -149,7 +150,11 @@ class Session(object):
             self.store[self.session_id] = dict(self._data)
         else:
             if web.cookies().get(self._config.cookie_name):
-                self._setcookie(self.session_id, expires=-1)
+                self._setcookie(
+                    self.session_id,
+                    expires=self._config.timeout,
+                    samesite=self._config.get("samesite"),
+                )
 
     def _setcookie(self, session_id, expires="", **kw):
         cookie_name = self._config.cookie_name
@@ -157,14 +162,16 @@ class Session(object):
         cookie_path = self._config.cookie_path
         httponly = self._config.httponly
         secure = self._config.secure
+        samesite = kw.get("samesite", self._config.get("samesite", None))
         web.setcookie(
             cookie_name,
             session_id,
-            expires=expires,
+            expires=expires or self._config.timeout,
             domain=cookie_domain,
             httponly=httponly,
             secure=secure,
             path=cookie_path,
+            samesite=samesite,
         )
 
     def _generate_session_id(self):
@@ -387,7 +394,7 @@ class ShelfStore:
 
     def cleanup(self, timeout):
         now = time.time()
-        for k in self.shelf.keys():
+        for k in self.shelf:
             atime, v = self.shelf[k]
             if now - atime > timeout:
                 del self[k]

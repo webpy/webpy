@@ -420,7 +420,7 @@ def rawinput(method=None):
         if fs.list is None:
             fs.list = []
 
-        return dict([(k, fs[k]) for k in fs.keys()])
+        return dict([(k, fs[k]) for k in fs])
 
     e = ctx.env.copy()
     a = b = {}
@@ -485,7 +485,14 @@ def data():
 
 
 def setcookie(
-    name, value, expires="", domain=None, secure=False, httponly=False, path=None
+    name,
+    value,
+    expires="",
+    domain=None,
+    secure=False,
+    httponly=False,
+    path=None,
+    samesite=None,
 ):
     """Sets a cookie."""
     morsel = Morsel()
@@ -499,9 +506,11 @@ def setcookie(
         morsel["domain"] = domain
     if secure:
         morsel["secure"] = secure
-    value = morsel.OutputString()
     if httponly:
-        value += "; httponly"
+        morsel["httponly"] = True
+    value = morsel.OutputString()
+    if samesite and samesite.lower() in ("strict", "lax"):
+        value += "; SameSite=%s" % samesite
     header("Set-Cookie", value)
 
 

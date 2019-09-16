@@ -4,12 +4,16 @@
 
 * Fixed lots of Python-3 compatibility issues.
 * Drop support for Python 2.3 and 2.4.
+* Allow to get data from PATCH request (fixes #259, tx @kufd)
+* Only store new session data if the data is non-default (fixes #161, tx @shish)
+* Supports `SameSite` cookie attribute (fixes #61 #99 #337)
+* Cookie expire time is now set to same as session `timeout` (fixes #409 #410)
+* Supports url for SQLite database like `sqlite:///mydb.sqlite`,
+  `sqlite:////absolute/path/mydb.sqlite` (fixes #209)
 * Return body for NoMethod error handler (fixes #240, tx @waldhol)
 * Fixed unicode in request url (fixes #461, tx @schneidersoft)
-* Only store new session data if the data is non-default (fixes #161, tx @shish)
 * Fixed inline comment in Templator which leads to unexpected behavior (fixes
   #432, tx @lucylqe)
-* Allow to get data from PATCH request (fixes #259, tx @kufd)
 * Fixed missing exception (ValueError) for socket.inet_pton to be compatible
   with twisted patched `socket.inet_pton` (fixes #464, tx @tclh123)
 * Fixed incorrect order of arguments for sending email with boto (fixes #204,
@@ -19,8 +23,6 @@
   tx @PriceChild)
 * Fixed: IP address which contains space should not pass validation (fixes
   #140, tx @chuangbo)
-* Supports `SameSite` cookie attribute (fixes #61 #99 #337)
-* Cookie expire time is now set to same as session `timeout` (fixes #409 #410)
 * Fixed incorrect returned row ids with `multiple_insert()` (fixes #263 #447)
 
 ## 2018-02-28 0.39

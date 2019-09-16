@@ -3,6 +3,7 @@
 ## 2019-XX-XX 0.40
 
 * Fixed lots of Python-3 compatibility issues.
+* Drop support for Python 2.3 and 2.4.
 * Return body for NoMethod error handler (fixes #240, tx @waldhol)
 * Fixed unicode in request url (fixes #461, tx @schneidersoft)
 * Only store new session data if the data is non-default (fixes #161, tx @shish)
@@ -18,6 +19,8 @@
   tx @PriceChild)
 * Fixed: IP address which contains space should not pass validation (fixes
   #140, tx @chuangbo)
+* Supports `SameSite` cookie attribute (fixes #61 #99 #337)
+* Cookie expire time is now set to same as session `timeout` (fixes #409 #410)
 
 ## 2018-02-28 0.39
 

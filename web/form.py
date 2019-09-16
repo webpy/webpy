@@ -351,7 +351,7 @@ class Radio(Input):
 
     def render(self):
         x = "<span>"
-        for arg in self.args:
+        for idx, arg in enumerate(self.args, start=1):
             if isinstance(arg, (tuple, list)):
                 value, desc = arg
             else:
@@ -360,6 +360,7 @@ class Radio(Input):
             attrs["name"] = self.name
             attrs["type"] = "radio"
             attrs["value"] = value
+            attrs["id"] = self.name + str(idx)
             if self.value == value:
                 attrs["checked"] = "checked"
             x += "<input %s/> %s" % (attrs, net.websafe(desc))

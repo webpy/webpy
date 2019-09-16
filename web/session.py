@@ -162,7 +162,7 @@ class Session(object):
         cookie_path = self._config.cookie_path
         httponly = self._config.httponly
         secure = self._config.secure
-        samesite = kw.get("samesite", None) or self._config.get("samesite", None)
+        samesite = kw.get("samesite", self._config.get("samesite", None))
         web.setcookie(
             cookie_name,
             session_id,

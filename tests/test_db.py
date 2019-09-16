@@ -175,7 +175,7 @@ class DBTest(unittest.TestCase):
             self.driver
             in web.db.pg_drivers + web.db.mysql_drivers + web.db.sqlite_drivers
         ):
-            values = [{"v": "a"}, {"v": "b"}, {"v", "c"}]
+            values = [{"v": "a"}, {"v": "b"}, {"v": "c"}]
 
             ids = db.multiple_insert("mi", values)
             assert ids == [1, 2, 3]

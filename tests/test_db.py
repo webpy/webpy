@@ -162,12 +162,19 @@ class DBTest(unittest.TestCase):
         if self.driver in web.db.pg_drivers:
             db.query("CREATE TABLE mi (id SERIAL PRIMARY KEY, v VARCHAR(5))")
         elif self.driver in web.db.mysql_drivers:
-            self.db.query("CREATE TABLE mi (id INT(10) UNSIGNED AUTO_INCREMENT, v VARCHAR(5))")
+            self.db.query(
+                "CREATE TABLE mi (id INT(10) UNSIGNED AUTO_INCREMENT, v VARCHAR(5))"
+            )
         elif self.driver in web.db.sqlite_drivers:
-            self.db.query("CREATE TABLE mi (id INTEGER PRIMARY KEY NOT NULL, v VARCHAR(5))")
+            self.db.query(
+                "CREATE TABLE mi (id INTEGER PRIMARY KEY NOT NULL, v VARCHAR(5))"
+            )
 
         # Insert rows and verify returned row id.
-        if self.driver in web.db.pg_drivers + web.db.mysql_drivers + web.db.sqlite_drivers:
+        if (
+            self.driver
+            in web.db.pg_drivers + web.db.mysql_drivers + web.db.sqlite_drivers
+        ):
             values = [{"v": "a"}, {"v": "b"}, {"v", "c"}]
 
             ids = db.multiple_insert("mi", **values)

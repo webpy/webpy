@@ -178,10 +178,11 @@ class DBTest(unittest.TestCase):
             values = [{"v": "a"}, {"v": "b"}, {"v": "c"}]
 
             ids = db.multiple_insert("mi", values)
-            assert ids == [1, 2, 3]
+            # `psycopg2` returns `range(1, 4)` instead of `[1, 2, 3]` on Python-3.
+            assert list(ids) == [1, 2, 3]
 
             ids = db.multiple_insert("mi", values)
-            assert ids == [4, 5, 6]
+            assert list(ids) == [4, 5, 6]
 
     def test_result_is_unicode(self):
         # TODO : not sure this test has still meaning with Py3

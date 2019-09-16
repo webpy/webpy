@@ -3,14 +3,11 @@ import time
 import threading
 import sys
 import web
-import urllib
 
 try:
     from urllib.parse import urlencode
 except ImportError:
     from urllib import urlencode
-
-from web.py3helpers import PY2
 
 data = """
 import web

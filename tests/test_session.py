@@ -35,7 +35,7 @@ class SessionTest(unittest.TestCase):
 
     def make_session(self, app):
         dir = tempfile.mkdtemp()
-        store = web.session.DiskStore(tempfile.mkdtemp())
+        store = web.session.DiskStore(dir)
         return web.session.Session(app, store, {"count": 0})
 
     def testSession(self):

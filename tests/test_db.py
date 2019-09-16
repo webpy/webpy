@@ -23,7 +23,7 @@ def try_import(name):
 def requires_module(name):
     module = try_import(name)
 
-    ## this doesn't seem to be working. The simple decorator below seems to be working.
+    # this doesn't seem to be working. The simple decorator below seems to be working.
     # return pytest.mark.skipif(module is None, reason="requires {} module".format(name))
 
     def decorator(cls):

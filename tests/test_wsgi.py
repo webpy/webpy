@@ -1,6 +1,7 @@
 import unittest
 import web
-import threading, time
+import threading
+import time
 
 
 class WSGITest(unittest.TestCase):

@@ -144,7 +144,7 @@ class DBTest(unittest.TestCase):
     def testPooling(self):
         # can't test pooling if DBUtils is not installed
         try:
-            import DBUtils
+            import DBUtils  # noqa
         except ImportError:
             return
         db = setup_database(self.dbname, pooling=True)

@@ -54,6 +54,10 @@ TOKEN = "[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\
 
 tokenprog = re.compile(TOKEN)
 
+# Supported db drivers.
+pg_drivers = ["psycopg2", "psycopg", "pgdb"]
+mysql_drivers = ["MySQLdb", "pymysql", "mysql.connector"]
+sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
 
 class UnknownDB(Exception):
     """raised for unsupported dbms"""
@@ -994,7 +998,13 @@ class DB:
 
         try:
             out = db_cursor.fetchone()[0]
-            out = range(out - len(values) + 1, out + 1)
+
+            # MySQL gives the first id of multiple inserted rows.
+            # PostgreSQL and SQLite give the last id.
+            if self.db_module.__name__ in mysql_drivers:
+                out = range(out, out+len(values))
+            else:
+                out = range(out - len(values) + 1, out + 1)
         except Exception:
             out = None
 
@@ -1087,9 +1097,7 @@ class PostgresDB(DB):
         if "pw" in keywords:
             keywords["password"] = keywords.pop("pw")
 
-        db_module = import_driver(
-            ["psycopg2", "psycopg", "pgdb"], preferred=keywords.pop("driver", None)
-        )
+        db_module = import_driver(pg_drivers, preferred=keywords.pop("driver", None))
         if db_module.__name__ == "psycopg2":
             import psycopg2.extensions
 
@@ -1148,10 +1156,7 @@ class PostgresDB(DB):
 class MySQLDB(DB):
     def __init__(self, **keywords):
 
-        db = import_driver(
-            ["MySQLdb", "pymysql", "mysql.connector"],
-            preferred=keywords.pop("driver", None),
-        )
+        db = import_driver(mysql_drivers, preferred=keywords.pop("driver", None))
 
         if db.__name__ == "MySQLdb":
             if "pw" in keywords:
@@ -1199,10 +1204,7 @@ def import_driver(drivers, preferred=None):
 
 class SqliteDB(DB):
     def __init__(self, **keywords):
-        db = import_driver(
-            ["sqlite3", "pysqlite2.dbapi2", "sqlite"],
-            preferred=keywords.pop("driver", None),
-        )
+        db = import_driver(sqlite_drivers, preferred=keywords.pop("driver", None))
 
         if db.__name__ in ["sqlite3", "pysqlite2.dbapi2"]:
             db.paramstyle = "qmark"

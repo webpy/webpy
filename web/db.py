@@ -1353,17 +1353,24 @@ def dburl2dict(url):
         True
         >>> dburl2dict('mysql://james:d%40y@serverfarm.example.net/mygreatdb') == {'pw': 'd@y', 'dbn': 'mysql', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': None}
         True
+        >>> dburl2dict('sqlite:///mygreatdb.db')
+        {'dbn': 'sqlite', 'db': 'mygreatdb.db'}
+        >>> dburl2dict('sqlite:////absolute/path/mygreatdb.db')
+        {'dbn': 'sqlite', 'db': '/absolute/path/mygreatdb.db'}
     """
     parts = urlparse.urlparse(unquote(url))
 
-    return {
-        "dbn": parts.scheme,
-        "user": parts.username,
-        "pw": parts.password,
-        "db": parts.path[1:],
-        "host": parts.hostname,
-        "port": parts.port,
-    }
+    if parts.scheme == "sqlite":
+        return {"dbn": parts.scheme, "db": parts.path[1:]}
+    else:
+        return {
+            "dbn": parts.scheme,
+            "user": parts.username,
+            "pw": parts.password,
+            "db": parts.path[1:],
+            "host": parts.hostname,
+            "port": parts.port,
+        }
 
 
 _databases = {}
@@ -1377,8 +1384,10 @@ def database(dburl=None, **params):
     """
     if not dburl and not params:
         dburl = os.environ["DATABASE_URL"]
+
     if dburl:
         params = dburl2dict(dburl)
+
     dbn = params.pop("dbn")
     if dbn in _databases:
         return _databases[dbn](**params)

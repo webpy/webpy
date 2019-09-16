@@ -1243,18 +1243,6 @@ class Profile:
 profile = Profile
 
 
-# hack for compatibility with Python 2.3:
-if not hasattr(traceback, "format_exc"):
-    from cStringIO import StringIO
-
-    def format_exc(limit=None):
-        strbuf = StringIO()
-        traceback.print_exc(limit, strbuf)
-        return strbuf.getvalue()
-
-    traceback.format_exc = format_exc
-
-
 def tryall(context, prefix=None):
     """
     Tries a series of functions and prints their results.

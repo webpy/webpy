@@ -77,12 +77,6 @@ def modified(date=None, etag=None):
     `True`, or otherwise it raises NotModified error. It also sets
     `Last-Modified` and `ETag` output headers.
     """
-    try:
-        from __builtin__ import set
-    except ImportError:
-        # for python 2.3
-        from sets import Set as set
-
     n = set(
         [x.strip('" ') for x in web.ctx.env.get("HTTP_IF_NONE_MATCH", "").split(",")]
     )

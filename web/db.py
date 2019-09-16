@@ -59,6 +59,7 @@ pg_drivers = ["psycopg2", "psycopg", "pgdb"]
 mysql_drivers = ["MySQLdb", "pymysql", "mysql.connector"]
 sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
 
+
 class UnknownDB(Exception):
     """raised for unsupported dbms"""
 
@@ -1002,7 +1003,7 @@ class DB:
             # MySQL gives the first id of multiple inserted rows.
             # PostgreSQL and SQLite give the last id.
             if self.db_module.__name__ in mysql_drivers:
-                out = range(out, out+len(values))
+                out = range(out, out + len(values))
             else:
                 out = range(out - len(values) + 1, out + 1)
         except Exception:

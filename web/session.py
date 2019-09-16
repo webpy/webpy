@@ -149,7 +149,7 @@ class Session(object):
             self.store[self.session_id] = dict(self._data)
         else:
             if web.cookies().get(self._config.cookie_name):
-                self._setcookie(self.session_id, expires=-1)
+                self._setcookie(self.session_id, expires=self._config.timeout)
 
     def _setcookie(self, session_id, expires="", **kw):
         cookie_name = self._config.cookie_name
@@ -160,7 +160,7 @@ class Session(object):
         web.setcookie(
             cookie_name,
             session_id,
-            expires=expires,
+            expires=expires or self._config.timeout,
             domain=cookie_domain,
             httponly=httponly,
             secure=secure,

@@ -148,7 +148,9 @@ class Form(object):
 
 
 class Input(object):
-    """Generic input. Type attribute must be specified when called directly
+    """Generic input. Type attribute must be specified when called directly.
+
+    See also: <https://www.w3.org/TR/html52/sec-forms.html#the-input-element>
 
         >>> Input(name='foo', type='email', value="user@domain.com").render()
         '<input id="foo" name="foo" type="email" value="user@domain.com"/>'
@@ -169,12 +171,13 @@ class Input(object):
         >>> Input(name='color', type="color").render()
         '<input id="color" name="color" type="color"/>'
     """
+
     def __init__(self, name, *validators, **attrs):
         self.name = name
         self.validators = validators
         self.attrs = attrs = AttributeList(attrs)
 
-        self.type = attrs.pop('type', None)
+        self.type = attrs.pop("type", None)
         self.description = attrs.pop("description", name)
         self.value = attrs.pop("value", None)
         self.pre = attrs.pop("pre", "")

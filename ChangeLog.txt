@@ -9,20 +9,17 @@
 * Supports `SameSite` cookie attribute (fixes #61 #99 #337)
 * Cookie expire time is now set to same as session `timeout` (fixes #409 #410)
 * Supports url for SQLite database like `sqlite:///mydb.sqlite`,
-  `sqlite:////absolute/path/mydb.sqlite` (fixes #209)
+  `sqlite:////absolute/path/mydb.sqlite` (fixes #209, tx @iamFIREcracker)
+* Allow HTML5 form input elements in `web.form.Input()` (fixes #440, tx @jimgregory)
 * Return body for NoMethod error handler (fixes #240, tx @waldhol)
 * Fixed unicode in request url (fixes #461, tx @schneidersoft)
-* Fixed inline comment in Templator which leads to unexpected behavior (fixes
-  #432, tx @lucylqe)
+* Fixed inline comment in Templator which leads to unexpected behavior (fixes #432, tx @lucylqe)
 * Fixed missing exception (ValueError) for socket.inet_pton to be compatible
   with twisted patched `socket.inet_pton` (fixes #464, tx @tclh123)
-* Fixed incorrect order of arguments for sending email with boto (fixes #204,
-  tx @asldevi)
+* Fixed incorrect order of arguments for sending email with boto (fixes #204, tx @asldevi)
 * Fixed notfound message is not utf-8 charset (fixes #500, tx @by-z)
-* Fixed error in creating pooled PostgresDB with pgdb driver (fixes #255,
-  tx @PriceChild)
-* Fixed: IP address which contains space should not pass validation (fixes
-  #140, tx @chuangbo)
+* Fixed error in creating pooled PostgresDB with pgdb driver (fixes #255, tx @PriceChild)
+* Fixed: IP address which contains space should not pass validation (fixes #140, tx @chuangbo)
 * Fixed incorrect returned row ids with `multiple_insert()` (fixes #263 #447)
 
 ## 2018-02-28 0.39

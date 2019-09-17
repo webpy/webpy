@@ -152,6 +152,12 @@ class Input(object):
 
     See also: <https://www.w3.org/TR/html52/sec-forms.html#the-input-element>
 
+    Currently only types which can be written inside one `<input />` tag are
+    supported.
+
+    - For checkbox, please use `Checkbox` class for better control.
+    - For radiobox, please use `Radio` class for better control.
+
         >>> Input(name='foo', type='email', value="user@domain.com").render()
         '<input id="foo" name="foo" type="email" value="user@domain.com"/>'
         >>> Input(name='foo', type='number', value="bar").render()
@@ -170,6 +176,8 @@ class Input(object):
         '<input id="range" max="10" min="0" name="range" step="2" type="range" value="5"/>'
         >>> Input(name='color', type="color").render()
         '<input id="color" name="color" type="color"/>'
+        >>> Input(name='f', type="file", accept=".doc,.docx,.xml").render()
+        '<input accept=".doc,.docx,.xml" id="f" name="f" type="file"/>'
     """
 
     def __init__(self, name, *validators, **attrs):
@@ -475,8 +483,8 @@ class Hidden(Input):
 class File(Input):
     """File input.
 
-        >>> File(name='f').render()
-        '<input id="f" name="f" type="file"/>'
+        >>> File(name='f', accept=".doc,.docx,.xml").render()
+        '<input accept=".doc,.docx,.xml" id="f" name="f" type="file"/>'
     """
 
     def get_type(self):

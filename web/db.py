@@ -234,7 +234,8 @@ class SQLQuery(object):
             else:
                 x = safestr(x)
                 # automatically escape % characters in the query
-                # For backward compatability, ignore escaping when the query looks already escaped
+                # For backward compatability, ignore escaping when the query
+                # looks already escaped
                 if paramstyle in ["format", "pyformat"]:
                     if "%" in x and "%%" not in x:
                         x = x.replace("%", "%%")
@@ -262,7 +263,8 @@ class SQLQuery(object):
         >>> SQLQuery.join(['a', 'b'], ', ', prefix='(', suffix=')')
         <sql: '(a, b)'>
 
-        If target argument is provided, the items are appended to target instead of creating a new SQLQuery.
+        If target argument is provided, the items are appended to target
+        instead of creating a new SQLQuery.
         """
         if target is None:
             target = SQLQuery()
@@ -444,7 +446,8 @@ def sqlors(left, lst):
 
 def sqlwhere(data, grouping=" AND "):
     """
-    Converts a two-tuple (key, value) iterable `data` to an SQL WHERE clause `SQLQuery`.
+    Converts a two-tuple (key, value) iterable `data` to an SQL WHERE clause
+    `SQLQuery`.
 
         >>> sqlwhere((('cust_id', 2), ('order_id',3)))
         <sql: 'cust_id = 2 AND order_id = 3'>
@@ -551,8 +554,8 @@ class DB:
     def __init__(self, db_module, keywords):
         """Creates a database.
         """
-        # some DB implementaions take optional paramater `driver` to use a specific driver modue
-        # but it should not be passed to connect
+        # some DB implementaions take optional paramater `driver` to use a
+        # specific driver modue but it should not be passed to `connect`.
         keywords.pop("driver", None)
 
         self.db_module = db_module
@@ -931,9 +934,9 @@ class DB:
 
     def multiple_insert(self, tablename, values, seqname=None, _test=False):
         """
-        Inserts multiple rows into `tablename`. The `values` must be a list of dictionaries,
-        one for each row to be inserted, each with the same set of keys.
-        Returns the list of ids of the inserted rows.
+        Inserts multiple rows into `tablename`. The `values` must be a list of
+        dictionaries, one for each row to be inserted, each with the same set
+        of keys. Returns the list of ids of the inserted rows.
         Set `seqname` to the ID if it's not the default, or to `False`
         if there isn't one.
 
@@ -1106,7 +1109,8 @@ class PostgresDB(DB):
         if db_module.__name__ == "pgdb" and "port" in keywords:
             keywords["host"] += ":" + str(keywords.pop("port"))
 
-        # if db is not provided postgres driver will take it from PGDATABASE environment variable
+        # if db is not provided `postgres` driver will take it from PGDATABASE
+        # environment variable.
         if "db" in keywords:
             keywords["database"] = keywords.pop("db")
 
@@ -1210,16 +1214,19 @@ class SqliteDB(DB):
         if db.__name__ in ["sqlite3", "pysqlite2.dbapi2"]:
             db.paramstyle = "qmark"
 
-        # sqlite driver doesn't create datatime objects for timestamp columns unless `detect_types` option is passed.
-        # It seems to be supported in sqlite3 and pysqlite2 drivers, not surte about sqlite.
+        # sqlite driver doesn't create datatime objects for timestamp columns
+        # unless `detect_types` option is passed.
+        # It seems to be supported in `sqlite3` and `pysqlite2` drivers, not
+        # surte about `sqlite`.
         keywords.setdefault("detect_types", db.PARSE_DECLTYPES)
 
+        self.dbname = "sqlite"
         self.paramstyle = db.paramstyle
         keywords["database"] = keywords.pop("db")
-        keywords[
-            "pooling"
-        ] = False  # sqlite don't allows connections to be shared by threads
-        self.dbname = "sqlite"
+
+        # sqlite don't allows connections to be shared by threads
+        keywords["pooling"] = False
+
         DB.__init__(self, db, keywords)
 
     def _process_insert_query(self, query, tablename, seqname):
@@ -1432,7 +1439,7 @@ def _interpolate(format):
             raise _ItplError(text, pos)
         return match, match.end()
 
-    namechars = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
     chunks = []
     pos = 0
 

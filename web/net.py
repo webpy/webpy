@@ -17,10 +17,17 @@ except ImportError:
     from urllib import quote
 
 __all__ = [
-  "validipaddr", "validip6addr", "validipport", "validip", "validaddr",
-  "urlquote",
-  "httpdate", "parsehttpdate",
-  "htmlquote", "htmlunquote", "websafe",
+    "validipaddr",
+    "validip6addr",
+    "validipport",
+    "validip",
+    "validaddr",
+    "urlquote",
+    "httpdate",
+    "parsehttpdate",
+    "htmlquote",
+    "htmlunquote",
+    "websafe",
 ]
 
 
@@ -39,10 +46,11 @@ def validip6addr(address):
     """
     try:
         socket.inet_pton(socket.AF_INET6, address)
-    except (socket.error, AttributeError):
+    except (socket.error, AttributeError, ValueError):
         return False
 
     return True
+
 
 def validipaddr(address):
     """
@@ -50,21 +58,28 @@ def validipaddr(address):
 
         >>> validipaddr('192.168.1.1')
         True
+        >>> validipaddr('192.168. 1.1')
+        False
         >>> validipaddr('192.168.1.800')
         False
         >>> validipaddr('192.168.1')
         False
     """
     try:
-        octets = address.split('.')
+        octets = address.split(".")
         if len(octets) != 4:
             return False
+
         for x in octets:
+            if " " in x:
+                return False
+
             if not (0 <= int(x) <= 255):
                 return False
     except ValueError:
         return False
     return True
+
 
 def validipport(port):
     """
@@ -83,6 +98,7 @@ def validipport(port):
     except ValueError:
         return False
     return True
+
 
 def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
     """
@@ -105,17 +121,19 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
     addr = defaultaddr
     port = defaultport
 
-    #Matt Boswell's code to check for ipv6 first
-    match = re.search(r'^\[([^]]+)\](?::(\d+))?$',ip) #check for [ipv6]:port
+    # Matt Boswell's code to check for ipv6 first
+    match = re.search(r"^\[([^]]+)\](?::(\d+))?$", ip)  # check for [ipv6]:port
     if match:
         if validip6addr(match.group(1)):
             if match.group(2):
-                if validipport(match.group(2)): return (match.group(1),int(match.group(2)))
+                if validipport(match.group(2)):
+                    return (match.group(1), int(match.group(2)))
             else:
-                return (match.group(1),port)
+                return (match.group(1), port)
     else:
-        if validip6addr(ip): return (ip,port)
-    #end ipv6 code
+        if validip6addr(ip):
+            return (ip, port)
+    # end ipv6 code
 
     ip = ip.split(":", 1)
     if len(ip) == 1:
@@ -126,15 +144,16 @@ def validip(ip, defaultaddr="0.0.0.0", defaultport=8080):
         elif validipport(ip[0]):
             port = int(ip[0])
         else:
-            raise ValueError(':'.join(ip) + ' is not a valid IP address/port')
+            raise ValueError(":".join(ip) + " is not a valid IP address/port")
     elif len(ip) == 2:
         addr, port = ip
         if not validipaddr(addr) or not validipport(port):
-            raise ValueError(':'.join(ip) + ' is not a valid IP address/port')
+            raise ValueError(":".join(ip) + " is not a valid IP address/port")
         port = int(port)
     else:
-        raise ValueError(':'.join(ip) + ' is not a valid IP address/port')
+        raise ValueError(":".join(ip) + " is not a valid IP address/port")
     return (addr, port)
+
 
 def validaddr(string_):
     """
@@ -155,10 +174,11 @@ def validaddr(string_):
             ...
         ValueError: fff is not a valid IP address/port
     """
-    if '/' in string_:
+    if "/" in string_:
         return string_
     else:
         return validip(string_)
+
 
 def urlquote(val):
     """
@@ -171,16 +191,18 @@ def urlquote(val):
         >>> urlquote(u'\u203d')
         '%E2%80%BD'
     """
-    if val is None: return ''
+    if val is None:
+        return ""
 
     if PY2:
         if isinstance(val, text_type):
-            val = val.encode('utf-8')
+            val = val.encode("utf-8")
         else:
             val = str(val)
     else:
-        val = str(val).encode('utf-8')
+        val = str(val).encode("utf-8")
     return quote(val)
+
 
 def httpdate(date_obj):
     """
@@ -191,6 +213,7 @@ def httpdate(date_obj):
         'Thu, 01 Jan 1970 01:01:01 GMT'
     """
     return date_obj.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
 
 def parsehttpdate(string_):
     """
@@ -205,60 +228,66 @@ def parsehttpdate(string_):
         return None
     return datetime.datetime(*t[:6])
 
+
 def htmlquote(text):
     r"""
     Encodes `text` for raw use in HTML.
 
-        >>> htmlquote(u"<'&\">")
+        >>> htmlquote(u"<'&\">")  # doctest: +ALLOW_UNICODE
         u'&lt;&#39;&amp;&quot;&gt;'
     """
-    text = text.replace(u"&", u"&amp;") # Must be done first!
+    text = text.replace(u"&", u"&amp;")  # Must be done first!
     text = text.replace(u"<", u"&lt;")
     text = text.replace(u">", u"&gt;")
     text = text.replace(u"'", u"&#39;")
     text = text.replace(u'"', u"&quot;")
     return text
 
+
 def htmlunquote(text):
     r"""
     Decodes `text` that's HTML quoted.
 
-        >>> htmlunquote(u'&lt;&#39;&amp;&quot;&gt;')
+        >>> htmlunquote(u'&lt;&#39;&amp;&quot;&gt;')  # doctest: +ALLOW_UNICODE
         u'<\'&">'
     """
     text = text.replace(u"&quot;", u'"')
     text = text.replace(u"&#39;", u"'")
     text = text.replace(u"&gt;", u">")
     text = text.replace(u"&lt;", u"<")
-    text = text.replace(u"&amp;", u"&") # Must be done last!
+    text = text.replace(u"&amp;", u"&")  # Must be done last!
     return text
 
-def websafe(val):
-    r"""Converts `val` so that it is safe for use in Unicode HTML.
 
-        >>> websafe("<'&\">")
+def websafe(val):
+    r"""
+    Converts `val` so that it is safe for use in Unicode HTML.
+
+        >>> websafe("<'&\">")  # doctest: +ALLOW_UNICODE
         u'&lt;&#39;&amp;&quot;&gt;'
-        >>> websafe(None)
+        >>> websafe(None)  # doctest: +ALLOW_UNICODE
         u''
         >>> websafe(u'\u203d') == u'\u203d'
         True
     """
     if val is None:
-        return u''
+        return u""
 
     if PY2:
         if isinstance(val, str):
-            val = val.decode('utf-8')
+            val = val.decode("utf-8")
         elif not isinstance(val, text_type):
             val = text_type(val)
     else:
         if isinstance(val, bytes):
-            val = val.decode('utf-8')
+            val = val.decode("utf-8")
         elif not isinstance(val, str):
             val = str(val)
 
     return htmlquote(val)
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

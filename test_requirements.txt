@@ -1,5 +1,5 @@
+DBUtils
+mysql-connector>=2.1.4
 psycopg2
 PyMySQL
-mysql-connector==2.1.4
-DBUtils
-pytest
+pytest>=4.6.2

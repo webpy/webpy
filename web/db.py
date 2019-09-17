@@ -10,8 +10,7 @@ import re
 import time
 
 from .py3helpers import PY2, iteritems, numeric_types, string_types, text_type
-from .utils import (iterbetter, iters, safestr, safeunicode, storage,
-                    threadeddict)
+from .utils import iterbetter, iters, safestr, safeunicode, storage, threadeddict
 
 try:
     from urllib import parse as urlparse
@@ -30,35 +29,56 @@ try:
     from .webapi import debug, config
 except ImportError:
     import sys
+
     debug = sys.stderr
     config = storage()
 
 __all__ = [
-  "UnknownParamstyle", "UnknownDB", "TransactionError",
-  "sqllist", "sqlors", "reparam", "sqlquote",
-  "SQLQuery", "SQLParam", "sqlparam",
-  "SQLLiteral", "sqlliteral",
-  "database", 'DB',
+    "UnknownParamstyle",
+    "UnknownDB",
+    "TransactionError",
+    "sqllist",
+    "sqlors",
+    "reparam",
+    "sqlquote",
+    "SQLQuery",
+    "SQLParam",
+    "sqlparam",
+    "SQLLiteral",
+    "sqlliteral",
+    "database",
+    "DB",
 ]
 
-TOKEN = '[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)[jJ])|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)|(0[xX][\\da-fA-F]+[lL]?|0[bB][01]+[lL]?|(0[oO][0-7]+)|(0[0-7]*)[lL]?|[1-9]\\d*[lL]?))|((\\*\\*=?|>>=?|<<=?|<>|!=|//=?|[+\\-*/%&|^=<>]=?|~)|[][(){}]|(\\r?\\n|[:;.,`@]))|([uUbB]?[rR]?\'[^\\n\'\\\\]*(?:\\\\.[^\\n\'\\\\]*)*\'|[uUbB]?[rR]?"[^\\n"\\\\]*(?:\\\\.[^\\n"\\\\]*)*")|[a-zA-Z_]\\w*)'
+TOKEN = "[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)[jJ])|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)|(0[xX][\\da-fA-F]+[lL]?|0[bB][01]+[lL]?|(0[oO][0-7]+)|(0[0-7]*)[lL]?|[1-9]\\d*[lL]?))|((\\*\\*=?|>>=?|<<=?|<>|!=|//=?|[+\\-*/%&|^=<>]=?|~)|[][(){}]|(\\r?\\n|[:;.,`@]))|([uUbB]?[rR]?'[^\\n'\\\\]*(?:\\\\.[^\\n'\\\\]*)*'|[uUbB]?[rR]?\"[^\\n\"\\\\]*(?:\\\\.[^\\n\"\\\\]*)*\")|[a-zA-Z_]\\w*)"
 
 tokenprog = re.compile(TOKEN)
 
+# Supported db drivers.
+pg_drivers = ["psycopg2", "psycopg", "pgdb"]
+mysql_drivers = ["MySQLdb", "pymysql", "mysql.connector"]
+sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
+
+
 class UnknownDB(Exception):
     """raised for unsupported dbms"""
+
     pass
+
 
 class _ItplError(ValueError):
     def __init__(self, text, pos):
         ValueError.__init__(self)
         self.text = text
         self.pos = pos
-    def __str__(self):
-        return "unfinished expression in %s at char %d" % (
-            repr(self.text), self.pos)
 
-class TransactionError(Exception): pass
+    def __str__(self):
+        return "unfinished expression in %s at char %d" % (repr(self.text), self.pos)
+
+
+class TransactionError(Exception):
+    pass
+
 
 class UnknownParamstyle(Exception):
     """
@@ -66,7 +86,9 @@ class UnknownParamstyle(Exception):
 
     (currently supported: qmark, numeric, format, pyformat)
     """
+
     pass
+
 
 class SQLParam(object):
     """
@@ -80,18 +102,19 @@ class SQLParam(object):
         >>> q.values()
         ['joe']
     """
+
     __slots__ = ["value"]
 
     def __init__(self, value):
         self.value = value
 
-    def get_marker(self, paramstyle='pyformat'):
-        if paramstyle == 'qmark':
-            return '?'
-        elif paramstyle == 'numeric':
-            return ':1'
-        elif paramstyle is None or paramstyle in ['format', 'pyformat']:
-            return '%s'
+    def get_marker(self, paramstyle="pyformat"):
+        if paramstyle == "qmark":
+            return "?"
+        elif paramstyle == "numeric":
+            return ":1"
+        elif paramstyle is None or paramstyle in ["format", "pyformat"]:
+            return "%s"
         raise UnknownParamstyle(paramstyle)
 
     def sqlquery(self):
@@ -110,9 +133,11 @@ class SQLParam(object):
         return isinstance(other, SQLParam) and other.value == self.value
 
     def __repr__(self):
-        return '<param: %s>' % repr(self.value)
+        return "<param: %s>" % repr(self.value)
 
-sqlparam =  SQLParam
+
+sqlparam = SQLParam
+
 
 class SQLQuery(object):
     """
@@ -123,6 +148,7 @@ class SQLQuery(object):
     Internally, consists of `items`, which is a list of strings and
     SQLParams, which get concatenated to produce the actual query.
     """
+
     __slots__ = ["items"]
 
     # tested in sqlquote's docstring
@@ -208,10 +234,11 @@ class SQLQuery(object):
             else:
                 x = safestr(x)
                 # automatically escape % characters in the query
-                # For backward compatability, ignore escaping when the query looks already escaped
-                if paramstyle in ['format', 'pyformat']:
-                    if '%' in x and '%%' not in x:
-                        x = x.replace('%', '%%')
+                # For backward compatability, ignore escaping when the query
+                # looks already escaped
+                if paramstyle in ["format", "pyformat"]:
+                    if "%" in x and "%%" not in x:
+                        x = x.replace("%", "%%")
                 s.append(x)
         return "".join(s)
 
@@ -224,7 +251,7 @@ class SQLQuery(object):
         """
         return [i.value for i in self.items if isinstance(i, SQLParam)]
 
-    def join(items, sep=' ', prefix=None, suffix=None, target=None):
+    def join(items, sep=" ", prefix=None, suffix=None, target=None):
         """
         Joins multiple queries.
 
@@ -236,7 +263,8 @@ class SQLQuery(object):
         >>> SQLQuery.join(['a', 'b'], ', ', prefix='(', suffix=')')
         <sql: '(a, b)'>
 
-        If target argument is provided, the items are appended to target instead of creating a new SQLQuery.
+        If target argument is provided, the items are appended to target
+        instead of creating a new SQLQuery.
         """
         if target is None:
             target = SQLQuery()
@@ -251,7 +279,7 @@ class SQLQuery(object):
                 target_items.append(sep)
             if isinstance(item, SQLQuery):
                 target_items.extend(item.items)
-            elif item == "": # joins with empty strings
+            elif item == "":  # joins with empty strings
                 continue
             else:
                 target_items.append(item)
@@ -275,7 +303,8 @@ class SQLQuery(object):
         return safeunicode(self._str())
 
     def __repr__(self):
-        return '<sql: %s>' % repr(str(self))
+        return "<sql: %s>" % repr(str(self))
+
 
 class SQLLiteral:
     """
@@ -286,13 +315,16 @@ class SQLLiteral:
         >>> sqlquote(SQLLiteral('NOW()'))
         <sql: 'NOW()'>
     """
+
     def __init__(self, v):
         self.v = v
 
     def __repr__(self):
         return "<literal: %r>" % self.v
 
+
 sqlliteral = SQLLiteral
+
 
 def _sqllist(values):
     """
@@ -300,13 +332,14 @@ def _sqllist(values):
         <sql: '(1, 2, 3)'>
     """
     items = []
-    items.append('(')
+    items.append("(")
     for i, v in enumerate(values):
         if i != 0:
-            items.append(', ')
+            items.append(", ")
         items.append(sqlparam(v))
-    items.append(')')
+    items.append(")")
     return SQLQuery(items)
+
 
 def reparam(string_, dictionary):
     """
@@ -320,9 +353,9 @@ def reparam(string_, dictionary):
     """
     return SafeEval().safeeval(string_, dictionary)
 
-    dictionary = dictionary.copy() # eval mucks with it
+    dictionary = dictionary.copy()  # eval mucks with it
     # disable builtins to avoid risk for remote code exection.
-    dictionary['__builtins__'] = object()
+    dictionary["__builtins__"] = object()
     result = []
     for live, chunk in _interpolate(string_):
         if live:
@@ -330,7 +363,8 @@ def reparam(string_, dictionary):
             result.append(sqlquote(v))
         else:
             result.append(chunk)
-    return SQLQuery.join(result, '')
+    return SQLQuery.join(result, "")
+
 
 def sqlify(obj):
     """
@@ -347,7 +381,7 @@ def sqlify(obj):
     # we have to do this the hard way...
 
     if obj is None:
-        return 'NULL'
+        return "NULL"
     elif obj is True:
         return "'t'"
     elif obj is False:
@@ -358,9 +392,10 @@ def sqlify(obj):
         return repr(obj.isoformat())
     else:
         if PY2 and isinstance(obj, text_type):  # Strings are always UTF8 in Py3
-            obj = obj.encode('utf8')
+            obj = obj.encode("utf8")
 
         return repr(obj)
+
 
 def sqllist(lst):
     """
@@ -374,7 +409,8 @@ def sqllist(lst):
     if isinstance(lst, string_types):
         return lst
     else:
-        return ', '.join(lst)
+        return ", ".join(lst)
+
 
 def sqlors(left, lst):
     """
@@ -401,16 +437,17 @@ def sqlors(left, lst):
             lst = lst[0]
 
     if isinstance(lst, iters):
-        return SQLQuery(['('] +
-          sum([[left, sqlparam(x), ' OR '] for x in lst], []) +
-          ['1=2)']
+        return SQLQuery(
+            ["("] + sum([[left, sqlparam(x), " OR "] for x in lst], []) + ["1=2)"]
         )
     else:
         return left + sqlparam(lst)
 
-def sqlwhere(data, grouping=' AND '):
+
+def sqlwhere(data, grouping=" AND "):
     """
-    Converts a two-tuple (key, value) iterable `data` to an SQL WHERE clause `SQLQuery`.
+    Converts a two-tuple (key, value) iterable `data` to an SQL WHERE clause
+    `SQLQuery`.
 
         >>> sqlwhere((('cust_id', 2), ('order_id',3)))
         <sql: 'cust_id = 2 AND order_id = 3'>
@@ -420,7 +457,8 @@ def sqlwhere(data, grouping=' AND '):
         'a = %s AND b = %s'
     """
 
-    return SQLQuery.join([k + ' = ' + sqlparam(v) for k, v in data], grouping)
+    return SQLQuery.join([k + " = " + sqlparam(v) for k, v in data], grouping)
+
 
 def sqlquote(a):
     """
@@ -436,14 +474,17 @@ def sqlquote(a):
     else:
         return sqlparam(a).sqlquery()
 
+
 class Transaction:
     """Database transaction."""
+
     def __init__(self, ctx):
         self.ctx = ctx
         self.transaction_count = transaction_count = len(ctx.transactions)
 
         class transaction_engine:
             """Transaction Engine used in top level transactions."""
+
             def do_transact(self):
                 ctx.commit(unload=False)
 
@@ -455,27 +496,29 @@ class Transaction:
 
         class subtransaction_engine:
             """Transaction Engine used in sub transactions."""
+
             def query(self, q):
                 db_cursor = ctx.db.cursor()
                 ctx.db_execute(db_cursor, SQLQuery(q % transaction_count))
 
             def do_transact(self):
-                self.query('SAVEPOINT webpy_sp_%s')
+                self.query("SAVEPOINT webpy_sp_%s")
 
             def do_commit(self):
-                self.query('RELEASE SAVEPOINT webpy_sp_%s')
+                self.query("RELEASE SAVEPOINT webpy_sp_%s")
 
             def do_rollback(self):
-                self.query('ROLLBACK TO SAVEPOINT webpy_sp_%s')
+                self.query("ROLLBACK TO SAVEPOINT webpy_sp_%s")
 
         class dummy_engine:
             """Transaction Engine used instead of subtransaction_engine
             when sub transactions are not supported."""
+
             do_transact = do_commit = do_rollback = lambda self: None
 
         if self.transaction_count:
             # nested transactions are not supported in some databases
-            if self.ctx.get('ignore_nested_transactions'):
+            if self.ctx.get("ignore_nested_transactions"):
                 self.engine = dummy_engine()
             else:
                 self.engine = subtransaction_engine()
@@ -497,49 +540,53 @@ class Transaction:
     def commit(self):
         if len(self.ctx.transactions) > self.transaction_count:
             self.engine.do_commit()
-            self.ctx.transactions = self.ctx.transactions[:self.transaction_count]
+            self.ctx.transactions = self.ctx.transactions[: self.transaction_count]
 
     def rollback(self):
         if len(self.ctx.transactions) > self.transaction_count:
             self.engine.do_rollback()
-            self.ctx.transactions = self.ctx.transactions[:self.transaction_count]
+            self.ctx.transactions = self.ctx.transactions[: self.transaction_count]
+
 
 class DB:
     """Database"""
+
     def __init__(self, db_module, keywords):
         """Creates a database.
         """
-        # some DB implementaions take optional paramater `driver` to use a specific driver modue
-        # but it should not be passed to connect
-        keywords.pop('driver', None)
+        # some DB implementaions take optional paramater `driver` to use a
+        # specific driver modue but it should not be passed to `connect`.
+        keywords.pop("driver", None)
 
         self.db_module = db_module
         self.keywords = keywords
 
         self._ctx = threadeddict()
         # flag to enable/disable printing queries
-        self.printing = config.get('debug_sql', config.get('debug', False))
+        self.printing = config.get("debug_sql", config.get("debug", False))
         self.supports_multiple_insert = False
 
         try:
-            import DBUtils
+            import DBUtils  # noqa, flake8 F401
+
             # enable pooling if DBUtils module is available.
             self.has_pooling = True
         except ImportError:
             self.has_pooling = False
 
         # Pooling can be disabled by passing pooling=False in the keywords.
-        self.has_pooling = self.keywords.pop('pooling', True) and self.has_pooling
+        self.has_pooling = self.keywords.pop("pooling", True) and self.has_pooling
 
     def _getctx(self):
-        if not self._ctx.get('db'):
+        if not self._ctx.get("db"):
             self._load_context(self._ctx)
         return self._ctx
+
     ctx = property(_getctx)
 
     def _load_context(self, ctx):
         ctx.dbq_count = 0
-        ctx.transactions = [] # stack of transactions
+        ctx.transactions = []  # stack of transactions
 
         if self.has_pooling:
             ctx.db = self._connect_with_pooling(self.keywords)
@@ -547,10 +594,10 @@ class DB:
             ctx.db = self._connect(self.keywords)
         ctx.db_execute = self._db_execute
 
-        if not hasattr(ctx.db, 'commit'):
+        if not hasattr(ctx.db, "commit"):
             ctx.db.commit = lambda: None
 
-        if not hasattr(ctx.db, 'rollback'):
+        if not hasattr(ctx.db, "rollback"):
             ctx.db.rollback = lambda: None
 
         def commit(unload=True):
@@ -581,12 +628,12 @@ class DB:
             # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
             # see Bug#122112
 
-            if PooledDB.__version__.split('.') < '0.9.3'.split('.'):
+            if PooledDB.__version__.split(".") < "0.9.3".split("."):
                 return PooledDB.PooledDB(dbapi=self.db_module, **keywords)
             else:
                 return PooledDB.PooledDB(creator=self.db_module, **keywords)
 
-        if getattr(self, '_pooleddb', None) is None:
+        if getattr(self, "_pooleddb", None) is None:
             self._pooleddb = get_pooled_db()
 
         return self._pooleddb.connection()
@@ -596,14 +643,14 @@ class DB:
 
     def _param_marker(self):
         """Returns parameter marker based on paramstyle attribute if this database."""
-        style = getattr(self, 'paramstyle', 'pyformat')
+        style = getattr(self, "paramstyle", "pyformat")
 
-        if style == 'qmark':
-            return '?'
-        elif style == 'numeric':
-            return ':1'
-        elif style in ['format', 'pyformat']:
-            return '%s'
+        if style == "qmark":
+            return "?"
+        elif style == "numeric":
+            return ":1"
+        elif style in ["format", "pyformat"]:
+            return "%s"
         raise UnknownParamstyle(style)
 
     def _db_execute(self, cur, sql_query):
@@ -617,7 +664,7 @@ class DB:
             b = time.time()
         except:
             if self.printing:
-                print('ERR:', str(sql_query), file=debug)
+                print("ERR:", str(sql_query), file=debug)
             if self.ctx.transactions:
                 self.ctx.transactions[-1].rollback()
             else:
@@ -625,13 +672,16 @@ class DB:
             raise
 
         if self.printing:
-            print('%s (%s): %s' % (round(b-a, 2), self.ctx.dbq_count, str(sql_query)), file=debug)
+            print(
+                "%s (%s): %s" % (round(b - a, 2), self.ctx.dbq_count, str(sql_query)),
+                file=debug,
+            )
         return out
 
     def _process_query(self, sql_query):
         """Takes the SQLQuery object and returns query string and parameters.
         """
-        paramstyle = getattr(self, 'paramstyle', 'pyformat')
+        paramstyle = getattr(self, "paramstyle", "pyformat")
         query = sql_query.query(paramstyle)
         params = sql_query.values()
         return query, params
@@ -639,7 +689,7 @@ class DB:
     def _where(self, where, vars):
         if isinstance(where, numeric_types):
             where = "id = " + sqlparam(where)
-        #@@@ for backward-compatibility
+        # @@@ for backward-compatibility
         elif isinstance(where, (list, tuple)) and len(where) == 2:
             where = SQLQuery(where[0], where[1])
         elif isinstance(where, dict):
@@ -653,8 +703,8 @@ class DB:
     def _where_dict(self, where):
         where_clauses = []
 
-        for k, v in sorted(iteritems(where), key= lambda t:t[0]):
-            where_clauses.append(k + ' = ' + sqlquote(v))
+        for k, v in sorted(iteritems(where), key=lambda t: t[0]):
+            where_clauses.append(k + " = " + sqlquote(v))
         if where_clauses:
             return SQLQuery.join(where_clauses, " AND ")
         else:
@@ -674,27 +724,32 @@ class DB:
             >>> db.query("SELECT * FROM foo WHERE x = " + sqlquote('f'), _test=True)
             <sql: "SELECT * FROM foo WHERE x = 'f'">
         """
-        if vars is None: vars = {}
+        if vars is None:
+            vars = {}
 
         if not processed and not isinstance(sql_query, SQLQuery):
             sql_query = reparam(sql_query, vars)
 
-        if _test: return sql_query
+        if _test:
+            return sql_query
 
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, sql_query)
 
         if db_cursor.description:
             names = [x[0] for x in db_cursor.description]
+
             def iterwrapper():
                 row = db_cursor.fetchone()
                 while row:
                     yield storage(dict(zip(names, row)))
                     row = db_cursor.fetchone()
+
             out = iterbetter(iterwrapper())
             out.__len__ = lambda: int(db_cursor.rowcount)
-            out.list = lambda: [storage(dict(zip(names, x))) \
-                               for x in db_cursor.fetchall()]
+            out.list = lambda: [
+                storage(dict(zip(names, x))) for x in db_cursor.fetchall()
+            ]
         else:
             out = db_cursor.rowcount
 
@@ -702,8 +757,18 @@ class DB:
             self.ctx.commit()
         return out
 
-    def select(self, tables, vars=None, what='*', where=None, order=None, group=None,
-               limit=None, offset=None, _test=False):
+    def select(
+        self,
+        tables,
+        vars=None,
+        what="*",
+        where=None,
+        order=None,
+        group=None,
+        limit=None,
+        offset=None,
+        _test=False,
+    ):
         """
         Selects `what` from `tables` with clauses `where`, `order`,
         `group`, `limit`, and `offset`. Uses vars to interpolate.
@@ -717,15 +782,33 @@ class DB:
             >>> db.select('foo', where={'id': 5}, _test=True)
             <sql: 'SELECT * FROM foo WHERE id = 5'>
         """
-        if vars is None: vars = {}
+        if vars is None:
+            vars = {}
+
         sql_clauses = self.sql_clauses(what, tables, where, group, order, limit, offset)
-        clauses = [self.gen_clause(sql, val, vars) for sql, val in sql_clauses if val is not None]
+        clauses = [
+            self.gen_clause(sql, val, vars)
+            for sql, val in sql_clauses
+            if val is not None
+        ]
         qout = SQLQuery.join(clauses)
-        if _test: return qout
+
+        if _test:
+            return qout
+
         return self.query(qout, processed=True)
 
-    def where(self, table, what='*', order=None, group=None, limit=None,
-              offset=None, _test=False, **kwargs):
+    def where(
+        self,
+        table,
+        what="*",
+        order=None,
+        group=None,
+        limit=None,
+        offset=None,
+        _test=False,
+        **kwargs
+    ):
         """
         Selects from `table` where keys are equal to values in `kwargs`.
 
@@ -738,33 +821,41 @@ class DB:
             <sql: 'SELECT * FROM foo'>
         """
         where = self._where_dict(kwargs)
-        return self.select(table, what=what, order=order,
-               group=group, limit=limit, offset=offset, _test=_test,
-               where=where)
+        return self.select(
+            table,
+            what=what,
+            order=order,
+            group=group,
+            limit=limit,
+            offset=offset,
+            _test=_test,
+            where=where,
+        )
 
     def sql_clauses(self, what, tables, where, group, order, limit, offset):
         return (
-            ('SELECT', what),
-            ('FROM', sqllist(tables)),
-            ('WHERE', where),
-            ('GROUP BY', group),
-            ('ORDER BY', order),
+            ("SELECT", what),
+            ("FROM", sqllist(tables)),
+            ("WHERE", where),
+            ("GROUP BY", group),
+            ("ORDER BY", order),
             # The limit and offset could be the values provided by
             # the end-user and are potentially unsafe.
             # Using them as parameters to avoid any risk.
-            ('LIMIT', limit and SQLParam(limit).sqlquery()),
-            ('OFFSET', offset and SQLParam(offset).sqlquery()))
+            ("LIMIT", limit and SQLParam(limit).sqlquery()),
+            ("OFFSET", offset and SQLParam(offset).sqlquery()),
+        )
 
     def gen_clause(self, sql, val, vars):
         if isinstance(val, numeric_types):
-            if sql == 'WHERE':
-                nout = 'id = ' + sqlquote(val)
+            if sql == "WHERE":
+                nout = "id = " + sqlquote(val)
             else:
                 nout = SQLQuery(val)
-        #@@@
+        # @@@
         elif isinstance(val, (list, tuple)) and len(val) == 2:
-            nout = SQLQuery(val[0], val[1]) # backwards-compatibility
-        elif sql == 'WHERE' and isinstance(val, dict):
+            nout = SQLQuery(val[0], val[1])  # backwards-compatibility
+        elif sql == "WHERE" and isinstance(val, dict):
             nout = self._where_dict(val)
         elif isinstance(val, SQLQuery):
             nout = val
@@ -772,8 +863,10 @@ class DB:
             nout = reparam(val, vars)
 
         def xjoin(a, b):
-            if a and b: return a + ' ' + b
-            else: return a or b
+            if a and b:
+                return a + " " + b
+            else:
+                return a or b
 
         return xjoin(sql, nout)
 
@@ -792,24 +885,30 @@ class DB:
             >>> q.values()
             [2, 'bob']
         """
-        def q(x): return "(" + x + ")"
+
+        def q(x):
+            return "(" + x + ")"
 
         if values:
-            #needed for Py3 compatibility with the above doctests
+            # needed for Py3 compatibility with the above doctests
             sorted_values = sorted(values.items(), key=lambda t: t[0])
 
-            _keys = SQLQuery.join(map(lambda t: t[0], sorted_values), ', ')
-            _values = SQLQuery.join([sqlparam(v) for v in map(lambda t: t[1], sorted_values)], ', ')
-            sql_query = "INSERT INTO %s " % tablename + q(_keys) + ' VALUES ' + q(_values)
+            _keys = SQLQuery.join(map(lambda t: t[0], sorted_values), ", ")
+            _values = SQLQuery.join(
+                [sqlparam(v) for v in map(lambda t: t[1], sorted_values)], ", "
+            )
+            sql_query = (
+                "INSERT INTO %s " % tablename + q(_keys) + " VALUES " + q(_values)
+            )
         else:
             sql_query = SQLQuery(self._get_insert_default_values_query(tablename))
 
-        if _test: return sql_query
+        if _test:
+            return sql_query
 
         db_cursor = self._db_cursor()
         if seqname is not False:
             sql_query = self._process_insert_query(sql_query, tablename, seqname)
-
 
         if isinstance(sql_query, tuple):
             # for some databases, a separate query has to be made to find
@@ -825,7 +924,6 @@ class DB:
         except Exception:
             out = None
 
-
         if not self.ctx.transactions:
             self.ctx.commit()
 
@@ -836,9 +934,9 @@ class DB:
 
     def multiple_insert(self, tablename, values, seqname=None, _test=False):
         """
-        Inserts multiple rows into `tablename`. The `values` must be a list of dictioanries,
-        one for each row to be inserted, each with the same set of keys.
-        Returns the list of ids of the inserted rows.
+        Inserts multiple rows into `tablename`. The `values` must be a list of
+        dictionaries, one for each row to be inserted, each with the same set
+        of keys. Returns the list of ids of the inserted rows.
         Set `seqname` to the ID if it's not the default, or to `False`
         if there isn't one.
 
@@ -852,29 +950,42 @@ class DB:
             return []
 
         if not self.supports_multiple_insert:
-            out = [self.insert(tablename, seqname=seqname, _test=_test, **v) for v in values]
+            out = [
+                self.insert(tablename, seqname=seqname, _test=_test, **v)
+                for v in values
+            ]
             if seqname is False:
                 return None
             else:
                 return out
 
         keys = values[0].keys()
-        #@@ make sure all keys are valid
+        # @@ make sure all keys are valid
 
         for v in values:
             if v.keys() != keys:
-                raise ValueError('Not all rows have the same keys')
+                raise ValueError("Not all rows have the same keys")
 
-        keys = sorted(keys) #enforce query order for the above doctest compatibility with Py3
+        # enforce query order for the above doctest compatibility with Py3
+        keys = sorted(keys)
 
-        sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
+        sql_query = SQLQuery(
+            "INSERT INTO %s (%s) VALUES " % (tablename, ", ".join(keys))
+        )
 
         for i, row in enumerate(values):
             if i != 0:
                 sql_query.append(", ")
-            SQLQuery.join([SQLParam(row[k]) for k in keys], sep=", ", target=sql_query, prefix="(", suffix=")")
+            SQLQuery.join(
+                [SQLParam(row[k]) for k in keys],
+                sep=", ",
+                target=sql_query,
+                prefix="(",
+                suffix=")",
+            )
 
-        if _test: return sql_query
+        if _test:
+            return sql_query
 
         db_cursor = self._db_cursor()
         if seqname is not False:
@@ -891,14 +1002,19 @@ class DB:
 
         try:
             out = db_cursor.fetchone()[0]
-            out = range(out-len(values)+1, out+1)
+
+            # MySQL gives the first id of multiple inserted rows.
+            # PostgreSQL and SQLite give the last id.
+            if self.db_module.__name__ in mysql_drivers:
+                out = range(out, out + len(values))
+            else:
+                out = range(out - len(values) + 1, out + 1)
         except Exception:
             out = None
 
         if not self.ctx.transactions:
             self.ctx.commit()
         return out
-
 
     def update(self, tables, where, vars=None, _test=False, **values):
         """
@@ -916,17 +1032,23 @@ class DB:
             >>> q.values()
             [2, 'bob', 'Joseph']
         """
-        if vars is None: vars = {}
-        where = self._where(where, vars)
+        if vars is None:
+            vars = {}
 
+        where = self._where(where, vars)
         values = sorted(values.items(), key=lambda t: t[0])
 
         query = (
-          "UPDATE " + sqllist(tables) +
-          " SET " + sqlwhere(values, ', ') +
-          " WHERE " + where)
+            "UPDATE "
+            + sqllist(tables)
+            + " SET "
+            + sqlwhere(values, ", ")
+            + " WHERE "
+            + where
+        )
 
-        if _test: return query
+        if _test:
+            return query
 
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, query)
@@ -943,14 +1065,20 @@ class DB:
             >>> db.delete('foo', where='name = $name', vars=locals(), _test=True)
             <sql: "DELETE FROM foo WHERE name = 'Joe'">
         """
-        if vars is None: vars = {}
+        if vars is None:
+            vars = {}
+
         where = self._where(where, vars)
 
-        q = 'DELETE FROM ' + table
-        if using: q += ' USING ' + sqllist(using)
-        if where: q += ' WHERE ' + where
+        q = "DELETE FROM " + table
+        if using:
+            q += " USING " + sqllist(using)
 
-        if _test: return q
+        if where:
+            q += " WHERE " + where
+
+        if _test:
+            return q
 
         db_cursor = self._db_cursor()
         self._db_execute(db_cursor, q)
@@ -965,22 +1093,26 @@ class DB:
         """Start a transaction."""
         return Transaction(self.ctx)
 
+
 class PostgresDB(DB):
     """Postgres driver."""
-    def __init__(self, **keywords):
-        if 'pw' in keywords:
-            keywords['password'] = keywords.pop('pw')
 
-        db_module = import_driver(["psycopg2", "psycopg", "pgdb"], preferred=keywords.pop('driver', None))
+    def __init__(self, **keywords):
+        if "pw" in keywords:
+            keywords["password"] = keywords.pop("pw")
+
+        db_module = import_driver(pg_drivers, preferred=keywords.pop("driver", None))
         if db_module.__name__ == "psycopg2":
             import psycopg2.extensions
-            psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-        if db_module.__name__ == "pgdb" and 'port' in keywords:
-            keywords["host"] += ":" + str(keywords.pop('port'))
 
-        # if db is not provided postgres driver will take it from PGDATABASE environment variable
-        if 'db' in keywords:
-            keywords['database'] = keywords.pop('db')
+            psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+        if db_module.__name__ == "pgdb" and "port" in keywords:
+            keywords["host"] += ":" + str(keywords.pop("port"))
+
+        # if db is not provided `postgres` driver will take it from PGDATABASE
+        # environment variable.
+        if "db" in keywords:
+            keywords["database"] = keywords.pop("db")
 
         self.dbname = "postgres"
         self.paramstyle = db_module.paramstyle
@@ -1010,7 +1142,7 @@ class PostgresDB(DB):
     def _connect(self, keywords):
         conn = DB._connect(self, keywords)
         try:
-            conn.set_client_encoding('UTF8')
+            conn.set_client_encoding("UTF8")
         except AttributeError:
             # fallback for pgdb driver
             conn.cursor().execute("set client_encoding to 'UTF-8'")
@@ -1018,42 +1150,48 @@ class PostgresDB(DB):
 
     def _connect_with_pooling(self, keywords):
         conn = DB._connect_with_pooling(self, keywords)
-        conn._con._con.set_client_encoding('UTF8')
+        try:
+            conn._con._con.set_client_encoding("UTF8")
+        except AttributeError:
+            # fallback for pgdb driver
+            conn.cursor().execute("set client_encoding to 'UTF-8'")
         return conn
+
 
 class MySQLDB(DB):
     def __init__(self, **keywords):
 
-        db = import_driver(["MySQLdb", "pymysql","mysql.connector"], preferred=keywords.pop('driver', None))
+        db = import_driver(mysql_drivers, preferred=keywords.pop("driver", None))
+
         if db.__name__ == "MySQLdb":
-            if 'pw' in keywords:
-                keywords['passwd'] = keywords['pw']
-                del keywords['pw']
+            if "pw" in keywords:
+                keywords["passwd"] = keywords["pw"]
+                del keywords["pw"]
         if db.__name__ == "pymysql":
-            if 'pw' in keywords:
-                keywords['password'] = keywords['pw']
-                del keywords['pw']
+            if "pw" in keywords:
+                keywords["password"] = keywords["pw"]
+                del keywords["pw"]
         if db.__name__ == "mysql.connector":
-            if 'pw' in keywords:
-                keywords['password'] = keywords['pw']
-                del keywords['pw']
+            if "pw" in keywords:
+                keywords["password"] = keywords["pw"]
+                del keywords["pw"]
 
+        if "charset" not in keywords:
+            keywords["charset"] = "utf8"
+        elif keywords["charset"] is None:
+            del keywords["charset"]
 
-        if 'charset' not in keywords:
-            keywords['charset'] = 'utf8'
-        elif keywords['charset'] is None:
-            del keywords['charset']
-
-        self.paramstyle = db.paramstyle = 'pyformat' # it's both, like psycopg
+        self.paramstyle = db.paramstyle = "pyformat"  # it's both, like psycopg
         self.dbname = "mysql"
         DB.__init__(self, db, keywords)
         self.supports_multiple_insert = True
 
     def _process_insert_query(self, query, tablename, seqname):
-        return query, SQLQuery('SELECT last_insert_id();')
+        return query, SQLQuery("SELECT last_insert_id();")
 
     def _get_insert_default_values_query(self, table):
         return "INSERT INTO %s () VALUES()" % table
+
 
 def import_driver(drivers, preferred=None):
     """Import the first available driver or preferred driver.
@@ -1063,30 +1201,36 @@ def import_driver(drivers, preferred=None):
 
     for d in drivers:
         try:
-            return __import__(d, None, None, ['x'])
+            return __import__(d, None, None, ["x"])
         except ImportError:
             pass
     raise ImportError("Unable to import " + " or ".join(drivers))
 
+
 class SqliteDB(DB):
     def __init__(self, **keywords):
-        db = import_driver(["sqlite3", "pysqlite2.dbapi2", "sqlite"], preferred=keywords.pop('driver', None))
+        db = import_driver(sqlite_drivers, preferred=keywords.pop("driver", None))
 
         if db.__name__ in ["sqlite3", "pysqlite2.dbapi2"]:
-            db.paramstyle = 'qmark'
+            db.paramstyle = "qmark"
 
-        # sqlite driver doesn't create datatime objects for timestamp columns unless `detect_types` option is passed.
-        # It seems to be supported in sqlite3 and pysqlite2 drivers, not surte about sqlite.
-        keywords.setdefault('detect_types', db.PARSE_DECLTYPES)
+        # sqlite driver doesn't create datatime objects for timestamp columns
+        # unless `detect_types` option is passed.
+        # It seems to be supported in `sqlite3` and `pysqlite2` drivers, not
+        # surte about `sqlite`.
+        keywords.setdefault("detect_types", db.PARSE_DECLTYPES)
 
-        self.paramstyle = db.paramstyle
-        keywords['database'] = keywords.pop('db')
-        keywords['pooling'] = False # sqlite don't allows connections to be shared by threads
         self.dbname = "sqlite"
+        self.paramstyle = db.paramstyle
+        keywords["database"] = keywords.pop("db")
+
+        # sqlite don't allows connections to be shared by threads
+        keywords["pooling"] = False
+
         DB.__init__(self, db, keywords)
 
     def _process_insert_query(self, query, tablename, seqname):
-        return query, SQLQuery('SELECT last_insert_rowid();')
+        return query, SQLQuery("SELECT last_insert_rowid();")
 
     def query(self, *a, **kw):
         out = DB.query(self, *a, **kw)
@@ -1094,18 +1238,20 @@ class SqliteDB(DB):
             del out.__len__
         return out
 
+
 class FirebirdDB(DB):
     """Firebird Database.
     """
+
     def __init__(self, **keywords):
         try:
             import kinterbasdb as db
         except Exception:
             db = None
             pass
-        if 'pw' in keywords:
-            keywords['password'] = keywords.pop('pw')
-        keywords['database'] = keywords.pop('db')
+        if "pw" in keywords:
+            keywords["password"] = keywords.pop("pw")
+        keywords["database"] = keywords.pop("db")
 
         self.paramstyle = db.paramstyle
 
@@ -1113,27 +1259,29 @@ class FirebirdDB(DB):
 
     def delete(self, table, where=None, using=None, vars=None, _test=False):
         # firebird doesn't support using clause
-        using=None
+        using = None
         return DB.delete(self, table, where, using, vars, _test)
 
     def sql_clauses(self, what, tables, where, group, order, limit, offset):
         return (
-            ('SELECT', ''),
-            ('FIRST', limit),
-            ('SKIP', offset),
-            ('', what),
-            ('FROM', sqllist(tables)),
-            ('WHERE', where),
-            ('GROUP BY', group),
-            ('ORDER BY', order)
+            ("SELECT", ""),
+            ("FIRST", limit),
+            ("SKIP", offset),
+            ("", what),
+            ("FROM", sqllist(tables)),
+            ("WHERE", where),
+            ("GROUP BY", group),
+            ("ORDER BY", order),
         )
+
 
 class MSSQLDB(DB):
     def __init__(self, **keywords):
         import pymssql as db
-        if 'pw' in keywords:
-            keywords['password'] = keywords.pop('pw')
-        keywords['database'] = keywords.pop('db')
+
+        if "pw" in keywords:
+            keywords["password"] = keywords.pop("pw")
+        keywords["database"] = keywords.pop("db")
         self.dbname = "mssql"
         DB.__init__(self, db, keywords)
 
@@ -1142,20 +1290,21 @@ class MSSQLDB(DB):
         """
         # MSSQLDB expects params to be a tuple.
         # Overwriting the default implementation to convert params to tuple.
-        paramstyle = getattr(self, 'paramstyle', 'pyformat')
+        paramstyle = getattr(self, "paramstyle", "pyformat")
         query = sql_query.query(paramstyle)
         params = sql_query.values()
         return query, tuple(params)
 
     def sql_clauses(self, what, tables, where, group, order, limit, offset):
         return (
-            ('SELECT', what),
-            ('TOP', limit),
-            ('FROM', sqllist(tables)),
-            ('WHERE', where),
-            ('GROUP BY', group),
-            ('ORDER BY', order),
-            ('OFFSET', offset))
+            ("SELECT", what),
+            ("TOP", limit),
+            ("FROM", sqllist(tables)),
+            ("WHERE", where),
+            ("GROUP BY", group),
+            ("ORDER BY", order),
+            ("OFFSET", offset),
+        )
 
     def _test(self):
         """Test LIMIT.
@@ -1171,20 +1320,22 @@ class MSSQLDB(DB):
         """
         pass
 
+
 class OracleDB(DB):
     def __init__(self, **keywords):
         import cx_Oracle as db
-        if 'pw' in keywords:
-            keywords['password'] = keywords.pop('pw')
 
-        #@@ TODO: use db.makedsn if host, port is specified
-        keywords['dsn'] = keywords.pop('db')
-        self.dbname = 'oracle'
-        db.paramstyle = 'numeric'
+        if "pw" in keywords:
+            keywords["password"] = keywords.pop("pw")
+
+        # @@ TODO: use db.makedsn if host, port is specified
+        keywords["dsn"] = keywords.pop("db")
+        self.dbname = "oracle"
+        db.paramstyle = "numeric"
         self.paramstyle = db.paramstyle
 
         # oracle doesn't support pooling
-        keywords.pop('pooling', None)
+        keywords.pop("pooling", None)
         DB.__init__(self, db, keywords)
 
     def _process_insert_query(self, query, tablename, seqname):
@@ -1193,6 +1344,7 @@ class OracleDB(DB):
             return query
         else:
             return query + "; SELECT %s.currval FROM dual" % seqname
+
 
 def dburl2dict(url):
     """
@@ -1208,17 +1360,29 @@ def dburl2dict(url):
         True
         >>> dburl2dict('mysql://james:d%40y@serverfarm.example.net/mygreatdb') == {'pw': 'd@y', 'dbn': 'mysql', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': None}
         True
+        >>> dburl2dict('sqlite:///mygreatdb.db')
+        {'dbn': 'sqlite', 'db': 'mygreatdb.db'}
+        >>> dburl2dict('sqlite:////absolute/path/mygreatdb.db')
+        {'dbn': 'sqlite', 'db': '/absolute/path/mygreatdb.db'}
     """
     parts = urlparse.urlparse(unquote(url))
 
-    return {'dbn': parts.scheme,
-            'user': parts.username,
-            'pw': parts.password,
-            'db': parts.path[1:],
-            'host': parts.hostname,
-            'port': parts.port}
+    if parts.scheme == "sqlite":
+        return {"dbn": parts.scheme, "db": parts.path[1:]}
+    else:
+        return {
+            "dbn": parts.scheme,
+            "user": parts.username,
+            "pw": parts.password,
+            "db": parts.path[1:],
+            "host": parts.hostname,
+            "port": parts.port,
+        }
+
 
 _databases = {}
+
+
 def database(dburl=None, **params):
     """Creates appropriate database using params.
 
@@ -1226,14 +1390,17 @@ def database(dburl=None, **params):
     Pooling can be disabled by passing pooling=False in params.
     """
     if not dburl and not params:
-        dburl = os.environ['DATABASE_URL']
+        dburl = os.environ["DATABASE_URL"]
+
     if dburl:
         params = dburl2dict(dburl)
-    dbn = params.pop('dbn')
+
+    dbn = params.pop("dbn")
     if dbn in _databases:
         return _databases[dbn](**params)
     else:
         raise UnknownDB(dbn)
+
 
 def register_database(name, clazz):
     """
@@ -1248,12 +1415,14 @@ def register_database(name, clazz):
     """
     _databases[name] = clazz
 
-register_database('mysql', MySQLDB)
-register_database('postgres', PostgresDB)
-register_database('sqlite', SqliteDB)
-register_database('firebird', FirebirdDB)
-register_database('mssql', MSSQLDB)
-register_database('oracle', OracleDB)
+
+register_database("mysql", MySQLDB)
+register_database("postgres", PostgresDB)
+register_database("sqlite", SqliteDB)
+register_database("firebird", FirebirdDB)
+register_database("mssql", MSSQLDB)
+register_database("oracle", OracleDB)
+
 
 def _interpolate(format):
     """
@@ -1263,14 +1432,14 @@ def _interpolate(format):
 
     from <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
+
     def matchorfail(text, pos):
         match = tokenprog.match(text, pos)
         if match is None:
             raise _ItplError(text, pos)
         return match, match.end()
 
-    namechars = "abcdefghijklmnopqrstuvwxyz" \
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
+    namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
     chunks = []
     pos = 0
 
@@ -1291,14 +1460,17 @@ def _interpolate(format):
                     level = level + 1
                 elif token == "}":
                     level = level - 1
-            chunks.append((1, format[dollar + 2:pos - 1]))
+            chunks.append((1, format[dollar + 2 : pos - 1]))
 
         elif nextchar in namechars:
             chunks.append((0, format[pos:dollar]))
             match, pos = matchorfail(format, dollar + 1)
             while pos < len(format):
-                if format[pos] == "." and \
-                    pos + 1 < len(format) and format[pos + 1] in namechars:
+                if (
+                    format[pos] == "."
+                    and pos + 1 < len(format)
+                    and format[pos + 1] in namechars
+                ):
                     match, pos = matchorfail(format, pos + 1)
                 elif format[pos] in "([":
                     pos, level = pos + 1, 1
@@ -1312,14 +1484,15 @@ def _interpolate(format):
                             level = level - 1
                 else:
                     break
-            chunks.append((1, format[dollar + 1:pos]))
+            chunks.append((1, format[dollar + 1 : pos]))
         else:
-            chunks.append((0, format[pos:dollar + 1]))
+            chunks.append((0, format[pos : dollar + 1]))
             pos = dollar + 1 + (nextchar == "$")
 
     if pos < len(format):
         chunks.append((0, format[pos:]))
     return chunks
+
 
 class _Node(object):
     def __init__(self, type, first, second=None):
@@ -1328,21 +1501,24 @@ class _Node(object):
         self.second = second
 
     def __eq__(self, other):
-        return (isinstance(other, _Node)
+        return (
+            isinstance(other, _Node)
             and self.type == other.type
             and self.first == other.first
-            and self.second == other.second)
+            and self.second == other.second
+        )
 
     def __repr__(self):
         return "Node(%r, %r, %r)" % (self.type, self.first, self.second)
+
 
 class Parser:
     """Parser to parse string templates like "Hello $name".
 
     Loosely based on <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
-    namechars = "abcdefghijklmnopqrstuvwxyz" \
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+
+    namechars = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
     def __init__(self):
         self.reset()
@@ -1366,31 +1542,31 @@ class Parser:
                 break
             nextchar = self.text[dollar + 1]
             if nextchar in self.namechars:
-                yield _Node("text", self.text[self.pos:dollar])
-                self.pos = dollar+1
+                yield _Node("text", self.text[self.pos : dollar])
+                self.pos = dollar + 1
                 yield self.parse_expr()
 
             # for supporting ${x.id}, for backward compataility
-            elif nextchar == '{':
+            elif nextchar == "{":
                 saved_pos = self.pos
-                self.pos = dollar+2 # skip "${"
+                self.pos = dollar + 2  # skip "${"
                 expr = self.parse_expr()
-                if self.text[self.pos] == '}':
+                if self.text[self.pos] == "}":
                     self.pos += 1
-                    yield _Node("text", self.text[self.pos:dollar])
+                    yield _Node("text", self.text[self.pos : dollar])
                     yield expr
                 else:
                     self.pos = saved_pos
                     break
             else:
-                yield _Node("text", self.text[self.pos:dollar+1])
+                yield _Node("text", self.text[self.pos : dollar + 1])
                 self.pos = dollar + 1
                 # $$ is used to escape $
                 if nextchar == "$":
                     self.pos += 1
 
         if self.pos < len(self.text):
-            yield _Node("text", self.text[self.pos:])
+            yield _Node("text", self.text[self.pos :])
 
     def match(self):
         match = tokenprog.match(self.text, self.pos)
@@ -1406,11 +1582,14 @@ class Parser:
         if self.is_literal(match.group()):
             expr = _Node("literal", match.group())
         else:
-            expr = _Node("param", self.text[self.pos:pos])
+            expr = _Node("param", self.text[self.pos : pos])
         self.pos = pos
         while self.pos < len(self.text):
-            if self.text[self.pos] == "." and \
-                self.pos + 1 < len(self.text) and self.text[self.pos + 1] in self.namechars:
+            if (
+                self.text[self.pos] == "."
+                and self.pos + 1 < len(self.text)
+                and self.text[self.pos + 1] in self.namechars
+            ):
                 self.pos += 1
                 match, pos = self.match()
                 attr = match.group()
@@ -1420,7 +1599,7 @@ class Parser:
                 saved_pos = self.pos
                 self.pos += 1
                 key = self.parse_expr()
-                if self.text[self.pos] == ']':
+                if self.text[self.pos] == "]":
                     self.pos += 1
                     expr = _Node("getitem", expr, key)
                 else:
@@ -1430,9 +1609,11 @@ class Parser:
                 break
         return expr
 
+
 class SafeEval(object):
     """Safe evaluator for binding params to db queries.
     """
+
     def safeeval(self, text, mapping):
         nodes = Parser().parse(text)
         return SQLQuery.join([self.eval_node(node, mapping) for node in nodes], "")
@@ -1449,9 +1630,12 @@ class SafeEval(object):
         elif node.type == "getattr":
             return getattr(self.eval_expr(node.first, mapping), node.second)
         elif node.type == "getitem":
-            return self.eval_expr(node.first, mapping)[self.eval_expr(node.second, mapping)]
+            return self.eval_expr(node.first, mapping)[
+                self.eval_expr(node.second, mapping)
+            ]
         elif node.type == "param":
             return mapping[node.first]
+
 
 def test_parser():
     def f(text, expected):
@@ -1462,24 +1646,28 @@ def test_parser():
 
     f("Hello", [_Node("text", "Hello")])
     f("Hello $name", [_Node("text", "Hello "), _Node("param", "name")])
-    f("Hello $name.foo", [
-        _Node("text", "Hello "),
-        _Node("getattr",
-            _Node("param", "name"),
-            "foo")])
-    f("WHERE id=$self.id LIMIT 1", [
-        _Node("text", "WHERE id="),
-        _Node('getattr',
-            _Node('param', 'self', None),
-            'id'),
-        _Node("text", " LIMIT 1")])
+    f(
+        "Hello $name.foo",
+        [_Node("text", "Hello "), _Node("getattr", _Node("param", "name"), "foo")],
+    )
+    f(
+        "WHERE id=$self.id LIMIT 1",
+        [
+            _Node("text", "WHERE id="),
+            _Node("getattr", _Node("param", "self", None), "id"),
+            _Node("text", " LIMIT 1"),
+        ],
+    )
 
-    f("WHERE id=$self['id'] LIMIT 1", [
-        _Node("text", "WHERE id="),
-        _Node('getitem',
-            _Node('param', 'self', None),
-            _Node('literal', "'id'")),
-        _Node("text", " LIMIT 1")])
+    f(
+        "WHERE id=$self['id'] LIMIT 1",
+        [
+            _Node("text", "WHERE id="),
+            _Node("getitem", _Node("param", "self", None), _Node("literal", "'id'")),
+            _Node("text", " LIMIT 1"),
+        ],
+    )
+
 
 def test_safeeval():
     def f(q, vars):
@@ -1488,8 +1676,10 @@ def test_safeeval():
     print(f("WHERE id=$id", {"id": 1}).items)
     assert f("WHERE id=$id", {"id": 1}).items == ["WHERE id=", sqlparam(1)]
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
     test_parser()
     test_safeeval()

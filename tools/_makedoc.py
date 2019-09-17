@@ -1,82 +1,87 @@
 from __future__ import print_function
 import os
+import sys
+
+sys.path.append("..")
 import web
+
 
 class Parser:
     def __init__(self):
-        self.mode = 'normal'
-        self.text = ''
-        
+        self.mode = "normal"
+        self.text = ""
+
     def go(self, pyfile):
         for line in open(pyfile):
-            if self.mode == 'in def':
-                self.text += ' ' + line.strip()
-                if line.strip().endswith(':'):
+            if self.mode == "in def":
+                self.text += " " + line.strip()
+                if line.strip().endswith(":"):
                     if self.definition(self.text):
-                        self.text = ''
-                        self.mode = 'in func'
+                        self.text = ""
+                        self.mode = "in func"
                     else:
-                        self.text = ''
-                        self.mode = 'normal'
+                        self.text = ""
+                        self.mode = "normal"
 
-            elif self.mode == 'in func':
+            elif self.mode == "in func":
                 if '"""' in line:
                     self.text += line.strip().strip('"')
-                    self.mode = 'in doc'
+                    self.mode = "in doc"
                     if line.count('"""') == 2:
-                        self.mode = 'normal'
+                        self.mode = "normal"
                         self.docstring(self.text)
-                        self.text = ''
+                        self.text = ""
                 else:
-                    self.mode = 'normal'
+                    self.mode = "normal"
 
-            elif self.mode == 'in doc':
-                self.text += ' ' + line
+            elif self.mode == "in doc":
+                self.text += " " + line
                 if '"""' in line:
-                    self.mode = 'normal'
+                    self.mode = "normal"
                     self.docstring(self.text.strip().strip('"'))
-                    self.text = ''
-            
-            elif line.startswith('## '):
-                self.header(line.strip().strip('#'))
-            
-            elif line.startswith('def ') or line.startswith('class '):
-                self.text += line.strip().strip(':')
-                if line.strip().endswith(':'):
+                    self.text = ""
+
+            elif line.startswith("## "):
+                self.header(line.strip().strip("#"))
+
+            elif line.startswith("def ") or line.startswith("class "):
+                self.text += line.strip().strip(":")
+                if line.strip().endswith(":"):
                     if self.definition(self.text):
-                        self.text = ''
-                        self.mode = 'in func'
+                        self.text = ""
+                        self.mode = "in func"
                     else:
-                        self.text = ''
-                        self.mode = 'normal'
+                        self.text = ""
+                        self.mode = "normal"
                 else:
-                    self.mode = 'in def'
-    
+                    self.mode = "in def"
+
     def clean(self, text):
         text = text.strip()
-        text = text.replace('*', r'\*')
+        text = text.replace("*", r"\*")
         return text
-    
+
     def definition(self, text):
-        text = web.lstrips(text, 'def ')
-        if text.startswith('_') or text.startswith('class _'):
+        text = web.lstrips(text, "def ")
+        if text.startswith("_") or text.startswith("class _"):
             return False
-        print('`'+text.strip()+'`')
+        print("`" + text.strip() + "`")
         return True
-    
+
     def docstring(self, text):
-        print('   :', text.strip())
+        print("   :", text.strip())
         print()
-    
+
     def header(self, text):
-        print('##', text.strip())
+        print("##", text.strip())
         print()
-        
-for pyfile in os.listdir('trunk/web'):
-    if pyfile[-2:] == 'py':
+
+
+for pyfile in os.listdir("web"):
+    if pyfile[-2:] == "py":
         print()
-        print('## ' + pyfile)
+        print("## " + pyfile)
         print()
-        Parser().go('trunk/web/' + pyfile)
-print('`ctx`\n   :', end=' ')
-print('\n'.join('    '+x for x in web.ctx.__doc__.strip().split('\n')))
+        Parser().go("web/" + pyfile)
+print("`ctx`\n   :", end=" ")
+print("\n".join("    " + x for x in web.ctx.__doc__.strip().split("\n")))

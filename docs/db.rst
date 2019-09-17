@@ -18,6 +18,12 @@ Make sure that you have appropriate database library installed (`psycopg2` for P
 
 `dbn` for MySQL is `mysql` and `sqlite` for SQLite. SQLite doesn't take `user` `pw` parameters.
 
+To close database connection:
+
+::
+
+    db.ctx.db.close()
+
 Multiple databases
 ``````````````````
 

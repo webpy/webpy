@@ -1,5 +1,8 @@
 from __future__ import print_function
 import os
+import sys
+
+sys.path.append("..")
 import web
 
 
@@ -74,11 +77,11 @@ class Parser:
         print()
 
 
-for pyfile in os.listdir("trunk/web"):
+for pyfile in os.listdir("web"):
     if pyfile[-2:] == "py":
         print()
         print("## " + pyfile)
         print()
-        Parser().go("trunk/web/" + pyfile)
+        Parser().go("web/" + pyfile)
 print("`ctx`\n   :", end=" ")
 print("\n".join("    " + x for x in web.ctx.__doc__.strip().split("\n")))

@@ -233,7 +233,7 @@ def htmlquote(text):
     r"""
     Encodes `text` for raw use in HTML.
 
-        >>> htmlquote(u"<'&\">")
+        >>> htmlquote(u"<'&\">")  # doctest: +ALLOW_UNICODE
         u'&lt;&#39;&amp;&quot;&gt;'
     """
     text = text.replace(u"&", u"&amp;")  # Must be done first!
@@ -248,7 +248,7 @@ def htmlunquote(text):
     r"""
     Decodes `text` that's HTML quoted.
 
-        >>> htmlunquote(u'&lt;&#39;&amp;&quot;&gt;')
+        >>> htmlunquote(u'&lt;&#39;&amp;&quot;&gt;')  # doctest: +ALLOW_UNICODE
         u'<\'&">'
     """
     text = text.replace(u"&quot;", u'"')
@@ -263,9 +263,9 @@ def websafe(val):
     r"""
     Converts `val` so that it is safe for use in Unicode HTML.
 
-        >>> websafe("<'&\">")
+        >>> websafe("<'&\">")  # doctest: +ALLOW_UNICODE
         u'&lt;&#39;&amp;&quot;&gt;'
-        >>> websafe(None)
+        >>> websafe(None)  # doctest: +ALLOW_UNICODE
         u''
         >>> websafe(u'\u203d') == u'\u203d'
         True

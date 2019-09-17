@@ -632,7 +632,7 @@ subdir_application = application
 
 
 class subdomain_application(application):
-    """
+    r"""
     Application to delegate requests based on the host.
 
         >>> urls = ("/hello", "hello")

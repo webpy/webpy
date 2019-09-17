@@ -1444,7 +1444,7 @@ def to36(q):
     return "".join(converted) or "0"
 
 
-r_url = re_compile("(?<!\()(http://(\S+))")
+r_url = re_compile(r"(?<!\()(http://(\S+))")
 
 
 def safemarkdown(text):

@@ -1672,7 +1672,7 @@ def test():
 
         >>> t('$x')()
         Traceback (most recent call last):
-        ...
+            ...
         NameError: name 'x' is not defined
         >>> t('$x', globals={'x': 1})()  # doctest: +ALLOW_UNICODE
         u'1\n'

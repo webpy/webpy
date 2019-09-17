@@ -25,7 +25,7 @@ before_script:
   - mysql --user=root -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
 script:
   - pytest --cov --cov-report=term-missing --cov-report=xml
-  - pip install simplejson twisted
+  - pip install twisted
   - pytest --doctest-modules --ignore=experimental/pwt.py --ignore=web/webopenid.py . || true
 after_success:
   - |

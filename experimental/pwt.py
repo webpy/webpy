@@ -1,7 +1,8 @@
 from __future__ import print_function
-import simplejson
-import sudo
+import json
 import sys
+
+import sudo
 
 sys.path.append("..")
 import web
@@ -62,7 +63,7 @@ function receive(d) {
         self._inFunc = False
 
         web.header("Content-Type", "text/javascript")
-        print("receive(" + simplejson.dumps(self.updated) + ");")
+        print("receive(" + json.dumps(self.updated) + ");")
 
     def __setattr__(self, k, v):
         if self._inFunc and k != "_inFunc":

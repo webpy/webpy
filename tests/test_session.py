@@ -2,6 +2,7 @@ import unittest
 import web
 import tempfile
 import os
+import threading
 
 
 class SessionTest(unittest.TestCase):
@@ -79,6 +80,22 @@ class SessionTest(unittest.TestCase):
         b.open("/redirect")
         b.open("/session/request_token")
         self.assertEqual(b.data, b"123")
+
+class DiskStoreTest(unittest.TestCase):
+    def testStoreConcurrent(self):
+        dir = tempfile.mkdtemp()
+        store = web.session.DiskStore(dir)
+        def set_val():
+            store['fail'] = 'value'
+
+        for c in xrange(10):
+            m = threading.Thread(target=set_val)
+            m.start()
+            try:
+                value = store['fail']
+            except KeyError:
+                pass
+        self.assertEquals(value, 'value')
 
 
 class DBSessionTest(SessionTest):

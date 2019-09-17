@@ -20,12 +20,15 @@ Notes:
 """
 from __future__ import absolute_import
 
+import hmac
 import os
 import random
-import hmac
-from . import webapi as web
+
 import openid.consumer.consumer
 import openid.store.memstore
+
+from . import webapi as web
+
 
 sessions = {}
 store = openid.store.memstore.MemoryStore()

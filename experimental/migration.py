@@ -2,8 +2,10 @@
 
 Import this module at the beginning of your program.
 """
-import web
 import sys
+
+sys.path.append("..")
+import web
 
 
 def setup_database():

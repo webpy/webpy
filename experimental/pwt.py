@@ -1,6 +1,10 @@
 from __future__ import print_function
+import simplejson
+import sudo
+import sys
+
+sys.path.append("..")
 import web
-import simplejson, sudo
 
 # fmt: off
 urls = (

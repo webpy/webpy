@@ -1,7 +1,9 @@
 """Helpers functions to run log-running tasks."""
+import sys
 import threading
-from web import utils
-from web import webapi as web
+
+sys.path.append("..")
+from web import utils, webapi as web
 
 
 def background(func):

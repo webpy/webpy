@@ -288,7 +288,7 @@ class DiskStore(Store):
         path = self._get_path(key)
         pickled = self.encode(value)
         try:
-            tname = path + "." + threading.current_thread().getname()
+            tname = path + "." + threading.current_thread().getName()
             f = open(tname, "wb")
             try:
                 f.write(pickled)

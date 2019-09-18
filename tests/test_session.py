@@ -90,7 +90,7 @@ class DiskStoreTest(unittest.TestCase):
         def set_val():
             store["fail"] = "value"
 
-        for c in xrange(10):
+        for c in range(10):
             m = threading.Thread(target=set_val)
             m.start()
             try:

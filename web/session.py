@@ -294,7 +294,7 @@ class DiskStore(Store):
                 f.write(pickled)
             finally:
                 f.close()
-                os.rename(tname, path) #atomary operation
+                os.rename(tname, path)  # atomary operation
         except IOError:
             pass
 

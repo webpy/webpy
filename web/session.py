@@ -279,7 +279,8 @@ class DiskStore(Store):
         path = self._get_path(key)
 
         if os.path.exists(path):
-            pickled = open(path, "rb").read()
+            with open(path, "rb") as fh:
+                pickled = fh.read()
             return self.decode(pickled)
         else:
             raise KeyError(key)

@@ -1,10 +1,8 @@
 from __future__ import print_function
-import random
+import json
 
-from twisted.internet import reactor, defer
+from twisted.internet import reactor
 from twisted.web import http
-
-import simplejson
 
 import web
 
@@ -104,7 +102,7 @@ class JSFeed(Feed):
         Feed.publish(
             self,
             '<script type="text/javascript">window.parent.%s(%s)</script>'
-            % (self.callback, simplejson.dumps(obj) + " " * 2048),
+            % (self.callback, json.dumps(obj) + " " * 2048),
         )
 
 

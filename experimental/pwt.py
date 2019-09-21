@@ -1,6 +1,7 @@
 from __future__ import print_function
+import json
 import web
-import simplejson, sudo
+import sudo
 
 # fmt: off
 urls = (
@@ -58,7 +59,7 @@ function receive(d) {
         self._inFunc = False
 
         web.header("Content-Type", "text/javascript")
-        print("receive(" + simplejson.dumps(self.updated) + ");")
+        print("receive(" + json.dumps(self.updated) + ");")
 
     def __setattr__(self, k, v):
         if self._inFunc and k != "_inFunc":

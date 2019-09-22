@@ -499,8 +499,9 @@ class Telephone(Input):
     >>> Telephone(name='tel', value='55512345').render()
     u'<input id="tel" name="tel" type="tel" value="55512345"/>'
     """
+
     def get_type(self):
-        return 'tel'
+        return "tel"
 
 
 class Email(Input):
@@ -512,8 +513,9 @@ class Email(Input):
     u'<input id="email" name="email" type="email" value="me@example.org"/>'
 
     """
+
     def get_type(self):
-        return 'email'
+        return "email"
 
 
 class Search(Input):
@@ -527,8 +529,9 @@ class Search(Input):
     u'<input id="search" name="search" pattern="[a-z0-9]{2,30}" placeholder="Search..." required="required" type="search" value="Search"/>'
 
     """
+
     def get_type(self):
-        return 'search'
+        return "search"
 
 
 class Url(Input):
@@ -539,8 +542,9 @@ class Url(Input):
     >>> Url(name='url', value='url').render()
     u'<input id="url" name="url" type="url" value="url"/>'
     """
+
     def get_type(self):
-        return 'url'
+        return "url"
 
 
 class Number(Input):
@@ -551,8 +555,9 @@ class Number(Input):
     >>> Number(name='num', min='0', max='10', step='2', value='5').render()
     u'<input id="num" max="10" min="0" name="num" step="2" type="number" value="5"/>'
     """
+
     def get_type(self):
-        return 'number'
+        return "number"
 
 
 class Range(Input):
@@ -563,8 +568,9 @@ class Range(Input):
     >>> Range(name='range', min='0', max='10', step='2', value='5').render()
     u'<input id="range" max="10" min="0" name="range" step="2" type="range" value="5"/>'
     """
+
     def get_type(self):
-        return 'range'
+        return "range"
 
 
 class Color(Input):
@@ -577,8 +583,9 @@ class Color(Input):
     >>> Color(name='color').render()
     u'<input id="color" name="color" type="color"/>'
     """
+
     def get_type(self):
-        return 'color'
+        return "color"
 
 
 class Datalist(Input):
@@ -597,15 +604,16 @@ class Datalist(Input):
     >>> Datalist(name='list', args=['a', 'b', 'c', 'd']).render()
     u'<datalist id="list" name="list"><option value="a"/><option value="b"/><option value="c"/><option value="d"/></datalist>'
     """
+
     def __init__(self, name, args, *validators, **kwargs):
         self.args = args
         super(Datalist, self).__init__(name, *validators, **kwargs)
 
     def render(self):
         attrs = self.attrs.copy()
-        attrs['name'] = self.name
-        label_p = ''
-        x = '<datalist %s>' % attrs
+        attrs["name"] = self.name
+        label_p = ""
+        x = "<datalist %s>" % attrs
         for arg in self.args:
             if isinstance(arg, (tuple, list)):
                 label_p = ' label="%s"' % net.websafe(arg[0])
@@ -613,7 +621,7 @@ class Datalist(Input):
             else:
                 label = net.websafe(arg)
             x += '<option%s value="%s"/>' % (label_p, label)
-        x += '</datalist>'
+        x += "</datalist>"
         return x
 
 

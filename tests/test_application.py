@@ -1,7 +1,9 @@
 import unittest
 import time
 import threading
+import os
 import sys
+import shutil
 import web
 
 try:
@@ -57,6 +59,29 @@ class ApplicationTest(unittest.TestCase):
         time.sleep(1)
         write("foo.py", data % dict(classname="c", output="c"))
         self.assertEqual(app.request("/").data, b"c")
+
+    def test_reloader_nested(self):
+        try:
+            shutil.rmtree('testpackage')
+        except OSError:
+            pass
+        os.mkdir('testpackage')
+        write('testpackage/__init__.py', '')
+        write('testpackage/bar.py', data % dict(classname='a', output='a'))
+        import testpackage.bar
+        app = testpackage.bar.app
+
+        self.assertEqual(app.request('/').data, b'a')
+
+        # test class change
+        time.sleep(1)
+        write('testpackage/bar.py', data % dict(classname='a', output='b'))
+        self.assertEqual(app.request('/').data, b'b')
+
+        # test urls change
+        time.sleep(1)
+        write('testpackage/bar.py', data % dict(classname='c', output='c'))
+        self.assertEqual(app.request('/').data, b'c')
 
     def testUppercaseMethods(self):
         urls = ("/", "hello")

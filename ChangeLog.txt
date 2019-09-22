@@ -25,6 +25,7 @@
 * Fixed incorrect returned row ids with `multiple_insert()` (fixes #263 #447)
 * Fixed not correctly render the `id` attribute after changed (fixes #339, tx @jimgregory)
 * Fixed DiskStore concurrency issue (fixes Fixes #83 #182 #191 #289 #470, tx @skawouter)
+* Fixed app module isn't picked up by `Reloader` for first code change (fixes #438, tx @jzellman)
 
 ## 2018-02-28 0.39
 

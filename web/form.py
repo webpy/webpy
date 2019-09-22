@@ -31,11 +31,11 @@ class Form(object):
 
         >>> f = Form(Textbox("x"))
         >>> f.render()
-        '<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text"/></td></tr>\n</table>'
+        u'<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text"/></td></tr>\n</table>'
         >>> f.fill(x="42")
         True
         >>> f.render()
-        '<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text" value="42"/></td></tr>\n</table>'
+        u'<table>\n    <tr><th><label for="x">x</label></th><td><input id="x" name="x" type="text" value="42"/></td></tr>\n</table>'
     """
 
     def __init__(self, *inputs, **kw):
@@ -159,25 +159,25 @@ class Input(object):
     - For radiobox, please use `Radio` class for better control.
 
         >>> Input(name='foo', type='email', value="user@domain.com").render()
-        '<input id="foo" name="foo" type="email" value="user@domain.com"/>'
+        u'<input id="foo" name="foo" type="email" value="user@domain.com"/>'
         >>> Input(name='foo', type='number', value="bar").render()
-        '<input id="foo" name="foo" type="number" value="bar"/>'
+        u'<input id="foo" name="foo" type="number" value="bar"/>'
         >>> Input(name='num', type="number", min='0', max='10', step='2', value='5').render()
-        '<input id="num" max="10" min="0" name="num" step="2" type="number" value="5"/>'
+        u'<input id="num" max="10" min="0" name="num" step="2" type="number" value="5"/>'
         >>> Input(name='foo', type="tel", value='55512345').render()
-        '<input id="foo" name="foo" type="tel" value="55512345"/>'
+        u'<input id="foo" name="foo" type="tel" value="55512345"/>'
         >>> Input(name='search', type="search", value='Search').render()
-        '<input id="search" name="search" type="search" value="Search"/>'
+        u'<input id="search" name="search" type="search" value="Search"/>'
         >>> Input(name='search', type="search", value='Search', required='required', pattern='[a-z0-9]{2,30}', placeholder='Search...').render()
-        '<input id="search" name="search" pattern="[a-z0-9]{2,30}" placeholder="Search..." required="required" type="search" value="Search"/>'
+        u'<input id="search" name="search" pattern="[a-z0-9]{2,30}" placeholder="Search..." required="required" type="search" value="Search"/>'
         >>> Input(name='url', type="url", value='url').render()
-        '<input id="url" name="url" type="url" value="url"/>'
+        u'<input id="url" name="url" type="url" value="url"/>'
         >>> Input(name='range', type="range", min='0', max='10', step='2', value='5').render()
-        '<input id="range" max="10" min="0" name="range" step="2" type="range" value="5"/>'
+        u'<input id="range" max="10" min="0" name="range" step="2" type="range" value="5"/>'
         >>> Input(name='color', type="color").render()
-        '<input id="color" name="color" type="color"/>'
+        u'<input id="color" name="color" type="color"/>'
         >>> Input(name='f', type="file", accept=".doc,.docx,.xml").render()
-        '<input accept=".doc,.docx,.xml" id="f" name="f" type="file"/>'
+        u'<input accept=".doc,.docx,.xml" id="f" name="f" type="file"/>'
     """
 
     def __init__(self, name, *validators, **attrs):
@@ -269,9 +269,9 @@ class Textbox(Input):
     """Textbox input.
 
         >>> Textbox(name='foo', value='bar').render()
-        '<input id="foo" name="foo" type="text" value="bar"/>'
+        u'<input id="foo" name="foo" type="text" value="bar"/>'
         >>> Textbox(name='foo', value=0).render()
-        '<input id="foo" name="foo" type="text" value="0"/>'
+        u'<input id="foo" name="foo" type="text" value="0"/>'
     """
 
     def get_type(self):
@@ -282,7 +282,7 @@ class Password(Input):
     """Password input.
 
         >>> Password(name='password', value='secret').render()
-        '<input id="password" name="password" type="password" value="secret"/>'
+        u'<input id="password" name="password" type="password" value="secret"/>'
     """
 
     def get_type(self):
@@ -293,7 +293,7 @@ class Textarea(Input):
     """Textarea input.
 
         >>> Textarea(name='foo', value='bar').render()
-        '<textarea id="foo" name="foo">bar</textarea>'
+        u'<textarea id="foo" name="foo">bar</textarea>'
     """
 
     def render(self):
@@ -307,9 +307,9 @@ class Dropdown(Input):
     r"""Dropdown/select input.
 
         >>> Dropdown(name='foo', args=['a', 'b', 'c'], value='b').render()
-        '<select id="foo" name="foo">\n  <option value="a">a</option>\n  <option selected="selected" value="b">b</option>\n  <option value="c">c</option>\n</select>\n'
+        u'<select id="foo" name="foo">\n  <option value="a">a</option>\n  <option selected="selected" value="b">b</option>\n  <option value="c">c</option>\n</select>\n'
         >>> Dropdown(name='foo', args=[('a', 'aa'), ('b', 'bb'), ('c', 'cc')], value='b').render()
-        '<select id="foo" name="foo">\n  <option value="a">aa</option>\n  <option selected="selected" value="b">bb</option>\n  <option value="c">cc</option>\n</select>\n'
+        u'<select id="foo" name="foo">\n  <option value="a">aa</option>\n  <option selected="selected" value="b">bb</option>\n  <option value="c">cc</option>\n</select>\n'
     """
 
     def __init__(self, name, args, *validators, **attrs):
@@ -355,9 +355,9 @@ class GroupedDropdown(Dropdown):
     r"""Grouped Dropdown/select input.
 
         >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', ('Volvo', 'Saab')), ('German Cars', ('Mercedes', 'Audi'))), value='Audi').render()
-        '<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="Volvo">Volvo</option>\n    <option value="Saab">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="Mercedes">Mercedes</option>\n    <option selected="selected" value="Audi">Audi</option>\n  </optgroup>\n</select>\n'
+        u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="Volvo">Volvo</option>\n    <option value="Saab">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="Mercedes">Mercedes</option>\n    <option selected="selected" value="Audi">Audi</option>\n  </optgroup>\n</select>\n'
         >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', (('v', 'Volvo'), ('s', 'Saab'))), ('German Cars', (('m', 'Mercedes'), ('a', 'Audi')))), value='a').render()
-        '<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="v">Volvo</option>\n    <option value="s">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="m">Mercedes</option>\n    <option selected="selected" value="a">Audi</option>\n  </optgroup>\n</select>\n'
+        u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="v">Volvo</option>\n    <option value="s">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="m">Mercedes</option>\n    <option selected="selected" value="a">Audi</option>\n  </optgroup>\n</select>\n'
 
     """
 
@@ -409,14 +409,14 @@ class Checkbox(Input):
     """Checkbox input.
 
     >>> Checkbox('foo', value='bar', checked=True).render()
-    '<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
+    u'<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     >>> Checkbox('foo', value='bar').render()
-    '<input id="foo_bar" name="foo" type="checkbox" value="bar"/>'
+    u'<input id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     >>> c = Checkbox('foo', value='bar')
     >>> c.validate('on')
     True
     >>> c.render()
-    '<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
+    u'<input checked="checked" id="foo_bar" name="foo" type="checkbox" value="bar"/>'
     """
 
     def __init__(self, name, *validators, **attrs):
@@ -448,9 +448,9 @@ class Button(Input):
     """HTML Button.
 
     >>> Button("save").render()
-    '<button id="save" name="save">save</button>'
+    u'<button id="save" name="save">save</button>'
     >>> Button("action", value="save", html="<b>Save Changes</b>").render()
-    '<button id="action" name="action" value="save"><b>Save Changes</b></button>'
+    u'<button id="action" name="action" value="save"><b>Save Changes</b></button>'
     """
 
     def __init__(self, name, *validators, **attrs):
@@ -470,7 +470,7 @@ class Hidden(Input):
     """Hidden Input.
 
         >>> Hidden(name='foo', value='bar').render()
-        '<input id="foo" name="foo" type="hidden" value="bar"/>'
+        u'<input id="foo" name="foo" type="hidden" value="bar"/>'
     """
 
     def is_hidden(self):
@@ -484,11 +484,137 @@ class File(Input):
     """File input.
 
         >>> File(name='f', accept=".doc,.docx,.xml").render()
-        '<input accept=".doc,.docx,.xml" id="f" name="f" type="file"/>'
+        u'<input accept=".doc,.docx,.xml" id="f" name="f" type="file"/>'
     """
 
     def get_type(self):
         return "file"
+
+
+class Telephone(Input):
+    """Telephone input.
+
+    See: <http://dev.w3.org/html5/spec/Overview.html#the-input-element>
+
+    >>> Telephone(name='tel', value='55512345').render()
+    u'<input id="tel" name="tel" type="tel" value="55512345"/>'
+    """
+    def get_type(self):
+        return 'tel'
+
+
+class Email(Input):
+    """Email input.
+
+    See: <http://dev.w3.org/html5/spec/Overview.html#the-input-element>
+
+    >>> Email(name='email', value='me@example.org').render()
+    u'<input id="email" name="email" type="email" value="me@example.org"/>'
+
+    """
+    def get_type(self):
+        return 'email'
+
+
+class Search(Input):
+    """Search input.
+
+    See: <http://dev.w3.org/html5/spec/Overview.html#text-state-and-search-state>
+
+    >> Search(name='search', value='Search').render()
+    u'<input id="search" name="search" type="search" value="Search"/>'
+    >>> Search(name='search', value='Search', required='required', pattern='[a-z0-9]{2,30}', placeholder='Search...').render()
+    u'<input id="search" name="search" pattern="[a-z0-9]{2,30}" placeholder="Search..." required="required" type="search" value="Search"/>'
+
+    """
+    def get_type(self):
+        return 'search'
+
+
+class Url(Input):
+    """URL input.
+
+    See: <http://dev.w3.org/html5/spec/Overview.html#url-state>
+
+    >>> Url(name='url', value='url').render()
+    u'<input id="url" name="url" type="url" value="url"/>'
+    """
+    def get_type(self):
+        return 'url'
+
+
+class Number(Input):
+    """Number input.
+
+    See: <http://dev.w3.org/html5/spec/Overview.html#number-state>
+
+    >>> Number(name='num', min='0', max='10', step='2', value='5').render()
+    u'<input id="num" max="10" min="0" name="num" step="2" type="number" value="5"/>'
+    """
+    def get_type(self):
+        return 'number'
+
+
+class Range(Input):
+    """Range input.
+
+    See: <http://dev.w3.org/html5/spec/Overview.html#range-state>
+
+    >>> Range(name='range', min='0', max='10', step='2', value='5').render()
+    u'<input id="range" max="10" min="0" name="range" step="2" type="range" value="5"/>'
+    """
+    def get_type(self):
+        return 'range'
+
+
+class Color(Input):
+    """Color input.
+
+    Warning: Only Opera 11 supports.
+
+    See: <http://dev.w3.org/html5/spec/Overview.html#color-state>
+
+    >>> Color(name='color').render()
+    u'<input id="color" name="color" type="color"/>'
+    """
+    def get_type(self):
+        return 'color'
+
+
+class Datalist(Input):
+    """Datalist input.
+
+    This is currently supported by only Firefox and Opera. Use it with caucious.
+    Datalist cannot be used separately. It must be bound to an input.
+
+    An example can be viewed on
+    <http://dev.w3.org/html5/spec/Overview.html#url-state>
+
+    >>> Datalist(name='list', args=[('a', 'b'), ('c', 'd')]).render()
+    u'<datalist id="list" name="list"><option label="a" value="b"/><option label="c" value="d"/></datalist>'
+    >>> Datalist(name='list', args=[['a', 'b'], ['c', 'd']]).render()
+    u'<datalist id="list" name="list"><option label="a" value="b"/><option label="c" value="d"/></datalist>'
+    >>> Datalist(name='list', args=['a', 'b', 'c', 'd']).render()
+    u'<datalist id="list" name="list"><option value="a"/><option value="b"/><option value="c"/><option value="d"/></datalist>'
+    """
+    def __init__(self, name, args, *validators, **kwargs):
+        self.args = args
+        super(Datalist, self).__init__(name, *validators, **kwargs)
+
+    def render(self):
+        attrs = self.attrs.copy()
+        attrs['name'] = self.name
+        label_p = ''
+        x = '<datalist %s>' % attrs
+        for arg in self.args:
+            if isinstance(arg, (tuple, list)):
+                label_p = ' label="%s"' % net.websafe(arg[0])
+                label = net.websafe(arg[1])
+            else:
+                label = net.websafe(arg)
+            x += '<option%s value="%s"/>' % (label_p, label)
+        x += '</datalist>'
+        return x
 
 
 class Validator:

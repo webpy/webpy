@@ -11,6 +11,8 @@
 * Supports url for SQLite database like `sqlite:///mydb.sqlite`,
   `sqlite:////absolute/path/mydb.sqlite` (fixes #209, tx @iamFIREcracker)
 * Allow HTML5 form input elements in `web.form.Input()` (fixes #440, tx @jimgregory)
+* Add more form classes for different types: `Email`, `Url`, `Number`, `Range`,
+  `Color`, `Search`, `Telephone` and `Datalist` (fixes #98 #497, tx @faruken @gjdv)
 * Return body for `NoMethod` error handler (fixes #240, tx @waldhol)
 * Fixed unicode in request url (fixes #461, tx @schneidersoft)
 * Fixed inline comment in Templator which leads to unexpected behavior (fixes #432, tx @lucylqe)
@@ -22,6 +24,7 @@
 * Fixed: IP address which contains space should not pass validation (fixes #140, tx @chuangbo)
 * Fixed incorrect returned row ids with `multiple_insert()` (fixes #263 #447)
 * Fixed not correctly render the `id` attribute after changed (fixes #339, tx @jimgregory)
+* Fixed DiskStore concurrency issue (fixes Fixes #83 #182 #191 #289 #470, tx @skawouter)
 
 ## 2018-02-28 0.39
 

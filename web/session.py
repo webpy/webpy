@@ -8,6 +8,7 @@ import os.path
 import time
 import datetime
 import base64
+import threading
 from copy import deepcopy
 
 try:
@@ -278,7 +279,8 @@ class DiskStore(Store):
         path = self._get_path(key)
 
         if os.path.exists(path):
-            pickled = open(path, "rb").read()
+            with open(path, "rb") as fh:
+                pickled = fh.read()
             return self.decode(pickled)
         else:
             raise KeyError(key)
@@ -287,11 +289,13 @@ class DiskStore(Store):
         path = self._get_path(key)
         pickled = self.encode(value)
         try:
-            f = open(path, "wb")
+            tname = path + "." + threading.current_thread().getName()
+            f = open(tname, "wb")
             try:
                 f.write(pickled)
             finally:
                 f.close()
+                os.rename(tname, path)  # atomary operation
         except IOError:
             pass
 

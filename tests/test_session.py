@@ -97,7 +97,7 @@ class DiskStoreTest(unittest.TestCase):
                 value = store["fail"]
             except KeyError:
                 pass
-        self.assertEquals(value, "value")
+        self.assertEqual(value, "value")
 
 
 class DBSessionTest(SessionTest):

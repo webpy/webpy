@@ -44,7 +44,6 @@ import tokenize
 import os
 import sys
 import glob
-import re
 import ast
 
 from .utils import storage, safeunicode, safestr, re_compile
@@ -299,7 +298,6 @@ class Parser:
         def attr_access():
             from token import NAME  # python token constants
 
-            dot = tokens.lookahead()
             if tokens.lookahead2().type == NAME:
                 next(tokens)  # consume dot
                 identifier()
@@ -1176,8 +1174,6 @@ class GAE_Render(Render):
 render = Render
 # setup render for Google App Engine.
 try:
-    from google import appengine
-
     render = Render = GAE_Render
 except ImportError:
     pass
@@ -1191,8 +1187,6 @@ def frender(path, **keywords):
 
 def compile_templates(root):
     """Compiles templates to python code."""
-    re_start = re_compile("^", re.M)
-
     for dirpath, dirnames, filenames in os.walk(root):
         filenames = [
             f
@@ -1235,7 +1229,7 @@ def compile_templates(root):
             out.write("join_ = %s._join; escape_ = %s._escape\n\n" % (name, name))
 
             # create template to make sure it compiles
-            t = Template(open(path, encoding="utf-8").read(), path)
+            Template(open(path, encoding="utf-8").read(), path)
         out.close()
 
 
@@ -1742,8 +1736,6 @@ def test():
 
 
 if __name__ == "__main__":
-    import sys
-
     if "--compile" in sys.argv:
         compile_templates(sys.argv[2])
     else:

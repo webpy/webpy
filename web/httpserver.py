@@ -44,7 +44,8 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
     import SocketServer
-    import socket, errno
+    import socket
+    import errno
     import traceback
 
     class WSGIHandler(SimpleHTTPRequestHandler):
@@ -96,7 +97,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                     # Catch common network errors and suppress them
                     if socket_err.args[0] in (errno.ECONNABORTED, errno.EPIPE):
                         return
-                except socket.timeout as socket_timeout:
+                except socket.timeout:
                     return
             except:
                 print(traceback.format_exc(), file=web.debug)

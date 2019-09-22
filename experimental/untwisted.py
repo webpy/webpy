@@ -32,7 +32,6 @@ class Request(http.Request):
 
         web.webapi._load(env)
         web.ctx.trequest = self
-        result = self.actualfunc()
         self.setResponseCode(int(web.ctx.status.split()[0]))
         for (h, v) in web.ctx.headers:
             self.setHeader(h, v)

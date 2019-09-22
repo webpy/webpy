@@ -61,7 +61,7 @@ if PY2:
 
 
 else:
-    from collections import MutableMapping
+    from collections.abc import MutableMapping
 
 
 def splitline(text):

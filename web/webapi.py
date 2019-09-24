@@ -594,7 +594,7 @@ def parse_cookies(http_cookie):
 
 
 def cookies(*requireds, **defaults):
-    r"""Returns a `storage` object with all the request cookies in it.
+    """Returns a `storage` object with all the request cookies in it.
 
     See `storify` for how `requireds` and `defaults` work.
 

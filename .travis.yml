@@ -14,8 +14,8 @@ install:
   - pip install flake8 markdown pytest-cov -r requirements.txt -r test_requirements.txt
 before_script:
   - if [ "$TRAVIS_PYTHON_VERSION" = "3.7" ]; then
-      pip install black;
-      black --check .;
+      pip install black ;
+      black --check . ;
     fi
   # stop the build if there are Python syntax errors or undefined names
   - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -23,7 +23,12 @@ before_script:
   - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
   - psql -c 'create database webpy;' -U postgres
   - mysql --user=root -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
-script: pytest --cov --cov-report=term-missing --cov-report=xml
+script:
+  - pytest --cov --cov-report=term-missing --cov-report=xml
+  - if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ]; then
+      pip install twisted ;
+      pytest --doctest-modules --ignore=web/template.py --ignore=web/webapi.py --ignore=web/webopenid.py ./web ;
+    fi
 after_success:
   - |
     flags=py${TRAVIS_PYTHON_VERSION//./}

@@ -56,8 +56,10 @@ class application:
         ...     def GET(self): return "hello"
         >>>
         >>> app.request("/hello").data
-        b'hello'
+        'hello'
     """
+
+    # PY3DOCTEST: b'hello'
 
     def __init__(self, mapping=(), fvars={}, autoreload=None):
         if autoreload is None:
@@ -157,8 +159,9 @@ class application:
             ...
             >>> app.add_processor(hello)
             >>> app.request("/web.py").data
-            b'hello, web.py'
+            'hello, web.py'
         """
+        # PY3DOCTEST: b'hello, web.py'
         self.processors.append(processor)
 
     def request(
@@ -183,7 +186,7 @@ class application:
             ...
             >>> response = app.request("/hello")
             >>> response.data
-            b'hello'
+            'hello'
             >>> response.status
             '200 OK'
             >>> response.headers['Content-Type']
@@ -215,9 +218,11 @@ class application:
             >>> app.request('/ua', headers = {
             ...      'User-Agent': 'a small jumping bean/1.0 (compatible)'
             ... }).data
-            b'your user-agent is a small jumping bean/1.0 (compatible)'
+            'your user-agent is a small jumping bean/1.0 (compatible)'
 
         """
+        # PY3DOCTEST: b'hello'
+        # PY3DOCTEST: b'your user-agent is a small jumping bean/1.0 (compatible)'
         path, maybe_query = splitquery(localpart)
         query = maybe_query or ""
 
@@ -607,10 +612,13 @@ class auto_application(application):
         ...     path = '/foo/.*'
         ...     def GET(self): return "foo"
         >>> app.request("/hello").data
-        b'hello, world'
+        'hello, world'
         >>> app.request('/foo/bar').data
-        b'foo'
+        'foo'
     """
+
+    # PY3DOCTEST: b'hello, world'
+    # PY3DOCTEST: b'foo'
 
     def __init__(self):
         application.__init__(self)
@@ -648,13 +656,16 @@ class subdomain_application(application):
         >>> mapping = (r"hello\.example\.com", app)
         >>> app2 = subdomain_application(mapping)
         >>> app2.request("/hello", host="hello.example.com").data
-        b'hello'
+        'hello'
         >>> response = app2.request("/hello", host="something.example.com")
         >>> response.status
         '404 Not Found'
         >>> response.data
-        b'not found'
+        'not found'
     """
+
+    # PY3DOCTEST: b'hello'
+    # PY3DOCTEST: b'not found'
 
     def handle(self):
         host = web.ctx.host.split(":")[0]  # strip port

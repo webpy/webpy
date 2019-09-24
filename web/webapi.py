@@ -530,13 +530,13 @@ def decode_cookie(value):
     """
     try:
         # First try plain ASCII encoding
-        return test_type(value, "us-ascii")
+        return text_type(value, "us-ascii")
     except UnicodeError:
         # Then try UTF-8, and if that fails, ISO8859
         try:
-            return test_type(value, "utf-8")
+            return text_type(value, "utf-8")
         except UnicodeError:
-            return test_type(value, "iso8859", "ignore")
+            return text_type(value, "iso8859", "ignore")
 
 
 def parse_cookies(http_cookie):

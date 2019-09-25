@@ -25,7 +25,6 @@ ALL_MODULES = [
     "web.template",
     "web.utils",
     "web.webapi",
-    "web.webopenid",
     "web.wsgi",
 ]
 

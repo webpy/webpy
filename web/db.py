@@ -1361,9 +1361,9 @@ def dburl2dict(url):
         >>> dburl2dict('mysql://james:d%40y@serverfarm.example.net/mygreatdb') == {'pw': 'd@y', 'dbn': 'mysql', 'db': 'mygreatdb', 'host': 'serverfarm.example.net', 'user': 'james', 'port': None}
         True
         >>> dburl2dict('sqlite:///mygreatdb.db')
-        {'dbn': 'sqlite', 'db': 'mygreatdb.db'}
+        {'db': 'mygreatdb.db', 'dbn': 'sqlite'}
         >>> dburl2dict('sqlite:////absolute/path/mygreatdb.db')
-        {'dbn': 'sqlite', 'db': '/absolute/path/mygreatdb.db'}
+        {'db': '/absolute/path/mygreatdb.db', 'dbn': 'sqlite'}
     """
     parts = urlparse.urlparse(unquote(url))
 

@@ -27,7 +27,7 @@ script:
   - pytest --cov --cov-report=term-missing --cov-report=xml
   - if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ]; then
       pip install twisted ;
-      pytest --doctest-modules --ignore=web/template.py --ignore=web/webopenid.py ./web --cov-report=xml ;
+      pytest --doctest-modules --ignore=web/webopenid.py ./web --cov-report=xml ;
     fi
 after_success:
   - |

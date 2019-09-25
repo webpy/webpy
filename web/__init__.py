@@ -25,8 +25,3 @@ from .webapi import *
 from .httpserver import *
 from .debugerror import *
 from .application import *
-
-try:
-    from . import webopenid as openid
-except ImportError:
-    pass  # requires openid module

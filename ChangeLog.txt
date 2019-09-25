@@ -14,6 +14,10 @@
 * Add more form classes for different types: `Email`, `Url`, `Number`, `Range`,
   `Color`, `Search`, `Telephone` and `Datalist` (fixes #98 #497, tx @faruken @gjdv)
 * Return body for `NoMethod` error handler (fixes #240, tx @waldhol)
+* Directory `experimental/` has been removed, it's not used and out of date.
+* Module `web/webopenid.py` has been removed, it uses old `python-openid`
+  module which was released 9 years ago. If you need openid support, consider
+  `python-openid2` or other packages available pypi.
 * Fixed unicode in request url (fixes #461, tx @schneidersoft)
 * Fixed inline comment in Templator which leads to unexpected behavior (fixes #432, tx @lucylqe)
 * Fixed missing exception (ValueError) for socket.inet_pton to be compatible

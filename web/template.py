@@ -451,12 +451,15 @@ class Parser:
             >>> read_block_section = Parser().read_block_section
             >>> read_block_section('for i in range(10): hello $i\nfoo')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
-            >>> read_block_section('for i in range(10):  $# inline comment\n hello $i\nfoo')
-            (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
             >>> read_block_section('for i in range(10):\n        hello $i\n    foo', begin_indent='    ')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, '    foo')
             >>> read_block_section('for i in range(10):\n  hello $i\nfoo')
             (<block: 'for i in range(10):', [<line: [t'hello ', $i, t'\n']>]>, 'foo')
+
+        With inline comment:
+
+            >>> read_block_section('for i in range(10):  $# inline comment\n hello $i\nfoo')
+            (<block: 'for i in range(10):', []>, ' hello $i\nfoo')
         """
         line, text = splitline(text)
         stmt, line = self.read_statement(line)

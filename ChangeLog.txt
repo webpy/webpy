@@ -3,7 +3,7 @@
 ## 2019-09-25 0.40
 
 * Fixed lots of Python-3 compatibility issues.
-* Drop support for Python 2.3 and 2.4.
+* Drop support for Python < 2.7.
 * Allow to get data from PATCH request (fixes #259, tx @kufd)
 * Only store new session data if the data is non-default (fixes #161, tx @shish)
 * Supports `SameSite` cookie attribute (fixes #61 #99 #337)

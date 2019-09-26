@@ -2,9 +2,12 @@
 
 ## 2019-09-25 0.40
 
+Note: `0.40` is the last release which supports Python 2. Future releases will
+drop support for Python 2.
+
 * Fixed lots of Python-3 compatibility issues.
-* Drop support for Python 2.3 and 2.4.
-* Allow to get data from PATCH request (fixes #259, tx @kufd)
+* Drop support for Python < 2.7.
+* Allow to get form data from http PATCH request (fixes #259, tx @kufd)
 * Only store new session data if the data is non-default (fixes #161, tx @shish)
 * Supports `SameSite` cookie attribute (fixes #61 #99 #337)
 * Cookie expire time is now set to same as session `timeout` (fixes #409 #410)
@@ -17,7 +20,7 @@
 * Directory `experimental/` has been removed, it's not used and out of date.
 * Module `web/webopenid.py` has been removed, it uses old `python-openid`
   module which was released 9 years ago. If you need openid support, consider
-  `python-openid2` or other packages available pypi.
+  `python-openid2` or other packages available on https://pypi.org/.
 * Fixed unicode in request url (fixes #461, tx @schneidersoft)
 * Fixed inline comment in Templator which leads to unexpected behavior (fixes #432, tx @lucylqe)
 * Fixed missing exception (ValueError) for socket.inet_pton to be compatible
@@ -25,7 +28,7 @@
 * Fixed incorrect order of arguments for sending email with boto (fixes #204, tx @asldevi)
 * Fixed notfound message is not utf-8 charset (fixes #500, tx @by-z)
 * Fixed error in creating pooled PostgresDB with pgdb driver (fixes #255, tx @PriceChild)
-* Fixed: IP address which contains space should not pass validation (fixes #140, tx @chuangbo)
+* Fixed IP address which contains space should not pass validation (fixes #140, tx @chuangbo)
 * Fixed incorrect returned row ids with `multiple_insert()` (fixes #263 #447)
 * Fixed not correctly render the `id` attribute after changed (fixes #339, tx @jimgregory)
 * Fixed DiskStore concurrency issue (fixes Fixes #83 #182 #191 #289 #470, tx @skawouter)

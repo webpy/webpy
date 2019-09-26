@@ -35,7 +35,7 @@ else:
 
 whereami = os.path.join(os.getcwd(), __file__)
 whereami = os.path.sep.join(whereami.split(os.path.sep)[:-1])
-djangoerror_t = r"""\
+djangoerror_t = """\
 $def with (exception_type, exception_value, frames)
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">

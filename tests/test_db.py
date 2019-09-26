@@ -72,12 +72,13 @@ class DBTest(unittest.TestCase):
 
     def setUp(self):
         self.db = setup_database(self.dbname, driver=self.driver)
+        self.db.query("DROP TABLE IF EXISTS person")
         self.db.query("CREATE TABLE person (name text, email text, active boolean)")
 
     def tearDown(self):
-        # there might be some error with the current connection, delete from a new connection
-        self.db = setup_database(self.dbname, driver=self.driver)
-        self.db.query("DROP TABLE person")
+        self.db.query("DROP TABLE IF EXISTS person")
+        self.db.query("DROP TABLE IF EXISTS mi")
+        self.db.ctx.db.close()
 
     def _testable(self):
         try:
@@ -148,11 +149,14 @@ class DBTest(unittest.TestCase):
         except ImportError:
             return
         db = setup_database(self.dbname, pooling=True)
-        self.assertEqual(db.ctx.db.__class__.__module__, "DBUtils.PooledDB")
-        db.select("person", limit=1)
+        try:
+            self.assertEqual(db.ctx.db.__class__.__module__, "DBUtils.PooledDB")
+            db.select("person", limit=1)
+        finally:
+            db.ctx.db.close()
 
     def test_multiple_insert(self):
-        db = setup_database(self.dbname)
+        db = self.db
         db.multiple_insert("person", [dict(name="a"), dict(name="b")], seqname=False)
 
         assert db.select("person", where="name='a'").list()
@@ -186,15 +190,13 @@ class DBTest(unittest.TestCase):
 
     def test_result_is_unicode(self):
         # TODO : not sure this test has still meaning with Py3
-        db = setup_database(self.dbname)
         self.db.insert("person", False, name="user")
-        name = db.select("person")[0].name
+        name = self.db.select("person")[0].name
         self.assertEqual(type(name), unicode)
 
     def test_result_is_true(self):
-        db = setup_database(self.dbname)
         self.db.insert("person", False, name="user")
-        self.assertEqual(bool(db.select("person")), True)
+        self.assertEqual(bool(self.db.select("person")), True)
 
     def testBoolean(self):
         def t(active):
@@ -207,15 +209,13 @@ class DBTest(unittest.TestCase):
         t(True)
 
     def test_insert_default_values(self):
-        db = setup_database(self.dbname)
-        db.insert("person")
+        self.db.insert("person")
 
     def test_where(self):
-        db = setup_database(self.dbname)
-        db.insert("person", False, name="Foo")
-        d = db.where("person", name="Foo").list()
+        self.db.insert("person", False, name="Foo")
+        d = self.db.where("person", name="Foo").list()
         assert len(d) == 1
-        d = db.where("person").list()
+        d = self.db.where("person").list()
         assert len(d) == 1
 
 
@@ -225,7 +225,7 @@ class PostgresTest2(DBTest):
     driver = "psycopg2"
 
     def test_limit_with_unsafe_value(self):
-        db = setup_database(self.dbname)
+        db = self.db
         db.insert("person", False, name="Foo")
         assert len(db.select("person").list()) == 1
 
@@ -238,7 +238,7 @@ class PostgresTest2(DBTest):
         assert len(db.select("person").list()) == 1
 
     def test_offset_with_unsafe_value(self):
-        db = setup_database(self.dbname)
+        db = self.db
         db.insert("person", False, name="Foo")
         assert len(db.select("person").list()) == 1
 

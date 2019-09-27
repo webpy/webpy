@@ -21,7 +21,7 @@ page, then install it manually:
 
 ```
 unzip webpy-0.40.zip
-cd webpy-webpy-0.40/
+cd webpy-0.40/
 python3 setup.py install
 ```
 

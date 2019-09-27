@@ -1,7 +1,14 @@
 #!/usr/bin/env python
 
+import os
 from setuptools import setup
 from web import __version__
+
+rootdir = os.path.abspath(os.path.dirname(__file__))
+
+# Get the long description from the README file
+with open(os.path.join(rootdir, "README.md")) as in_file:
+    long_description = in_file.read()
 
 setup(
     name="web.py",
@@ -14,10 +21,8 @@ setup(
     url="http://webpy.org/",
     packages=["web", "web.contrib"],
     install_requires=["cheroot", "markdown"],
-    long_description=(
-        "Think about the ideal way to write a web app. "
-        "Write the code to make it happen."
-    ),
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     license="Public domain",
     platforms=["any"],
     classifiers=[

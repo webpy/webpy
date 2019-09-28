@@ -167,7 +167,7 @@ class DBTest(unittest.TestCase):
             db.query("CREATE TABLE mi (id SERIAL PRIMARY KEY, v VARCHAR(5))")
         elif self.driver in web.db.mysql_drivers:
             self.db.query(
-                "CREATE TABLE mi (id INT(10) UNSIGNED AUTO_INCREMENT, v VARCHAR(5))"
+                "CREATE TABLE mi (id INT(10) UNSIGNED AUTO_INCREMENT, v VARCHAR(5), PRIMARY KEY (`id`))"
             )
         elif self.driver in web.db.sqlite_drivers:
             self.db.query(

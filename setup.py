@@ -20,7 +20,7 @@ setup(
     maintainer_email="anandology@gmail.com",
     url="http://webpy.org/",
     packages=["web", "web.contrib"],
-    install_requires=["cheroot", "markdown"],
+    install_requires=["cheroot"],
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="Public domain",

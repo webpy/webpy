@@ -25,12 +25,9 @@ except ImportError:
     from urllib import splitquery, urlencode, unquote
 
 try:
-    from importlib import reload  # Since Py 3.4 reload is in importlib
-except ImportError:
-    try:
-        from imp import reload  # Since Py 3.0 and before 3.4 reload is in imp
-    except ImportError:
-        pass  # Before Py 3.0 reload is a global function
+    reload  # Python 2
+except NameError:
+    from importlib import reload  # Python 3
 
 from io import BytesIO
 

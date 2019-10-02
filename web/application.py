@@ -26,7 +26,7 @@ except ImportError:
 
 try:
     reload  # Python 2
-except ImportError:
+except NameError:
     from importlib import reload  # Python 3
 
 from io import BytesIO

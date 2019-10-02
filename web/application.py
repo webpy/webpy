@@ -25,7 +25,7 @@ except ImportError:
     from urllib import splitquery, urlencode, unquote
 
 try:
-    reload  # Python
+    reload  # Python 2
 except ImportError:
     from importlib import reload  # Python 3
 

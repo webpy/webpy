@@ -1,7 +1,8 @@
 import unittest
-import web
 import threading
 import time
+import urllib2
+import web
 
 
 class WSGITest(unittest.TestCase):
@@ -18,7 +19,7 @@ class WSGITest(unittest.TestCase):
         thread.start()
         time.sleep(0.5)
 
-        b = web.browser.Browser()
+        b = web.browser.AppBrowser(app)
         r = b.open("/").read()
         s = r.decode("utf8")
         self.assertEqual(s, u"\u0C05\u0C06")
@@ -39,7 +40,7 @@ class WSGITest(unittest.TestCase):
         thread.start()
         time.sleep(0.5)
 
-        b = web.browser.Browser()
+        b = web.browser.AppBrowser(app)
         r = b.open("/")
         self.assertEqual(r.read(), b"abcdef")
 
@@ -59,9 +60,10 @@ class WSGITest(unittest.TestCase):
         thread.start()
         time.sleep(0.5)
 
-        b = web.browser.Browser()
+        b = web.browser.AppBrowser(app)
         r = b.open("/%E2%84%A6")
-        self.assertEqual(r.read(), b"\xE2\x84\xA6")
+        s = urllib2.unquote(r.read())
+        self.assertEqual(s, b"\xE2\x84\xA6")
 
         app.stop()
         thread.join()

@@ -3,7 +3,7 @@ import threading
 import time
 
 try:  # PY 3
-    from urllib.parse import unquote
+    from urllib.parse import unquote_to_bytes as unquote
 except ImportError:  # PY 2
     from urllib import unquote
 

@@ -1,7 +1,12 @@
 import unittest
 import threading
 import time
-import urllib2
+
+try:  # PY 3
+    from urllib.parse import unquote
+except ImportError:  # PY 2
+    from urllib import unquote
+
 import web
 
 
@@ -62,7 +67,7 @@ class WSGITest(unittest.TestCase):
 
         b = web.browser.AppBrowser(app)
         r = b.open("/%E2%84%A6")
-        s = urllib2.unquote(r.read())
+        s = unquote(r.read())
         self.assertEqual(s, b"\xE2\x84\xA6")
 
         app.stop()

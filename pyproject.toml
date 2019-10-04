@@ -15,6 +15,5 @@ exclude = '''
     | dist
   )/
   | docs/conf.py
-  | tools/markdown.py
 )
 '''

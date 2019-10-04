@@ -79,7 +79,6 @@ __all__ = [
     "threadeddict",
     "autoassign",
     "to36",
-    "safemarkdown",
     "sendmail",
 ]
 
@@ -1445,24 +1444,6 @@ def to36(q):
 
 
 r_url = re_compile(r"(?<!\()(http://(\S+))")
-
-
-def safemarkdown(text):
-    """
-    Converts text to HTML following the rules of Markdown, but blocking any
-    outside HTML input, so that only the things supported by Markdown
-    can be used. Also converts raw URLs to links.
-
-    (requires [markdown.py](http://webpy.org/markdown.py))
-    """
-    from markdown import markdown
-
-    if text:
-        text = text.replace("<", "&lt;")
-        # TODO: automatically get page title?
-        text = r_url.sub(r"<\1>", text)
-        text = markdown(text)
-        return text
 
 
 def sendmail(from_address, to_address, subject, message, headers=None, **kw):

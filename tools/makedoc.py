@@ -119,7 +119,7 @@ def arg_string(func):
 
 def recurse_over(ob, name, indent_level=0):
     ts = type_string(ob)
-    if not ts in doc_these:
+    if ts not in doc_these:
         return  # stos what shouldn't be docced getting docced
     if indent_level > 0 and ts == "module":
         return  # Stops it getting into the stdlib
@@ -177,7 +177,7 @@ def recurse_over(ob, name, indent_level=0):
     else:
         members = [item for item in dir(ob) if not item.startswith("_")]
 
-    if not "im_class" in members:
+    if "im_class" not in members:
         for name in members:
             recurse_over(getattr(ob, name), name, indent_level + 1)
     if indent_level > 0:

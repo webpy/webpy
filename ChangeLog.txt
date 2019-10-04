@@ -1,5 +1,12 @@
 # web.py changelog
 
+## 2019-XX-XX 0.50
+
+* Removed function `web.safemarkdown`. if it's used in your application, you
+  can install the `Markdown` module from pypi
+  (https://pypi.org/project/Markdown/), then replace `web.safemarkdown()` by
+  `markdown.markdown()`.
+
 ## 2019-09-25 0.40
 
 Note: `0.40` is the last release which supports Python 2. Future releases will

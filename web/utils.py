@@ -414,6 +414,10 @@ if not PY2:
     safeunicode = safestr
 
 
+# for backward-compatibility
+utf8 = safestr
+
+
 def timelimit(timeout):
     """
     A decorator to limit a function to `timeout` seconds, raising `TimeoutError`

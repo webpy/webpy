@@ -12,6 +12,17 @@
 Note: `0.40` is the last release which supports Python 2. Future releases will
 drop support for Python 2.
 
+Broken backward compatibilities:
+
+- `web.utils.utf8` and `web.utf8` (it's an alias of `web.utils.utf8`) were
+  removed. Please replace them by `web.safestr` instead.
+- `db.select()` doesn't support specifying offset in `limit` like this:
+  `db.select(..., limit="2, 10", ...)` (equals to raw SQL statement
+  `SELECT ... LIMIT 2, 10`). Please replace them by moving the offset to
+  `offset` keyword like this: `db.select(..., offset=2, limit=10)`.
+
+Major changes since 0.39:
+
 * Fixed lots of Python-3 compatibility issues.
 * Drop support for Python < 2.7.
 * Allow to get form data from http PATCH request (fixes #259, tx @kufd)

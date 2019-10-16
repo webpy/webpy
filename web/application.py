@@ -796,7 +796,8 @@ class Reloader:
         self.mtimes = {}
 
     def __call__(self):
-        for mod in sys.modules.values():
+        sys_modules = list(sys.modules.values())
+        for mod in sys_modules:
             self.check(mod)
 
     def check(self, mod):

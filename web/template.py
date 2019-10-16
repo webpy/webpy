@@ -1266,6 +1266,7 @@ ALLOWED_AST_NODES = [
     "With",
     "comprehension",
     "NameConstant",
+    "Constant",
     "arg",
     #'Raise', 'TryExcept', 'TryFinally', 'Assert', 'Import',
     #'ImportFrom', 'Exec', 'Global',

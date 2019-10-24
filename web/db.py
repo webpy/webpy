@@ -10,7 +10,7 @@ import re
 import time
 
 from .py3helpers import PY2, iteritems, numeric_types, string_types, text_type
-from .utils import iterbetter, iters, safestr, safeunicode, storage, threadeddict
+from .utils import iters, safestr, safeunicode, storage, threadeddict
 
 try:
     from urllib import parse as urlparse
@@ -330,9 +330,19 @@ def _sqllist(values):
     """
         >>> _sqllist([1, 2, 3])
         <sql: '(1, 2, 3)'>
+        >>> _sqllist(set([5, 1, 3, 2]))
+        <sql: '(1, 2, 3, 5)'>
+        >>> _sqllist((5, 1, 3, 2, 2, 5))
+        <sql: '(1, 2, 3, 5)'>
     """
     items = []
     items.append("(")
+
+    if isinstance(values, set):
+        values = list(values)
+    elif isinstance(values, tuple):
+        values = list(set(values))
+
     for i, v in enumerate(values):
         if i != 0:
             items.append(", ")

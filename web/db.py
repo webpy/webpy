@@ -478,8 +478,12 @@ def sqlquote(a):
         <sql: "WHERE x = 't' AND y = 3">
         >>> 'WHERE x = ' + sqlquote(True) + ' AND y IN ' + sqlquote([2, 3])
         <sql: "WHERE x = 't' AND y IN (2, 3)">
+        >>> 'WHERE x = ' + sqlquote(True) + ' AND y IN ' + sqlquote(set([3, 2, 3, 4]))
+        <sql: "WHERE x = 't' AND y IN (2, 3, 4)">
+        >>> 'WHERE x = ' + sqlquote(True) + ' AND y IN ' + sqlquote((3, 2, 3, 4))
+        <sql: "WHERE x = 't' AND y IN (2, 3, 4)">
     """
-    if isinstance(a, list):
+    if isinstance(a, (list, tuple, set)):
         return _sqllist(a)
     else:
         return sqlparam(a).sqlquery()

@@ -7,6 +7,7 @@ from __future__ import print_function
 import cgi
 import pprint
 import sys
+import tempfile
 from io import BytesIO
 
 from .py3helpers import PY2, text_type, urljoin
@@ -391,6 +392,23 @@ def InternalError(message=None):
 internalerror = InternalError
 
 
+class cgiFieldStorage(cgi.FieldStorage):
+    """
+    Subclass cgi.FieldStorage, as read_binary expects fp to return
+    bytes. If the headers do not contain a content-disposition with a
+    filename, cgi.FieldStorage's make_file will create a TemporaryFile
+    with `w+` flags. The write to that temporary file will fail, due
+    to incorrect encoding in Python 3.
+    """
+
+    def make_file(self, binary=None):
+        """
+        For backwards compatibility with Python 2, make_file accepted
+        a binary flag. This was unused, and removed in Python 3.
+        """
+        return tempfile.TemporaryFile("wb+")
+
+
 def header(hdr, value, unique=False):
     """
     Adds the header `hdr: value` with the response.
@@ -434,19 +452,19 @@ def rawinput(method=None):
                 a = ctx.get("_fieldstorage")
                 if not a:
                     fp = e["wsgi.input"]
-                    a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
+                    a = cgiFieldStorage(fp=fp, environ=e, keep_blank_values=1)
                     ctx._fieldstorage = a
             else:
                 d = data()
-                if PY2 and isinstance(d, text_type):
+                if isinstance(d, text_type):
                     d = d.encode("utf-8")
                 fp = BytesIO(d)
-                a = cgi.FieldStorage(fp=fp, environ=e, keep_blank_values=1)
+                a = cgiFieldStorage(fp=fp, environ=e, keep_blank_values=1)
             a = dictify(a)
 
     if method.lower() in ["both", "get"]:
         e["REQUEST_METHOD"] = "GET"
-        b = dictify(cgi.FieldStorage(environ=e, keep_blank_values=1))
+        b = dictify(cgiFieldStorage(environ=e, keep_blank_values=1))
 
     def process_fieldstorage(fs):
         if isinstance(fs, list):

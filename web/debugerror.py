@@ -275,9 +275,12 @@ def djangoerror():
         # hack to get correct line number for templates
         lineno += tback.tb_frame.f_locals.get("__lineoffset__", 0)
 
-        pre_context_lineno, pre_context, context_line, post_context = _get_lines_from_file(
-            filename, lineno, 7
-        )
+        (
+            pre_context_lineno,
+            pre_context,
+            context_line,
+            post_context,
+        ) = _get_lines_from_file(filename, lineno, 7)
 
         if "__hidetraceback__" not in tback.tb_frame.f_locals:
             frames.append(

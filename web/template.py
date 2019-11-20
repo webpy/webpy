@@ -1293,6 +1293,7 @@ ALLOWED_AST_NODES = [
     "Call",
     "Num",
     "Str",
+    "Joinedstr",
     "Attribute",
     "Subscript",
     "Name",

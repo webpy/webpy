@@ -19,10 +19,10 @@ from inspect import isclass
 
 import wsgiref.handlers
 
-try:
-    from urllib.parse import splitquery, urlencode, unquote
-except ImportError:
+if PY2:
     from urllib import splitquery, urlencode, unquote
+else:
+    from urllib.parse import urlparse, urlencode, unquote
 
 try:
     reload  # Python 2
@@ -220,7 +220,13 @@ class application:
         """
         # PY3DOCTEST: b'hello'
         # PY3DOCTEST: b'your user-agent is a small jumping bean/1.0 (compatible)'
-        path, maybe_query = splitquery(localpart)
+        if PY2:
+            path, maybe_query = splitquery(localpart)
+        else:
+            _p = urlparse(localpart)
+            path = _p.path
+            maybe_query = _p.query
+
         query = maybe_query or ""
 
         if "env" in kw:

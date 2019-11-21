@@ -7,7 +7,6 @@ import os
 import os.path
 import time
 import datetime
-import base64
 import threading
 from copy import deepcopy
 
@@ -21,6 +20,12 @@ from hashlib import sha1
 from . import utils
 from . import webapi as web
 from .py3helpers import PY2
+
+if PY2:
+    from base64 import encodestring as encodebytes, decodestring as decodebytes
+else:
+    from base64 import encodebytes, decodebytes
+
 
 __all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore"]
 
@@ -234,11 +239,11 @@ class Store:
     def encode(self, session_dict):
         """encodes session dict as a string"""
         pickled = pickle.dumps(session_dict)
-        return base64.encodestring(pickled)
+        return encodebytes(pickled)
 
     def decode(self, session_data):
         """decodes the data to get back the session dict """
-        pickled = base64.decodestring(session_data)
+        pickled = decodebytes(session_data)
         return pickle.loads(pickled)
 
 

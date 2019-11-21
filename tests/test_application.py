@@ -429,8 +429,8 @@ class ApplicationTest(unittest.TestCase):
 
         thread.start()
         time.sleep(1)
-        self.assertTrue(thread.isAlive())
+        self.assertTrue(thread.is_alive())
 
         app.stop()
         thread.join(timeout=1)
-        self.assertFalse(thread.isAlive())
+        self.assertFalse(thread.is_alive())

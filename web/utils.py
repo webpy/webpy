@@ -456,7 +456,7 @@ def timelimit(timeout):
 
             c = Dispatch()
             c.join(timeout)
-            if c.isAlive():
+            if c.is_alive():
                 raise RuntimeError("took too long")
             if c.error:
                 raise c.error[1]

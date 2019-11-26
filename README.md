@@ -13,7 +13,7 @@ To install it, please run:
 pip2 install web.py==0.40
 
 # For Python 3
-pip3 install web.py==0.40
+python3 -m pip install web.py==0.40
 ```
 
 You can also download it from [GitHub Releases](https://github.com/webpy/webpy/releases)

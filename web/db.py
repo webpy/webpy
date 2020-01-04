@@ -550,7 +550,7 @@ class ResultSet(BaseResultSet):
     """
 
     def __len__(self):
-        return max(int(self.cursor.rowcount), 0)  # deal with rowcount == -1
+        return int(self.cursor.rowcount)
 
 
 class SqliteResultSet(BaseResultSet):

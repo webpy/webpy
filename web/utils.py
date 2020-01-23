@@ -234,7 +234,7 @@ class Counter(storage):
         return [k for k, v in iteritems(self) if v == m]
 
     def least(self):
-        """Returns the keys with mininum count."""
+        """Returns the keys with minimum count."""
         m = min(self.itervalues())
         return [k for k, v in iteritems(self) if v == m]
 
@@ -770,7 +770,7 @@ iterbetter = IterBetter
 
 
 def safeiter(it, cleanup=None, ignore_errors=True):
-    """Makes an iterator safe by ignoring the exceptions occured during the iteration.
+    """Makes an iterator safe by ignoring the exceptions occurred during the iteration.
     """
 
     def next():

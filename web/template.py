@@ -187,7 +187,7 @@ class Parser:
         return SuiteNode(sections)
 
     def readline(self, text):
-        r"""Reads one line from the text. Newline is supressed if the line ends with \.
+        r"""Reads one line from the text. Newline is suppressed if the line ends with \.
 
             >>> readline = Parser().readline
             >>> readline('hello $name!\nbye!')
@@ -199,7 +199,7 @@ class Parser:
         """
         line, text = splitline(text)
 
-        # supress new line if line ends with \
+        # suppress new line if line ends with \
         if line.endswith("\\\n"):
             line = line[:-2]
 
@@ -965,7 +965,7 @@ class Template(BaseTemplate):
         if not text.endswith("\n"):
             text += "\n"
 
-        # ignore BOM chars at the begining of template
+        # ignore BOM chars at the beginning of template
         BOM = "\xef\xbb\xbf"
         if isinstance(text, str) and text.startswith(BOM):
             text = text[len(BOM) :]
@@ -1429,16 +1429,16 @@ class SafeVisitor(ast.NodeVisitor):
 class TemplateResult(MutableMapping):
     """Dictionary like object for storing template output.
 
-    The result of a template execution is usally a string, but sometimes it
+    The result of a template execution is usually a string, but sometimes it
     contains attributes set using $var. This class provides a simple
     dictionary like interface for storing the output of the template and the
-    attributes. The output is stored with a special key __body__. Convering
-    the the TemplateResult to string or unicode returns the value of __body__.
+    attributes. The output is stored with a special key __body__. Converting
+    the TemplateResult to string or unicode returns the value of __body__.
 
     When the template is in execution, the output is generated part by part
     and those parts are combined at the end. Parts are added to the
     TemplateResult by calling the `extend` method and the parts are combined
-    seemlessly when __body__ is accessed.
+    seamlessly when __body__ is accessed.
 
         >>> d = TemplateResult(__body__='hello, world', x='foo')
         >>> print(d)

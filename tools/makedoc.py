@@ -169,7 +169,7 @@ def recurse_over(ob, name, indent_level=0):
         )
     )
     print("".join((indent_start % ds_indent, ds, indent_end, "</p>")))
-    # Although ''.join looks wierd, it's alot faster is string addition
+    # Although ''.join looks weird, it's a lot faster is string addition
     members = ""
 
     if hasattr(ob, "__all__"):

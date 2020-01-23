@@ -571,7 +571,7 @@ def parse_cookies(http_cookie):
     >>> sorted(parse_cookies('a=1; b=2; c=3').items())
     [('a', '1'), ('b', '2'), ('c', '3')]
 
-    # TODO: cclauss reenable this test
+    # TODO: cclauss re-enable this test
     # >>> sorted(parse_cookies('a=1; b=w("x")|y=z; c=3').items())
     # [('a', '1'), ('b', 'w('), ('c', '3')]
 

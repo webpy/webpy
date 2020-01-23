@@ -11,13 +11,14 @@ services:
   - postgresql
 
 install:
-  - pip install flake8 pytest-cov -r requirements.txt -r test_requirements.txt
+  - pip install codespell flake8 pytest-cov -r requirements.txt -r test_requirements.txt
 
 before_script:
   - if [ "$TRAVIS_PYTHON_VERSION" = "3.7" ]; then
       pip install black ;
       black --check . ;
     fi
+  - codespell . --ignore-words-list=gae --skip=./.* --quiet-level=2 || true
   # stop the build if there are Python syntax errors or undefined names
   - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
   # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide

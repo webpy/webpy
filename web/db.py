@@ -234,7 +234,7 @@ class SQLQuery(object):
             else:
                 x = safestr(x)
                 # automatically escape % characters in the query
-                # For backward compatability, ignore escaping when the query
+                # For backward compatibility, ignore escaping when the query
                 # looks already escaped
                 if paramstyle in ["format", "pyformat"]:
                     if "%" in x and "%%" not in x:
@@ -258,7 +258,7 @@ class SQLQuery(object):
         >>> SQLQuery.join(['a', 'b'], ', ')
         <sql: 'a, b'>
 
-        Optinally, prefix and suffix arguments can be provided.
+        Optionally, prefix and suffix arguments can be provided.
 
         >>> SQLQuery.join(['a', 'b'], ', ', prefix='(', suffix=')')
         <sql: '(a, b)'>
@@ -364,7 +364,7 @@ def reparam(string_, dictionary):
     return SafeEval().safeeval(string_, dictionary)
 
     dictionary = dictionary.copy()  # eval mucks with it
-    # disable builtins to avoid risk for remote code exection.
+    # disable builtins to avoid risk for remote code execution.
     dictionary["__builtins__"] = object()
     result = []
     for live, chunk in _interpolate(string_):
@@ -556,7 +556,7 @@ class ResultSet(BaseResultSet):
 class SqliteResultSet(BaseResultSet):
     """Result Set for sqlite.
 
-    Same functionaly as ResultSet except len is not supported.
+    Same functionally as ResultSet except len is not supported.
     """
 
     def __init__(self, cursor):
@@ -571,7 +571,7 @@ class SqliteResultSet(BaseResultSet):
             return super().__next__()
 
     def __bool__(self):
-        # The ResultSet class class doesn't need to support __bool__ explicity
+        # The ResultSet class class doesn't need to support __bool__ explicitly
         # because it has __len__. Since SqliteResultSet doesn't support len,
         # we need to peep into the result to find if the result is empty of not.
         if self._head is None:
@@ -662,8 +662,8 @@ class DB:
     def __init__(self, db_module, keywords):
         """Creates a database.
         """
-        # some DB implementaions take optional paramater `driver` to use a
-        # specific driver modue but it should not be passed to `connect`.
+        # some DB implementations take parameter paramater `driver` to use a
+        # specific driver module but it should not be passed to `connect`.
         keywords.pop("driver", None)
 
         self.db_module = db_module
@@ -1642,7 +1642,7 @@ class Parser:
                 self.pos = dollar + 1
                 yield self.parse_expr()
 
-            # for supporting ${x.id}, for backward compataility
+            # for supporting ${x.id}, for backward compatibility
             elif nextchar == "{":
                 saved_pos = self.pos
                 self.pos = dollar + 2  # skip "${"

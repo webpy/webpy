@@ -662,7 +662,7 @@ class DB:
     def __init__(self, db_module, keywords):
         """Creates a database.
         """
-        # some DB implementations take parameter paramater `driver` to use a
+        # some DB implementations take optional parameter `driver` to use a
         # specific driver module but it should not be passed to `connect`.
         keywords.pop("driver", None)
 

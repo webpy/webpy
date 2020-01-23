@@ -74,7 +74,7 @@ Major changes since 0.39:
 * Fixed handling of long numbers in sqlify. closes #213. (tx cjrolo)
 * Escape HTML characters when emitting API docs. (tx Jeff Zellman)
 * Fixed an inconsistency in form.Dropdown when numbers are used for args and value. (tx Noprianto)
-* Fixed a potential remote exeution risk in `reparam` (tx Adrián Brav)
+* Fixed a potential remote execution risk in `reparam` (tx Adrián Brav)
 * The where clause in db queries can be a dict now
 * Added `first` method to iterbetter
 * Fix to unexpected session when used with MySQL (tx suhashpatil)
@@ -87,7 +87,7 @@ Major changes since 0.39:
 ## 2012-06-26 0.37
 
 * Fixed datestr issue on Windows -- #155
-* Fixed Python 2.4 compatability issues (tx fredludlow)
+* Fixed Python 2.4 compatibility issues (tx fredludlow)
 * Fixed error in utils.safewrite (tx shuge) -- #95
 * Allow use of web.data() with app.request() -- #105
 * Fixed an issue with session initializaton (tx beardedprojamz) -- #109
@@ -95,7 +95,7 @@ Major changes since 0.39:
 * Made djangoerror work on GAE. -- #80
 * Handle malformatted data in the urls. -- #117
 * Made it easier to stop the dev server -- #100, #122
-* Added support fot customizing cookie_path in session (tx larsga) -- #89
+* Added support for customizing cookie_path in session (tx larsga) -- #89
 * Added exception for "415 Unsupported Media" (tx JirkaChadima) -- #145
 * Added GroupedDropdown to support `<optgroup>` tag (tx jzellman) -- #152
 * Fixed failure in embedded interpreter - #87
@@ -113,7 +113,7 @@ Major changes since 0.39:
 * Fixed db.delete error with `using` clause (tx berndtj) -- #28
 * Fixed the case of no where-clauses in db.where
 * Fixed threadlocal error in python2.3 -- #77
-* Fixed TemplateResult inconsistant behavior -- #78
+* Fixed TemplateResult inconsistent behavior -- #78
 * Fixed query execution issues with MSSQL -- #71
 
 ## 2011-05-15 0.35
@@ -128,15 +128,15 @@ Major changes since 0.39:
 * Added doseq support for web.url
 * New flag web.config.debug_sql to control printing of db queries (tx Nimrod S. Kerrett)
 * Fixed inserting default values into MySQL -- #49
-* Fixed rendering of Dropdown with mutliple values (tx krowbar) -- #43
-* Fixed mutliple set-cookie header issue with session -- #45
+* Fixed rendering of Dropdown with multiple values (tx krowbar) -- #43
+* Fixed multiple set-cookie header issue with session -- #45
 * Fixed error in safeunicode when used with appengine datastore objects
 * Fixed unicode error in generating debugerror -- #26
 * Fixed GAE compilation issue -- #24
 * Fixed unicode encoding issue in templates -- #17
 * Fixed a bug in form.RadioButton when called with tuple options (tx fhsm) -- #13
 * Fixed error in creating PostgresDB with pgdb driver (tx cninucci) -- #23
-* Support auto convertion of timestamp/date datatypes in sqlite to datetime.data objects -- #22
+* Support auto conversion of timestamp/date datatypes in sqlite to datetime.data objects -- #22
 * Fixed escaping issue on GAE -- #10
 * fixed form.validates for checkbox (tx Justin Davis).
 * fixed duplicate content-type in web.sendmail -- #20
@@ -148,7 +148,7 @@ Major changes since 0.39:
 
 ## 2010-03-20 0.34
 
-* fix: boolen test works even for sqlite results (tx Emyr Thomas for the idea)
+* fix: boolean test works even for sqlite results (tx Emyr Thomas for the idea)
 * fix issue with loop.xx variables in templetor (Bug#476708)
 * hide unwanted tracebacks in debugerror
 * display correct template line numbers in debugerror
@@ -172,7 +172,7 @@ Major changes since 0.39:
 * fix: make sure sequence exists before queying for currval(seqname) when executing postgres insert query (Bug#268705)
 * fix: raise web.notfound() instead of return in autodelegate (tx SeC)
 * fix: raise NotSupportedError when len or bool is used on sqlite result (Bug#179644)
-* fix: make db paramater optional for creating postgres DB to allow taking it from environ. (Bug#153491)
+* fix: make db parameter optional for creating postgres DB to allow taking it from environ. (Bug#153491)
 * fix unicode errors in db module
 * fix: convert unicode strings to UTF8 before printing SQL queries
 * fix unicode error in debugerror
@@ -256,7 +256,7 @@ Major changes since 0.39:
 * fix relative URI in `web.redirect` ([118236](https://bugs.launchpad.net/webpy/+bug/118236))
 * fix `ctx._write` support in built-in HTTP server ([121908](https://bugs.launchpad.net/webpy/+bug/121908))
 * fix `numify` strips things after '.'s ([118644](https://bugs.launchpad.net/webpy/+bug/118644))
-* fix various unicode isssues ([114703](https://bugs.launchpad.net/webpy/+bug/114703), [120644](https://bugs.launchpad.net/webpy/+bug/120644), [124280](https://bugs.launchpad.net/webpy/+bug/124280))
+* fix various unicode issues ([114703](https://bugs.launchpad.net/webpy/+bug/114703), [120644](https://bugs.launchpad.net/webpy/+bug/120644), [124280](https://bugs.launchpad.net/webpy/+bug/124280))
 
 ## 2007-05-28: 0.21
 
@@ -266,7 +266,7 @@ Major changes since 0.39:
 * new `form.File`
 * new `web.url`
 * fix rendering issues with hidden and button inputs
-* fix 2.3 incompatability with `numify`
+* fix 2.3 incompatibility with `numify`
 * fix multiple headers with same name
 * fix web.redirect issues when homepath is not /
 * new CherryPy wsgi server

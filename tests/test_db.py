@@ -291,7 +291,7 @@ class MySQLTest_MySQLdb(DBTest):
         self.db.query("CREATE TABLE person (name text, email text) ENGINE=INNODB")
 
     def testBoolean(self):
-        # boolean datatype is not suppoted in MySQL (at least until v5.0)
+        # boolean datatype is not supported in MySQL (at least until v5.0)
         pass
 
 

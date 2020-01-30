@@ -1577,51 +1577,60 @@ class _EmailMessage:
         message_text = self.message.as_string()
 
         if webapi.config.get("smtp_server"):
-            server = webapi.config.get("smtp_server")
-            port = webapi.config.get("smtp_port", 0)
-            username = webapi.config.get("smtp_username")
-            password = webapi.config.get("smtp_password")
-            debug_level = webapi.config.get("smtp_debuglevel", None)
-            starttls = webapi.config.get("smtp_starttls", False)
-
-            import smtplib
-
-            smtpserver = smtplib.SMTP(server, port)
-
-            if debug_level:
-                smtpserver.set_debuglevel(debug_level)
-
-            if starttls:
-                smtpserver.ehlo()
-                smtpserver.starttls()
-                smtpserver.ehlo()
-
-            if username and password:
-                smtpserver.login(username, password)
-
-            smtpserver.sendmail(self.from_address, self.recipients, message_text)
-            smtpserver.quit()
+            self.sendWithSMTP()
         elif webapi.config.get("email_engine") == "aws":
-            import boto.ses
-
-            c = boto.ses.SESConnection(
-                aws_access_key_id=webapi.config.get("aws_access_key_id"),
-                aws_secret_access_key=webapi.config.get("aws_secret_access_key"),
-            )
-            c.send_raw_email(message_text, self.from_address, self.recipients)
+            self.sendWithAWS()
         else:
-            sendmail = webapi.config.get("sendmail_path", "/usr/sbin/sendmail")
+            self.defaultEmailSender()
 
-            assert not self.from_address.startswith("-"), "security"
-            for r in self.recipients:
-                assert not r.startswith("-"), "security"
+    def sendWithAWS(self):
+        import boto.ses
 
-            cmd = [sendmail, "-f", self.from_address] + self.recipients
+        c = boto.ses.SESConnection(
+            aws_access_key_id=webapi.config.get("aws_access_key_id"),
+            aws_secret_access_key=webapi.config.get("aws_secret_access_key"),
+        )
+        c.send_raw_email(message_text, self.from_address, self.recipients)
 
-            p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-            p.stdin.write(message_text.encode("utf-8"))
-            p.stdin.close()
-            p.wait()
+    def sendWithSMTP(self):
+        server = webapi.config.get("smtp_server")
+        port = webapi.config.get("smtp_port", 0)
+        username = webapi.config.get("smtp_username")
+        password = webapi.config.get("smtp_password")
+        debug_level = webapi.config.get("smtp_debuglevel", None)
+        starttls = webapi.config.get("smtp_starttls", False)
+
+        import smtplib
+
+        smtpserver = smtplib.SMTP(server, port)
+
+        if debug_level:
+            smtpserver.set_debuglevel(debug_level)
+
+        if starttls:
+            smtpserver.ehlo()
+            smtpserver.starttls()
+            smtpserver.ehlo()
+
+        if username and password:
+            smtpserver.login(username, password)
+
+        smtpserver.sendmail(self.from_address, self.recipients, message_text)
+        smtpserver.quit()
+
+    def defaultEmailSender():
+        sendmail = webapi.config.get("sendmail_path", "/usr/sbin/sendmail")
+
+        assert not self.from_address.startswith("-"), "security"
+        for r in self.recipients:
+            assert not r.startswith("-"), "security"
+
+        cmd = [sendmail, "-f", self.from_address] + self.recipients
+
+        p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        p.stdin.write(message_text.encode("utf-8"))
+        p.stdin.close()
+        p.wait()
 
     def __repr__(self):
         return "<EmailMessage>"

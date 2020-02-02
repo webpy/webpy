@@ -1,7 +1,8 @@
 # web.py changelog
 
-## 2019-XX-XX 0.50
+## 2020-XX-XX 0.50
 
+* Fixed: not support `samesite=none`. #592
 * Fixed Python-3 compatibility issues: #574, #576.
 * Support tuple and set in `sqlquote()`.
 * Removed function `web.safemarkdown`. if it's used in your application, you

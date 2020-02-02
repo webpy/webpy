@@ -527,7 +527,7 @@ def setcookie(
     if httponly:
         morsel["httponly"] = True
     value = morsel.OutputString()
-    if samesite and samesite.lower() in ("strict", "lax"):
+    if samesite and samesite.lower() in ("strict", "lax", "none"):
         value += "; SameSite=%s" % samesite
     header("Set-Cookie", value)
 

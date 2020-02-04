@@ -1568,11 +1568,6 @@ class _EmailMessage:
         self.headers = {}
 
     def send(self):
-        try:
-            from . import webapi
-        except ImportError:
-            webapi = Storage(config=Storage())
-
         self.prepare_message()
         message_text = self.message.as_string()
 
@@ -1584,6 +1579,11 @@ class _EmailMessage:
             self.defaultEmailSender()
 
     def sendWithAWS(self):
+        try:
+            from . import webapi
+        except ImportError:
+            webapi = Storage(config=Storage())
+        
         import boto.ses
 
         c = boto.ses.SESConnection(
@@ -1593,6 +1593,11 @@ class _EmailMessage:
         c.send_raw_email(message_text, self.from_address, self.recipients)
 
     def sendWithSMTP(self):
+        try:
+            from . import webapi
+        except ImportError:
+            webapi = Storage(config=Storage())
+
         server = webapi.config.get("smtp_server")
         port = webapi.config.get("smtp_port", 0)
         username = webapi.config.get("smtp_username")
@@ -1619,6 +1624,11 @@ class _EmailMessage:
         smtpserver.quit()
 
     def defaultEmailSender():
+        try:
+            from . import webapi
+        except ImportError:
+            webapi = Storage(config=Storage())
+
         sendmail = webapi.config.get("sendmail_path", "/usr/sbin/sendmail")
 
         assert not self.from_address.startswith("-"), "security"

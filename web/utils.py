@@ -1568,9 +1568,6 @@ class _EmailMessage:
         self.headers = {}
 
     def send(self):
-        self.prepare_message()
-        message_text = self.message.as_string()
-
         if webapi.config.get("smtp_server"):
             self.sendWithSMTP()
         elif webapi.config.get("email_engine") == "aws":
@@ -1579,6 +1576,9 @@ class _EmailMessage:
             self.defaultEmailSender()
 
     def sendWithAWS(self):
+        self.prepare_message()
+        message_text = self.message.as_string()
+        
         try:
             from . import webapi
         except ImportError:
@@ -1593,6 +1593,9 @@ class _EmailMessage:
         c.send_raw_email(message_text, self.from_address, self.recipients)
 
     def sendWithSMTP(self):
+        self.prepare_message()
+        message_text = self.message.as_string()
+        
         try:
             from . import webapi
         except ImportError:
@@ -1623,7 +1626,10 @@ class _EmailMessage:
         smtpserver.sendmail(self.from_address, self.recipients, message_text)
         smtpserver.quit()
 
-    def defaultEmailSender():
+    def defaultEmailSender(self):
+        self.prepare_message()
+        message_text = self.message.as_string()
+        
         try:
             from . import webapi
         except ImportError:

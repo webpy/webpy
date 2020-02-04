@@ -1568,6 +1568,11 @@ class _EmailMessage:
         self.headers = {}
 
     def send(self):
+        try:
+            from . import webapi
+        except ImportError:
+            webapi = Storage(config=Storage())
+
         if webapi.config.get("smtp_server"):
             self.sendWithSMTP()
         elif webapi.config.get("email_engine") == "aws":

@@ -1177,8 +1177,6 @@ class GAE_Render(Render):
 render = Render
 # setup render for Google App Engine.
 try:
-    from google import appengine
-
     render = Render = GAE_Render
 except ImportError:
     pass
@@ -1293,7 +1291,7 @@ ALLOWED_AST_NODES = [
     "Call",
     "Num",
     "Str",
-    "Joinedstr",
+    "JoinedStr",
     "Attribute",
     "Subscript",
     "Name",

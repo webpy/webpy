@@ -2,6 +2,9 @@
 
 ## 2020-XX-XX 0.50
 
+* New session store `MemoryStore`, used to save a session in memory.
+  Should be usefull where there is limited fs writes on the disk, like
+  flash memories. #174
 * Fixed: not support `samesite=none`. #592
 * Fixed Python-3 compatibility issues: #574, #576.
 * Support tuple and set in `sqlquote()`.

@@ -118,3 +118,11 @@ class DBSessionTest(SessionTest):
         )
         store = web.session.DBStore(db, "session")
         return web.session.Session(app, store, {"count": 0})
+
+
+class MemorySessionTest(SessionTest):
+    """Session test with db store."""
+
+    def make_session(self, app):
+        store = web.session.MemoryStore()
+        return web.session.Session(app, store, {"count": 0})

@@ -411,7 +411,7 @@ class ShelfStore:
 
 class MemoryStore(Store):
     """Store for saving a session in memory.
-    Usefull where there is limited fs writes on the disk, like
+    Useful where there is limited fs writes on the disk, like
     flash memories
 
     Data will be saved into a dict:

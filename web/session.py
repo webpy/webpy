@@ -417,6 +417,7 @@ class MemoryStore(Store):
     Data will be saved into a dict:
     k: (time, pydata)
     """
+
     def __init__(self, d_store=None):
         if d_store is None:
             d_store = {}
@@ -442,7 +443,7 @@ class MemoryStore(Store):
         now = time.time()
         to_del = []
         for k, (atime, value) in iteritems(self.d_store):
-            if now - atime > timeout :
+            if now - atime > timeout:
                 to_del.append(k)
 
         # to avoid exception on "dict change during iterations"

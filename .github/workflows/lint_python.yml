@@ -14,9 +14,11 @@ jobs:
       - uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install black codespell flake8 isort pytest
+      - run: pip install codespell flake8 isort pytest
       - if: matrix.python-version >= 3.6
-        run: black --check .
+        run: |
+          pip install black
+          black --check .
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
       - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - run: isort --recursive . || true

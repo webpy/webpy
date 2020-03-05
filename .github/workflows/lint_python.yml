@@ -8,7 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [2.7, 3.5, 3.6, 3.7, 3.8, pypy3]
+        # TODO: (cclauss) add pypy3
+        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]  # , pypy3]
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-python@master

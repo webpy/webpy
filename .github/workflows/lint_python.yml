@@ -34,7 +34,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
           -c 'create database webpy;'
-          # -U postgres
     strategy:
       matrix:
         # TODO: (cclauss) add pypy3

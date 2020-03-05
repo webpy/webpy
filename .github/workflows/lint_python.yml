@@ -1,0 +1,55 @@
+name: lint_python
+on:
+  pull_request:
+  push:
+    branches: [master]
+jobs:
+  lint_python:
+    runs-on: ubuntu-latest
+    # services:
+    #  mysql:
+    #    image: mysql:latest
+    #    # ports: 
+    #    #  - 3306
+    #    # needed because the mysql container does not provide a healthcheck
+    #    options: >-
+    #      --health-cmd "mysqladmin ping"
+    #      --health-interval 10s
+    #      --health-timeout 5s
+    #      --health-retries 10
+    #      --user=root
+    #      -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+    #   postgres:
+    #    image: postgres:latest
+    #    env:
+    #      POSTGRES_USER: postgres
+    #      POSTGRES_PASSWORD: postgres
+    #      POSTGRES_DB: postgres
+    #    # ports:
+    #    #  - 5432:5432
+    #    # needed because the postgres container does not provide a healthcheck
+    #    options: >-
+    #      --health-cmd pg_isready
+    #      --health-interval 10s
+    #      --health-timeout 5s
+    #      --health-retries 5
+    #      -c 'create database webpy;'
+    strategy:
+      matrix:
+        # TODO: (cclauss) add pypy3
+        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]  # , pypy3]
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@master
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install codespell flake8 isort pytest
+      - if: matrix.python-version >= 3.6
+        run: |
+          pip install black
+          black --check .
+      - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
+      - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - run: isort --recursive . || true
+      - run: pip install -r requirements.txt
+      - run: pytest .

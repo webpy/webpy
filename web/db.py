@@ -1272,7 +1272,7 @@ class MySQLDB(DB):
                 del keywords["pw"]
         if db.__name__ == "mysql.connector":
             # Enabled buffered so that len can work as expected.
-            keywords.setdefault('buffered', True)
+            keywords.setdefault("buffered", True)
 
             if "pw" in keywords:
                 keywords["password"] = keywords["pw"]

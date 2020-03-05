@@ -6,9 +6,14 @@ on:
 jobs:
   lint_python:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [2.7, 3.5, 3.8, pypy3]
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-python@master
+        with:
+          python-version: ${{ matrix.python-version }}
       - run: pip install black codespell flake8 isort pytest
       - run: black --check .
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2

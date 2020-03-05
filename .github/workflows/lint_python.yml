@@ -6,34 +6,34 @@ on:
 jobs:
   lint_python:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:latest
-        # ports: 
-        #  - 3306
-        # needed because the mysql container does not provide a healthcheck
-        options: >-
-          --health-cmd "mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --user=root
-          -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
-      # postgres:
-      #  image: postgres:latest
-      #  env:
-      #    POSTGRES_USER: postgres
-      #    POSTGRES_PASSWORD: postgres
-      #    POSTGRES_DB: postgres
-      #  # ports:
-      #  #  - 5432:5432
-      #  # needed because the postgres container does not provide a healthcheck
-      #  options: >-
-      #    --health-cmd pg_isready
-      #    --health-interval 10s
-      #    --health-timeout 5s
-      #    --health-retries 5
-      #    -c 'create database webpy;'
+    # services:
+    #  mysql:
+    #    image: mysql:latest
+    #    # ports: 
+    #    #  - 3306
+    #    # needed because the mysql container does not provide a healthcheck
+    #    options: >-
+    #      --health-cmd "mysqladmin ping"
+    #      --health-interval 10s
+    #      --health-timeout 5s
+    #      --health-retries 10
+    #      --user=root
+    #      -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+    #   postgres:
+    #    image: postgres:latest
+    #    env:
+    #      POSTGRES_USER: postgres
+    #      POSTGRES_PASSWORD: postgres
+    #      POSTGRES_DB: postgres
+    #    # ports:
+    #    #  - 5432:5432
+    #    # needed because the postgres container does not provide a healthcheck
+    #    options: >-
+    #      --health-cmd pg_isready
+    #      --health-interval 10s
+    #      --health-timeout 5s
+    #      --health-retries 5
+    #      -c 'create database webpy;'
     strategy:
       matrix:
         # TODO: (cclauss) add pypy3

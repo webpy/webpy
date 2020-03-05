@@ -6,6 +6,13 @@ on:
 jobs:
   lint_python:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: latest
+        options: --user=root -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+      postgres:
+        image: latest
+        options: -c 'create database webpy;' -U postgres
     strategy:
       matrix:
         # TODO: (cclauss) add pypy3

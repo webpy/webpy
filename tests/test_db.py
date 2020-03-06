@@ -51,7 +51,10 @@ def setup_database(dbname, driver=None, pooling=False):
         host = os.getenv("WEBPY_DB_HOST", "localhost")
         port = os.getenv("WEBPY_DB_PG_PORT", 5432)
         _dbname = os.getenv("WEBPY_DB_NAME", "webpy")
-        user = os.getenv("WEBPY_DB_USER", "scott")
+        # Travis CI hack:
+        user = os.getenv("USER")
+        if not user:
+            user = os.getenv("WEBPY_DB_USER")
         pw = os.getenv("WEBPY_DB_PASSWORD", "")
 
         db = web.database(

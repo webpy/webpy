@@ -43,10 +43,7 @@ jobs:
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
       - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - run: isort --recursive . || true
-      - run: pip install -r requirements.txt
-
-      # Install SQL db drivers to trigger unittests for db module.
-      - run: pip install -r requirements_tests.txt
+      - run: pip install -r requirements.txt -r test_requirements.txt
 
       # Use the default MySQL server offered by Github Actions.
       - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"

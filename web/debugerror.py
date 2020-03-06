@@ -12,14 +12,15 @@ __all__ = ["debugerror", "djangoerror", "emailerrors"]
 
 import os
 import os.path
-import sys
 import pprint
+import sys
 import traceback
-from .template import Template
-from .net import websafe
-from .utils import sendmail, safestr
+
 from . import webapi as web
+from .net import websafe
 from .py3helpers import PY2
+from .template import Template
+from .utils import safestr, sendmail
 
 if PY2:
 

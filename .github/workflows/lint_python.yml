@@ -36,7 +36,7 @@ jobs:
           black --check .
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
       - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-      - run: isort --recursive . || true
+      - run: isort --recursive .
       - run: pip install -r requirements.txt -r test_requirements.txt
 
       # Use the default MySQL server offered by Github Actions.

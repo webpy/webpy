@@ -1,10 +1,10 @@
 """test utilities
 (part of web.py)
 """
-import unittest
 import doctest
-import sys
 import re
+import sys
+import unittest
 
 from .py3helpers import PY2
 

@@ -3,23 +3,23 @@ Session Management
 (from web.py)
 """
 
+import datetime
 import os
 import os.path
-import time
-import datetime
 import threading
+import time
 from copy import deepcopy
+from hashlib import sha1
+
+from . import utils
+from . import webapi as web
+from .py3helpers import PY2, iteritems
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
-from hashlib import sha1
-
-from . import utils
-from . import webapi as web
-from .py3helpers import PY2, iteritems
 
 if PY2:
     from base64 import encodestring as encodebytes, decodestring as decodebytes

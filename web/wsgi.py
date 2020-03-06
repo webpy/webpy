@@ -6,10 +6,10 @@ WSGI Utilities
 import os
 import sys
 
-from . import webapi as web
-from .utils import listget, intget
-from .net import validaddr
 from . import httpserver
+from . import webapi as web
+from .net import validaddr
+from .utils import intget, listget
 
 
 def runfcgi(func, addr=("localhost", 8000)):

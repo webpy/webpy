@@ -50,7 +50,7 @@ def setup_database(dbname, driver=None, pooling=False):
     elif dbname == "postgres":
         host = os.getenv("WEBPY_DB_HOST", "localhost")
         port = os.getenv("WEBPY_DB_PG_PORT", 5432)
-        dbname = os.getenv("WEBPY_DB_NAME", "webpy")
+        _dbname = os.getenv("WEBPY_DB_NAME", "webpy")
         user = os.getenv("WEBPY_DB_USER", "scott")
         pw = os.getenv("WEBPY_DB_PASSWORD", "tiger")
 
@@ -58,7 +58,7 @@ def setup_database(dbname, driver=None, pooling=False):
             dbn=dbname,
             host=host,
             port=port,
-            db=dbname,
+            db=_dbname,
             user=user,
             pw=pw,
             pooling=pooling,

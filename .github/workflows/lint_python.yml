@@ -46,7 +46,9 @@ jobs:
       # Use the default MySQL server offered by Github Actions.
       - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
 
-      - run: psql -h localhost -U postgres -d postgres -c "CREATE DATABASE webpy; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger'; ALTER DATABASE webpy OWNER TO scott;"
+      #- run: psql -h localhost -U postgres -d postgres -c "CREATE DATABASE webpy; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger'; ALTER DATABASE webpy OWNER TO scott;"
+      - run: sudo su - postgres -c "createdb webpy; createuser -d -P 'tiger' webpy;"
+      - run: psql -h localhost -U postgres -d webpy -c "CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger'; ALTER DATABASE webpy OWNER TO scott;"
 
       # Run pytest and get detailed output for easier debugging.
       - run: pytest -s -x -v .

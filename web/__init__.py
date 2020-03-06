@@ -27,6 +27,7 @@ from .utils import *
 from .webapi import *
 from .wsgi import *
 """
+from . import application  # noqa: F401
 
 __version__ = "0.40"
 __author__ = [

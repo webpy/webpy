@@ -1,0 +1,12 @@
+cheroot>=6.0.0
+
+# DB drivers.
+# mysql
+MySQLdb
+pymysql
+mysql.connector
+
+# pgsql
+psycopg
+psycopg2
+pgdb

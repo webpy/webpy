@@ -52,5 +52,6 @@ jobs:
       - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - run: isort --recursive . || true
       - run: pip install -r requirements.txt
+      - run: pip install -r requirements_tests.txt
       - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
       - run: pytest -s -x -v .

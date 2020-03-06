@@ -15,15 +15,8 @@ import time
 import traceback
 from threading import local as threadlocal
 
-from .py3helpers import (
-    PY2,
-    imap,
-    is_iter,
-    iteritems,
-    itervalues,
-    string_types,
-    text_type,
-)
+from .py3helpers import (PY2, imap, is_iter, iteritems, itervalues,
+                         string_types, text_type)
 
 try:
     from StringIO import StringIO

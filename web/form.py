@@ -5,7 +5,9 @@ HTML forms
 
 import copy
 import re
-from . import utils, net, webapi as web
+
+from . import net, utils
+from . import webapi as web
 
 
 def attrget(obj, attr, value=None):

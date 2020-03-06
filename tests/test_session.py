@@ -1,8 +1,9 @@
-import unittest
-import web
-import tempfile
 import os
+import tempfile
 import threading
+import unittest
+
+import web
 
 
 class SessionTest(unittest.TestCase):

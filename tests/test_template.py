@@ -1,7 +1,8 @@
-import web
 import unittest
-from web.template import SecurityError, Template
+
+import web
 from web.py3helpers import PY2
+from web.template import SecurityError, Template
 
 try:
     unicode  # Python 2

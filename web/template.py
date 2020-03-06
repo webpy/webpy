@@ -28,7 +28,18 @@ Grammar:
     pyexpr -> <python expression>
 """
 from __future__ import print_function
+
+import ast
+import glob
+import os
+import sys
+import tokenize
 from io import open
+
+from .net import websafe
+from .py3helpers import PY2
+from .utils import re_compile, safestr, safeunicode, storage
+from .webapi import config
 
 __all__ = [
     "Template",
@@ -40,16 +51,7 @@ __all__ = [
     "test",
 ]
 
-import tokenize
-import os
-import sys
-import glob
-import ast
 
-from .utils import storage, safeunicode, safestr, re_compile
-from .webapi import config
-from .net import websafe
-from .py3helpers import PY2
 
 if PY2:
     from UserDict import DictMixin

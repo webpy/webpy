@@ -1,9 +1,10 @@
-import unittest
-import time
-import threading
 import os
-import sys
 import shutil
+import sys
+import threading
+import time
+import unittest
+
 import web
 
 try:

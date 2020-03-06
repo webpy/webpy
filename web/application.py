@@ -4,20 +4,20 @@ Web application
 """
 from __future__ import print_function
 
-from . import webapi as web
-from . import wsgi, utils, browser
-from .debugerror import debugerror
-from . import httpserver
-from .utils import lstrips
-from .py3helpers import iteritems, string_types, is_iter, PY2
-import sys
-
-import traceback
 import itertools
 import os
-from inspect import isclass
-
+import sys
+import traceback
 import wsgiref.handlers
+from inspect import isclass
+from io import BytesIO
+
+from . import browser, httpserver, utils
+from . import webapi as web
+from . import wsgi
+from .debugerror import debugerror
+from .py3helpers import PY2, is_iter, iteritems, string_types
+from .utils import lstrips
 
 if PY2:
     from urllib import splitquery, urlencode, unquote
@@ -29,7 +29,6 @@ try:
 except NameError:
     from importlib import reload  # Python 3
 
-from io import BytesIO
 
 
 __all__ = [

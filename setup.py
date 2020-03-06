@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import os
+
 from setuptools import setup
+
 from web import __version__
 
 rootdir = os.path.abspath(os.path.dirname(__file__))

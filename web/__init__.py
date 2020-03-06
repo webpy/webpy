@@ -3,8 +3,9 @@
 
 from __future__ import generators
 
-from .application import subdomain_application  # noqa: F401
-from .application import application, auto_application  # noqa: F401
+from . import session
+from .application import application, auto_application, loadhook  # noqa: F401
+from .application import subdomain_application, unloadhook  # noqa: F401
 from .db import database  # noqa: F401
 from .http import changequery  # noqa: F401
 from .utils import storage  # noqa: F401

@@ -1178,7 +1178,7 @@ class GAE_Render(Render):
 render = Render
 # setup render for Google App Engine.
 try:
-    from google import appengine
+    from google import appengine  # noqa: F401
 
     render = Render = GAE_Render
 except ImportError:

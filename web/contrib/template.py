@@ -17,7 +17,7 @@ class render_cheetah:
 
     def __init__(self, path):
         # give error if Chetah is not installed
-        from Cheetah.Template import Template
+        from Cheetah.Template import Template  # noqa: F401
 
         self.path = path
 

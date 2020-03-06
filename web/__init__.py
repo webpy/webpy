@@ -3,6 +3,7 @@
 
 from __future__ import generators
 
+"""
 from . import (
     db,
     debugerror,
@@ -25,6 +26,7 @@ from .net import *
 from .utils import *
 from .webapi import *
 from .wsgi import *
+"""
 
 __version__ = "0.40"
 __author__ = [

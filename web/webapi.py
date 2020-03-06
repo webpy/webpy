@@ -10,7 +10,7 @@ import sys
 import tempfile
 from io import BytesIO
 
-from .py3helpers import PY2, text_type, urljoin
+from .py3helpers import text_type, urljoin
 from .utils import dictadd, intget, safestr, storage, storify, threadeddict
 
 try:

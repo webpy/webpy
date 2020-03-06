@@ -44,15 +44,11 @@ jobs:
       - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
 
       #- run: psql -h localhost -U postgres -d postgres -c "CREATE DATABASE webpy; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger'; ALTER DATABASE webpy OWNER TO scott;"
-      - run: createdb -h localhost -U postgres webpy
-        env:
-          PGPASSWORD: postgres
-
-      - run: createuser -h localhost -U postgres -d -P 'tiger' scott
-        env:
-          PGPASSWORD: postgres
-
-      - run: psql -h localhost -U postgres -d webpy -c "ALTER DATABASE webpy OWNER TO scott"
+      - run: |
+          createdb -h localhost -U postgres webpy
+          createuser -h localhost -U postgres -d webpy
+          psql -h localhost -U postgres -d postgres -c "ALTER USER scott WITH ENCRYPTED PASSWORD 'tiger'"
+          psql -h localhost -U postgres -d postgres -c "ALTER DATABASE webpy OWNER TO scott;"
         env:
           PGPASSWORD: postgres
 

@@ -52,7 +52,6 @@ __all__ = [
 ]
 
 
-
 if PY2:
     from UserDict import DictMixin
 

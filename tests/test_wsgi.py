@@ -10,7 +10,6 @@ except ImportError:  # PY 2
     from urllib import unquote
 
 
-
 class WSGITest(unittest.TestCase):
     def test_layers_unicode(self):
         urls = ("/", "uni")

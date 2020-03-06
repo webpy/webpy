@@ -21,7 +21,6 @@ except ImportError:
     import pickle
 
 
-
 if PY2:
     from base64 import encodestring as encodebytes, decodestring as decodebytes
 else:

@@ -30,7 +30,6 @@ except NameError:
     from importlib import reload  # Python 3
 
 
-
 __all__ = [
     "application",
     "auto_application",

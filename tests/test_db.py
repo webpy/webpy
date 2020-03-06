@@ -52,7 +52,7 @@ def setup_database(dbname, driver=None, pooling=False):
         port = os.getenv("WEBPY_DB_PG_PORT", 5432)
         _dbname = os.getenv("WEBPY_DB_NAME", "webpy")
         user = os.getenv("WEBPY_DB_USER", "scott")
-        pw = os.getenv("WEBPY_DB_PASSWORD", "tiger")
+        pw = os.getenv("WEBPY_DB_PASSWORD", "")
 
         db = web.database(
             dbn=dbname,

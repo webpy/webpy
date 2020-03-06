@@ -52,7 +52,7 @@ jobs:
 
       # Run pytest and get detailed output for easy debugging if test failed.
       # Env variables `WEBPY_DB_` are required for sql db connections.
-      - run: pytest -s -x -v .
+      - run: pytest --capture=no --exitfirst --verbose .
         env:
           WEBPY_DB_HOST: localhost
           WEBPY_DB_PG_PORT: 5432

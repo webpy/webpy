@@ -48,22 +48,13 @@ def setup_database(dbname, driver=None, pooling=False):
     if dbname == "sqlite":
         db = web.database(dbn=dbname, db="webpy.db", pooling=pooling, driver=driver)
     elif dbname == "postgres":
-        host = os.getenv("WEBPY_DB_HOST", "localhost")
-        port = os.getenv("WEBPY_DB_PG_PORT", 5432)
-        _dbname = os.getenv("WEBPY_DB_NAME", "webpy")
-        user = os.getenv("WEBPY_DB_USER")
-        # Travis CI hack:
-        if not user:
-            user = os.getenv("USER")
-        pw = os.getenv("WEBPY_DB_PASSWORD", "")
-
         db = web.database(
             dbn=dbname,
-            host=host,
-            port=port,
-            db=_dbname,
-            user=user,
-            pw=pw,
+            host=os.getenv("WEBPY_DB_HOST", "localhost"),
+            port=os.getenv("WEBPY_DB_PG_PORT", 5432),
+            db=os.getenv("WEBPY_DB_NAME", "webpy"),
+            user=os.getenv("WEBPY_DB_USER", os.getenv("USER")),
+            pw=os.getenv("WEBPY_DB_PASSWORD", ""),
             pooling=pooling,
             driver=driver,
         )

@@ -20,9 +20,6 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
         #-c "CREATE DATABASE webpy WITH TEMPLATE template0 ENCODING 'UTF8'; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger' NOSUPERUSER NOCREATEDB NOCREATEROLE; ALTER DATABASE webpy OWNER TO scott;"
 
-    env:
-      PGPASSWORD: postgres
-
     strategy:
       matrix:
         # TODO: (cclauss) add pypy3  https://github.com/webpy/webpy/issues/598
@@ -47,8 +44,17 @@ jobs:
       - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
 
       #- run: psql -h localhost -U postgres -d postgres -c "CREATE DATABASE webpy; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger'; ALTER DATABASE webpy OWNER TO scott;"
-      - run: sudo su - postgres -c "createdb webpy; createuser -d -P 'tiger' webpy;"
-      - run: psql -h localhost -U postgres -d webpy -c "CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger'; ALTER DATABASE webpy OWNER TO scott;"
+      - run: createdb -h localhost -U postgres webpy
+        env:
+          PGPASSWORD: postgres
+
+      - run: createuser -d -P 'tiger' webpy
+        env:
+          PGPASSWORD: postgres
+
+      - run: psql -h localhost -U postgres -d webpy -c "ALTER DATABASE webpy OWNER TO scott;"
+        env:
+          PGPASSWORD: postgres
 
       # Run pytest and get detailed output for easier debugging.
       - run: pytest -s -x -v .

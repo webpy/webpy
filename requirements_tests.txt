@@ -4,7 +4,7 @@ cheroot>=6.0.0
 # mysql
 MySQLdb; python_version == '2.7'
 pymysql
-mysql.connector; python_version >= 3.5
+mysql.connector; python_version >= '3.5'
 
 # pgsql
 psycopg; python_version == '2.7'

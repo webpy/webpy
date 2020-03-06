@@ -1216,6 +1216,9 @@ class PostgresDB(DB):
 
         self.dbname = "postgres"
         if db_module.__name__ == "pgdb":
+            # pgdb is a lightweight wrap of and depends on psycopg2, so it's
+            # safe to presume psycopg2 is available.
+            import psycopg2
             self.paramstyle = psycopg2.paramstyle
         else:
             self.paramstyle = db_module.paramstyle

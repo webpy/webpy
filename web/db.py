@@ -1205,6 +1205,7 @@ class PostgresDB(DB):
             import psycopg2.extensions
 
             psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+
         if db_module.__name__ == "pgdb" and "port" in keywords:
             keywords["host"] += ":" + str(keywords.pop("port"))
 
@@ -1214,7 +1215,10 @@ class PostgresDB(DB):
             keywords["database"] = keywords.pop("db")
 
         self.dbname = "postgres"
-        self.paramstyle = db_module.paramstyle
+        if db_module.__name__ == "pgdb":
+            self.paramstyle = psycopg2.paramstyle
+        else:
+            self.paramstyle = db_module.paramstyle
         DB.__init__(self, db_module, keywords)
         self.supports_multiple_insert = True
         self._sequences = None

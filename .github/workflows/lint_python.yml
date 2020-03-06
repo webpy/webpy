@@ -6,19 +6,19 @@ on:
 jobs:
   lint_python:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:latest
-        ports:
-          - 3306:3306
-        # needed because the mysql container does not provide a healthcheck
-        options: >-
-          --health-cmd "mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --user=root
-          -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+    #services:
+    #  mysql:
+    #    image: mysql:latest
+    #    ports:
+    #      - 3306:3306
+    #    # needed because the mysql container does not provide a healthcheck
+    #    options: >-
+    #      --health-cmd "mysqladmin ping"
+    #      --health-interval 10s
+    #      --health-timeout 5s
+    #      --health-retries 10
+    #      --user=root
+    #      -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
     #   postgres:
     #    image: postgres:latest
     #    env:
@@ -52,4 +52,6 @@ jobs:
       - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - run: isort --recursive . || true
       - run: pip install -r requirements.txt
+      - run: ls /root/.my.cnf || true
+      - run: mysql -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
       - run: pytest .

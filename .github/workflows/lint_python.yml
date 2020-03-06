@@ -53,4 +53,4 @@ jobs:
       - run: isort --recursive . || true
       - run: pip install -r requirements.txt
       - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
-      - run: pytest .
+      - run: pytest -s -x -v .

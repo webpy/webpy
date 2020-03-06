@@ -3,43 +3,29 @@ on:
   pull_request:
   push:
     branches: [master]
+
 jobs:
   lint_python:
     runs-on: ubuntu-latest
-    # services:  # https://github.com/webpy/webpy/issues/599
-    #  mysql:
-    #    image: mysql:latest
-    #    # ports: 
-    #    #  - 3306
-    #    # needed because the mysql container does not provide a healthcheck
-    #    options: >-
-    #      --health-cmd "mysqladmin ping"
-    #      --health-interval 10s
-    #      --health-timeout 5s
-    #      --health-retries 10
-    #      --user=root
-    #      -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
-    #   postgres:
-    #    image: postgres:latest
-    #    env:
-    #      POSTGRES_USER: postgres
-    #      POSTGRES_PASSWORD: postgres
-    #      POSTGRES_DB: postgres
-    #    # ports:
-    #    #  - 5432:5432
-    #    # needed because the postgres container does not provide a healthcheck
-    #    options: >-
-    #      --health-cmd pg_isready
-    #      --health-interval 10s
-    #      --health-timeout 5s
-    #      --health-retries 5
-    #      -c 'create database webpy;'
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     strategy:
       matrix:
         # TODO: (cclauss) add pypy3  https://github.com/webpy/webpy/issues/598
         python-version: [2.7, 3.5, 3.6, 3.7, 3.8]  # , pypy3]
+
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       - uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
@@ -51,5 +37,25 @@ jobs:
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
       - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - run: isort --recursive . || true
-      - run: pip install -r requirements.txt
-      - run: pytest .
+      - run: pip install -r requirements.txt -r test_requirements.txt
+
+      # Use the default MySQL server offered by Github Actions.
+      - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+
+      - run: |
+          createdb -h localhost -U postgres webpy
+          createuser -h localhost -U postgres -d scott
+          psql -h localhost -U postgres -d postgres -c "ALTER USER scott WITH ENCRYPTED PASSWORD 'tiger'"
+          psql -h localhost -U postgres -d postgres -c "ALTER DATABASE webpy OWNER TO scott"
+        env:
+          PGPASSWORD: postgres
+
+      # Run pytest and get detailed output for easy debugging if test failed.
+      # Env variables `WEBPY_DB_` are required for sql db connections.
+      - run: pytest --capture=no --exitfirst --verbose .
+        env:
+          WEBPY_DB_HOST: localhost
+          WEBPY_DB_PG_PORT: 5432
+          WEBPY_DB_NAME: webpy
+          WEBPY_DB_USER: scott
+          WEBPY_DB_PASSWORD: tiger

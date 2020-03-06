@@ -2,11 +2,11 @@ cheroot>=6.0.0
 
 # DB drivers.
 # mysql
-MySQLdb
+MySQLdb; python_version == '2.7'
 pymysql
-mysql.connector
+mysql.connector; python_version >= 3.5
 
 # pgsql
-psycopg
+psycopg; python_version == '2.7'
 psycopg2
 pgdb

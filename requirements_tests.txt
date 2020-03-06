@@ -2,7 +2,7 @@ cheroot>=6.0.0
 
 # DB drivers.
 # mysql
-MySQLdb; python_version == '2.7'
+MySQL-python; python_version == '2.7'
 pymysql
 mysql.connector; python_version >= '3.5'
 

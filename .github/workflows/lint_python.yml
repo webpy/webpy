@@ -48,11 +48,11 @@ jobs:
         env:
           PGPASSWORD: postgres
 
-      - run: createuser -d -P 'tiger' webpy
+      - run: createuser -h localhost -U postgres -d -P 'tiger' scott
         env:
           PGPASSWORD: postgres
 
-      - run: psql -h localhost -U postgres -d webpy -c "ALTER DATABASE webpy OWNER TO scott;"
+      - run: psql -h localhost -U postgres -d webpy -c "ALTER DATABASE webpy OWNER TO scott"
         env:
           PGPASSWORD: postgres
 

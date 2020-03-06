@@ -55,5 +55,8 @@ jobs:
       # Run pytest and get detailed output for easier debugging.
       - run: pytest -s -x -v .
         env:
+          WEBPY_DB_HOST: localhost
+          WEBPY_DB_PG_PORT: 5432
+          WEBPY_DB_NAME: webpy
           WEBPY_DB_USER: scott
           WEBPY_DB_PASSWORD: tiger

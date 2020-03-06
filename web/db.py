@@ -1219,6 +1219,7 @@ class PostgresDB(DB):
             # pgdb is a lightweight wrap of and depends on psycopg2, so it's
             # safe to presume psycopg2 is available.
             import psycopg2
+
             self.paramstyle = psycopg2.paramstyle
         else:
             self.paramstyle = db_module.paramstyle

@@ -48,9 +48,11 @@ def setup_database(dbname, driver=None, pooling=False):
     if dbname == "sqlite":
         db = web.database(dbn=dbname, db="webpy.db", pooling=pooling, driver=driver)
     elif dbname == "postgres":
-        user = os.getenv("USER")
+        user = os.getenv("WEBPY_DB_USER")
+        pw = os.getenv("WEBPY_DB_PASSWORD")
+
         db = web.database(
-            dbn=dbname, db="webpy", user=user, pw="", pooling=pooling, driver=driver
+            dbn=dbname, db="webpy", user=user, pw=pw, pooling=pooling, driver=driver
         )
     else:
         db = web.database(

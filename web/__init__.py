@@ -4,13 +4,26 @@
 from __future__ import generators
 
 from . import session  # noqa: F401
-from .application import (application, auto_application, loadhook,  # noqa: F401
-                          subdomain_application, unloadhook)
+from .application import (  # noqa: F401
+    application,
+    auto_application,
+    loadhook,
+    subdomain_application,
+    unloadhook,
+)
 from .db import database  # noqa: F401
 from .http import changequery  # noqa: F401
 from .utils import storage  # noqa: F401
-from .webapi import (HTTPError, cookies, ctx, input, notfound, redirect,  # noqa: F401
-                     seeother, setcookie)
+from .webapi import (  # noqa: F401
+    HTTPError,
+    cookies,
+    ctx,
+    input,
+    notfound,
+    redirect,
+    seeother,
+    setcookie,
+)
 
 """
 from . import (

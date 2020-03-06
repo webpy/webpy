@@ -3,6 +3,13 @@
 
 from __future__ import generators
 
+from .application import subdomain_application  # noqa: F401
+from .application import application, auto_application  # noqa: F401
+from .db import database  # noqa: F401
+from .http import changequery  # noqa: F401
+from .utils import storage  # noqa: F401
+from .webapi import HTTPError, ctx, input, seeother, setcookie  # noqa: F401
+
 """
 from . import (
     db,
@@ -27,7 +34,6 @@ from .utils import *
 from .webapi import *
 from .wsgi import *
 """
-from .application import application  # noqa: F401
 
 __version__ = "0.40"
 __author__ = [

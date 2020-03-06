@@ -20,7 +20,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          -c "CREATE DATABASE webpy WITH TEMPLATE template0 ENCODING 'UTF8'; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger' NOSUPERUSER NOCREATEDB NOCREATEROLE; ALTER DATABASE webpy OWNER TO scott;"
+        #-c "CREATE DATABASE webpy WITH TEMPLATE template0 ENCODING 'UTF8'; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger' NOSUPERUSER NOCREATEDB NOCREATEROLE; ALTER DATABASE webpy OWNER TO scott;"
 
     env:
       PGPASSWORD: postgres
@@ -48,7 +48,7 @@ jobs:
       # Use the default MySQL server offered by Github Actions.
       - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
 
-      #- run: psql -U postgres "CREATE DATABASE webpy WITH TEMPLATE template0 ENCODING 'UTF8'; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger' NOSUPERUSER NOCREATEDB NOCREATEROLE; ALTER DATABASE webpy OWNER TO scott;"
+      - run: psql -U postgres "CREATE DATABASE webpy WITH TEMPLATE template0 ENCODING 'UTF8'; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger' NOSUPERUSER NOCREATEDB NOCREATEROLE; ALTER DATABASE webpy OWNER TO scott;"
 
       # Run pytest and get detailed output for easier debugging.
       - run: pytest -s -x -v .

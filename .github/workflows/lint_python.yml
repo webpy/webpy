@@ -18,7 +18,6 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-        #-c "CREATE DATABASE webpy WITH TEMPLATE template0 ENCODING 'UTF8'; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger' NOSUPERUSER NOCREATEDB NOCREATEROLE; ALTER DATABASE webpy OWNER TO scott;"
 
     strategy:
       matrix:
@@ -43,7 +42,6 @@ jobs:
       # Use the default MySQL server offered by Github Actions.
       - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
 
-      #- run: psql -h localhost -U postgres -d postgres -c "CREATE DATABASE webpy; CREATE USER scott WITH ENCRYPTED PASSWORD 'tiger'; ALTER DATABASE webpy OWNER TO scott;"
       - run: |
           createdb -h localhost -U postgres webpy
           createuser -h localhost -U postgres -d scott
@@ -52,7 +50,8 @@ jobs:
         env:
           PGPASSWORD: postgres
 
-      # Run pytest and get detailed output for easier debugging.
+      # Run pytest and get detailed output for easy debugging if test failed.
+      # Env variables `WEBPY_DB_` are required for sql db connections.
       - run: pytest -s -x -v .
         env:
           WEBPY_DB_HOST: localhost

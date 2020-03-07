@@ -8,6 +8,10 @@
 * Fixed: not support `samesite=none`. #592
 * Fixed Python-3 compatibility issues: #574, #576.
 * Support tuple and set in `sqlquote()`.
+* Drop support for SQL driver `pgdb`. It was dead, you cannot even find its
+  website or download link.
+* Drop support for SQL driver `psycopg`. The latest version was released in
+  2006 (14 years ago), please use `psycopg2` instead.
 * Removed function `web.safemarkdown`. if it's used in your application, you
   can install the `Markdown` module from pypi
   (https://pypi.org/project/Markdown/), then replace `web.safemarkdown()` by

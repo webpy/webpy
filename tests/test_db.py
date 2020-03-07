@@ -257,16 +257,6 @@ class PostgresTest2(DBTest):
         assert len(db.select("person").list()) == 1
 
 
-@requires_module("psycopg")
-class PostgresTest_psycopg(PostgresTest2):
-    driver = "psycopg"
-
-
-@requires_module("pgdb")
-class PostgresTest_pgdb(PostgresTest2):
-    driver = "pgdb"
-
-
 @requires_module("sqlite3")
 class SqliteTest(DBTest):
     dbname = "sqlite"

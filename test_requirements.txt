@@ -9,6 +9,4 @@ PyMySQL>=0.9.3
 mysql-connector-python>=8.0.19
 
 # pgsql
-#psycopg; python_version == '2.7'
 psycopg2>=2.8.4
-#pgdb>=0.0.8

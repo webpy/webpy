@@ -55,7 +55,7 @@ TOKEN = "[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\
 tokenprog = re.compile(TOKEN)
 
 # Supported db drivers.
-pg_drivers = ["psycopg2", "psycopg", "pgdb"]
+pg_drivers = ["psycopg2"]
 mysql_drivers = ["MySQLdb", "pymysql", "mysql.connector"]
 sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
 
@@ -1205,8 +1205,6 @@ class PostgresDB(DB):
             import psycopg2.extensions
 
             psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-        if db_module.__name__ == "pgdb" and "port" in keywords:
-            keywords["host"] += ":" + str(keywords.pop("port"))
 
         # if db is not provided `postgres` driver will take it from PGDATABASE
         # environment variable.
@@ -1240,20 +1238,12 @@ class PostgresDB(DB):
 
     def _connect(self, keywords):
         conn = DB._connect(self, keywords)
-        try:
-            conn.set_client_encoding("UTF8")
-        except AttributeError:
-            # fallback for pgdb driver
-            conn.cursor().execute("set client_encoding to 'UTF-8'")
+        conn.set_client_encoding("UTF8")
         return conn
 
     def _connect_with_pooling(self, keywords):
         conn = DB._connect_with_pooling(self, keywords)
-        try:
-            conn._con._con.set_client_encoding("UTF8")
-        except AttributeError:
-            # fallback for pgdb driver
-            conn.cursor().execute("set client_encoding to 'UTF-8'")
+        conn._con._con.set_client_encoding("UTF8")
         return conn
 
 
@@ -1283,7 +1273,7 @@ class MySQLDB(DB):
         elif keywords["charset"] is None:
             del keywords["charset"]
 
-        self.paramstyle = db.paramstyle = "pyformat"  # it's both, like psycopg
+        self.paramstyle = db.paramstyle = "pyformat"  # it's both
         self.dbname = "mysql"
         DB.__init__(self, db, keywords)
         self.supports_multiple_insert = True

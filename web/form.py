@@ -520,6 +520,38 @@ class Email(Input):
         return "email"
 
 
+class Date(Input):
+    """Date input.
+
+    Note: Not supported by desktop Safari, Internet Explorer, or Opera Mini
+
+    See: <https://html.spec.whatwg.org/#date-state-(type=date)>
+
+    >>> Date(name='date', value='2020-04-01').render()
+    u'<input id="date" name="date" type="date" value="2020-04-01"/>'
+
+    """
+
+    def get_type(self):
+        return "date"
+
+
+class Time(Input):
+    """Time input.
+
+    Note: Not supported by desktop Safari, Internet Explorer, or Opera Mini
+
+    See: <https://html.spec.whatwg.org/#time-state-(type=time)>
+
+    >>> Time(name='time', value='07:00').render()
+    u'<input id="time" name="time" type="time" value="07:00"/>'
+
+    """
+
+    def get_type(self):
+        return "time"
+
+
 class Search(Input):
     """Search input.
 

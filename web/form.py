@@ -496,7 +496,7 @@ class File(Input):
 class Telephone(Input):
     """Telephone input.
 
-    See: <http://dev.w3.org/html5/spec/Overview.html#the-input-element>
+    See: <https://html.spec.whatwg.org/#telephone-state-(type=tel)>
 
     >>> Telephone(name='tel', value='55512345').render()
     u'<input id="tel" name="tel" type="tel" value="55512345"/>'
@@ -509,7 +509,7 @@ class Telephone(Input):
 class Email(Input):
     """Email input.
 
-    See: <http://dev.w3.org/html5/spec/Overview.html#the-input-element>
+    See: <https://html.spec.whatwg.org/#e-mail-state-(type=email)>
 
     >>> Email(name='email', value='me@example.org').render()
     u'<input id="email" name="email" type="email" value="me@example.org"/>'
@@ -523,7 +523,7 @@ class Email(Input):
 class Search(Input):
     """Search input.
 
-    See: <http://dev.w3.org/html5/spec/Overview.html#text-state-and-search-state>
+    See: <https://html.spec.whatwg.org/#text-(type=text)-state-and-search-state-(type=search)>
 
     >> Search(name='search', value='Search').render()
     u'<input id="search" name="search" type="search" value="Search"/>'
@@ -539,7 +539,7 @@ class Search(Input):
 class Url(Input):
     """URL input.
 
-    See: <http://dev.w3.org/html5/spec/Overview.html#url-state>
+    See: <https://html.spec.whatwg.org/#url-state-(type=url)>
 
     >>> Url(name='url', value='url').render()
     u'<input id="url" name="url" type="url" value="url"/>'
@@ -552,7 +552,7 @@ class Url(Input):
 class Number(Input):
     """Number input.
 
-    See: <http://dev.w3.org/html5/spec/Overview.html#number-state>
+    See: <https://html.spec.whatwg.org/#number-state-(type=number)>
 
     >>> Number(name='num', min='0', max='10', step='2', value='5').render()
     u'<input id="num" max="10" min="0" name="num" step="2" type="number" value="5"/>'
@@ -565,7 +565,7 @@ class Number(Input):
 class Range(Input):
     """Range input.
 
-    See: <http://dev.w3.org/html5/spec/Overview.html#range-state>
+    See: <https://html.spec.whatwg.org/#range-state-(type=range)>
 
     >>> Range(name='range', min='0', max='10', step='2', value='5').render()
     u'<input id="range" max="10" min="0" name="range" step="2" type="range" value="5"/>'
@@ -578,9 +578,9 @@ class Range(Input):
 class Color(Input):
     """Color input.
 
-    Warning: Only Opera 11 supports.
+    Note: Not supported by Internet Explorer or Opera Mini
 
-    See: <http://dev.w3.org/html5/spec/Overview.html#color-state>
+    See: <https://html.spec.whatwg.org/#color-stat://html.spec.whatwg.org/#color-state-(type=color)>
 
     >>> Color(name='color').render()
     u'<input id="color" name="color" type="color"/>'
@@ -593,11 +593,12 @@ class Color(Input):
 class Datalist(Input):
     """Datalist input.
 
-    This is currently supported by only Firefox and Opera. Use it with caucious.
+    This is currently supported by Chrome, Firefox, Edge, and Opera. It is not
+    supported on Safari or Internet Explorer. Use it with caution. 
+
     Datalist cannot be used separately. It must be bound to an input.
 
-    An example can be viewed on
-    <http://dev.w3.org/html5/spec/Overview.html#url-state>
+    <https://html.spec.whatwg.org/#the-datalist-element>
 
     >>> Datalist(name='list', args=[('a', 'b'), ('c', 'd')]).render()
     u'<datalist id="list" name="list"><option label="a" value="b"/><option label="c" value="d"/></datalist>'

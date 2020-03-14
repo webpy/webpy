@@ -1,32 +1,7 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
 
-from __future__ import generators
-
-from . import session  # noqa: F401
-from .application import (  # noqa: F401
-    application,
-    auto_application,
-    loadhook,
-    subdomain_application,
-    unloadhook,
-)
-from .db import database  # noqa: F401
-from .http import changequery  # noqa: F401
-from .utils import storage  # noqa: F401
-from .webapi import (  # noqa: F401
-    HTTPError,
-    cookies,
-    ctx,
-    input,
-    notfound,
-    redirect,
-    seeother,
-    setcookie,
-)
-
-"""
-from . import (
+from . import (  # noqa: F401
     db,
     debugerror,
     form,
@@ -39,16 +14,160 @@ from . import (
     webapi,
     wsgi,
 )
-from .application import *
-from .db import *
-from .debugerror import *
-from .http import *
-from .httpserver import *
-from .net import *
-from .utils import *
-from .webapi import *
+from .application import (  # noqa: F401
+    application,
+    auto_application,
+    autodelegate,
+    loadhook,
+    subdir_application
+    subdomain_application,
+    unloadhook,
+)
+from .db import (  # noqa: F401
+    DB,
+    SQLLiteral,
+    SQLParam,
+    SQLQuery,
+    TransactionError,
+    UnknownDB,
+    UnknownParamstyle,
+    database,
+    reparam,
+    sqllist,
+    sqlliteral,
+    sqlors,
+    sqlparam,
+    sqlquote,
+)
+from debugerror import debugerror, djangoerror, emailerrors  # noqa: F401
+from .http import (  # noqa: F401
+    changequery,
+    expires,
+    lastmodified,
+    modified,
+    prefixurl,
+    profiler,
+    url,
+)
+from .httpserver import runsimple
+from .net import (  # noqa: F401
+    htmlquote,
+    htmlunquote,
+    httpdate,
+    parsehttpdate,
+    urlquote,
+    validaddr,
+    validip,
+    validip6addr,
+    validipaddr,
+    validipport,
+    websafe,
+)
+from .utils import (  # noqa: F401
+    CaptureStdout,
+    Counter,
+    IterBetter,
+    Memoize,
+    Profile,
+    Storage,
+    ThreadedDict,
+    autoassign,
+    capturestdout,
+    commify,
+    cond,
+    counter,
+    dateify,
+    datestr,
+    denumify,
+    dictadd,
+    dictfind,
+    dictfindall,
+    dictincr,
+    dictreverse,
+    group,
+    intget,
+    iterbetter,
+    iters,
+    iterview,
+    listget,
+    lstrips,
+    memoize,
+    nthstr,
+    numify,
+    profile,
+    re_compile,
+    re_subm,
+    requeue,
+    restack,
+    rstrips,
+    safeiter,
+    safestr,
+    safeunicode,
+    safewrite,
+    sendmail,
+    storage,
+    storify,
+    strips,
+    threadeddict,
+    timelimit,
+    to36,
+    tryall,
+    uniq,
+)
+from .webapi import (  # noqa: F401
+    Accepted,
+    BadRequest,
+    Conflict,
+    Created,
+    Forbidden,
+    Found,
+    Gone,
+    HTTPError,
+    InternalError,
+    NoContent,
+    NoMethod,
+    NotAcceptable,
+    NotFound,
+    NotModified,
+    OK,
+    PreconditionFailed,
+    Redirect,
+    SeeOther,
+    TempRedirect,
+    Unauthorized,
+    UnavailableForLegalReasons,
+    UnsupportedMediaType,
+    accepted,
+    badrequest,
+    config,
+    conflict,
+    cookies,
+    created,
+    ctx,
+    data,
+    debug,
+    forbidden,
+    found,
+    gone,
+    header,
+    input,
+    internalerror,
+    nocontent,
+    nomethod,
+    notacceptable,
+    notfound,
+    notmodified,
+    ok,
+    preconditionfailed,
+    redirect,
+    seeother,
+    setcookie,
+    tempredirect,
+    unauthorized,
+    unavailableforlegalreasons,
+    unsupportedmediatype,
+)
 from .wsgi import *
-"""
 
 __version__ = "0.40"
 __author__ = [

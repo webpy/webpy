@@ -1257,7 +1257,7 @@ ALLOWED_AST_NODES = """Add And Assign Attribute AugAssign AugLoad AugStore BinOp
     Not NotEq NotIn Num Or Param Pass Pow RShift Return Set SetComp Slice Store Str Sub
     Subscript Suite Tuple UAdd USub UnaryOp While With Yield alias arg arguments
     comprehension keyword""".split()
-    # Assert Exec Global Import ImportFrom Print Raise Repr TryExcept TryFinally
+# Assert Exec Global Import ImportFrom Print Raise Repr TryExcept TryFinally
 
 
 class SafeVisitor(ast.NodeVisitor):

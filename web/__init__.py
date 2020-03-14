@@ -19,7 +19,7 @@ from .application import (  # noqa: F401
     auto_application,
     autodelegate,
     loadhook,
-    subdir_application
+    subdir_application,
     subdomain_application,
     unloadhook,
 )
@@ -39,7 +39,7 @@ from .db import (  # noqa: F401
     sqlparam,
     sqlquote,
 )
-from debugerror import debugerror, djangoerror, emailerrors  # noqa: F401
+from .debugerror import debugerror, djangoerror, emailerrors  # noqa: F401,F811
 from .http import (  # noqa: F401
     changequery,
     expires,
@@ -49,7 +49,7 @@ from .http import (  # noqa: F401
     profiler,
     url,
 )
-from .httpserver import runsimple
+from .httpserver import runsimple  # noqa: F401
 from .net import (  # noqa: F401
     htmlquote,
     htmlunquote,
@@ -167,7 +167,7 @@ from .webapi import (  # noqa: F401
     unavailableforlegalreasons,
     unsupportedmediatype,
 )
-from .wsgi import *
+from .wsgi import *  # noqa: F401,F403
 
 __version__ = "0.40"
 __author__ = [

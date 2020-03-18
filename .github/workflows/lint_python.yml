@@ -40,9 +40,13 @@ jobs:
       - run: pip install -r requirements.txt -r test_requirements.txt
 
       # Use the default MySQL server offered by Github Actions.
-      - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+      - name: "Generate /tmp/my.cnf"
+        run: echo -e "[client]\nuser=root\npassword='root'" > /tmp/my.cnf
+      - name: "Create MySQL user and database used for testing."
+        run: mysql --defaults-file=/tmp/my.cnf -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
 
-      - run: |
+      - name: "Create PostgreSQL user and database."
+        run: |
           createdb -h localhost -U postgres webpy
           createuser -h localhost -U postgres -d scott
           psql -h localhost -U postgres -d postgres -c "ALTER USER scott WITH ENCRYPTED PASSWORD 'tiger'"

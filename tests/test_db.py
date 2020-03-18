@@ -51,7 +51,7 @@ def setup_database(dbname, driver=None, pooling=False):
         db = web.database(
             dbn=dbname,
             host=os.getenv("WEBPY_DB_HOST", "localhost"),
-            port=os.getenv("WEBPY_DB_PG_PORT", 5432),
+            port=int(os.getenv("WEBPY_DB_PG_PORT", 5432)),
             db=os.getenv("WEBPY_DB_NAME", "webpy"),
             user=os.getenv("WEBPY_DB_USER", os.getenv("USER")),
             pw=os.getenv("WEBPY_DB_PASSWORD", ""),
@@ -61,9 +61,11 @@ def setup_database(dbname, driver=None, pooling=False):
     else:
         db = web.database(
             dbn=dbname,
-            db="webpy",
-            user="scott",
-            pw="tiger",
+            host=os.getenv("WEBPY_DB_HOST", "localhost"),
+            port=int(os.getenv("WEBPY_DB_MYSQL_PORT", 3306)),
+            db=os.getenv("WEBPY_DB_NAME", "webpy"),
+            user=os.getenv("WEBPY_DB_USER", os.getenv("USER")),
+            pw=os.getenv("WEBPY_DB_PASSWORD", ""),
             pooling=pooling,
             driver=driver,
         )

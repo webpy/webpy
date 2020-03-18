@@ -9,6 +9,14 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      mariadb:
+        image: mysql:5.7
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
       postgres:
         image: postgres:latest
         env:
@@ -29,6 +37,7 @@ jobs:
       - uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
+
       - run: pip install codespell flake8 isort pytest
       - if: matrix.python-version >= 3.6
         run: |
@@ -37,12 +46,18 @@ jobs:
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
       - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - run: isort --recursive .
-      - run: pip install -r requirements.txt -r test_requirements.txt
+
+      - name: "Install dependent Python modules for testing."
+        run: pip install -r requirements.txt -r test_requirements.txt
 
       # Use the default MySQL server offered by Github Actions.
-      - run: mysql -uroot -proot -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+      - name: "Generate /tmp/my.cnf"
+        run: echo -e "[client]\nhost=127.0.0.1\nport=3306\nuser=root\npassword='root'" > /tmp/my.cnf
+      - name: "Create MySQL user and database used for testing."
+        run: mysql --defaults-file=/tmp/my.cnf -e "create user 'scott'@'%' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'%' with grant option;"
 
-      - run: |
+      - name: "Create PostgreSQL user and database."
+        run: |
           createdb -h localhost -U postgres webpy
           createuser -h localhost -U postgres -d scott
           psql -h localhost -U postgres -d postgres -c "ALTER USER scott WITH ENCRYPTED PASSWORD 'tiger'"
@@ -54,7 +69,8 @@ jobs:
       # Env variables `WEBPY_DB_` are required for sql db connections.
       - run: pytest --capture=no --exitfirst --verbose .
         env:
-          WEBPY_DB_HOST: localhost
+          WEBPY_DB_HOST: 127.0.0.1
+          WEBPY_DB_MYSQL_PORT: 3306
           WEBPY_DB_PG_PORT: 5432
           WEBPY_DB_NAME: webpy
           WEBPY_DB_USER: scott

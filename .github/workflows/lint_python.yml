@@ -72,7 +72,8 @@ jobs:
       # Env variables `WEBPY_DB_` are required for sql db connections.
       - run: pytest --capture=no --exitfirst --verbose .
         env:
-          WEBPY_DB_HOST: localhost
+          WEBPY_DB_HOST: 127.0.0.1
+          WEBPY_DB_MYSQL_PORT: 3306
           WEBPY_DB_PG_PORT: 5432
           WEBPY_DB_NAME: webpy
           WEBPY_DB_USER: scott

@@ -12,7 +12,7 @@ jobs:
       mariadb:
         image: mariadb:10.4
         ports:
-          - 3306
+          - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: root
         options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 5
@@ -49,6 +49,9 @@ jobs:
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt
+
+      - name: "Testing: check which network services are running."
+        run: netstat -ntlp
 
       # Use the default MySQL server offered by Github Actions.
       - name: "Generate /tmp/my.cnf"

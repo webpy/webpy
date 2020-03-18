@@ -57,7 +57,7 @@ jobs:
       - name: "Generate /tmp/my.cnf"
         run: echo -e "[client]\nhost=127.0.0.1\nport=3306\nuser=root\npassword='root'" > /tmp/my.cnf
       - name: "Create MySQL user and database used for testing."
-        run: mysql --defaults-file=/tmp/my.cnf -e "create user 'scott'@'localhost' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'localhost' with grant option;"
+        run: mysql --defaults-file=/tmp/my.cnf -e "create user 'scott'@'127.0.0.1' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'127.0.0.1' with grant option;"
 
       - name: "Create PostgreSQL user and database."
         run: |

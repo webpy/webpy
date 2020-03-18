@@ -9,6 +9,14 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      mariadb:
+        image: mariadb:10.4
+        ports:
+          - 3306
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
       postgres:
         image: postgres:latest
         env:
@@ -29,6 +37,7 @@ jobs:
       - uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
+
       - run: pip install codespell flake8 isort pytest
       - if: matrix.python-version >= 3.6
         run: |
@@ -37,7 +46,9 @@ jobs:
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
       - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - run: isort --recursive .
-      - run: pip install -r requirements.txt -r test_requirements.txt
+
+      - name: "Install dependent Python modules for testing."
+        run: pip install -r requirements.txt -r test_requirements.txt
 
       # Use the default MySQL server offered by Github Actions.
       - name: "Generate /tmp/my.cnf"

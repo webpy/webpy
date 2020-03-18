@@ -10,8 +10,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:10.4
-        cmd: "--bind-address=0.0.0.0"
+        image: mysql:5.7
         ports:
           - 3306:3306
         env:

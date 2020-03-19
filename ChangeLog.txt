@@ -1,6 +1,6 @@
 # web.py changelog
 
-## 2020-XX-XX 0.50
+## 2020-03-20 0.50
 
 * New session store `MemoryStore`, used to save a session in memory.
   Should be useful where there are limited fs writes to the disk, like

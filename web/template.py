@@ -895,7 +895,11 @@ class BaseTemplate:
 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        return self.t(*a, **kw)
+        try:
+            return self.t(*a, **kw)
+        except TypeError as e:
+            print("layout.html must have '$def with (content)' near the beginning.")
+            raise e
 
     def make_env(self, globals, builtins):
         return dict(

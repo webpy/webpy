@@ -28,6 +28,7 @@ setup(
     license="Public domain",
     platforms=["any"],
     classifiers=[
+        "License :: Public Domain",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",

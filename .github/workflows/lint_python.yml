@@ -29,8 +29,7 @@ jobs:
 
     strategy:
       matrix:
-        # TODO: (cclauss) add pypy3  https://github.com/webpy/webpy/issues/598
-        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]  # , pypy3]
+        python-version: [2.7, 3.5, 3.6, 3.7, 3.8, pypy3]
 
     steps:
       - uses: actions/checkout@v2

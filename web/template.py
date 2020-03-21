@@ -895,7 +895,13 @@ class BaseTemplate:
 
     def __call__(self, *a, **kw):
         __hidetraceback__ = True
-        return self.t(*a, **kw)
+        try:
+            return self.t(*a, **kw)
+        except TypeError as e:
+            print(
+                "To fix this error, please see https://webpy.org/docs/0.3/templetor#errors"
+            )
+            raise e
 
     def make_env(self, globals, builtins):
         return dict(

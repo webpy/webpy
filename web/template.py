@@ -899,8 +899,7 @@ class BaseTemplate:
             return self.t(*a, **kw)
         except TypeError as e:
             print(
-                "Check web.py website to check possible errors and how to "
-                "fix it: https://webpy.org/docs/0.3/templetor#errors"
+                "To fix this error, please see https://webpy.org/docs/0.3/templetor#errors"
             )
             raise e
 

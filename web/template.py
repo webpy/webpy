@@ -898,8 +898,10 @@ class BaseTemplate:
         try:
             return self.t(*a, **kw)
         except TypeError as e:
-            print("Check web.py website to check possible errors and how to "
-                  "fix it: https://webpy.org/docs/0.3/templetor#errors")
+            print(
+                "Check web.py website to check possible errors and how to "
+                "fix it: https://webpy.org/docs/0.3/templetor#errors"
+            )
             raise e
 
     def make_env(self, globals, builtins):

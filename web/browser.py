@@ -6,7 +6,6 @@ import webbrowser
 from io import BytesIO
 
 from .net import htmlunquote
-from .py3helpers import text_type
 from .utils import re_compile
 
 from urllib.request import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
@@ -112,7 +111,7 @@ class Browser(object):
             [
                 htmlunquote(c)
                 for c in e.recursiveChildGenerator()
-                if isinstance(c, text_type)
+                if isinstance(c, str)
             ]
         )
 

@@ -1499,6 +1499,7 @@ def register_database(name, clazz):
     _databases[name] = clazz
 
 
+register_database("mysql", MySQLDB)
 register_database("postgres", PostgresDB)
 register_database("sqlite", SqliteDB)
 register_database("firebird", FirebirdDB)

@@ -278,10 +278,10 @@ class SqliteTest_pysqlite2(SqliteTest):
     driver = "pysqlite2.dbapi2"
 
 
-@requires_module("MySQLdb")
-class MySQLTest_MySQLdb(DBTest):
+@requires_module("pymysql")
+class MySQLTest_PYMYSQL(DBTest):
     dbname = "mysql"
-    driver = "MySQLdb"
+    driver = "pymysql"
 
     def setUp(self):
         self.db = setup_database(self.dbname)
@@ -293,13 +293,8 @@ class MySQLTest_MySQLdb(DBTest):
         pass
 
 
-@requires_module("pymysql")
-class MySQLTest_PyMySQL(MySQLTest_MySQLdb):
-    driver = "pymysql"
-
-
 @requires_module("mysql.connector")
-class MySQLTest_MySQLConnector(MySQLTest_MySQLdb):
+class MySQLTest_MySQLConnector(MySQLTest_PYMYSQL):
     driver = "mysql.connector"
 
 

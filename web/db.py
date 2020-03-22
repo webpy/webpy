@@ -56,7 +56,7 @@ tokenprog = re.compile(TOKEN)
 
 # Supported db drivers.
 pg_drivers = ["psycopg2"]
-mysql_drivers = ["MySQLdb", "pymysql", "mysql.connector"]
+mysql_drivers = ["pymysql", "mysql.connector"]
 sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
 
 
@@ -1249,14 +1249,11 @@ class MySQLDB(DB):
 
         db = import_driver(mysql_drivers, preferred=keywords.pop("driver", None))
 
-        if db.__name__ == "MySQLdb":
-            if "pw" in keywords:
-                keywords["passwd"] = keywords["pw"]
-                del keywords["pw"]
         if db.__name__ == "pymysql":
             if "pw" in keywords:
                 keywords["password"] = keywords["pw"]
                 del keywords["pw"]
+
         if db.__name__ == "mysql.connector":
             # Enabled buffered so that len can work as expected.
             keywords.setdefault("buffered", True)
@@ -1502,7 +1499,6 @@ def register_database(name, clazz):
     _databases[name] = clazz
 
 
-register_database("mysql", MySQLDB)
 register_database("postgres", PostgresDB)
 register_database("sqlite", SqliteDB)
 register_database("firebird", FirebirdDB)

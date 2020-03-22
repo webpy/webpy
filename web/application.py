@@ -16,7 +16,7 @@ from . import browser, httpserver, utils
 from . import webapi as web
 from . import wsgi
 from .debugerror import debugerror
-from .py3helpers import is_iter, iteritems, string_types
+from .py3helpers import is_iter, iteritems
 from .utils import lstrips
 
 from urllib.parse import urlparse, urlencode, unquote
@@ -332,7 +332,7 @@ class application:
                 for r in result:
                     if isinstance(r, bytes):
                         yield r
-                    elif isinstance(r, string_types):
+                    elif isinstance(r, str):
                         yield r.encode("utf-8")
                     else:
                         yield str(r).encode("utf-8")
@@ -503,7 +503,7 @@ class application:
             return f.handle_with_processors()
         elif isclass(f):
             return handle_class(f)
-        elif isinstance(f, string_types):
+        elif isinstance(f, str):
             if f.startswith("redirect "):
                 url = f.split(" ", 1)[1]
                 if web.ctx.method == "GET":
@@ -531,7 +531,7 @@ class application:
                     return f, None
                 else:
                     continue
-            elif isinstance(what, string_types):
+            elif isinstance(what, str):
                 what, result = utils.re_subm(r"^%s\Z" % (pat,), what, value)
             else:
                 result = utils.re_compile(r"^%s\Z" % (pat,)).match(value)
@@ -664,7 +664,7 @@ class subdomain_application(application):
 
     def _match(self, mapping, value):
         for pat, what in mapping:
-            if isinstance(what, string_types):
+            if isinstance(what, str):
                 what, result = utils.re_subm("^" + pat + "$", what, value)
             else:
                 result = utils.re_compile("^" + pat + "$").match(value)

@@ -9,7 +9,7 @@ import os
 import re
 import time
 
-from .py3helpers import iteritems, numeric_types, string_types
+from .py3helpers import iteritems, numeric_types
 from .utils import iters, safestr, safeunicode, storage, threadeddict
 
 try:
@@ -185,7 +185,7 @@ class SQLQuery(object):
         self.items.append(value)
 
     def __add__(self, other):
-        if isinstance(other, string_types):
+        if isinstance(other, str):
             items = [other]
         elif isinstance(other, SQLQuery):
             items = other.items
@@ -194,7 +194,7 @@ class SQLQuery(object):
         return SQLQuery(self.items + items)
 
     def __radd__(self, other):
-        if isinstance(other, string_types):
+        if isinstance(other, str):
             items = [other]
         elif isinstance(other, SQLQuery):
             items = other.items
@@ -203,7 +203,7 @@ class SQLQuery(object):
         return SQLQuery(items + self.items)
 
     def __iadd__(self, other):
-        if isinstance(other, (string_types, SQLParam)):
+        if isinstance(other, (str, SQLParam)):
             self.items.append(other)
         elif isinstance(other, SQLQuery):
             self.items.extend(other.items)
@@ -413,7 +413,7 @@ def sqllist(lst):
         >>> sqllist('a')
         'a'
     """
-    if isinstance(lst, string_types):
+    if isinstance(lst, str):
         return lst
     else:
         return ", ".join(lst)

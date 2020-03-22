@@ -9,7 +9,7 @@ import os
 import re
 import time
 
-from .py3helpers import PY2, iteritems, numeric_types, string_types, text_type
+from .py3helpers import iteritems, numeric_types, string_types
 from .utils import iters, safestr, safeunicode, storage, threadeddict
 
 try:
@@ -401,9 +401,6 @@ def sqlify(obj):
     elif isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
     else:
-        if PY2 and isinstance(obj, text_type):  # Strings are always UTF8 in Py3
-            obj = obj.encode("utf8")
-
         return repr(obj)
 
 

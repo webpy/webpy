@@ -16,13 +16,10 @@ from . import browser, httpserver, utils
 from . import webapi as web
 from . import wsgi
 from .debugerror import debugerror
-from .py3helpers import PY2, is_iter, iteritems, string_types
+from .py3helpers import is_iter, iteritems, string_types
 from .utils import lstrips
 
-if PY2:
-    from urllib import splitquery, urlencode, unquote
-else:
-    from urllib.parse import urlparse, urlencode, unquote
+from urllib.parse import urlparse, urlencode, unquote
 
 try:
     reload  # Python 2
@@ -218,12 +215,9 @@ class application:
         """
         # PY3DOCTEST: b'hello'
         # PY3DOCTEST: b'your user-agent is a small jumping bean/1.0 (compatible)'
-        if PY2:
-            path, maybe_query = splitquery(localpart)
-        else:
-            _p = urlparse(localpart)
-            path = _p.path
-            maybe_query = _p.query
+        _p = urlparse(localpart)
+        path = _p.path
+        maybe_query = _p.query
 
         query = maybe_query or ""
 
@@ -336,15 +330,12 @@ class application:
 
             def build_result(result):
                 for r in result:
-                    if PY2:
-                        yield utils.safestr(r)
+                    if isinstance(r, bytes):
+                        yield r
+                    elif isinstance(r, string_types):
+                        yield r.encode("utf-8")
                     else:
-                        if isinstance(r, bytes):
-                            yield r
-                        elif isinstance(r, string_types):
-                            yield r.encode("utf-8")
-                        else:
-                            yield str(r).encode("utf-8")
+                        yield str(r).encode("utf-8")
 
             result = build_result(result)
 
@@ -469,10 +460,8 @@ class application:
         ctx.realhome = ctx.home
         ctx.ip = env.get("REMOTE_ADDR")
         ctx.method = env.get("REQUEST_METHOD")
-        if PY2:
-            ctx.path = env.get("PATH_INFO")
-        else:
-            ctx.path = env.get("PATH_INFO").encode("latin1").decode("utf8")
+        ctx.path = env.get("PATH_INFO").encode("latin1").decode("utf8")
+
         # http://trac.lighttpd.net/trac/ticket/406 requires:
         if env.get("SERVER_SOFTWARE", "").startswith("lighttpd/"):
             ctx.path = lstrips(env.get("REQUEST_URI").split("?")[0], ctx.homepath)

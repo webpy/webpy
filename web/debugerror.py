@@ -18,20 +18,11 @@ import traceback
 
 from . import webapi as web
 from .net import websafe
-from .py3helpers import PY2
 from .template import Template
 from .utils import safestr, sendmail
 
-if PY2:
-
-    def update_globals_template(t, globals):
-        t.t.func_globals.update(globals)
-
-
-else:
-
-    def update_globals_template(t, globals):
-        t.t.__globals__.update(globals)
+def update_globals_template(t, globals):
+    t.t.__globals__.update(globals)
 
 
 whereami = os.path.join(os.getcwd(), __file__)

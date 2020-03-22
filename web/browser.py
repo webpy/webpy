@@ -6,36 +6,19 @@ import webbrowser
 from io import BytesIO
 
 from .net import htmlunquote
-from .py3helpers import PY2, text_type
+from .py3helpers import text_type
 from .utils import re_compile
 
-try:  # Py3
-    from http.client import HTTPMessage
-    from urllib.request import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
-    from urllib.request import build_opener as urllib_build_opener
-    from urllib.parse import urljoin
-    from http.cookiejar import CookieJar
-    from urllib.response import addinfourl
-except ImportError:  # Py2
-    from httplib import HTTPMessage
-    from urllib import addinfourl
-    from urllib2 import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
-    from urllib2 import build_opener as urllib_build_opener
-    from cookielib import CookieJar
-    from urlparse import urljoin
+from urllib.request import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
+from urllib.request import build_opener as urllib_build_opener
+from urllib.parse import urljoin
+from http.cookiejar import CookieJar
+from urllib.response import addinfourl
 
-# Welcome to the Py2->Py3 httplib/urllib reorganization nightmare.
-
-if PY2:
-    get_selector = lambda x: x.get_selector()
-    get_host = lambda x: x.get_host()
-    get_data = lambda x: x.get_data()
-    get_type = lambda x: x.get_type()
-else:
-    get_selector = lambda x: x.selector
-    get_host = lambda x: x.host
-    get_data = lambda x: x.data
-    get_type = lambda x: x.type
+get_selector = lambda x: x.selector
+get_host = lambda x: x.host
+get_data = lambda x: x.data
+get_type = lambda x: x.type
 
 DEBUG = False
 
@@ -313,12 +296,9 @@ class AppHandler(HTTPHandler):
 
         data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
 
-        if PY2:
-            headers = HTTPMessage(BytesIO(data))
-        else:
-            import email
+        import email
 
-            headers = email.message_from_string(data)
+        headers = email.message_from_string(data)
 
         response = addinfourl(BytesIO(result.data), headers, url)
         code, msg = result.status.split(None, 1)

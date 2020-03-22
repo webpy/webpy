@@ -9,8 +9,6 @@ import re
 import socket
 import time
 
-from .py3helpers import PY2, text_type
-
 try:
     from urllib.parse import quote
 except ImportError:
@@ -194,13 +192,7 @@ def urlquote(val):
     if val is None:
         return ""
 
-    if PY2:
-        if isinstance(val, text_type):
-            val = val.encode("utf-8")
-        else:
-            val = str(val)
-    else:
-        val = str(val).encode("utf-8")
+    val = str(val).encode("utf-8")
     return quote(val)
 
 
@@ -273,16 +265,10 @@ def websafe(val):
     if val is None:
         return u""
 
-    if PY2:
-        if isinstance(val, str):
-            val = val.decode("utf-8")
-        elif not isinstance(val, text_type):
-            val = text_type(val)
-    else:
-        if isinstance(val, bytes):
-            val = val.decode("utf-8")
-        elif not isinstance(val, str):
-            val = str(val)
+    if isinstance(val, bytes):
+        val = val.decode("utf-8")
+    elif not isinstance(val, str):
+        val = str(val)
 
     return htmlquote(val)
 

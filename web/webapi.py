@@ -9,8 +9,8 @@ import pprint
 import sys
 import tempfile
 from io import BytesIO
+from urllib.parse import urljoin
 
-from .py3helpers import urljoin
 from .utils import dictadd, intget, safestr, storage, storify, threadeddict
 
 try:

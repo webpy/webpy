@@ -16,7 +16,6 @@ import traceback
 from threading import local as threadlocal
 
 from .py3helpers import (
-    imap,
     is_iter,
     iteritems,
     itervalues,
@@ -373,7 +372,7 @@ def safestr(obj, encoding="utf-8"):
     """
 
     if is_iter(obj):
-        return imap(safestr, obj)
+        return map(safestr, obj)
     else:
         return str(obj)
 

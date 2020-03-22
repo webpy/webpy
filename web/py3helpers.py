@@ -15,10 +15,8 @@ iteritems = lambda d: iter(d.items())
 # string and text types
 try:
     text_type = unicode
-    numeric_types = (int, long)
 except NameError:
     text_type = str
-    numeric_types = (int,)
 
 is_iter = lambda x: x and hasattr(x, "__next__")
 

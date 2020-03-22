@@ -7,11 +7,6 @@ import unittest
 
 import web
 
-try:
-    unicode  # Python 2
-except NameError:
-    unicode = str  # Python 3
-
 
 def try_import(name):
     try:
@@ -196,12 +191,6 @@ class DBTest(unittest.TestCase):
             ids = db.multiple_insert("mi", values)
             assert list(ids) == [4, 5, 6]
 
-    def test_result_is_unicode(self):
-        # TODO : not sure this test has still meaning with Py3
-        self.db.insert("person", False, name="user")
-        name = self.db.select("person")[0].name
-        self.assertEqual(type(name), unicode)
-
     def test_result_is_true(self):
         self.db.insert("person", False, name="user")
         self.assertEqual(bool(self.db.select("person")), True)
@@ -284,7 +273,7 @@ class MySQLTest_PYMYSQL(DBTest):
     driver = "pymysql"
 
     def setUp(self):
-        self.db = setup_database(self.dbname)
+        self.db = setup_database(self.dbname, driver=self.driver)
         # In mysql, transactions are supported only with INNODB engine.
         self.db.query("CREATE TABLE person (name text, email text) ENGINE=INNODB")
 

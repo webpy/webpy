@@ -108,11 +108,7 @@ class Browser(object):
         """Returns content of e or the current document as plain text."""
         e = e or self.get_soup()
         return "".join(
-            [
-                htmlunquote(c)
-                for c in e.recursiveChildGenerator()
-                if isinstance(c, str)
-            ]
+            [htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, str)]
         )
 
     def _get_links(self):

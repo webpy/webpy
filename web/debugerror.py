@@ -21,6 +21,7 @@ from .net import websafe
 from .template import Template
 from .utils import safestr, sendmail
 
+
 def update_globals_template(t, globals):
     t.t.__globals__.update(globals)
 

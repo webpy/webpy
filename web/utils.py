@@ -16,13 +16,9 @@ import traceback
 from threading import local as threadlocal
 
 from .py3helpers import (
-    PY2,
-    imap,
     is_iter,
     iteritems,
     itervalues,
-    string_types,
-    text_type,
 )
 
 try:
@@ -365,32 +361,6 @@ def strips(text, remove):
     return rstrips(lstrips(text, remove), remove)
 
 
-def safeunicode(obj, encoding="utf-8"):
-    r"""
-    Converts any given object to unicode string.
-
-        >>> safeunicode('hello')
-        u'hello'
-        >>> safeunicode(2)
-        u'2'
-        >>> safeunicode('\xe1\x88\xb4')
-        u'\u1234'
-    """
-    t = type(obj)
-    if t is text_type:
-        return obj
-    elif t is bytes:
-        return obj.decode(encoding)
-    elif t in [int, float, bool]:
-        return text_type(obj)
-    # elif hasattr(obj, '__unicode__') or isinstance(obj, unicode):
-    #    return unicode(obj)
-    # else:
-    #    return str(obj).decode(encoding)
-    else:
-        return text_type(obj)
-
-
 def safestr(obj, encoding="utf-8"):
     r"""
     Converts any given object to utf-8 encoded string.
@@ -401,17 +371,14 @@ def safestr(obj, encoding="utf-8"):
         '2'
     """
 
-    if PY2 and isinstance(obj, text_type):
-        return obj.encode(encoding)
-    elif is_iter(obj):
-        return imap(safestr, obj)
+    if is_iter(obj):
+        return [safestr(i) for i in obj]
     else:
         return str(obj)
 
 
-if not PY2:
-    # Since Python3, utf-8 encoded strings and unicode strings are the same thing
-    safeunicode = safestr
+# Since Python3, utf-8 encoded strings and unicode strings are the same thing
+safeunicode = safestr
 
 
 def timelimit(timeout):
@@ -1473,7 +1440,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             filename = os.path.basename(getattr(a, "name", ""))
             content_type = getattr(a, "content_type", None)
             mail.attach(filename, a.read(), content_type)
-        elif isinstance(a, string_types):
+        elif isinstance(a, str):
             f = open(a, "rb")
             content = f.read()
             f.close()

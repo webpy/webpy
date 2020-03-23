@@ -9,8 +9,8 @@ import pprint
 import sys
 import tempfile
 from io import BytesIO
+from urllib.parse import urljoin
 
-from .py3helpers import PY2, text_type, urljoin
 from .utils import dictadd, intget, safestr, storage, storify, threadeddict
 
 try:
@@ -456,7 +456,7 @@ def rawinput(method=None):
                     ctx._fieldstorage = a
             else:
                 d = data()
-                if isinstance(d, text_type):
+                if isinstance(d, str):
                     d = d.encode("utf-8")
                 fp = BytesIO(d)
                 a = cgiFieldStorage(fp=fp, environ=e, keep_blank_values=1)
@@ -532,31 +532,6 @@ def setcookie(
     header("Set-Cookie", value)
 
 
-def decode_cookie(value):
-    r"""Safely decodes a cookie value to unicode.
-
-    Tries us-ascii, utf-8 and io8859 encodings, in that order.
-
-    >>> decode_cookie('')
-    u''
-    >>> decode_cookie('asdf')
-    u'asdf'
-    >>> decode_cookie('foo \xC3\xA9 bar')
-    u'foo \xe9 bar'
-    >>> decode_cookie('foo \xE9 bar')
-    u'foo \xe9 bar'
-    """
-    try:
-        # First try plain ASCII encoding
-        return text_type(value, "us-ascii")
-    except UnicodeError:
-        # Then try UTF-8, and if that fails, ISO8859
-        try:
-            return text_type(value, "utf-8")
-        except UnicodeError:
-            return text_type(value, "iso8859", "ignore")
-
-
 def parse_cookies(http_cookie):
     r"""Parse a HTTP_COOKIE header and return dict of cookie names and decoded values.
 
@@ -620,10 +595,6 @@ def cookies(*requireds, **defaults):
 
     The values are converted to unicode if _unicode=True is passed.
     """
-    # If _unicode=True is specified, use decode_cookie to convert cookie value to unicode
-    if defaults.get("_unicode") is True:
-        defaults["_unicode"] = decode_cookie
-
     # parse cookie string and cache the result for next time.
     if "_parsed_cookies" not in ctx:
         http_cookie = ctx.env.get("HTTP_COOKIE", "")

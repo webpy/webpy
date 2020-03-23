@@ -17,7 +17,7 @@ import datetime
 
 from . import net, utils
 from . import webapi as web
-from .py3helpers import iteritems, numeric_types
+from .py3helpers import iteritems
 
 try:
     from urllib.parse import urlencode as urllib_urlencode
@@ -48,7 +48,7 @@ def expires(delta):
     Outputs an `Expires` header for `delta` from now.
     `delta` is a `timedelta` object or a number of seconds.
     """
-    if isinstance(delta, numeric_types):
+    if isinstance(delta, int):
         delta = datetime.timedelta(seconds=delta)
     date_obj = datetime.datetime.utcnow() + delta
     web.header("Expires", net.httpdate(date_obj))

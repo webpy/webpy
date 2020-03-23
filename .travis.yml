@@ -1,6 +1,5 @@
 language: python
 python:
-  - 2.7
   - 3.5
   - 3.6
   - 3.7
@@ -28,9 +27,6 @@ before_script:
 
 script:
   - pytest --cov --cov-report=term-missing --cov-report=xml
-  - if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ]; then
-      pytest --doctest-modules ./web --cov-report=xml ;
-    fi
 
 after_success:
   - |

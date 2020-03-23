@@ -35,9 +35,9 @@ import os
 import sys
 import tokenize
 from io import open
+import builtins
 
 from .net import websafe
-from .py3helpers import PY2
 from .utils import re_compile, safestr, safeunicode, storage
 from .webapi import config
 
@@ -52,16 +52,7 @@ __all__ = [
 ]
 
 
-if PY2:
-    from UserDict import DictMixin
-
-    # Make a new-style class
-    class MutableMapping(object, DictMixin):
-        pass
-
-
-else:
-    from collections.abc import MutableMapping
+from collections.abc import MutableMapping
 
 
 def splitline(text):
@@ -366,8 +357,6 @@ class Parser:
                 self.position += 1
                 return self.current_item
 
-            next = __next__  # Needed for Py2 compatibility
-
         tokens = BetterIter(get_tokens(text))
 
         if tokens.lookahead().value in parens:
@@ -547,8 +536,6 @@ class PythonTokenizer:
         row, col = end
         self.index = col
         return storage(type=type, value=t, begin=begin, end=end)
-
-    next = __next__  # needed for Py2 compatibility
 
 
 class DefwithNode:
@@ -796,10 +783,6 @@ TEMPLATE_BUILTIN_NAMES = [
     "__import__",  # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-if PY2:
-    import __builtin__ as builtins
-else:
-    import builtins
 TEMPLATE_BUILTINS = dict(
     [
         (name, getattr(builtins, name))
@@ -1020,7 +1003,6 @@ class Template(BaseTemplate):
             compiled_code = compile(code, filename, "exec")
         except SyntaxError as err:
             # display template line that caused the error along with the traceback.
-            # this works in Py3 but not Py2, duh ? TODO
             err.msg += "\n\nTemplate traceback:\n    File %s, line %s\n        %s" % (
                 repr(err.filename),
                 err.lineno,
@@ -1510,10 +1492,7 @@ class TemplateResult(MutableMapping):
 
     def __str__(self):
         self._prepare_body()
-        if PY2:
-            return self["__body__"].encode("utf-8")
-        else:
-            return self["__body__"]
+        return self["__body__"]
 
     def __repr__(self):
         self._prepare_body()
@@ -1537,7 +1516,7 @@ def test():
         >>> class TestResult:
         ...     def __init__(self, t): self.t = t
         ...     def __getattr__(self, name): return getattr(self.t, name)
-        ...     def __repr__(self): return repr(unicode(self.t) if PY2 else str(self.t))
+        ...     def __repr__(self): return str(self.t)
         ...
         >>> def t(code, **keywords):
         ...     tmpl = Template(code, **keywords)

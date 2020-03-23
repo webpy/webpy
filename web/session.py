@@ -13,7 +13,7 @@ from hashlib import sha1
 
 from . import utils
 from . import webapi as web
-from .py3helpers import PY2, iteritems
+from .py3helpers import iteritems
 
 try:
     import cPickle as pickle
@@ -21,10 +21,7 @@ except ImportError:
     import pickle
 
 
-if PY2:
-    from base64 import encodestring as encodebytes, decodestring as decodebytes
-else:
-    from base64 import encodebytes, decodebytes
+from base64 import encodebytes, decodebytes
 
 
 __all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore"]
@@ -189,9 +186,7 @@ class Session(object):
             secret_key = self._config.secret_key
 
             hashable = "%s%s%s%s" % (rand, now, utils.safestr(web.ctx.ip), secret_key)
-            # TODO maybe a better way to deal with this, without using an if-statement
-            session_id = sha1(hashable if PY2 else hashable.encode("utf-8"))
-            session_id = session_id.hexdigest()
+            session_id = sha1(hashable.encode("utf-8")).hexdigest()
             if session_id not in self.store:
                 break
         return session_id

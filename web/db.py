@@ -9,7 +9,7 @@ import os
 import re
 import time
 
-from .py3helpers import PY2, iteritems, numeric_types, string_types, text_type
+from .py3helpers import iteritems
 from .utils import iters, safestr, safeunicode, storage, threadeddict
 
 try:
@@ -56,7 +56,7 @@ tokenprog = re.compile(TOKEN)
 
 # Supported db drivers.
 pg_drivers = ["psycopg2"]
-mysql_drivers = ["MySQLdb", "pymysql", "mysql.connector"]
+mysql_drivers = ["pymysql", "mysql.connector"]
 sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
 
 
@@ -185,7 +185,7 @@ class SQLQuery(object):
         self.items.append(value)
 
     def __add__(self, other):
-        if isinstance(other, string_types):
+        if isinstance(other, str):
             items = [other]
         elif isinstance(other, SQLQuery):
             items = other.items
@@ -194,7 +194,7 @@ class SQLQuery(object):
         return SQLQuery(self.items + items)
 
     def __radd__(self, other):
-        if isinstance(other, string_types):
+        if isinstance(other, str):
             items = [other]
         elif isinstance(other, SQLQuery):
             items = other.items
@@ -203,7 +203,7 @@ class SQLQuery(object):
         return SQLQuery(items + self.items)
 
     def __iadd__(self, other):
-        if isinstance(other, (string_types, SQLParam)):
+        if isinstance(other, (str, SQLParam)):
             self.items.append(other)
         elif isinstance(other, SQLQuery):
             self.items.extend(other.items)
@@ -396,14 +396,11 @@ def sqlify(obj):
         return "'t'"
     elif obj is False:
         return "'f'"
-    elif isinstance(obj, numeric_types):
+    elif isinstance(obj, int):
         return str(obj)
     elif isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
     else:
-        if PY2 and isinstance(obj, text_type):  # Strings are always UTF8 in Py3
-            obj = obj.encode("utf8")
-
         return repr(obj)
 
 
@@ -416,7 +413,7 @@ def sqllist(lst):
         >>> sqllist('a')
         'a'
     """
-    if isinstance(lst, string_types):
+    if isinstance(lst, str):
         return lst
     else:
         return ", ".join(lst)
@@ -795,7 +792,7 @@ class DB:
         return query, params
 
     def _where(self, where, vars):
-        if isinstance(where, numeric_types):
+        if isinstance(where, int):
             where = "id = " + sqlparam(where)
         # @@@ for backward-compatibility
         elif isinstance(where, (list, tuple)) and len(where) == 2:
@@ -946,7 +943,7 @@ class DB:
         )
 
     def gen_clause(self, sql, val, vars):
-        if isinstance(val, numeric_types):
+        if isinstance(val, int):
             if sql == "WHERE":
                 nout = "id = " + sqlquote(val)
             else:
@@ -1252,14 +1249,11 @@ class MySQLDB(DB):
 
         db = import_driver(mysql_drivers, preferred=keywords.pop("driver", None))
 
-        if db.__name__ == "MySQLdb":
-            if "pw" in keywords:
-                keywords["passwd"] = keywords["pw"]
-                del keywords["pw"]
         if db.__name__ == "pymysql":
             if "pw" in keywords:
                 keywords["password"] = keywords["pw"]
                 del keywords["pw"]
+
         if db.__name__ == "mysql.connector":
             # Enabled buffered so that len can work as expected.
             keywords.setdefault("buffered", True)

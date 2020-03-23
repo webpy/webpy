@@ -876,7 +876,7 @@ class BaseTemplate:
         return env["__template__"]
 
     def __call__(self, *a, **kw):
-        __hidetraceback__ = True
+        __hidetraceback__ = True  # noqa: F841
         return self.t(*a, **kw)
 
     def make_env(self, globals, builtins):
@@ -960,7 +960,7 @@ class Template(BaseTemplate):
     normalize_text = staticmethod(normalize_text)
 
     def __call__(self, *a, **kw):
-        __hidetraceback__ = True
+        __hidetraceback__ = True  # noqa: F841
         from . import webapi as web
 
         if "headers" in web.ctx and self.content_type:
@@ -1159,7 +1159,7 @@ class GAE_Render(Render):
 render = Render
 # setup render for Google App Engine.
 try:
-    from google import appengine
+    from google import appengine  # noqa: F401
 
     render = Render = GAE_Render
 except ImportError:

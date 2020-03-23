@@ -9,4 +9,4 @@ repos:
     rev: '3.7.9'  # pick a git hash / tag to point to
     hooks:
     - id: flake8
-      args: [--count, --show-source, --statistics, "--select=E9,F63,F7,F82"]
+      args: [--count, "--ignore=E203,E265,E722,E731,W503", --max-line-length=477, --show-source, --statistics]

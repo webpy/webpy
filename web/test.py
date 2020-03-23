@@ -2,7 +2,6 @@
 (part of web.py)
 """
 import doctest
-import re
 import sys
 import unittest
 

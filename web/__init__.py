@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """web.py: makes web apps (http://webpy.org)"""
 
 from __future__ import generators

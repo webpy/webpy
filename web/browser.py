@@ -14,10 +14,6 @@ from urllib.parse import urljoin
 from http.cookiejar import CookieJar
 from urllib.response import addinfourl
 
-get_selector = lambda x: x.selector
-get_host = lambda x: x.host
-get_data = lambda x: x.data
-get_type = lambda x: x.type
 
 DEBUG = False
 
@@ -68,7 +64,7 @@ class Browser(object):
             self._response = e
 
         self.url = self._response.geturl()
-        self.path = get_selector(Request(self.url))
+        self.path = Request(self.url).selector
         self.data = self._response.read()
         self.status = self._response.code
         self._forms = None
@@ -275,12 +271,12 @@ class AppHandler(HTTPHandler):
 
     def http_open(self, req):
         result = self.app.request(
-            localpart=get_selector(req),
+            localpart=req.selector,
             method=req.get_method(),
-            host=get_host(req),
-            data=get_data(req),
+            host=req.host,
+            data=req.data,
             headers=dict(req.header_items()),
-            https=get_type(req) == "https",
+            https=(req.type == "https"),
         )
         return self._make_response(result, req.get_full_url())
 

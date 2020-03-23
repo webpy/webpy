@@ -2,7 +2,6 @@
 Web API (wrapper around WSGI)
 (from web.py)
 """
-from __future__ import print_function
 
 import cgi
 import pprint

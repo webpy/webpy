@@ -3,7 +3,6 @@ Outputs web.py docs as html
 version 2.0: documents all code, and indents nicely.
 By Colin Rothwell (TheBoff)
 """
-from __future__ import print_function
 
 import inspect
 import sys

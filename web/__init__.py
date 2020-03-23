@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """web.py: makes web apps (http://webpy.org)"""
 
-from __future__ import generators
-
 from . import (
     db,
     debugerror,

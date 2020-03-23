@@ -594,7 +594,7 @@ class Datalist(Input):
     """Datalist input.
 
     This is currently supported by Chrome, Firefox, Edge, and Opera. It is not
-    supported on Safari or Internet Explorer. Use it with caution. 
+    supported on Safari or Internet Explorer. Use it with caution.
 
     Datalist cannot be used separately. It must be bound to an input.
 

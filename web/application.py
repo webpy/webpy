@@ -2,7 +2,6 @@
 Web application
 (from web.py)
 """
-from __future__ import print_function
 
 import itertools
 import os

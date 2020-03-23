@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """web.py: makes web apps (http://webpy.org)"""
 
-from __future__ import generators
-
 from . import (  # noqa: F401
     db,
     debugerror,

@@ -27,7 +27,6 @@ Grammar:
     expr -> '$' pyexpr | '$(' pyexpr ')' | '${' pyexpr '}'
     pyexpr -> <python expression>
 """
-from __future__ import print_function
 
 import ast
 import glob

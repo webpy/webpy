@@ -332,8 +332,6 @@ class application:
                 for r in result:
                     if isinstance(r, bytes):
                         yield r
-                    elif isinstance(r, str):
-                        yield r.encode("utf-8")
                     else:
                         yield str(r).encode("utf-8")
 

@@ -1,6 +1,6 @@
 cheroot>=6.0.0
 DBUtils
-pytest>=4.6.2
+pytest>=5.4.1
 
 # DB drivers.
 # mysql

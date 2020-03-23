@@ -372,7 +372,7 @@ def safestr(obj, encoding="utf-8"):
     """
 
     if is_iter(obj):
-        return map(safestr, obj)
+        return [safestr(i) for i in obj]
     else:
         return str(obj)
 

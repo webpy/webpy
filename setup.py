@@ -21,7 +21,7 @@ setup(
     maintainer="Anand Chitipothu",
     maintainer_email="anandology@gmail.com",
     url="http://webpy.org/",
-    packages=["web", "web.contrib"],
+    packages=["docs", "tests", "web", "web.contrib"],
     install_requires=["cheroot"],
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -23,7 +23,7 @@ setup(
     url="http://webpy.org/",
     packages=["docs", "tests", "web", "web.contrib"],
     install_requires=[],
-    extras_require = {
+    extras_require={
         "cheroot":  ["cheroot"],
     },
     long_description=long_description,

@@ -1,5 +1,10 @@
 # web.py changelog
 
+## 2020-03-25 0.51
+
+* No changes but repacked with `tests` directory, so that BSD port maintainers
+  can run unittests.
+
 ## 2020-03-20 0.50
 
 * New session store `MemoryStore`, used to save a session in memory.

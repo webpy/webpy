@@ -26,7 +26,7 @@ from .utils import *
 from .webapi import *
 from .wsgi import *
 
-__version__ = "0.50"
+__version__ = "0.51"
 __author__ = [
     "Aaron Swartz <me@aaronsw.com>",
     "Anand Chitipothu <anandology@gmail.com>",

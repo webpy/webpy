@@ -24,7 +24,7 @@ setup(
     packages=["docs", "tests", "web", "web.contrib"],
     install_requires=[],
     extras_require={
-        "cheroot":  ["cheroot"],
+        "cheroot":["cheroot"],
     },
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -23,9 +23,7 @@ setup(
     url="http://webpy.org/",
     packages=["docs", "tests", "web", "web.contrib"],
     install_requires=[],
-    extras_require={
-        "cheroot": ["cheroot"],
-    },
+    extras_require={"cheroot": ["cheroot"],},
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="Public domain",

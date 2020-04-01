@@ -7,6 +7,7 @@ General Utilities
 import datetime
 import os
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -759,7 +760,7 @@ def safewrite(filename, content):
     """
     with open(filename + ".tmp", "w") as f:
         f.write(content)
-    os.rename(f.name, filename)
+    shutil.move(f.name, filename)
 
 
 def dictreverse(mapping):

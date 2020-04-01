@@ -232,7 +232,7 @@ $:dicttable(ctx.env)
 
 </body>
 </html>
-"""
+"""  # noqa: W605
 
 djangoerror_r = None
 

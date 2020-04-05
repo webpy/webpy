@@ -6,6 +6,7 @@ Session Management
 import datetime
 import os
 import os.path
+import shutil
 import threading
 import time
 from copy import deepcopy
@@ -295,7 +296,7 @@ class DiskStore(Store):
                 f.write(pickled)
             finally:
                 f.close()
-                os.rename(tname, path)  # atomary operation
+                shutil.move(tname, path)  # atomary operation
         except IOError:
             pass
 

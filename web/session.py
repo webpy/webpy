@@ -239,7 +239,10 @@ class Store:
 
     def decode(self, session_data):
         """decodes the data to get back the session dict """
-        pickled = decodebytes(session_data)
+        if isinstance(session_data, str):
+            pickled = decodebytes(session_data.encode())
+        else:
+            pickled = decodebytes(session_data)
         return pickle.loads(pickled)
 
 

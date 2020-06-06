@@ -240,9 +240,9 @@ class Store:
     def decode(self, session_data):
         """decodes the data to get back the session dict """
         if isinstance(session_data, str):
-            pickled = decodebytes(session_data.encode())
-        else:
-            pickled = decodebytes(session_data)
+            session_data = session_data.encode()
+
+        pickled = decodebytes(session_data)
         return pickle.loads(pickled)
 
 
@@ -347,7 +347,8 @@ class DBStore(Store):
             return self.decode(s.data)
 
     def __setitem__(self, key, value):
-        pickled = self.encode(value)
+        # Remove the leading `b` of bytes object.
+        pickled = self.encode(value).decode()
         now = datetime.datetime.now()
         if key in self:
             self.db.update(

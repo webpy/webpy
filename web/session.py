@@ -347,8 +347,10 @@ class DBStore(Store):
             return self.decode(s.data)
 
     def __setitem__(self, key, value):
-        # Remove the leading `b` of bytes object.
+        # Remove the leading `b` of bytes object (`b"..."`), otherwise encoded
+        # value is invalid base64 format.
         pickled = self.encode(value).decode()
+
         now = datetime.datetime.now()
         if key in self:
             self.db.update(

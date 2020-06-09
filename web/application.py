@@ -320,7 +320,7 @@ class application:
                     raise web.nomethod()
 
                 result = self.handle_with_processors()
-                if hasattr(result, "__next__"):
+                if result and hasattr(result, "__next__"):
                     result = peep(result)
                 else:
                     result = [result]
@@ -701,13 +701,12 @@ def unloadhook(h):
     def processor(handler):
         try:
             result = handler()
-            is_gen = hasattr(result, "__next__")
         except:
             # run the hook even when handler raises some exception
             h()
             raise
 
-        if is_gen:
+        if result and hasattr(result, "__next"):
             return wrap(result)
         else:
             h()

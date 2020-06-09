@@ -370,7 +370,7 @@ def safestr(obj, encoding="utf-8"):
         '2'
     """
 
-    if hasattr(obj, "__next__"):
+    if obj and hasattr(obj, "__next__"):
         return [safestr(i) for i in obj]
     else:
         return str(obj)

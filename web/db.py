@@ -55,7 +55,7 @@ tokenprog = re.compile(TOKEN)
 
 # Supported db drivers.
 pg_drivers = ["psycopg2"]
-mysql_drivers = ["pymysql", "mysql.connector"]
+mysql_drivers = ["pymysql", "MySQLdb", "mysql.connector"]
 sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
 
 

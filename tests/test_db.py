@@ -266,6 +266,21 @@ class SqliteTest_pysqlite2(SqliteTest):
     driver = "pysqlite2.dbapi2"
 
 
+@requires_module("MySQLdb")
+class MySQLTest_MySQLdb(DBTest):
+    dbname = "mysql"
+    driver = "MySQLdb"
+
+    def setUp(self):
+        self.db = setup_database(self.dbname, driver=self.driver)
+        # In mysql, transactions are supported only with INNODB engine.
+        self.db.query("CREATE TABLE person (name text, email text) ENGINE=INNODB")
+
+    def testBoolean(self):
+        # boolean datatype is not supported in MySQL (at least until v5.0)
+        pass
+
+
 @requires_module("pymysql")
 class MySQLTest_PYMYSQL(DBTest):
     dbname = "mysql"

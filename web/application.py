@@ -706,7 +706,7 @@ def unloadhook(h):
             h()
             raise
 
-        if result and hasattr(result, "__next"):
+        if result and hasattr(result, "__next__"):
             return wrap(result)
         else:
             h()

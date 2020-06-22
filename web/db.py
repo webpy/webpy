@@ -54,9 +54,9 @@ TOKEN = "[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\
 tokenprog = re.compile(TOKEN)
 
 # Supported db drivers.
-pg_drivers = ["psycopg2"]
-mysql_drivers = ["pymysql", "MySQLdb", "mysql.connector"]
-sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
+pg_drivers = ("psycopg2")
+mysql_drivers = ("pymysql", "MySQLdb", "mysql.connector")
+sqlite_drivers = ("sqlite3", "pysqlite2.dbapi2", "sqlite")
 
 
 class UnknownDB(Exception):
@@ -1286,7 +1286,7 @@ def import_driver(drivers, preferred=None):
     """Import the first available driver or preferred driver.
     """
     if preferred:
-        drivers = [preferred]
+        drivers = (preferred, )
 
     for d in drivers:
         try:

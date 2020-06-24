@@ -220,6 +220,17 @@ class PostgresTest2(DBTest):
     dbname = "postgres"
     driver = "psycopg2"
 
+    def setUp(self):
+        super().setUp()
+        self.db.query("DROP TABLE IF EXISTS post")
+        self.db.query(
+            "create table post (id serial primary key, title text, body text)"
+        )
+
+    def tearDown(self):
+        self.db.query("DROP TABLE IF EXISTS post")
+        super().tearDown()
+
     def test_limit_with_unsafe_value(self):
         db = self.db
         db.insert("person", False, name="Foo")
@@ -245,6 +256,20 @@ class PostgresTest2(DBTest):
             pass
 
         assert len(db.select("person").list()) == 1
+
+    def test_insert_returning(self):
+        db = self.db
+        row = db.query(
+            "insert into post (title, body) values ('foo', 'bar') returning *"
+        ).first()
+        assert row.title == "foo"
+        assert row.id is not None
+
+        # create a new connection to the db
+        db = setup_database(self.dbname, driver=self.driver)
+        row = db.select("post").first()
+        assert row is not None
+        assert row.title == "foo"
 
 
 @requires_module("sqlite3")

@@ -841,7 +841,7 @@ class DB:
         self._db_execute(db_cursor, sql_query)
 
         if db_cursor.description:
-            return self.create_result_set(db_cursor)
+            out = self.create_result_set(db_cursor)
         else:
             out = db_cursor.rowcount
 

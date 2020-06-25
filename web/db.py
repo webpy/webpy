@@ -54,9 +54,9 @@ TOKEN = "[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\
 tokenprog = re.compile(TOKEN)
 
 # Supported db drivers.
-pg_drivers = ["psycopg2"]
-mysql_drivers = ["pymysql", "mysql.connector"]
-sqlite_drivers = ["sqlite3", "pysqlite2.dbapi2", "sqlite"]
+pg_drivers = ("psycopg2",)
+mysql_drivers = ("pymysql", "MySQLdb", "mysql.connector")
+sqlite_drivers = ("sqlite3", "pysqlite2.dbapi2", "sqlite")
 
 
 class UnknownDB(Exception):
@@ -1253,7 +1253,11 @@ class MySQLDB(DB):
                 keywords["password"] = keywords["pw"]
                 del keywords["pw"]
 
-        if db.__name__ == "mysql.connector":
+        elif db.__name__ == "MySQLdb":
+            if "pw" in keywords:
+                keywords["passwd"] = keywords.pop("pw")
+
+        elif db.__name__ == "mysql.connector":
             # Enabled buffered so that len can work as expected.
             keywords.setdefault("buffered", True)
 
@@ -1282,7 +1286,7 @@ def import_driver(drivers, preferred=None):
     """Import the first available driver or preferred driver.
     """
     if preferred:
-        drivers = [preferred]
+        drivers = (preferred,)
 
     for d in drivers:
         try:

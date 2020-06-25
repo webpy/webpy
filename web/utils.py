@@ -16,7 +16,6 @@ import traceback
 from threading import local as threadlocal
 
 from .py3helpers import (
-    is_iter,
     iteritems,
     itervalues,
 )
@@ -371,7 +370,7 @@ def safestr(obj, encoding="utf-8"):
         '2'
     """
 
-    if is_iter(obj):
+    if obj and hasattr(obj, "__next__"):
         return [safestr(i) for i in obj]
     else:
         return str(obj)

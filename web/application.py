@@ -15,7 +15,7 @@ from . import browser, httpserver, utils
 from . import webapi as web
 from . import wsgi
 from .debugerror import debugerror
-from .py3helpers import is_iter, iteritems
+from .py3helpers import iteritems
 from .utils import lstrips
 
 from urllib.parse import urlparse, urlencode, unquote
@@ -320,7 +320,7 @@ class application:
                     raise web.nomethod()
 
                 result = self.handle_with_processors()
-                if is_iter(result):
+                if result and hasattr(result, "__next__"):
                     result = peep(result)
                 else:
                     result = [result]
@@ -701,13 +701,12 @@ def unloadhook(h):
     def processor(handler):
         try:
             result = handler()
-            is_gen = is_iter(result)
         except:
             # run the hook even when handler raises some exception
             h()
             raise
 
-        if is_gen:
+        if result and hasattr(result, "__next__"):
             return wrap(result)
         else:
             h()

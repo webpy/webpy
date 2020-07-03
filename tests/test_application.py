@@ -435,3 +435,29 @@ class ApplicationTest(unittest.TestCase):
         app.stop()
         thread.join(timeout=1)
         self.assertFalse(thread.is_alive())
+
+    def test_nested_applications(self):
+        """Nested context must be isolated from enclosing context."""
+
+        # NOTE: this is NOT the same as sub-applications.
+
+        class inner:
+            def GET(_):
+                web.header("Content-Type", "text/plain; charset=ascii")
+                return "This is the `inner` app!"
+
+        inner_app = web.application(("/", inner), {})
+
+        class outer:
+            def GET(_):
+                web.header("Content-Type", "text/plain; charset=utf-8")
+                inner_app.request("/")
+                return "This is the `outer` app!"
+
+        outer_app = web.application(("/", outer), {})
+
+        # We will only get the right `Content-Type` header if nesting works
+        # properly.
+        r = outer_app.request("/")
+        assert r.data == b"This is the `outer` app!"
+        assert r.headers["Content-Type"] == "text/plain; charset=utf-8"

@@ -125,11 +125,6 @@ class application:
                 web.ctx.path = oldctx.path
                 web.ctx.fullpath = oldctx.fullpath
 
-    def _cleanup(self):
-        # Threads can be recycled by WSGI servers.
-        # Clearing up all thread-local state to avoid interefereing with subsequent requests.
-        utils.ThreadedDict.clear_all()
-
     def init_mapping(self, mapping):
         self.mapping = list(utils.group(mapping, 2))
 
@@ -310,40 +305,38 @@ class application:
             return itertools.chain([firstchunk], iterator)
 
         def wsgi(env, start_resp):
-            # clear threadlocal to avoid inteference of previous requests
-            self._cleanup()
+            with web.guard_ctx():
+                self.load(env)
+                try:
+                    # allow uppercase methods only
+                    if web.ctx.method.upper() != web.ctx.method:
+                        raise web.nomethod()
 
-            self.load(env)
-            try:
-                # allow uppercase methods only
-                if web.ctx.method.upper() != web.ctx.method:
-                    raise web.nomethod()
-
-                result = self.handle_with_processors()
-                if result and hasattr(result, "__next__"):
-                    result = peep(result)
-                else:
-                    result = [result]
-            except web.HTTPError as e:
-                result = [e.data]
-
-            def build_result(result):
-                for r in result:
-                    if isinstance(r, bytes):
-                        yield r
+                    result = self.handle_with_processors()
+                    if result and hasattr(result, "__next__"):
+                        result = peep(result)
                     else:
-                        yield str(r).encode("utf-8")
+                        result = [result]
+                except web.HTTPError as e:
+                    result = [e.data]
 
-            result = build_result(result)
+                def build_result(result):
+                    for r in result:
+                        if isinstance(r, bytes):
+                            yield r
+                        else:
+                            yield str(r).encode("utf-8")
 
-            status, headers = web.ctx.status, web.ctx.headers
-            start_resp(status, headers)
+                result = build_result(result)
 
-            def cleanup():
-                self._cleanup()
-                yield b""  # force this function to be a generator
-
-            return itertools.chain(result, cleanup())
+                # Produce the response.
+                #
+                # NOTE: exhaust the generator while the `web.guard_ctx()`
+                #   context manager is still in effect, else we'll reset
+                #   `web.ctx` before all processors have finished.
+                start_resp(web.ctx.status, web.ctx.headers)
+                for data in result:
+                    yield data
 
         for m in middleware:
             wsgi = m(wsgi)
@@ -436,7 +429,6 @@ class application:
     def load(self, env):
         """Initializes ctx using env."""
         ctx = web.ctx
-        ctx.clear()
         ctx.status = "200 OK"
         ctx.headers = []
         ctx.output = ""

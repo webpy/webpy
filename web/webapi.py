@@ -7,6 +7,7 @@ import cgi
 import pprint
 import sys
 import tempfile
+from contextlib import contextmanager
 from io import BytesIO
 from urllib.parse import urljoin
 
@@ -670,6 +671,28 @@ A `storage` object containing various information about the request:
 `output`
    : A string to be used as the response.
 """
+
+
+@contextmanager
+def guard_ctx():
+    """Keep a copy of the current ``web.ctx``.
+
+    If this application is nested inside another webpy application, this
+    context manager protects the outer application from interference.
+
+    """
+
+    # NOTE: `web.ctx` is a thread-local and contains state for requests
+    #   that are executing concurrently in other threads (if any).  We
+    #   cannot simply replace the instance with a fresh one.
+    old_ctx = storage(ctx)
+    ctx.clear()
+    try:
+        yield
+    finally:
+        ctx.clear()
+        ctx.update(old_ctx)
+
 
 if __name__ == "__main__":
     import doctest

@@ -45,7 +45,7 @@ jobs:
           black --check .
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
       - run: flake8 --count --ignore=E203,E265,E722,E731,W503 --max-line-length=477 --show-source --statistics
-      - run: isort --recursive .
+      - run: isort .
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt

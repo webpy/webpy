@@ -1,7 +1,9 @@
 import os
+import time
 import tempfile
 import threading
 import unittest
+import shutil
 
 import web
 
@@ -84,6 +86,17 @@ class SessionTest(unittest.TestCase):
 
 
 class DiskStoreTest(unittest.TestCase):
+    def testRemovedSessionDir(self):
+        # make sure `cleanup()` correctly returns when session directory was
+        # removed.
+        dir = tempfile.mkdtemp()
+        s = web.session.DiskStore(dir)
+        s["count"] = 20
+        self.assertEqual(s["count"], 20)
+        shutil.rmtree(dir)
+        time.sleep(2)
+        s.cleanup(1)
+
     def testStoreConcurrent(self):
         dir = tempfile.mkdtemp()
         store = web.session.DiskStore(dir)

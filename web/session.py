@@ -309,12 +309,15 @@ class DiskStore(Store):
             os.remove(path)
 
     def cleanup(self, timeout):
+        if not os.path.isdir(self.root):
+            return
+
         now = time.time()
         for f in os.listdir(self.root):
             path = self._get_path(f)
             atime = os.stat(path).st_atime
             if now - atime > timeout:
-                os.remove(path)
+                shutil.rmtree(path)
 
 
 class DBStore(Store):

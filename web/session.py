@@ -309,8 +309,8 @@ class DiskStore(Store):
             os.remove(path)
 
     def cleanup(self, timeout):
-        now = time.time()
         if os.path.isdir(self.root):
+            now = time.time()
             for f in os.listdir(self.root):
                 path = self._get_path(f)
                 atime = os.stat(path).st_atime

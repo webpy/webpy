@@ -5,6 +5,8 @@
 * Python-2 support has been completely dropped. Welcome to Python 3.
 * Fixed: session store `DiskStore` doesn't return correctly if session
   directory doesn't exist. #652
+* Fixed: incorrect str/bytes type of session data. #644 #645
+* Fixed: `db.query("insert... returning")` fails to commit. #648 #649
 
 ## 2020-03-20 0.50
 

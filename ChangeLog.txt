@@ -1,6 +1,6 @@
 # web.py changelog
 
-## 2020-XX-YY 1.0
+## 2020-06-23 0.60
 
 * Python-2 support has been completely dropped. Welcome to Python 3.
 * Fixed: session store `DiskStore` doesn't return correctly if session

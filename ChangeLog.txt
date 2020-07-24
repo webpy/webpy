@@ -1,5 +1,9 @@
 # web.py changelog
 
+## 2020-06-23 0.61
+
+* setup.py: Add python_requires='>=3.5' #662
+
 ## 2020-06-23 0.60
 
 * Python-2 support has been completely dropped. Welcome to Python 3.

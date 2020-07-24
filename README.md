@@ -13,7 +13,7 @@ python3 -m pip install web.py==0.61
 ```
 
 If you are still using Python 2.7, then please use web.py version 0.51
-which is intended to be our last version that supports Python 2. 
+which is intended to be our last release that supports Python 2. 
 ```
 # For Python 2.7
 pip2 install web.py==0.51
@@ -27,4 +27,4 @@ cd webpy-0.61/
 python3 setup.py install
 ```
 
-Note: `0.5x` (e.g. 0.50, 0.51) are our last releases which supports Python 2.
+Note: `0.5x` (e.g. 0.50, 0.51) are our last releases which support Python 2.

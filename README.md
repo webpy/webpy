@@ -16,7 +16,7 @@ If you are still using Python 2.7, then please use web.py version 0.51
 which is intended to be our last release that supports Python 2. 
 ```
 # For Python 2.7
-pip2 install web.py==0.51
+python2 -m pip install web.py==0.51
 ```
 
 You can also download it from [GitHub Releases](https://github.com/webpy/webpy/releases)

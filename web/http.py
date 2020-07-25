@@ -24,19 +24,13 @@ try:
 except ImportError:
     from urllib import urlencode as urllib_urlencode
 
-try:
-    xrange  # Python 2
-except NameError:
-    xrange = range  # Python 3
-
-
 def prefixurl(base=""):
     """
     Sorry, this function is really difficult to explain.
     Maybe some other time.
     """
     url = web.ctx.path.lstrip("/")
-    for i in xrange(url.count("/")):
+    for i in range(url.count("/")):
         base += "../"
     if not base:
         base = "./"

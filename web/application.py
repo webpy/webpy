@@ -20,10 +20,7 @@ from .utils import lstrips
 
 from urllib.parse import urlparse, urlencode, unquote
 
-try:
-    reload  # Python 2
-except NameError:
-    from importlib import reload  # Python 3
+from importlib import reload
 
 
 __all__ = [

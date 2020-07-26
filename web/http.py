@@ -24,6 +24,7 @@ try:
 except ImportError:
     from urllib import urlencode as urllib_urlencode
 
+
 def prefixurl(base=""):
     """
     Sorry, this function is really difficult to explain.

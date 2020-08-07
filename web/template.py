@@ -945,18 +945,12 @@ class Template(BaseTemplate):
     def __repr__(self):
         """
         >>> Template('Template text', 'burndown_chart.html')
-        Template(text="Template text", filename="burndown_chart.html")
+        <Template burndown_chart.html>
 
         >>> Template('This is too much text with /t & /n characters', 'index.html')
-        Template(text="This is too much text with /t & /n chara", filename="index.html")
+        <Template index.html>
         """
-        try:
-            class_name = self.__class__.__qualname__
-        except AttributeError:
-            class_name = self.__class__.__name__
-        return '{}(text="{}", filename="{}")'.format(
-            class_name, self.text[:40], self.filename
-        )
+        return "<{} {}>".format(self.__class__.__name__, self.filename)
 
     def normalize_text(text):
         """Normalizes template text by correcting \r\n, tabs and BOM chars."""

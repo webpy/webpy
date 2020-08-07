@@ -942,6 +942,13 @@ class Template(BaseTemplate):
             builtins=builtins,
         )
 
+    def __repr__(self):
+        """
+        >>> Template(text='Template text', filename='burndown_chart.html')
+        <Template burndown_chart.html>
+        """
+        return "<{} {}>".format(self.__class__.__name__, self.filename)
+
     def normalize_text(text):
         """Normalizes template text by correcting \r\n, tabs and BOM chars."""
         text = text.replace("\r\n", "\n").replace("\r", "\n").expandtabs()

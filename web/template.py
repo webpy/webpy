@@ -944,11 +944,8 @@ class Template(BaseTemplate):
 
     def __repr__(self):
         """
-        >>> Template('Template text', 'burndown_chart.html')
+        >>> Template(text='Template text', filename='burndown_chart.html')
         <Template burndown_chart.html>
-
-        >>> Template('This is too much text with /t & /n characters', 'index.html')
-        <Template index.html>
         """
         return "<{} {}>".format(self.__class__.__name__, self.filename)
 

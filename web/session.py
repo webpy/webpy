@@ -311,16 +311,19 @@ class DiskStore(Store):
     def cleanup(self, timeout):
         now = time.time()
 
-        if os.path.isdir(self.root):
-            for f in os.listdir(self.root):
-                path = self._get_path(f)
-                atime = os.stat(path).st_atime
+        try:
+            if os.path.isdir(self.root):
+                for f in os.listdir(self.root):
+                    path = self._get_path(f)
+                    atime = os.stat(path).st_atime
+                    if now - atime > timeout:
+                        shutil.rmtree(path)
+            else:
+                atime = os.stat(self.root).st_atime
                 if now - atime > timeout:
-                    shutil.rmtree(path)
-        else:
-            atime = os.stat(self.root).st_atime
-            if now - atime > timeout:
-                os.remove(self.root)
+                    os.remove(self.root)
+        except FileNotFoundError:
+            pass
 
 
 class DBStore(Store):

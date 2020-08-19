@@ -1093,9 +1093,8 @@ class Render:
                 path, cache=self._cache is not None, base=self._base, **self._keywords
             )
         elif kind == "file":
-            return Template(
-                open(path, encoding="utf-8").read(), filename=path, **self._keywords
-            )
+            with open(path, encoding="utf-8") as tmpl_file:
+                return Template(tmpl_file.read(), filename=path, **self._keywords)
         else:
             raise AttributeError("No template named " + name)
 

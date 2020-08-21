@@ -1270,24 +1270,8 @@ class ThreadedDict(threadlocal):
         1
     """
 
-    _instances = set()
-
-    def __init__(self):
-        ThreadedDict._instances.add(self)
-
-    def __del__(self):
-        ThreadedDict._instances.remove(self)
-
     def __hash__(self):
         return id(self)
-
-    def clear_all():
-        """Clears all ThreadedDict instances.
-        """
-        for t in list(ThreadedDict._instances):
-            t.clear()
-
-    clear_all = staticmethod(clear_all)
 
     # Define all these methods to more or less fully emulate dict -- attribute access
     # is built into threading.local.

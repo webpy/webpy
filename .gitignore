@@ -5,3 +5,4 @@ dist/
 docs/_build/
 *.egg-info
 .coverage
+.idea

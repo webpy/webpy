@@ -237,8 +237,7 @@ class _NotFound(HTTPError):
 
 
 def NotFound(message=None):
-    """Returns HTTPError with '404 Not Found' error from the active application.
-    """
+    """Returns HTTPError with '404 Not Found' error from the active application."""
     if message:
         return _NotFound(message)
     elif ctx.get("app_stack"):
@@ -353,8 +352,7 @@ class _UnavailableForLegalReasons(HTTPError):
 
 
 def UnavailableForLegalReasons(message=None):
-    """Returns HTTPError with '415 Unavailable For Legal Reasons' error from the active application.
-    """
+    """Returns HTTPError with '415 Unavailable For Legal Reasons' error from the active application."""
     if message:
         return _UnavailableForLegalReasons(message)
     elif ctx.get("app_stack"):
@@ -378,8 +376,7 @@ class _InternalError(HTTPError):
 
 
 def InternalError(message=None):
-    """Returns HTTPError with '500 internal error' error from the active application.
-    """
+    """Returns HTTPError with '500 internal error' error from the active application."""
     if message:
         return _InternalError(message)
     elif ctx.get("app_stack"):
@@ -428,8 +425,7 @@ def header(hdr, value, unique=False):
 
 
 def rawinput(method=None):
-    """Returns storage object with GET or POST arguments.
-    """
+    """Returns storage object with GET or POST arguments."""
     method = method or "both"
 
     def dictify(fs):

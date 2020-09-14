@@ -73,8 +73,7 @@ def splitline(text):
 
 
 class Parser:
-    """Parser Base.
-    """
+    """Parser Base."""
 
     def __init__(self):
         self.statement_nodes = STATEMENT_NODES
@@ -129,11 +128,11 @@ class Parser:
     def read_var(self, text):
         r"""Reads a var statement.
 
-            >>> read_var = Parser().read_var
-            >>> read_var('var x=10\nfoo')
-            (<var: x = 10>, 'foo')
-            >>> read_var('var x: hello $name\nfoo')
-            (<var: x = join_(u'hello ', escape_(name, True))>, 'foo')
+        >>> read_var = Parser().read_var
+        >>> read_var('var x=10\nfoo')
+        (<var: x = 10>, 'foo')
+        >>> read_var('var x: hello $name\nfoo')
+        (<var: x = join_(u'hello ', escape_(name, True))>, 'foo')
         """
         line, text = splitline(text)
         tokens = self.python_tokens(line)
@@ -167,9 +166,9 @@ class Parser:
     def read_suite(self, text):
         r"""Reads section by section till end of text.
 
-            >>> read_suite = Parser().read_suite
-            >>> read_suite('hello $name\nfoo\n')
-            [<line: [t'hello ', $name, t'\n']>, <line: [t'foo\n']>]
+        >>> read_suite = Parser().read_suite
+        >>> read_suite('hello $name\nfoo\n')
+        [<line: [t'hello ', $name, t'\n']>, <line: [t'foo\n']>]
         """
         sections = []
         while text:
@@ -180,13 +179,13 @@ class Parser:
     def readline(self, text):
         r"""Reads one line from the text. Newline is suppressed if the line ends with \.
 
-            >>> readline = Parser().readline
-            >>> readline('hello $name!\nbye!')
-            (<line: [t'hello ', $name, t'!\n']>, 'bye!')
-            >>> readline('hello $name!\\\nbye!')
-            (<line: [t'hello ', $name, t'!']>, 'bye!')
-            >>> readline('$f()\n\n')
-            (<line: [$f(), t'\n']>, '\n')
+        >>> readline = Parser().readline
+        >>> readline('hello $name!\nbye!')
+        (<line: [t'hello ', $name, t'!\n']>, 'bye!')
+        >>> readline('hello $name!\\\nbye!')
+        (<line: [t'hello ', $name, t'!']>, 'bye!')
+        >>> readline('$f()\n\n')
+        (<line: [$f(), t'\n']>, '\n')
         """
         line, text = splitline(text)
 
@@ -204,11 +203,11 @@ class Parser:
     def read_node(self, text):
         r"""Reads a node from the given text and returns the node and remaining text.
 
-            >>> read_node = Parser().read_node
-            >>> read_node('hello $name')
-            (t'hello ', '$name')
-            >>> read_node('$name')
-            ($name, '')
+        >>> read_node = Parser().read_node
+        >>> read_node('hello $name')
+        (t'hello ', '$name')
+        >>> read_node('$name')
+        ($name, '')
         """
         if text.startswith("$$"):
             return TextNode("$"), text[2:]
@@ -229,9 +228,9 @@ class Parser:
     def read_text(self, text):
         r"""Reads a text node from the given text.
 
-            >>> read_text = Parser().read_text
-            >>> read_text('hello $name')
-            (t'hello ', '$name')
+        >>> read_text = Parser().read_text
+        >>> read_text('hello $name')
+        (t'hello ', '$name')
         """
         index = text.find("$")
         if index < 0:
@@ -368,9 +367,9 @@ class Parser:
     def read_assignment(self, text):
         r"""Reads assignment statement from text.
 
-            >>> read_assignment = Parser().read_assignment
-            >>> read_assignment('a = b + 1\nfoo')
-            (<assignment: 'a = b + 1'>, 'foo')
+        >>> read_assignment = Parser().read_assignment
+        >>> read_assignment('a = b + 1\nfoo')
+        (<assignment: 'a = b + 1'>, 'foo')
         """
         line, text = splitline(text)
         return AssignmentNode(line.strip()), text
@@ -378,13 +377,13 @@ class Parser:
     def python_lookahead(self, text):
         """Returns the first python token from the given text.
 
-            >>> python_lookahead = Parser().python_lookahead
-            >>> python_lookahead('for i in range(10):')
-            'for'
-            >>> python_lookahead('else:')
-            'else'
-            >>> python_lookahead(' x = 1')
-            ' '
+        >>> python_lookahead = Parser().python_lookahead
+        >>> python_lookahead('for i in range(10):')
+        'for'
+        >>> python_lookahead('else:')
+        'else'
+        >>> python_lookahead(' x = 1')
+        ' '
         """
         i = iter([text])
         readline = lambda: next(i)
@@ -427,9 +426,9 @@ class Parser:
     def read_statement(self, text):
         r"""Reads a python statement.
 
-            >>> read_statement = Parser().read_statement
-            >>> read_statement('for i in range(10): hello $name')
-            ('for i in range(10):', ' hello $name')
+        >>> read_statement = Parser().read_statement
+        >>> read_statement('for i in range(10): hello $name')
+        ('for i in range(10):', ' hello $name')
         """
         tok = PythonTokenizer(text)
         tok.consume_till(":")
@@ -498,12 +497,12 @@ class PythonTokenizer:
     def consume_till(self, delim):
         """Consumes tokens till colon.
 
-            >>> tok = PythonTokenizer('for i in range(10): hello $i')
-            >>> tok.consume_till(':')
-            >>> tok.text[:tok.index]
-            'for i in range(10):'
-            >>> tok.text[tok.index:]
-            ' hello $i'
+        >>> tok = PythonTokenizer('for i in range(10): hello $i')
+        >>> tok.consume_till(':')
+        >>> tok.text[:tok.index]
+        'for i in range(10):'
+        >>> tok.text[tok.index:]
+        ' hello $i'
         """
         try:
             while True:
@@ -829,8 +828,7 @@ class ForLoop:
 
 
 class ForLoopContext:
-    """Stackable context for ForLoop to support nested for loops.
-    """
+    """Stackable context for ForLoop to support nested for loops."""
 
     def __init__(self, forloop, parent):
         self._forloop = forloop
@@ -1173,8 +1171,7 @@ except ImportError:
 
 
 def frender(path, **keywords):
-    """Creates a template from the given file path.
-    """
+    """Creates a template from the given file path."""
     return Template(open(path, encoding="utf-8").read(), filename=path, **keywords)
 
 
@@ -1450,8 +1447,7 @@ class TemplateResult(MutableMapping):
         return self._d.keys()
 
     def _prepare_body(self):
-        """Prepare value of __body__ by joining parts.
-        """
+        """Prepare value of __body__ by joining parts."""
         if self._parts:
             value = u"".join(self._parts)
             self._parts[:] = []

@@ -239,17 +239,17 @@ class Browser(object):
 class AppBrowser(Browser):
     """Browser interface to test web.py apps.
 
-        b = AppBrowser(app)
-        b.open('/')
-        b.follow_link(text='Login')
+    b = AppBrowser(app)
+    b.open('/')
+    b.follow_link(text='Login')
 
-        b.select_form(name='login')
-        b['username'] = 'joe'
-        b['password'] = 'secret'
-        b.submit()
+    b.select_form(name='login')
+    b['username'] = 'joe'
+    b['password'] = 'secret'
+    b.submit()
 
-        assert b.path == '/'
-        assert 'Welcome joe' in b.get_text()
+    assert b.path == '/'
+    assert 'Welcome joe' in b.get_text()
     """
 
     def __init__(self, app):

@@ -204,19 +204,19 @@ def storify(mapping, *requireds, **defaults):
 class Counter(storage):
     """Keeps count of how many times something is added.
 
-        >>> c = counter()
-        >>> c.add('x')
-        >>> c.add('x')
-        >>> c.add('x')
-        >>> c.add('x')
-        >>> c.add('x')
-        >>> c.add('y')
-        >>> c['y']
-        1
-        >>> c['x']
-        5
-        >>> c.most()
-        ['x']
+    >>> c = counter()
+    >>> c.add('x')
+    >>> c.add('x')
+    >>> c.add('x')
+    >>> c.add('x')
+    >>> c.add('x')
+    >>> c.add('y')
+    >>> c['y']
+    1
+    >>> c['x']
+    5
+    >>> c.most()
+    ['x']
     """
 
     def add(self, n):
@@ -236,51 +236,51 @@ class Counter(storage):
     def percent(self, key):
         """Returns what percentage a certain key is of all entries.
 
-           >>> c = counter()
-           >>> c.add('x')
-           >>> c.add('x')
-           >>> c.add('x')
-           >>> c.add('y')
-           >>> c.percent('x')
-           0.75
-           >>> c.percent('y')
-           0.25
+        >>> c = counter()
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('y')
+        >>> c.percent('x')
+        0.75
+        >>> c.percent('y')
+        0.25
         """
         return float(self[key]) / sum(self.values())
 
     def sorted_keys(self):
         """Returns keys sorted by value.
 
-             >>> c = counter()
-             >>> c.add('x')
-             >>> c.add('x')
-             >>> c.add('y')
-             >>> c.sorted_keys()
-             ['x', 'y']
+        >>> c = counter()
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('y')
+        >>> c.sorted_keys()
+        ['x', 'y']
         """
         return sorted(self.keys(), key=lambda k: self[k], reverse=True)
 
     def sorted_values(self):
         """Returns values sorted by value.
 
-            >>> c = counter()
-            >>> c.add('x')
-            >>> c.add('x')
-            >>> c.add('y')
-            >>> c.sorted_values()
-            [2, 1]
+        >>> c = counter()
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('y')
+        >>> c.sorted_values()
+        [2, 1]
         """
         return [self[k] for k in self.sorted_keys()]
 
     def sorted_items(self):
         """Returns items sorted by value.
 
-            >>> c = counter()
-            >>> c.add('x')
-            >>> c.add('x')
-            >>> c.add('y')
-            >>> c.sorted_items()
-            [('x', 2), ('y', 1)]
+        >>> c = counter()
+        >>> c.add('x')
+        >>> c.add('x')
+        >>> c.add('y')
+        >>> c.sorted_items()
+        [('x', 2), ('y', 1)]
         """
         return [(k, self[k]) for k in self.sorted_keys()]
 
@@ -736,8 +736,7 @@ iterbetter = IterBetter
 
 
 def safeiter(it, cleanup=None, ignore_errors=True):
-    """Makes an iterator safe by ignoring the exceptions occurred during the iteration.
-    """
+    """Makes an iterator safe by ignoring the exceptions occurred during the iteration."""
 
     def next():
         while True:
@@ -842,11 +841,11 @@ def dictadd(*dicts):
 def requeue(queue, index=-1):
     """Returns the element at index after moving it to the beginning of the queue.
 
-        >>> x = [1, 2, 3, 4]
-        >>> requeue(x)
-        4
-        >>> x
-        [4, 1, 2, 3]
+    >>> x = [1, 2, 3, 4]
+    >>> requeue(x)
+    4
+    >>> x
+    [4, 1, 2, 3]
     """
     x = queue.pop(index)
     queue.insert(0, x)
@@ -856,11 +855,11 @@ def requeue(queue, index=-1):
 def restack(stack, index=0):
     """Returns the element at index after moving it to the top of stack.
 
-           >>> x = [1, 2, 3, 4]
-           >>> restack(x)
-           1
-           >>> x
-           [2, 3, 4, 1]
+    >>> x = [1, 2, 3, 4]
+    >>> restack(x)
+    1
+    >>> x
+    [2, 3, 4, 1]
     """
     x = stack.pop(index)
     stack.append(x)
@@ -1282,8 +1281,7 @@ class ThreadedDict(threadlocal):
         return id(self)
 
     def clear_all():
-        """Clears all ThreadedDict instances.
-        """
+        """Clears all ThreadedDict instances."""
         for t in list(ThreadedDict._instances):
             t.clear()
 

@@ -270,10 +270,10 @@ class AttributeList(dict):
 class Textbox(Input):
     """Textbox input.
 
-        >>> Textbox(name='foo', value='bar').render()
-        u'<input id="foo" name="foo" type="text" value="bar"/>'
-        >>> Textbox(name='foo', value=0).render()
-        u'<input id="foo" name="foo" type="text" value="0"/>'
+    >>> Textbox(name='foo', value='bar').render()
+    u'<input id="foo" name="foo" type="text" value="bar"/>'
+    >>> Textbox(name='foo', value=0).render()
+    u'<input id="foo" name="foo" type="text" value="0"/>'
     """
 
     def get_type(self):
@@ -283,8 +283,8 @@ class Textbox(Input):
 class Password(Input):
     """Password input.
 
-        >>> Password(name='password', value='secret').render()
-        u'<input id="password" name="password" type="password" value="secret"/>'
+    >>> Password(name='password', value='secret').render()
+    u'<input id="password" name="password" type="password" value="secret"/>'
     """
 
     def get_type(self):
@@ -294,8 +294,8 @@ class Password(Input):
 class Textarea(Input):
     """Textarea input.
 
-        >>> Textarea(name='foo', value='bar').render()
-        u'<textarea id="foo" name="foo">bar</textarea>'
+    >>> Textarea(name='foo', value='bar').render()
+    u'<textarea id="foo" name="foo">bar</textarea>'
     """
 
     def render(self):
@@ -308,10 +308,10 @@ class Textarea(Input):
 class Dropdown(Input):
     r"""Dropdown/select input.
 
-        >>> Dropdown(name='foo', args=['a', 'b', 'c'], value='b').render()
-        u'<select id="foo" name="foo">\n  <option value="a">a</option>\n  <option selected="selected" value="b">b</option>\n  <option value="c">c</option>\n</select>\n'
-        >>> Dropdown(name='foo', args=[('a', 'aa'), ('b', 'bb'), ('c', 'cc')], value='b').render()
-        u'<select id="foo" name="foo">\n  <option value="a">aa</option>\n  <option selected="selected" value="b">bb</option>\n  <option value="c">cc</option>\n</select>\n'
+    >>> Dropdown(name='foo', args=['a', 'b', 'c'], value='b').render()
+    u'<select id="foo" name="foo">\n  <option value="a">a</option>\n  <option selected="selected" value="b">b</option>\n  <option value="c">c</option>\n</select>\n'
+    >>> Dropdown(name='foo', args=[('a', 'aa'), ('b', 'bb'), ('c', 'cc')], value='b').render()
+    u'<select id="foo" name="foo">\n  <option value="a">aa</option>\n  <option selected="selected" value="b">bb</option>\n  <option value="c">cc</option>\n</select>\n'
     """
 
     def __init__(self, name, args, *validators, **attrs):
@@ -356,10 +356,10 @@ class Dropdown(Input):
 class GroupedDropdown(Dropdown):
     r"""Grouped Dropdown/select input.
 
-        >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', ('Volvo', 'Saab')), ('German Cars', ('Mercedes', 'Audi'))), value='Audi').render()
-        u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="Volvo">Volvo</option>\n    <option value="Saab">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="Mercedes">Mercedes</option>\n    <option selected="selected" value="Audi">Audi</option>\n  </optgroup>\n</select>\n'
-        >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', (('v', 'Volvo'), ('s', 'Saab'))), ('German Cars', (('m', 'Mercedes'), ('a', 'Audi')))), value='a').render()
-        u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="v">Volvo</option>\n    <option value="s">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="m">Mercedes</option>\n    <option selected="selected" value="a">Audi</option>\n  </optgroup>\n</select>\n'
+    >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', ('Volvo', 'Saab')), ('German Cars', ('Mercedes', 'Audi'))), value='Audi').render()
+    u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="Volvo">Volvo</option>\n    <option value="Saab">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="Mercedes">Mercedes</option>\n    <option selected="selected" value="Audi">Audi</option>\n  </optgroup>\n</select>\n'
+    >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', (('v', 'Volvo'), ('s', 'Saab'))), ('German Cars', (('m', 'Mercedes'), ('a', 'Audi')))), value='a').render()
+    u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="v">Volvo</option>\n    <option value="s">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="m">Mercedes</option>\n    <option selected="selected" value="a">Audi</option>\n  </optgroup>\n</select>\n'
 
     """
 
@@ -471,8 +471,8 @@ class Button(Input):
 class Hidden(Input):
     """Hidden Input.
 
-        >>> Hidden(name='foo', value='bar').render()
-        u'<input id="foo" name="foo" type="hidden" value="bar"/>'
+    >>> Hidden(name='foo', value='bar').render()
+    u'<input id="foo" name="foo" type="hidden" value="bar"/>'
     """
 
     def is_hidden(self):
@@ -485,8 +485,8 @@ class Hidden(Input):
 class File(Input):
     """File input.
 
-        >>> File(name='f', accept=".doc,.docx,.xml").render()
-        u'<input accept=".doc,.docx,.xml" id="f" name="f" type="file"/>'
+    >>> File(name='f', accept=".doc,.docx,.xml").render()
+    u'<input accept=".doc,.docx,.xml" id="f" name="f" type="file"/>'
     """
 
     def get_type(self):

@@ -360,8 +360,7 @@ class application:
         return wsgi.runwsgi(self.wsgifunc(*middleware))
 
     def stop(self):
-        """Stops the http server started by run.
-        """
+        """Stops the http server started by run."""
         if httpserver.server:
             httpserver.server.stop()
             httpserver.server = None

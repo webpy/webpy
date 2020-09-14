@@ -28,13 +28,13 @@ __all__ = ["runsimple"]
 
 def runbasic(func, server_address=("0.0.0.0", 8080)):
     """
-    Runs a simple HTTP server hosting WSGI app `func`. The directory `static/`
-    is hosted statically.
+      Runs a simple HTTP server hosting WSGI app `func`. The directory `static/`
+      is hosted statically.
 
-    Based on [WsgiServer][ws] from [Colin Stewart][cs].
+      Based on [WsgiServer][ws] from [Colin Stewart][cs].
 
-  [ws]: http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html
-  [cs]: http://www.owlfish.com/
+    [ws]: http://www.owlfish.com/software/wsgiutils/documentation/wsgi-server-api.html
+    [cs]: http://www.owlfish.com/
     """
     # Copyright (c) 2004 Colin Stewart (http://www.owlfish.com/)
     # Modified somewhat for simplicity

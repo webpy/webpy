@@ -50,8 +50,7 @@ class SessionExpired(web.HTTPError):
 
 
 class Session(object):
-    """Session management for web.py
-    """
+    """Session management for web.py"""
 
     __slots__ = [
         "store",
@@ -432,8 +431,7 @@ class MemoryStore(Store):
         return key in self.d_store
 
     def __getitem__(self, key):
-        """ Return the value and update the last seen value
-        """
+        """Return the value and update the last seen value"""
         t, value = self.d_store[key]
         self.d_store[key] = (time.time(), value)
         return value

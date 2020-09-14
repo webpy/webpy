@@ -154,15 +154,15 @@ class SQLQuery(object):
     def __init__(self, items=None):
         r"""Creates a new SQLQuery.
 
-            >>> SQLQuery("x")
-            <sql: 'x'>
-            >>> q = SQLQuery(['SELECT * FROM ', 'test', ' WHERE x=', SQLParam(1)])
-            >>> q
-            <sql: 'SELECT * FROM test WHERE x=1'>
-            >>> q.query(), q.values()
-            ('SELECT * FROM test WHERE x=%s', [1])
-            >>> SQLQuery(SQLParam(1))
-            <sql: '1'>
+        >>> SQLQuery("x")
+        <sql: 'x'>
+        >>> q = SQLQuery(['SELECT * FROM ', 'test', ' WHERE x=', SQLParam(1)])
+        >>> q
+        <sql: 'SELECT * FROM test WHERE x=1'>
+        >>> q.query(), q.values()
+        ('SELECT * FROM test WHERE x=%s', [1])
+        >>> SQLQuery(SQLParam(1))
+        <sql: '1'>
         """
         if items is None:
             self.items = []
@@ -327,12 +327,12 @@ sqlliteral = SQLLiteral
 
 def _sqllist(values):
     """
-        >>> _sqllist([1, 2, 3])
-        <sql: '(1, 2, 3)'>
-        >>> _sqllist(set([5, 1, 3, 2]))
-        <sql: '(1, 2, 3, 5)'>
-        >>> _sqllist((5, 1, 3, 2, 2, 5))
-        <sql: '(1, 2, 3, 5)'>
+    >>> _sqllist([1, 2, 3])
+    <sql: '(1, 2, 3)'>
+    >>> _sqllist(set([5, 1, 3, 2]))
+    <sql: '(1, 2, 3, 5)'>
+    >>> _sqllist((5, 1, 3, 2, 2, 5))
+    <sql: '(1, 2, 3, 5)'>
     """
     items = []
     items.append("(")
@@ -486,8 +486,7 @@ def sqlquote(a):
 
 
 class BaseResultSet:
-    """Base implementation of Result Set, the result of a db query.
-    """
+    """Base implementation of Result Set, the result of a db query."""
 
     def __init__(self, cursor):
         self.cursor = cursor
@@ -542,8 +541,7 @@ class BaseResultSet:
 
 
 class ResultSet(BaseResultSet):
-    """The result of a database query.
-    """
+    """The result of a database query."""
 
     def __len__(self):
         return int(self.cursor.rowcount)
@@ -656,8 +654,7 @@ class DB:
     """Database"""
 
     def __init__(self, db_module, keywords):
-        """Creates a database.
-        """
+        """Creates a database."""
         # some DB implementations take optional parameter `driver` to use a
         # specific driver module but it should not be passed to `connect`.
         keywords.pop("driver", None)
@@ -783,8 +780,7 @@ class DB:
         return out
 
     def _process_query(self, sql_query):
-        """Takes the SQLQuery object and returns query string and parameters.
-        """
+        """Takes the SQLQuery object and returns query string and parameters."""
         paramstyle = getattr(self, "paramstyle", "pyformat")
         query = sql_query.query(paramstyle)
         params = sql_query.values()
@@ -1283,8 +1279,7 @@ class MySQLDB(DB):
 
 
 def import_driver(drivers, preferred=None):
-    """Import the first available driver or preferred driver.
-    """
+    """Import the first available driver or preferred driver."""
     if preferred:
         drivers = (preferred,)
 
@@ -1326,8 +1321,7 @@ class SqliteDB(DB):
 
 
 class FirebirdDB(DB):
-    """Firebird Database.
-    """
+    """Firebird Database."""
 
     def __init__(self, **keywords):
         try:
@@ -1372,8 +1366,7 @@ class MSSQLDB(DB):
         DB.__init__(self, db, keywords)
 
     def _process_query(self, sql_query):
-        """Takes the SQLQuery object and returns query string and parameters.
-        """
+        """Takes the SQLQuery object and returns query string and parameters."""
         # MSSQLDB expects params to be a tuple.
         # Overwriting the default implementation to convert params to tuple.
         paramstyle = getattr(self, "paramstyle", "pyformat")
@@ -1395,14 +1388,14 @@ class MSSQLDB(DB):
     def _test(self):
         """Test LIMIT.
 
-            Fake presence of pymssql module for running tests.
-            >>> import sys
-            >>> sys.modules['pymssql'] = sys.modules['sys']
+        Fake presence of pymssql module for running tests.
+        >>> import sys
+        >>> sys.modules['pymssql'] = sys.modules['sys']
 
-            MSSQL has TOP clause instead of LIMIT clause.
-            >>> db = MSSQLDB(db='test', user='joe', pw='secret')
-            >>> db.select('foo', limit=4, _test=True)
-            <sql: 'SELECT * TOP 4 FROM foo'>
+        MSSQL has TOP clause instead of LIMIT clause.
+        >>> db = MSSQLDB(db='test', user='joe', pw='secret')
+        >>> db.select('foo', limit=4, _test=True)
+        <sql: 'SELECT * TOP 4 FROM foo'>
         """
         pass
 
@@ -1615,8 +1608,7 @@ class Parser:
         self.text = ""
 
     def parse(self, text):
-        """Parses the given text and returns a parse tree.
-        """
+        """Parses the given text and returns a parse tree."""
         self.reset()
         self.text = text
         return self.parse_all()
@@ -1697,8 +1689,7 @@ class Parser:
 
 
 class SafeEval(object):
-    """Safe evaluator for binding params to db queries.
-    """
+    """Safe evaluator for binding params to db queries."""
 
     def safeeval(self, text, mapping):
         nodes = Parser().parse(text)

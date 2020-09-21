@@ -153,11 +153,7 @@ class Session(object):
             self.store[self.session_id] = dict(self._data)
         else:
             if web.cookies().get(self._config.cookie_name):
-                self._setcookie(
-                    self.session_id,
-                    expires=self._config.timeout,
-                    samesite=self._config.get("samesite"),
-                )
+                self._setcookie(self.session_id, expires=-1)
 
     def _setcookie(self, session_id, expires="", **kw):
         cookie_name = self._config.cookie_name
@@ -213,11 +209,6 @@ class Session(object):
         """Kill the session, make it no longer available"""
         del self.store[self.session_id]
         self._killed = True
-
-        # Expire the cookie
-        web.setcookie(self._config.cookie_name,
-                      self.session_id,
-                      expires=-1)
 
 
 class Store:

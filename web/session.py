@@ -214,6 +214,11 @@ class Session(object):
         del self.store[self.session_id]
         self._killed = True
 
+        # Expire the cookie
+        web.setcookie(self._config.cookie_name,
+                      self.session_id,
+                      expires=-1)
+
 
 class Store:
     """Base class for session stores"""

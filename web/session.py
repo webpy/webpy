@@ -316,7 +316,10 @@ class DiskStore(Store):
             path = self._get_path(f)
             atime = os.stat(path).st_atime
             if now - atime > timeout:
-                shutil.rmtree(path)
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
 
 
 class DBStore(Store):

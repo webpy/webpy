@@ -34,18 +34,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@master
+      - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install codespell flake8 isort pytest
-      - if: matrix.python-version >= 3.6
-        run: |
-          pip install black
-          black --check .
+      - run: pip install black codespell flake8 isort pytest
+      - run: black --check .
       - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
       - run: flake8 --count --ignore=E203,E265,E722,E731,W503 --max-line-length=477 --show-source --statistics
-      - run: isort .
+      - run: isort --profile black .
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt

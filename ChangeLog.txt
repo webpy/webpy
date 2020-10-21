@@ -3,6 +3,8 @@
 ## 2020-XX-XX 0.62
 
 * Fixed: can not reset session data to same value as initialized. #683
+* Fixed: can not set session expire time. #655
+* Fixed: not export session store `MemoryStore`.
 
 ## 2020-06-23 0.61
 

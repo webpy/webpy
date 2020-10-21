@@ -148,7 +148,7 @@ class Session(object):
         del current_values["session_id"]
         del current_values["ip"]
 
-        if not self.get("_killed") and current_values != self._initializer:
+        if not self.get("_killed"):
             self._setcookie(self.session_id)
             self.store[self.session_id] = dict(self._data)
         else:

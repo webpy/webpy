@@ -25,7 +25,7 @@ except ImportError:
 from base64 import encodebytes, decodebytes
 
 
-__all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore"]
+__all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore", "MemoryStore"]
 
 web.config.session_parameters = utils.storage(
     {
@@ -153,11 +153,7 @@ class Session(object):
             self.store[self.session_id] = dict(self._data)
         else:
             if web.cookies().get(self._config.cookie_name):
-                self._setcookie(
-                    self.session_id,
-                    expires=self._config.timeout,
-                    samesite=self._config.get("samesite"),
-                )
+                self._setcookie(self.session_id, expires=-1)
 
     def _setcookie(self, session_id, expires="", **kw):
         cookie_name = self._config.cookie_name
@@ -169,7 +165,7 @@ class Session(object):
         web.setcookie(
             cookie_name,
             session_id,
-            expires=expires or self._config.timeout,
+            expires=expires,
             domain=cookie_domain,
             httponly=httponly,
             secure=secure,

@@ -1,5 +1,9 @@
 # web.py changelog
 
+## 2020-XX-XX 0.62
+
+* Fixed: can not reset session data to same value as initialized. #683
+
 ## 2020-06-23 0.61
 
 * setup.py: Add python_requires='>=3.5' #662

@@ -5,7 +5,7 @@ Visit http://webpy.org/ for more information.
 [![build status](https://secure.travis-ci.org/webpy/webpy.png?branch=master)](https://travis-ci.org/webpy/webpy)
 [![Codecov Test Coverage](https://codecov.io/gh/webpy/webpy/branch/master/graphs/badge.svg?style=flat)](https://codecov.io/gh/webpy/webpy)
 
-The latest stable release `0.61` only supports Python >= 3.5.
+The latest stable release `0.61` only supports Python >= 3.6.
 To install it, please run:
 ```
 # For Python 3

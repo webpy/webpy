@@ -70,5 +70,9 @@ class WSGITest(unittest.TestCase):
         s = unquote(r.read())
         self.assertEqual(s, b"\xE2\x84\xA6")
 
+        r = b.open("/Hélas")
+        s = unquote(r.read())
+        self.assertEqual(s, b"H\xe9las")
+
         app.stop()
         thread.join()

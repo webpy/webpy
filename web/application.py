@@ -453,7 +453,10 @@ class application:
         ctx.realhome = ctx.home
         ctx.ip = env.get("REMOTE_ADDR")
         ctx.method = env.get("REQUEST_METHOD")
-        ctx.path = env.get("PATH_INFO").encode("latin1").decode("utf8")
+        try:
+            ctx.path = env.get("PATH_INFO").encode("latin1").decode("utf8")
+        except UnicodeDecodeError:  # If there are Unicode characters...
+            ctx.path = env.get("PATH_INFO")
 
         # http://trac.lighttpd.net/trac/ticket/406 requires:
         if env.get("SERVER_SOFTWARE", "").startswith("lighttpd/"):

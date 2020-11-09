@@ -453,13 +453,17 @@ class application:
         ctx.realhome = ctx.home
         ctx.ip = env.get("REMOTE_ADDR")
         ctx.method = env.get("REQUEST_METHOD")
-        ctx.path = env.get("PATH_INFO").encode("latin1").decode("utf8")
+        try:
+            ctx.path = bytes(env.get("PATH_INFO"), "latin1").decode("utf8")
+        except UnicodeDecodeError:  # If there are Unicode characters...
+            ctx.path = env.get("PATH_INFO")
 
         # http://trac.lighttpd.net/trac/ticket/406 requires:
-        if env.get("SERVER_SOFTWARE", "").startswith("lighttpd/"):
+        if env.get("SERVER_SOFTWARE", "").startswith(("lighttpd/", "nginx/")):
             ctx.path = lstrips(env.get("REQUEST_URI").split("?")[0], ctx.homepath)
-            # Apache and CherryPy webservers unquote the url but lighttpd doesn't.
-            # unquote explicitly for lighttpd to make ctx.path uniform across all servers.
+            # Apache and CherryPy webservers unquote urls but lighttpd and nginx do not.
+            # Unquote explicitly for lighttpd and nginx to make ctx.path uniform across
+            # all servers.
             ctx.path = unquote(ctx.path)
 
         if env.get("QUERY_STRING"):

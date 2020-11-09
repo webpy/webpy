@@ -459,7 +459,7 @@ class application:
             ctx.path = env.get("PATH_INFO")
 
         # http://trac.lighttpd.net/trac/ticket/406 requires:
-        if env.get("SERVER_SOFTWARE", "").startswith(("lighttpd/", 'nginx/')):
+        if env.get("SERVER_SOFTWARE", "").startswith(("lighttpd/", "nginx/")):
             ctx.path = lstrips(env.get("REQUEST_URI").split("?")[0], ctx.homepath)
             # Apache and CherryPy webservers unquote urls but lighttpd and nginx do not.
             # Unquote explicitly for lighttpd and nginx to make ctx.path uniform across

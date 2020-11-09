@@ -27,7 +27,7 @@ setup(
     long_description_content_type="text/markdown",
     license="Public domain",
     platforms=["any"],
-    python_requires=">=3.6",
+    python_requires=">=3.5",
     classifiers=[
         "License :: Public Domain",
         "Programming Language :: Python",

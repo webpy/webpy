@@ -66,6 +66,11 @@ class WSGITest(unittest.TestCase):
         s = unquote(r.read())
         self.assertEqual(s, b"\xE2\x84\xA6")
 
+        r = b.open("/Dictionnaire_des_ide%CC%81es_rec%CC%A7ues")
+        s = unquote(r.read())
+        self.assertEqual(s, b"/Dictionnaire des id\xc3\xa9es re\xc3\xa7ues")
+        self.assertEqual(s, "/Dictionnaire des idées reçues")
+
         r = b.open("/Hélas")
         s = unquote(r.read())
         self.assertEqual(s, b"H\xe9las")

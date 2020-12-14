@@ -362,18 +362,6 @@ def reparam(string_, dictionary):
     """
     return SafeEval().safeeval(string_, dictionary)
 
-    dictionary = dictionary.copy()  # eval mucks with it
-    # disable builtins to avoid risk for remote code execution.
-    dictionary["__builtins__"] = object()
-    result = []
-    for live, chunk in _interpolate(string_):
-        if live:
-            v = eval(chunk, dictionary)
-            result.append(sqlquote(v))
-        else:
-            result.append(chunk)
-    return SQLQuery.join(result, "")
-
 
 def sqlify(obj):
     """

@@ -286,7 +286,7 @@ class application:
                 print(traceback.format_exc(), file=web.debug)
                 raise self.internalerror()
 
-        # processors must be applied in the resvere order. (??)
+        # processors must be applied in the reverse order. (??)
         return process(self.processors)
 
     def wsgifunc(self, *middleware):

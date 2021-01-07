@@ -775,6 +775,7 @@ TEMPLATE_BUILTIN_NAMES = [
     "ord",
     "pow",
     "range",
+    "round",
     "True",
     "False",
     "None",

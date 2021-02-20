@@ -6,7 +6,6 @@ Web API (wrapper around WSGI)
 import cgi
 import pprint
 import sys
-import tempfile
 from io import BytesIO
 from urllib.parse import urljoin
 

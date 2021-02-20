@@ -402,7 +402,7 @@ class cgiFieldStorage(cgi.FieldStorage):
         For backwards compatibility with Python 2, make_file accepted
         a binary flag. This was unused, and removed in Python 3.
         """
-        return tempfile.TemporaryFile("wb+")
+        return super().make_file()
 
 
 def header(hdr, value, unique=False):

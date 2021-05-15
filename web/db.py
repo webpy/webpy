@@ -656,7 +656,7 @@ class DB:
         self.supports_multiple_insert = False
 
         try:
-            import DBUtils  # noqa, flake8 F401
+            import dbutils  # noqa, flake8 F401
 
             # enable pooling if DBUtils module is available.
             self.has_pooling = True
@@ -712,7 +712,7 @@ class DB:
 
     def _connect_with_pooling(self, keywords):
         def get_pooled_db():
-            from DBUtils import PooledDB
+            from dbutils import PooledDB
 
             # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
             # see Bug#122112

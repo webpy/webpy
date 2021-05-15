@@ -2,7 +2,7 @@
 Database API
 (part of web.py)
 """
-
+import ast
 import datetime
 import os
 import re
@@ -17,11 +17,6 @@ try:
 except ImportError:
     import urlparse
     from urllib import unquote
-
-try:
-    import ast
-except ImportError:
-    ast = None
 
 try:
     # db module can work independent of web.py

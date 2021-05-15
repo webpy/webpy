@@ -152,7 +152,7 @@ class DBTest(unittest.TestCase):
             return
         db = setup_database(self.dbname, pooling=True)
         try:
-            self.assertEqual(db.ctx.db.__class__.__module__, "dbutils.PooledDB")
+            self.assertEqual(db.ctx.db.__class__.__module__, "dbutils.pooled_db")
             db.select("person", limit=1)
         finally:
             db.ctx.db.close()

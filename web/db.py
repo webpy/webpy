@@ -656,7 +656,7 @@ class DB:
         self.supports_multiple_insert = False
 
         try:
-            import dbutils  # noqa, flake8 F401
+            import dbutils  # noqa: F401
 
             # enable pooling if DBUtils module is available.
             self.has_pooling = True

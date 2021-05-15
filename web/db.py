@@ -719,7 +719,7 @@ class DB:
             # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
             # see Bug#122112
 
-            if PooledDB.__version__.split(".") < (0, 9, 3):
+            if PooledDB.__version__.split(".") < "0.9.3".split("."):
                 return PooledDB.PooledDB(dbapi=self.db_module, **keywords)
             else:
                 return PooledDB.PooledDB(creator=self.db_module, **keywords)

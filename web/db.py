@@ -712,7 +712,9 @@ class DB:
 
     def _connect_with_pooling(self, keywords):
         def get_pooled_db():
-            from dbutils.pooled_db import PooledDB
+            # In DBUtils 2.0.0, names were made pep8 compliant
+            # https://webwareforpython.github.io/DBUtils/changelog.html
+            from dbutils import pooled_db as PooledDB
 
             # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
             # see Bug#122112

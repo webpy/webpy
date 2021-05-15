@@ -712,7 +712,7 @@ class DB:
 
     def _connect_with_pooling(self, keywords):
         def get_pooled_db():
-            from dbutils import PooledDB
+            from dbutils.pooled_db import PooledDB
 
             # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
             # see Bug#122112

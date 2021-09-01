@@ -2,7 +2,7 @@ web.py is a web framework for Python that is as simple as it is powerful.
 
 Visit http://webpy.org/ for more information.
 
-[![build status](https://secure.travis-ci.org/webpy/webpy.png?branch=master)](https://travis-ci.org/webpy/webpy)
+[![build status](https://secure.travis-ci.org/webpy/webpy.svg?branch=master)](https://travis-ci.org/webpy/webpy)
 [![Codecov Test Coverage](https://codecov.io/gh/webpy/webpy/branch/master/graphs/badge.svg?style=flat)](https://codecov.io/gh/webpy/webpy)
 
 The latest stable release `0.62` only supports Python >= 3.5.

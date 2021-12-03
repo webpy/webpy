@@ -233,7 +233,7 @@ class Store:
         return encodebytes(pickled)
 
     def decode(self, session_data):
-        """decodes the data to get back the session dict """
+        """decodes the data to get back the session dict"""
         if isinstance(session_data, str):
             session_data = session_data.encode()
 

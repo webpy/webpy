@@ -290,17 +290,9 @@ class Counter(storage):
 
 counter = Counter
 
-iters = [list, tuple, set, frozenset]
-
-
-class _hack(tuple):
-    pass
-
-
-iters = _hack(iters)
+iters = (list, tuple, set, frozenset)
 iters.__doc__ = """
-A list of iterable items (like lists, but not strings). Includes whichever
-of lists, tuples, sets, and Sets are available in this version of Python.
+A list of iterable items like list, tuple, set, and frozenset but not strings.
 """
 
 

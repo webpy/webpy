@@ -289,11 +289,7 @@ class Counter(storage):
 
 
 counter = Counter
-
 iters = (list, tuple, set, frozenset)
-iters.__doc__ = """
-A list of iterable items like list, tuple, set, and frozenset but not strings.
-"""
 
 
 def _strips(direction, text, remove):

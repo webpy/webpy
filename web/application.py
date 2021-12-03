@@ -93,11 +93,6 @@ class application:
 
             self.add_processor(loadhook(Reloader()))
             if mapping_name and module_name:
-                # when app is ran as part of a package, this puts the app into
-                # `sys.modules` correctly, otherwise the first change to the
-                # app module will not be picked up by Reloader
-                reload_mapping()
-
                 self.add_processor(loadhook(reload_mapping))
 
             # load __main__ module usings its filename, so that it can be reloaded.

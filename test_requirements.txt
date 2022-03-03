@@ -1,5 +1,5 @@
 cheroot>=6.0.0
-DBUtils
+DBUtils>=2.0.0
 pytest>=5.4.1
 
 # DB drivers.

@@ -2,7 +2,7 @@
 Database API
 (part of web.py)
 """
-
+import ast
 import datetime
 import os
 import re
@@ -17,11 +17,6 @@ try:
 except ImportError:
     import urlparse
     from urllib import unquote
-
-try:
-    import ast
-except ImportError:
-    ast = None
 
 try:
     # db module can work independent of web.py
@@ -656,7 +651,7 @@ class DB:
         self.supports_multiple_insert = False
 
         try:
-            import DBUtils  # noqa, flake8 F401
+            import dbutils  # noqa: F401
 
             # enable pooling if DBUtils module is available.
             self.has_pooling = True
@@ -712,7 +707,9 @@ class DB:
 
     def _connect_with_pooling(self, keywords):
         def get_pooled_db():
-            from DBUtils import PooledDB
+            # In DBUtils 2.0.0, names were made pep8 compliant
+            # https://webwareforpython.github.io/DBUtils/changelog.html
+            from dbutils import pooled_db as PooledDB
 
             # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
             # see Bug#122112

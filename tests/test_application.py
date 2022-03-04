@@ -138,7 +138,6 @@ class ApplicationTest(unittest.TestCase):
 
         app = web.application(urls, {"foo": foo})
 
-        self.assertEqual(app.request("/foo\n").data, b"not found")
         self.assertEqual(app.request("/foo").data, b"foo")
 
     def test_subdirs(self):

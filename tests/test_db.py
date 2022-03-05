@@ -93,7 +93,7 @@ class DBTest(unittest.TestCase):
 
     def testUnicode(self):
         # Bug#177265: unicode queries throw errors
-        self.db.select("person", where="name=$name", vars={"name": u"\xf4"})
+        self.db.select("person", where="name=$name", vars={"name": "\xf4"})
 
     def assertRows(self, n):
         result = self.db.select("person")

@@ -21,6 +21,9 @@ setup(
     maintainer="Anand Chitipothu",
     maintainer_email="anandology@gmail.com",
     url="http://webpy.org/",
+    project_urls={
+        "Source": "https://github.com/webpy/webpy",
+    },
     packages=["web", "web.contrib"],
     install_requires=["cheroot"],
     long_description=long_description,

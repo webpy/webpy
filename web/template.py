@@ -889,7 +889,7 @@ class BaseTemplate:
         )
 
     def _join(self, *items):
-        return u"".join(items)
+        return "".join(items)
 
     def _escape(self, value, escape=False):
         if value is None:
@@ -1437,7 +1437,7 @@ class TemplateResult(MutableMapping):
 
     def __init__(self, *a, **kw):
         self.__dict__["_d"] = dict(*a, **kw)
-        self._d.setdefault("__body__", u"")
+        self._d.setdefault("__body__", "")
 
         self.__dict__["_parts"] = []
         self.__dict__["extend"] = self._parts.extend
@@ -1450,7 +1450,7 @@ class TemplateResult(MutableMapping):
     def _prepare_body(self):
         """Prepare value of __body__ by joining parts."""
         if self._parts:
-            value = u"".join(self._parts)
+            value = "".join(self._parts)
             self._parts[:] = []
             body = self._d.get("__body__")
             if body:

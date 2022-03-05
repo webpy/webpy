@@ -228,11 +228,11 @@ def htmlquote(text):
         >>> htmlquote(u"<'&\">")
         u'&lt;&#39;&amp;&quot;&gt;'
     """
-    text = text.replace(u"&", u"&amp;")  # Must be done first!
-    text = text.replace(u"<", u"&lt;")
-    text = text.replace(u">", u"&gt;")
-    text = text.replace(u"'", u"&#39;")
-    text = text.replace(u'"', u"&quot;")
+    text = text.replace("&", "&amp;")  # Must be done first!
+    text = text.replace("<", "&lt;")
+    text = text.replace(">", "&gt;")
+    text = text.replace("'", "&#39;")
+    text = text.replace('"', "&quot;")
     return text
 
 
@@ -243,11 +243,11 @@ def htmlunquote(text):
         >>> htmlunquote(u'&lt;&#39;&amp;&quot;&gt;')
         u'<\'&">'
     """
-    text = text.replace(u"&quot;", u'"')
-    text = text.replace(u"&#39;", u"'")
-    text = text.replace(u"&gt;", u">")
-    text = text.replace(u"&lt;", u"<")
-    text = text.replace(u"&amp;", u"&")  # Must be done last!
+    text = text.replace("&quot;", '"')
+    text = text.replace("&#39;", "'")
+    text = text.replace("&gt;", ">")
+    text = text.replace("&lt;", "<")
+    text = text.replace("&amp;", "&")  # Must be done last!
     return text
 
 
@@ -263,7 +263,7 @@ def websafe(val):
         True
     """
     if val is None:
-        return u""
+        return ""
 
     if isinstance(val, bytes):
         val = val.decode("utf-8")

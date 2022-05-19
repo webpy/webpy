@@ -316,7 +316,7 @@ class Dropdown(Input):
 
     def __init__(self, name, args, *validators, **attrs):
         self.args = args
-        super(Dropdown, self).__init__(name, *validators, **attrs)
+        super().__init__(name, *validators, **attrs)
 
     def render(self):
         attrs = self.attrs.copy()
@@ -365,7 +365,7 @@ class GroupedDropdown(Dropdown):
 
     def __init__(self, name, args, *validators, **attrs):
         self.args = args
-        super(Dropdown, self).__init__(name, *validators, **attrs)
+        super().__init__(name, *validators, **attrs)
 
     def render(self):
         attrs = self.attrs.copy()
@@ -386,7 +386,7 @@ class GroupedDropdown(Dropdown):
 class Radio(Input):
     def __init__(self, name, args, *validators, **attrs):
         self.args = args
-        super(Radio, self).__init__(name, *validators, **attrs)
+        super().__init__(name, *validators, **attrs)
 
     def render(self):
         x = "<span>"
@@ -456,7 +456,7 @@ class Button(Input):
     """
 
     def __init__(self, name, *validators, **attrs):
-        super(Button, self).__init__(name, *validators, **attrs)
+        super().__init__(name, *validators, **attrs)
         self.description = ""
 
     def render(self):
@@ -642,7 +642,7 @@ class Datalist(Input):
 
     def __init__(self, name, args, *validators, **kwargs):
         self.args = args
-        super(Datalist, self).__init__(name, *validators, **kwargs)
+        super().__init__(name, *validators, **kwargs)
 
     def render(self):
         attrs = self.attrs.copy()

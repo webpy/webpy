@@ -1,13 +1,9 @@
 import threading
 import time
 import unittest
+from urllib.parse import unquote_to_bytes as unquote
 
 import web
-
-try:  # PY 3
-    from urllib.parse import unquote_to_bytes as unquote
-except ImportError:  # PY 2
-    from urllib import unquote
 
 
 class WSGITest(unittest.TestCase):

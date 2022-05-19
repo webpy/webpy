@@ -13,14 +13,11 @@ import sys
 import threading
 import time
 import traceback
+from io import StringIO
 from threading import local as threadlocal
 
 from .py3helpers import iteritems, itervalues
 
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 __all__ = [
     "Storage",

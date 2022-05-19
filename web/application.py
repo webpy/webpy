@@ -19,6 +19,7 @@ from .debugerror import debugerror
 from .py3helpers import iteritems
 from .utils import lstrips
 
+
 __all__ = [
     "application",
     "auto_application",

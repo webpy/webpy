@@ -6,9 +6,11 @@ Session Management
 import datetime
 import os
 import os.path
+import pickle
 import shutil
 import threading
 import time
+from base64 import encodebytes, decodebytes
 from copy import deepcopy
 from hashlib import sha1
 
@@ -16,12 +18,6 @@ from . import utils
 from . import webapi as web
 from .py3helpers import iteritems
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
-from base64 import decodebytes, encodebytes
 
 __all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore", "MemoryStore"]
 

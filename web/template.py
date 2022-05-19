@@ -1341,7 +1341,7 @@ class SafeVisitor(ast.NodeVisitor):
 
     def __init__(self, *args, **kwargs):
         "Initialize visitor by generating callbacks for all AST node types."
-        super(SafeVisitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.errors = []
 
     def walk(self, tree, filename):
@@ -1355,13 +1355,13 @@ class SafeVisitor(ast.NodeVisitor):
         nodename = type(node).__name__
         if nodename not in ALLOWED_AST_NODES:
             self.fail_name(node, nodename)
-        super(SafeVisitor, self).generic_visit(node)
+        super().generic_visit(node)
 
     def visit_Attribute(self, node):
         attrname = self.get_node_attr(node)
         if self.is_unallowed_attr(attrname):
             self.fail_attribute(node, attrname)
-        super(SafeVisitor, self).generic_visit(node)
+        super().generic_visit(node)
 
     def visit_Assign(self, node):
         self.check_assign_targets(node)
@@ -1372,7 +1372,7 @@ class SafeVisitor(ast.NodeVisitor):
     def check_assign_targets(self, node):
         for target in node.targets:
             self.check_assign_target(target)
-        super(SafeVisitor, self).generic_visit(node)
+        super().generic_visit(node)
 
     def check_assign_target(self, targetnode):
         targetname = type(targetnode).__name__

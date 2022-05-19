@@ -33,7 +33,6 @@ import glob
 import os
 import sys
 import tokenize
-from io import open
 import builtins
 
 from .net import websafe
@@ -782,13 +781,11 @@ TEMPLATE_BUILTIN_NAMES = [
     "__import__",  # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-TEMPLATE_BUILTINS = dict(
-    [
-        (name, getattr(builtins, name))
-        for name in TEMPLATE_BUILTIN_NAMES
-        if name in builtins.__dict__
-    ]
-)
+TEMPLATE_BUILTINS = {
+    name: getattr(builtins, name)
+    for name in TEMPLATE_BUILTIN_NAMES
+    if name in builtins.__dict__
+}
 
 
 class ForLoop:

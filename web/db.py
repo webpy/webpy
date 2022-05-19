@@ -84,7 +84,7 @@ class UnknownParamstyle(Exception):
     pass
 
 
-class SQLParam(object):
+class SQLParam:
     """
     Parameter in SQLQuery.
 
@@ -133,7 +133,7 @@ class SQLParam(object):
 sqlparam = SQLParam
 
 
-class SQLQuery(object):
+class SQLQuery:
     """
     You can pass this sort of thing as a clause in any db function.
     Otherwise, you can pass a dictionary to the keyword argument `vars`
@@ -286,7 +286,7 @@ class SQLQuery(object):
 
     def _str(self):
         try:
-            return self.query() % tuple([sqlify(x) for x in self.values()])
+            return self.query() % tuple(sqlify(x) for x in self.values())
         except (ValueError, TypeError):
             return self.query()
 
@@ -427,7 +427,7 @@ def sqlors(left, lst):
 
     if isinstance(lst, iters):
         return SQLQuery(
-            ["("] + sum([[left, sqlparam(x), " OR "] for x in lst], []) + ["1=2)"]
+            ["("] + sum(([left, sqlparam(x), " OR "] for x in lst), []) + ["1=2)"]
         )
     else:
         return left + sqlparam(lst)
@@ -1210,7 +1210,7 @@ class PostgresDB(DB):
         """Query postgres to find names of all sequences used in this database."""
         if self._sequences is None:
             q = "SELECT c.relname FROM pg_class c WHERE c.relkind = 'S'"
-            self._sequences = set([c.relname for c in self.query(q)])
+            self._sequences = {c.relname for c in self.query(q)}
         return self._sequences
 
     def _connect(self, keywords):
@@ -1558,7 +1558,7 @@ def _interpolate(format):
     return chunks
 
 
-class _Node(object):
+class _Node:
     def __init__(self, type, first, second=None):
         self.type = type
         self.first = first
@@ -1673,7 +1673,7 @@ class Parser:
         return expr
 
 
-class SafeEval(object):
+class SafeEval:
     """Safe evaluator for binding params to db queries."""
 
     def safeeval(self, text, mapping):

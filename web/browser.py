@@ -24,7 +24,7 @@ class BrowserError(Exception):
     pass
 
 
-class Browser(object):
+class Browser:
     def __init__(self):
         self.cookiejar = CookieJar()
         self._cookie_processor = HTTPCookieProcessor(self.cookiejar)

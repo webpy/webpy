@@ -410,9 +410,7 @@ class application:
             minor = version[1]
 
             if major != 2:
-                raise EnvironmentError(
-                    "Google App Engine only supports python 2.5 and 2.7"
-                )
+                raise OSError("Google App Engine only supports python 2.5 and 2.7")
 
             # if 2.7, return a function that can be run by gae
             if minor == 7:
@@ -423,9 +421,7 @@ class application:
 
                 return run_wsgi_app(wsgiapp)
             else:
-                raise EnvironmentError(
-                    "Not a supported platform, use python 2.5 or 2.7"
-                )
+                raise OSError("Not a supported platform, use python 2.5 or 2.7")
         except ImportError:
             return wsgiref.handlers.CGIHandler().run(wsgiapp)
 
@@ -797,7 +793,7 @@ class Reloader:
 
         try:
             mtime = os.stat(mod.__file__).st_mtime
-        except (OSError, IOError):
+        except OSError:
             return
         if mod.__file__.endswith(self.__class__.SUFFIX) and os.path.exists(
             mod.__file__[:-1]

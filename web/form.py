@@ -27,7 +27,7 @@ def attrget(obj, attr, value=None):
     return value
 
 
-class Form(object):
+class Form:
     r"""
     HTML form.
 
@@ -149,7 +149,7 @@ class Form(object):
     d = property(_get_d)
 
 
-class Input(object):
+class Input:
     """Generic input. Type attribute must be specified when called directly.
 
     See also: <https://www.w3.org/TR/html52/sec-forms.html#the-input-element>

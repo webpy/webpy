@@ -36,7 +36,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
 
     class WSGIHandler(SimpleHTTPRequestHandler):
         def run_wsgi_app(self):
-            protocol, host, path, parameters, query, fragment = urlparse.urlparse(
+            protocol, host, path, parameters, query, fragment = urlparse(
                 "http://dummyhost%s" % self.path
             )
 

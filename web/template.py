@@ -880,14 +880,15 @@ class BaseTemplate:
         return self.t(*a, **kw)
 
     def make_env(self, globals, builtins_):
-        # Pypy's `__builtins__` can't be overridden in exec. More details see issue #598.
-        overrided_builtins = builtins.__dict__.keys() - builtins_.keys()
+        if sys.implementation.name == "pypy":
+            # Pypy's `__builtins__` can't be overridden in exec. More details see issue #598.
+            overridden_builtins = builtins.__dict__.keys() - builtins_.keys()
 
-        def f(name, *args, **kwargs):
-            raise NameError("name '%s' is not defined" % name)
+            def f(name, *args, **kwargs):
+                raise NameError("name '%s' is not defined" % name)
 
-        for name in overrided_builtins:
-            globals[name] = partial(f, name)
+            for name in overridden_builtins:
+                globals[name] = partial(f, name)
 
         return dict(
             globals,

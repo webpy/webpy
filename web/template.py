@@ -888,7 +888,8 @@ class BaseTemplate:
                 raise NameError("name '%s' is not defined" % name)
 
             for name in overridden_builtins:
-                globals[name] = partial(f, name)
+                if name not in globals:
+                    globals[name] = partial(f, name)
 
         return dict(
             globals,

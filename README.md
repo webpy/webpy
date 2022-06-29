@@ -12,7 +12,7 @@ To install it, please run:
 python3 -m pip install web.py==0.62
 ```
 
-If you are using Python 2.7, then please use web.py version 0.51
+If you are still using Python 2.7, then please use web.py version 0.51
 which is our last release that supports Python 2. 
 ```
 # For Python 2.7

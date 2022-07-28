@@ -20,5 +20,6 @@ cd webpy-0.62/
 python3 setup.py install
 ```
 
-Note: `0.5x` (e.g. 0.50, 0.51) are our last releases which support Python 2.
-Note: `0.6x` (e.g. 0.60, 0.61, 0.62) are our last releases which support Python 3.5.
+Note:
+* `0.5x` (e.g. 0.50, 0.51) are our last releases which support Python 2.
+* `0.6x` (e.g. 0.60, 0.61, 0.62) are our last releases which support Python >= 3.5.

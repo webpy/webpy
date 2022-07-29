@@ -50,7 +50,7 @@ jobs:
 
       # Use the default MySQL server offered by Github Actions.
       - name: "Generate /tmp/my.cnf"
-        run: cp my.ini /tmp/
+        run: cp my.cnf /tmp/
       - name: "Create MySQL user and database used for testing."
         run: mysql --defaults-file=/tmp/my.cnf -e "create user 'scott'@'%' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'%' with grant option;"
 

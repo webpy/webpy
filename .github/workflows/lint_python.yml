@@ -3,6 +3,7 @@ on:
   pull_request:
   push:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   lint_python:
@@ -10,7 +11,7 @@ jobs:
 
     services:
       mariadb:
-        image: mysql:5.7
+        image: mysql:8.0
         ports:
           - 3306:3306
         env:
@@ -31,11 +32,11 @@ jobs:
       fail-fast: false
       matrix:
         # TODO: (cclauss) add pypy3  https://github.com/webpy/webpy/issues/598
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]  # , pypy3]
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11-dev"]  # , pypy3]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 

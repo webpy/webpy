@@ -31,17 +31,17 @@ jobs:
       fail-fast: false
       matrix:
         # TODO: (cclauss) add pypy3  https://github.com/webpy/webpy/issues/598
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]  # , pypy3]
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11-dev"]  # , pypy3]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
       - run: pip install black codespell flake8 isort pytest
       - run: black --check .
-      - run: codespell . --ignore-words-list=eith,gae --skip=./.* --quiet-level=2
+      - run: codespell . --ignore-words-list=eith,gae --skip=./.*
       - run: flake8 --count --ignore=E203,E265,E722,E731,W503 --max-line-length=477 --show-source --statistics
       - run: isort --profile black .
 
@@ -50,7 +50,7 @@ jobs:
 
       # Use the default MySQL server offered by Github Actions.
       - name: "Generate /tmp/my.cnf"
-        run: echo -e "[client]\nhost=127.0.0.1\nport=3306\nuser=root\npassword='root'" > /tmp/my.cnf
+        run: cp my.ini /tmp/
       - name: "Create MySQL user and database used for testing."
         run: mysql --defaults-file=/tmp/my.cnf -e "create user 'scott'@'%' identified by 'tiger'; create database webpy; grant all privileges on webpy.* to 'scott'@'%' with grant option;"
 

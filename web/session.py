@@ -107,7 +107,8 @@ class Session(object):
         """Load the session from the store, by the id from cookie"""
         cookie_name = self._config.cookie_name
         self.session_id = web.cookies().get(cookie_name)
-        self.no_cookie = False # allow endpoints to use session.no_cookie to stop the session cookie being sent
+        # Handler can do session.send_cookie = False to not send the cookie
+        self.send_cookie = True 
 
         # protection against session_id tampering
         if self.session_id and not self._valid_session_id(self.session_id):
@@ -148,12 +149,7 @@ class Session(object):
         current_values = dict(self._data)
         del current_values["session_id"]
         del current_values["ip"]
-         # Stops the cookie being set for this response
-        #  via the handler/endpoint doing session.no_cookie = True
-        #  This is useful because Cloudflare and CDNs will not honour
-        #  origin Cache-Control directives when a Set-Cookie is present.
-        if self.no_cookie:
-            self.no_cookie = False
+        if not self.send_cookie:
             return
         if not self.get("_killed"):
             self._setcookie(self.session_id)

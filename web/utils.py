@@ -15,10 +15,7 @@ import time
 import traceback
 from threading import local as threadlocal
 
-from .py3helpers import (
-    iteritems,
-    itervalues,
-)
+from .py3helpers import iteritems, itervalues
 
 try:
     from StringIO import StringIO
@@ -1172,8 +1169,8 @@ class Profile:
 
     def __call__(self, *args):  # , **kw):   kw unused
         import cProfile
-        import pstats
         import os
+        import pstats
         import tempfile
 
         f, filename = tempfile.mkstemp()

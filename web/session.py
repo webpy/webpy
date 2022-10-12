@@ -21,9 +21,7 @@ try:
 except ImportError:
     import pickle
 
-
-from base64 import encodebytes, decodebytes
-
+from base64 import decodebytes, encodebytes
 
 __all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore", "MemoryStore"]
 

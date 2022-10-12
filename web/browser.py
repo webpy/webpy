@@ -3,17 +3,15 @@
 """
 import os
 import webbrowser
+from http.cookiejar import CookieJar
 from io import BytesIO
+from urllib.parse import urljoin
+from urllib.request import HTTPCookieProcessor, HTTPError, HTTPHandler, Request
+from urllib.request import build_opener as urllib_build_opener
+from urllib.response import addinfourl
 
 from .net import htmlunquote
 from .utils import re_compile
-
-from urllib.request import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
-from urllib.request import build_opener as urllib_build_opener
-from urllib.parse import urljoin
-from http.cookiejar import CookieJar
-from urllib.response import addinfourl
-
 
 DEBUG = False
 

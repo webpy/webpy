@@ -15,12 +15,13 @@ try:
     from urllib import parse as urlparse
     from urllib.parse import unquote
 except ImportError:
-    import urlparse
     from urllib import unquote
+
+    import urlparse
 
 try:
     # db module can work independent of web.py
-    from .webapi import debug, config
+    from .webapi import config, debug
 except ImportError:
     import sys
 

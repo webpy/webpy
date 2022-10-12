@@ -11,17 +11,18 @@ except ImportError:
     from StringIO import BytesIO
 
 try:
-    from http.server import HTTPServer, SimpleHTTPRequestHandler, BaseHTTPRequestHandler
+    from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
 except ImportError:
+    from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
     from SimpleHTTPServer import SimpleHTTPRequestHandler
-    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 
 try:
     from urllib import parse as urlparse
     from urllib.parse import unquote
 except ImportError:
-    import urlparse
     from urllib import unquote
+
+    import urlparse
 
 __all__ = ["runsimple"]
 
@@ -41,10 +42,11 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     # Used under the modified BSD license:
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
-    import SocketServer
-    import socket
     import errno
+    import socket
     import traceback
+
+    import SocketServer
 
     class WSGIHandler(SimpleHTTPRequestHandler):
         def run_wsgi_app(self):

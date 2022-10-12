@@ -29,12 +29,12 @@ Grammar:
 """
 
 import ast
+import builtins
 import glob
 import os
 import sys
 import tokenize
 from io import open
-import builtins
 
 from .net import websafe
 from .utils import re_compile, safestr, safeunicode, storage

@@ -1,9 +1,9 @@
 import os
-import time
+import shutil
 import tempfile
 import threading
+import time
 import unittest
-import shutil
 
 import web
 

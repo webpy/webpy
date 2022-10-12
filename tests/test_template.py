@@ -38,6 +38,11 @@ class TemplateTest(unittest.TestCase):
         t("$code:\n    foo = {'a': 1}.items()")()
         t("$code:\n    bar = {k:0 for k in [1,2,3]}")()
 
+    def test_overridden(self):
+        tpl = "$print('blah')"
+        f = t(tpl, globals={"print": lambda x: x})
+        assert repr(f()) == "'blah\\n'"
+
 
 class TestRender:
     def test_template_without_ext(self, tmpdir):

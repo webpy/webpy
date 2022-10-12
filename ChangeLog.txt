@@ -117,7 +117,7 @@ Major changes since 0.39:
 * Fixed Python 2.4 compatibility issues (tx fredludlow)
 * Fixed error in utils.safewrite (tx shuge) -- #95
 * Allow use of web.data() with app.request() -- #105
-* Fixed an issue with session initializaton (tx beardedprojamz) -- #109
+* Fixed an issue with session initialization (tx beardedprojamz) -- #109
 * Allow custom message on 400 Bad Request (tx patryk) -- #121
 * Made djangoerror work on GAE. -- #80
 * Handle malformatted data in the urls. -- #117

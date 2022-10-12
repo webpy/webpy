@@ -8,8 +8,10 @@ import os
 import sys
 import traceback
 import wsgiref.handlers
+from importlib import reload
 from inspect import isclass
 from io import BytesIO
+from urllib.parse import unquote, urlencode, urlparse
 
 from . import browser, httpserver, utils
 from . import webapi as web
@@ -17,11 +19,6 @@ from . import wsgi
 from .debugerror import debugerror
 from .py3helpers import iteritems
 from .utils import lstrips
-
-from urllib.parse import urlparse, urlencode, unquote
-
-from importlib import reload
-
 
 __all__ = [
     "application",

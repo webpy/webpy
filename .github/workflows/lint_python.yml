@@ -41,7 +41,7 @@ jobs:
 
       - run: pip install black codespell flake8 isort pytest
       - run: black --check .
-      - run: codespell . --ignore-words-list=eith,gae --skip=./.*
+      - run: codespell . --ignore-words-list=asend,gae --skip=./.*
       - run: flake8 --count --ignore=E203,E265,E722,E731,W503 --max-line-length=477 --show-source --statistics
       - run: isort --profile black .
 

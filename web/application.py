@@ -307,7 +307,7 @@ class application:
             return itertools.chain([firstchunk], iterator)
 
         def wsgi(env, start_resp):
-            # clear threadlocal to avoid inteference of previous requests
+            # clear threadlocal to avoid interference of previous requests
             self._cleanup()
 
             self.load(env)

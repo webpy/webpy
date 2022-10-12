@@ -29,11 +29,12 @@ Grammar:
 """
 
 import ast
+import builtins
 import glob
 import os
 import sys
 import tokenize
-import builtins
+from functools import partial
 
 from .net import websafe
 from .utils import re_compile, safestr, safeunicode, storage
@@ -875,10 +876,21 @@ class BaseTemplate:
         __hidetraceback__ = True  # noqa: F841
         return self.t(*a, **kw)
 
-    def make_env(self, globals, builtins):
+    def make_env(self, globals, builtins_):
+        if sys.implementation.name == "pypy":
+            # Pypy's `__builtins__` can't be overridden in exec. More details see issue #598.
+            overridden_builtins = builtins.__dict__.keys() - builtins_.keys()
+
+            def f(name, *args, **kwargs):
+                raise NameError("name '%s' is not defined" % name)
+
+            for name in overridden_builtins:
+                if name not in globals:
+                    globals[name] = partial(f, name)
+
         return dict(
             globals,
-            __builtins__=builtins,
+            __builtins__=builtins_,
             ForLoop=ForLoop,
             TemplateResult=TemplateResult,
             escape_=self._escape,

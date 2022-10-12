@@ -768,7 +768,7 @@ def dictreverse(mapping):
         >>> dictreverse({1: 2, 3: 4})
         {2: 1, 4: 3}
     """
-    return dict([(value, key) for (key, value) in iteritems(mapping)])
+    return {value: key for (key, value) in iteritems(mapping)}
 
 
 def dictfind(dictionary, element):
@@ -1198,7 +1198,7 @@ class Profile:
         # remove the tempfile
         try:
             os.remove(filename)
-        except IOError:
+        except OSError:
             pass
 
         return result, x

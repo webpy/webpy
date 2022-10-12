@@ -49,7 +49,7 @@ class SessionExpired(web.HTTPError):
         web.HTTPError.__init__(self, "200 OK", {}, data=message)
 
 
-class Session(object):
+class Session:
     """Session management for web.py"""
 
     __slots__ = [
@@ -295,7 +295,7 @@ class DiskStore(Store):
             finally:
                 f.close()
                 shutil.move(tname, path)  # atomary operation
-        except IOError:
+        except OSError:
             pass
 
     def __delitem__(self, key):

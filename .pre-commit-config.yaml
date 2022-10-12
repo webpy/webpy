@@ -1,5 +1,5 @@
-default_language_version:
-    python: python3.7
+# default_language_version:
+#     python: python3.7
 repos:
 -   repo: https://github.com/python/black
     rev: 22.10.0

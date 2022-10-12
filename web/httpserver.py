@@ -1,28 +1,13 @@
 import os
 import posixpath
 import sys
+from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
+from io import BytesIO
+from urllib import parse as urlparse
+from urllib.parse import unquote
 
 from . import utils
 from . import webapi as web
-
-try:
-    from io import BytesIO
-except ImportError:
-    from StringIO import BytesIO
-
-try:
-    from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
-except ImportError:
-    from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-    from SimpleHTTPServer import SimpleHTTPRequestHandler
-
-try:
-    from urllib import parse as urlparse
-    from urllib.parse import unquote
-except ImportError:
-    from urllib import unquote
-
-    import urlparse
 
 __all__ = ["runsimple"]
 

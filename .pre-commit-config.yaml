@@ -17,3 +17,8 @@ repos:
     hooks:
     - id: flake8
       args: [--count, "--ignore=E203,E265,E722,E731,W503", --max-line-length=477, --show-source, --statistics]
+
+-   repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.10.1
+    hooks:
+    - id: validate-pyproject

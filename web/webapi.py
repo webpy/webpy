@@ -9,6 +9,7 @@ import sys
 import tempfile
 from io import BytesIO
 from urllib.parse import urljoin
+
 try:
     from urllib.parse import unquote, quote
     from http.cookies import CookieError, Morsel, SimpleCookie

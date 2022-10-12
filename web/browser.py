@@ -13,8 +13,6 @@ from .net import htmlunquote
 from .utils import re_compile
 
 
-
-
 DEBUG = False
 
 __all__ = ["BrowserError", "Browser", "AppBrowser", "AppHandler"]
@@ -24,7 +22,7 @@ class BrowserError(Exception):
     pass
 
 
-class Browser():
+class Browser:
     def __init__(self):
         self.cookiejar = CookieJar()
         self._cookie_processor = HTTPCookieProcessor(self.cookiejar)
@@ -81,7 +79,7 @@ class Browser():
 
     def show(self):
         """Opens the current page in real web browser."""
-        f = open("page.html", "w", encoding='utf-8')
+        f = open("page.html", "w", encoding="utf-8")
         f.write(self.data)
         f.close()
 

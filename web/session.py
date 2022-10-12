@@ -47,7 +47,7 @@ class SessionExpired(web.HTTPError):
         web.HTTPError.__init__(self, "200 OK", {}, data=message)
 
 
-class Session():
+class Session:
     """Session management for web.py"""
 
     __slots__ = [

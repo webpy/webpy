@@ -23,6 +23,7 @@ def requires_module(name):
     def decorator(cls):
         if module:
             return cls
+
         class Foo:
             pass
 

@@ -84,7 +84,7 @@ class UnknownParamstyle(Exception):
     pass
 
 
-class SQLParam():
+class SQLParam:
     """
     Parameter in SQLQuery.
 
@@ -133,7 +133,7 @@ class SQLParam():
 sqlparam = SQLParam
 
 
-class SQLQuery():
+class SQLQuery:
     """
     You can pass this sort of thing as a clause in any db function.
     Otherwise, you can pass a dictionary to the keyword argument `vars`
@@ -1546,7 +1546,7 @@ def _interpolate(format):
     return chunks
 
 
-class _Node():
+class _Node:
     def __init__(self, type, first, second=None):
         self.type = type
         self.first = first
@@ -1661,7 +1661,7 @@ class Parser:
         return expr
 
 
-class SafeEval():
+class SafeEval:
     """Safe evaluator for binding params to db queries."""
 
     def safeeval(self, text, mapping):

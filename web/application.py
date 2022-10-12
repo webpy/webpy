@@ -20,8 +20,6 @@ from .py3helpers import iteritems
 from .utils import lstrips
 
 
-
-
 __all__ = [
     "application",
     "auto_application",
@@ -420,9 +418,7 @@ class application:
                 from google.appengine.ext.webapp.util import run_wsgi_app
 
                 return run_wsgi_app(wsgiapp)
-            raise EnvironmentError(
-                "Not a supported platform, use python 2.5 or 2.7"
-            )
+            raise EnvironmentError("Not a supported platform, use python 2.5 or 2.7")
         except ImportError:
             return wsgiref.handlers.CGIHandler().run(wsgiapp)
 

@@ -7,17 +7,11 @@ import datetime
 import os
 import re
 import time
+from urllib import parse as urlparse
+from urllib.parse import unquote
 
 from .py3helpers import iteritems
 from .utils import iters, safestr, safeunicode, storage, threadeddict
-
-try:
-    from urllib import parse as urlparse
-    from urllib.parse import unquote
-except ImportError:
-    from urllib import unquote
-
-    import urlparse
 
 try:
     # db module can work independent of web.py

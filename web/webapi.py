@@ -7,18 +7,11 @@ import cgi
 import pprint
 import sys
 import tempfile
+from http.cookies import CookieError, Morsel, SimpleCookie
 from io import BytesIO
-from urllib.parse import urljoin
+from urllib.parse import quote, unquote, urljoin
 
 from .utils import dictadd, intget, safestr, storage, storify, threadeddict
-
-try:
-    from http.cookies import CookieError, Morsel, SimpleCookie
-    from urllib.parse import quote, unquote
-except ImportError:
-    from urllib import quote, unquote
-
-    from Cookie import CookieError, Morsel, SimpleCookie
 
 __all__ = [
     "config",

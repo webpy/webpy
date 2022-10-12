@@ -1,6 +1,5 @@
 include LICENSE.txt
 include requirements.txt
 include test_requirements.txt
-recursive-include docs *
-recursive-include tests *
-recursive-include tools *
+recursive-include docs *.rst Makefile
+recursive-include tests *.py

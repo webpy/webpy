@@ -283,7 +283,7 @@ class AppHandler(HTTPHandler):
 
     def _make_response(self, result, url):
 
-        data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
+        data = "\r\n".join([f"{k}: {v}" for k, v in result.header_items])
 
         import email
 

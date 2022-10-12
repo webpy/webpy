@@ -295,7 +295,7 @@ class LogMiddleware:
         req = environ.get("PATH_INFO", "_")
         protocol = environ.get("ACTUAL_SERVER_PROTOCOL", "-")
         method = environ.get("REQUEST_METHOD", "-")
-        host = "%s:%s" % (
+        host = "{}:{}".format(
             environ.get("REMOTE_ADDR", "-"),
             environ.get("REMOTE_PORT", "-"),
         )

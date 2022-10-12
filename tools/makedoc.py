@@ -200,7 +200,7 @@ def main(modules=None):
             mod = __import__(name, {}, {}, "x")
             recurse_over(mod, name)
         except ImportError as e:
-            print("Unable to import module %s (Error: %s)" % (name, e), file=sys.stderr)
+            print(f"Unable to import module {name} (Error: {e})", file=sys.stderr)
             pass
     print("</div>")
 

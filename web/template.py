@@ -381,7 +381,7 @@ class Parser:
         >>> python_lookahead('for i in range(10):')
         'for'
         >>> python_lookahead('else:')
-        'else'
+        'elsweb/template.py
         >>> python_lookahead(' x = 1')
         ' '
         """
@@ -557,7 +557,7 @@ class DefwithNode:
         return encoding + self.defwith + self.suite.emit(indent + INDENT) + self.end
 
     def __repr__(self):
-        return "<defwith: %s, %s>" % (self.defwith, self.suite)
+        return f"<defwith: {self.defwith}, {self.suite}>"
 
 
 class TextNode:
@@ -582,14 +582,14 @@ class ExpressionNode:
         self.escape = escape
 
     def emit(self, indent, begin_indent=""):
-        return "escape_(%s, %s)" % (self.value, bool(self.escape))
+        return f"escape_({self.value}, {bool(self.escape)})"
 
     def __repr__(self):
         if self.escape:
             escape = ""
         else:
             escape = ":"
-        return "$%s%s" % (escape, self.value)
+        return f"${escape}{self.value}"
 
 
 class AssignmentNode:
@@ -633,7 +633,7 @@ class BlockNode:
         return out
 
     def __repr__(self):
-        return "<block: %s, %s>" % (repr(self.stmt), repr(self.suite))
+        return f"<block: {repr(self.stmt)}, {repr(self.suite)}>"
 
 
 class ForNode(BlockNode):
@@ -647,7 +647,7 @@ class ForNode(BlockNode):
         BlockNode.__init__(self, stmt, block, begin_indent)
 
     def __repr__(self):
-        return "<block: %s, %s>" % (repr(self.original_stmt), repr(self.suite))
+        return f"<block: {repr(self.original_stmt)}, {repr(self.suite)}>"
 
 
 class CodeNode:
@@ -712,10 +712,10 @@ class VarNode:
         self.value = value
 
     def emit(self, indent, text_indent):
-        return indent + "self[%s] = %s\n" % (repr(self.name), self.value)
+        return indent + f"self[{repr(self.name)}] = {self.value}\n"
 
     def __repr__(self):
-        return "<var: %s = %s>" % (self.name, self.value)
+        return f"<var: {self.name} = {self.value}>"
 
 
 class SuiteNode:
@@ -955,7 +955,7 @@ class Template(BaseTemplate):
         >>> Template(text='Template text', filename='burndown_chart.html')
         <Template burndown_chart.html>
         """
-        return "<{} {}>".format(self.__class__.__name__, self.filename)
+        return f"<{self.__class__.__name__} {self.filename}>"
 
     def normalize_text(text):
         """Normalizes template text by correcting \r\n, tabs and BOM chars."""
@@ -1017,10 +1017,12 @@ class Template(BaseTemplate):
             compiled_code = compile(code, filename, "exec")
         except SyntaxError as err:
             # display template line that caused the error along with the traceback.
-            err.msg += "\n\nTemplate traceback:\n    File %s, line %s\n        %s" % (
-                repr(err.filename),
-                err.lineno,
-                get_source_line(err.filename, err.lineno - 1),
+            err.msg += (
+                "\n\nTemplate traceback:\n    File {}, line {}\n        {}".format(
+                    repr(err.filename),
+                    err.lineno,
+                    get_source_line(err.filename, err.lineno - 1),
+                )
             )
 
             raise
@@ -1225,8 +1227,8 @@ def compile_templates(root):
             out.write(code)
 
             out.write("\n\n")
-            out.write("%s = CompiledTemplate(%s, %s)\n" % (name, name, repr(path)))
-            out.write("join_ = %s._join; escape_ = %s._escape\n\n" % (name, name))
+            out.write(f"{name} = CompiledTemplate({name}, {repr(path)})\n")
+            out.write(f"join_ = {name}._join; escape_ = {name}._escape\n\n")
 
             # create template to make sure it compiles
             Template(open(path, encoding="utf-8").read(), path)

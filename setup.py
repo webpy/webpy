@@ -9,7 +9,7 @@ from web import __version__
 rootdir = os.path.abspath(os.path.dirname(__file__))
 
 # Get the long description from the README file
-with open(os.path.join(rootdir, "README.md")) as in_file:
+with open(os.path.join(rootdir, "README.md"), encoding="utf-8") as in_file:
     long_description = in_file.read()
 
 setup(

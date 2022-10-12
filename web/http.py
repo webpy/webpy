@@ -92,8 +92,7 @@ def modified(date=None, etag=None):
         web.header("ETag", '"' + etag + '"')
     if validate:
         raise web.notmodified()
-    else:
-        return True
+    return True
 
 
 def urlencode(query, doseq=0):
@@ -109,8 +108,7 @@ def urlencode(query, doseq=0):
     def convert(value, doseq=False):
         if doseq and isinstance(value, list):
             return [convert(v) for v in value]
-        else:
-            return utils.safestr(value)
+        return utils.safestr(value)
 
     query = dict([(k, convert(v, doseq)) for k, v in query.items()])
     return urllib_urlencode(query, doseq=doseq)

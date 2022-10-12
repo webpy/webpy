@@ -84,7 +84,7 @@ class UnknownParamstyle(Exception):
     pass
 
 
-class SQLParam(object):
+class SQLParam():
     """
     Parameter in SQLQuery.
 
@@ -105,9 +105,9 @@ class SQLParam(object):
     def get_marker(self, paramstyle="pyformat"):
         if paramstyle == "qmark":
             return "?"
-        elif paramstyle == "numeric":
+        if paramstyle == "numeric":
             return ":1"
-        elif paramstyle is None or paramstyle in ["format", "pyformat"]:
+        if paramstyle is None or paramstyle in ["format", "pyformat"]:
             return "%s"
         raise UnknownParamstyle(paramstyle)
 
@@ -133,7 +133,7 @@ class SQLParam(object):
 sqlparam = SQLParam
 
 
-class SQLQuery(object):
+class SQLQuery():
     """
     You can pass this sort of thing as a clause in any db function.
     Otherwise, you can pass a dictionary to the keyword argument `vars`
@@ -374,16 +374,15 @@ def sqlify(obj):
 
     if obj is None:
         return "NULL"
-    elif obj is True:
+    if obj is True:
         return "'t'"
-    elif obj is False:
+    if obj is False:
         return "'f'"
-    elif isinstance(obj, int):
+    if isinstance(obj, int):
         return str(obj)
-    elif isinstance(obj, datetime.datetime):
+    if isinstance(obj, datetime.datetime):
         return repr(obj.isoformat())
-    else:
-        return repr(obj)
+    return repr(obj)
 
 
 def sqllist(lst):
@@ -397,8 +396,7 @@ def sqllist(lst):
     """
     if isinstance(lst, str):
         return lst
-    else:
-        return ", ".join(lst)
+    return ", ".join(lst)
 
 
 def sqlors(left, lst):
@@ -429,8 +427,7 @@ def sqlors(left, lst):
         return SQLQuery(
             ["("] + sum([[left, sqlparam(x), " OR "] for x in lst], []) + ["1=2)"]
         )
-    else:
-        return left + sqlparam(lst)
+    return left + sqlparam(lst)
 
 
 def sqlwhere(data, grouping=" AND "):
@@ -464,8 +461,7 @@ def sqlquote(a):
     """
     if isinstance(a, (list, tuple, set)):
         return _sqllist(a)
-    else:
-        return sqlparam(a).sqlquery()
+    return sqlparam(a).sqlquery()
 
 
 class BaseResultSet:
@@ -544,8 +540,7 @@ class SqliteResultSet(BaseResultSet):
         if self._head is not None:
             self._index += 1
             return self._head
-        else:
-            return super().__next__()
+        return super().__next__()
 
     def __bool__(self):
         # The ResultSet class class doesn't need to support __bool__ explicitly
@@ -716,8 +711,7 @@ class DB:
 
             if PooledDB.__version__.split(".") < "0.9.3".split("."):
                 return PooledDB.PooledDB(dbapi=self.db_module, **keywords)
-            else:
-                return PooledDB.PooledDB(creator=self.db_module, **keywords)
+            return PooledDB.PooledDB(creator=self.db_module, **keywords)
 
         if getattr(self, "_pooleddb", None) is None:
             self._pooleddb = get_pooled_db()
@@ -733,9 +727,9 @@ class DB:
 
         if style == "qmark":
             return "?"
-        elif style == "numeric":
+        if style == "numeric":
             return ":1"
-        elif style in ["format", "pyformat"]:
+        if style in ["format", "pyformat"]:
             return "%s"
         raise UnknownParamstyle(style)
 
@@ -792,8 +786,7 @@ class DB:
             where_clauses.append(k + " = " + sqlquote(v))
         if where_clauses:
             return SQLQuery.join(where_clauses, " AND ")
-        else:
-            return None
+        return None
 
     def query(self, sql_query, vars=None, processed=False, _test=False):
         """
@@ -941,8 +934,7 @@ class DB:
         def xjoin(a, b):
             if a and b:
                 return a + " " + b
-            else:
-                return a or b
+            return a or b
 
         return xjoin(sql, nout)
 
@@ -1032,8 +1024,7 @@ class DB:
             ]
             if seqname is False:
                 return None
-            else:
-                return out
+            return out
 
         keys = values[0].keys()
         # @@ make sure all keys are valid
@@ -1406,8 +1397,7 @@ class OracleDB(DB):
         if seqname is None:
             # It is not possible to get seq name from table name in Oracle
             return query
-        else:
-            return query + "; SELECT %s.currval FROM dual" % seqname
+        return query + "; SELECT %s.currval FROM dual" % seqname
 
 
 def dburl2dict(url):
@@ -1433,15 +1423,14 @@ def dburl2dict(url):
 
     if parts.scheme == "sqlite":
         return {"dbn": parts.scheme, "db": parts.path[1:]}
-    else:
-        return {
-            "dbn": parts.scheme,
-            "user": parts.username,
-            "pw": parts.password,
-            "db": parts.path[1:],
-            "host": parts.hostname,
-            "port": parts.port,
-        }
+    return {
+        "dbn": parts.scheme,
+        "user": parts.username,
+        "pw": parts.password,
+        "db": parts.path[1:],
+        "host": parts.hostname,
+        "port": parts.port,
+    }
 
 
 _databases = {}
@@ -1462,8 +1451,7 @@ def database(dburl=None, **params):
     dbn = params.pop("dbn")
     if dbn in _databases:
         return _databases[dbn](**params)
-    else:
-        raise UnknownDB(dbn)
+    raise UnknownDB(dbn)
 
 
 def register_database(name, clazz):
@@ -1558,7 +1546,7 @@ def _interpolate(format):
     return chunks
 
 
-class _Node(object):
+class _Node():
     def __init__(self, type, first, second=None):
         self.type = type
         self.first = first
@@ -1582,7 +1570,7 @@ class Parser:
     Loosely based on <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
 
-    namechars = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    namechars = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
     def __init__(self):
         self.reset()
@@ -1673,7 +1661,7 @@ class Parser:
         return expr
 
 
-class SafeEval(object):
+class SafeEval():
     """Safe evaluator for binding params to db queries."""
 
     def safeeval(self, text, mapping):
@@ -1683,19 +1671,18 @@ class SafeEval(object):
     def eval_node(self, node, mapping):
         if node.type == "text":
             return node.first
-        else:
-            return sqlquote(self.eval_expr(node, mapping))
+        return sqlquote(self.eval_expr(node, mapping))
 
     def eval_expr(self, node, mapping):
         if node.type == "literal":
             return ast.literal_eval(node.first)
-        elif node.type == "getattr":
+        if node.type == "getattr":
             return getattr(self.eval_expr(node.first, mapping), node.second)
-        elif node.type == "getitem":
+        if node.type == "getitem":
             return self.eval_expr(node.first, mapping)[
                 self.eval_expr(node.second, mapping)
             ]
-        elif node.type == "param":
+        if node.type == "param":
             return mapping[node.first]
 
 

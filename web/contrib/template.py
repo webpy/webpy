@@ -73,8 +73,7 @@ class render_genshi:
             stream = t.generate(**kw)
             if type:
                 return stream.render(type)
-            else:
-                return stream.render()
+            return stream.render()
 
         return template
 

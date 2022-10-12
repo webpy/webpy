@@ -97,7 +97,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                         return
                 except socket.timeout:
                     return
-            except:
+            except Exception:
                 print(traceback.format_exc(), file=web.debug)
 
             if not self.wsgi_sent_headers:
@@ -267,8 +267,7 @@ class StaticMiddleware:
 
         if path.startswith(self.prefix):
             return StaticApp(environ, start_response)
-        else:
-            return self.app(environ, start_response)
+        return self.app(environ, start_response)
 
     def normpath(self, path):
         path2 = posixpath.normpath(unquote(path))

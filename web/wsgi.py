@@ -48,16 +48,14 @@ def runwsgi(func):
 
         if args:
             return runfcgi(func, validaddr(args[0]))
-        else:
-            return runfcgi(func, None)
+        return runfcgi(func, None)
 
     if "scgi" in sys.argv:
         args = sys.argv[1:]
         args.remove("scgi")
         if args:
             return runscgi(func, validaddr(args[0]))
-        else:
-            return runscgi(func)
+        return runscgi(func)
 
     server_addr = validaddr(listget(sys.argv, 1, ""))
     if "PORT" in os.environ:  # e.g. Heroku

@@ -4,15 +4,15 @@
 import os
 import webbrowser
 from io import BytesIO
-
-from .net import htmlunquote
-from .utils import re_compile
-
 from urllib.request import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
 from urllib.request import build_opener as urllib_build_opener
 from urllib.parse import urljoin
-from http.cookiejar import CookieJar
 from urllib.response import addinfourl
+from http.cookiejar import CookieJar
+from .net import htmlunquote
+from .utils import re_compile
+
+
 
 
 DEBUG = False
@@ -24,7 +24,7 @@ class BrowserError(Exception):
     pass
 
 
-class Browser(object):
+class Browser():
     def __init__(self):
         self.cookiejar = CookieJar()
         self._cookie_processor = HTTPCookieProcessor(self.cookiejar)
@@ -81,7 +81,7 @@ class Browser(object):
 
     def show(self):
         """Opens the current page in real web browser."""
-        f = open("page.html", "w")
+        f = open("page.html", "w", encoding='utf-8')
         f.write(self.data)
         f.close()
 
@@ -146,8 +146,7 @@ class Browser(object):
 
         if link:
             return self.open(link["href"])
-        else:
-            raise BrowserError("No link found")
+        raise BrowserError("No link found")
 
     def find_link(
         self, text=None, text_regex=None, url=None, url_regex=None, predicate=None
@@ -219,8 +218,7 @@ class Browser(object):
         if forms:
             self.form = forms[index]
             return self.form
-        else:
-            raise BrowserError("No form selected.")
+        raise BrowserError("No form selected.")
 
     def submit(self, **kw):
         """submits the currently selected form."""

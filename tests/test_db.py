@@ -23,17 +23,15 @@ def requires_module(name):
     def decorator(cls):
         if module:
             return cls
-        else:
+        class Foo:
+            pass
 
-            class Foo:
-                pass
-
-            print(
-                "skipping all tests from {} as {} module is not found".format(
-                    cls.__name__, name
-                )
+        print(
+            "skipping all tests from {} as {} module is not found".format(
+                cls.__name__, name
             )
-            return Foo
+        )
+        return Foo
 
     return decorator
 
@@ -123,7 +121,7 @@ class DBTest(unittest.TestCase):
         # It should be possible to run a correct query after getting an error from a wrong query.
         try:
             self.db.select("notthere")
-        except:
+        except Exception:
             pass
         self.db.select("person")
 

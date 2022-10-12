@@ -22,12 +22,12 @@ def attrget(obj, attr, value=None):
         hasattr(obj, "keys") and attr in obj
     ):  # needed for Py3, has_key doesn't exist anymore
         return obj[attr]
-    elif hasattr(obj, attr):
+    if hasattr(obj, attr):
         return getattr(obj, attr)
     return value
 
 
-class Form(object):
+class Form():
     r"""
     HTML form.
 
@@ -95,8 +95,7 @@ class Form(object):
     def rendernote(self, note):
         if note:
             return '<strong class="wrong">%s</strong>' % net.websafe(note)
-        else:
-            return ""
+        return ""
 
     def validates(self, source=None, _validate=True, **kw):
         source = source or kw or web.input()
@@ -149,7 +148,7 @@ class Form(object):
     d = property(_get_d)
 
 
-class Input(object):
+class Input():
     """Generic input. Type attribute must be specified when called directly.
 
     See also: <https://www.w3.org/TR/html52/sec-forms.html#the-input-element>
@@ -206,8 +205,7 @@ class Input(object):
     def get_type(self):
         if self.type is not None:
             return self.type
-        else:
-            raise AttributeError("missing attribute 'type'")
+        raise AttributeError("missing attribute 'type'")
 
     def get_default_id(self):
         return self.name
@@ -239,8 +237,7 @@ class Input(object):
     def rendernote(self, note):
         if note:
             return '<strong class="wrong">%s</strong>' % net.websafe(note)
-        else:
-            return ""
+        return ""
 
     def addatts(self):
         # add leading space for backward-compatibility
@@ -670,7 +667,7 @@ class Validator:
     def valid(self, value):
         try:
             return self.test(value)
-        except:
+        except Exception:
             return False
 
 

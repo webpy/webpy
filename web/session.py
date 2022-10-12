@@ -12,6 +12,7 @@ import time
 from copy import deepcopy
 from hashlib import sha1
 
+from base64 import encodebytes, decodebytes
 from . import utils
 from . import webapi as web
 from .py3helpers import iteritems
@@ -20,9 +21,6 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-
-
-from base64 import encodebytes, decodebytes
 
 
 __all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore", "MemoryStore"]
@@ -49,7 +47,7 @@ class SessionExpired(web.HTTPError):
         web.HTTPError.__init__(self, "200 OK", {}, data=message)
 
 
-class Session(object):
+class Session():
     """Session management for web.py"""
 
     __slots__ = [
@@ -281,8 +279,7 @@ class DiskStore(Store):
             with open(path, "rb") as fh:
                 pickled = fh.read()
             return self.decode(pickled)
-        else:
-            raise KeyError(key)
+        raise KeyError(key)
 
     def __setitem__(self, key, value):
         path = self._get_path(key)

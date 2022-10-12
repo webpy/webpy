@@ -17,10 +17,9 @@ def module_suite(module, classnames=None):
     """Makes a suite from a module."""
     if classnames:
         return unittest.TestLoader().loadTestsFromNames(classnames, module)
-    elif hasattr(module, "suite"):
+    if hasattr(module, "suite"):
         return module.suite()
-    else:
-        return unittest.TestLoader().loadTestsFromModule(module)
+    return unittest.TestLoader().loadTestsFromModule(module)
 
 
 def doctest_suite(module_names):

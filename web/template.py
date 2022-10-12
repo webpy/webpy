@@ -35,7 +35,7 @@ import sys
 import tokenize
 from io import open
 import builtins
-
+from collections.abc import MutableMapping
 from .net import websafe
 from .utils import re_compile, safestr, safeunicode, storage
 from .webapi import config
@@ -49,9 +49,6 @@ __all__ = [
     "SecurityError",
     "test",
 ]
-
-
-from collections.abc import MutableMapping
 
 
 def splitline(text):
@@ -68,8 +65,7 @@ def splitline(text):
     index = text.find("\n") + 1
     if index:
         return text[:index], text[index:]
-    else:
-        return text, ""
+    return text, ""
 
 
 class Parser:
@@ -92,8 +88,7 @@ class Parser:
             defwith, text = splitline(text)
             defwith = defwith[1:].strip()  # strip $ and spaces
             return defwith, text
-        else:
-            return "", text
+        return "", text
 
     def read_section(self, text):
         r"""Reads one section from the given text.
@@ -115,11 +110,11 @@ class Parser:
 
             if ahead == "var":
                 return self.read_var(text2)
-            elif ahead in self.statement_nodes:
+            if ahead in self.statement_nodes:
                 return self.read_block_section(text2, begin_indent)
-            elif ahead in self.keywords:
+            if ahead in self.keywords:
                 return self.read_keyword(text2)
-            elif ahead.strip() == "":
+            if ahead.strip() == "":
                 # assignments starts with a space after $
                 # ex: $ a = b + 2
                 return self.read_assignment(text2)
@@ -211,10 +206,10 @@ class Parser:
         """
         if text.startswith("$$"):
             return TextNode("$"), text[2:]
-        elif text.startswith("$#"):  # comment
+        if text.startswith("$#"):  # comment
             line, text = splitline(text)
             return TextNode("\n"), text
-        elif text.startswith("$"):
+        if text.startswith("$"):
             text = text[1:]  # strip $
             if text.startswith(":"):
                 escape = False
@@ -222,8 +217,7 @@ class Parser:
             else:
                 escape = True
             return self.read_expr(text, escape=escape)
-        else:
-            return self.read_text(text)
+        return self.read_text(text)
 
     def read_text(self, text):
         r"""Reads a text node from the given text.
@@ -235,8 +229,7 @@ class Parser:
         index = text.find("$")
         if index < 0:
             return TextNode(text), ""
-        else:
-            return TextNode(text[:index]), text[index:]
+        return TextNode(text[:index]), text[index:]
 
     def read_keyword(self, text):
         line, text = splitline(text)
@@ -277,7 +270,7 @@ class Parser:
             lookahead = tokens.lookahead()
             if lookahead is None:
                 return
-            elif lookahead.value == ".":
+            if lookahead.value == ".":
                 attr_access()
             elif lookahead.value in parens:
                 paren_expr()
@@ -480,8 +473,7 @@ class Parser:
     def create_block_node(self, keyword, stmt, block, begin_indent):
         if keyword in self.statement_nodes:
             return self.statement_nodes[keyword](stmt, block, begin_indent)
-        else:
-            raise ParseError("Unknown statement: %s" % repr(keyword))
+        raise ParseError("Unknown statement: %s" % repr(keyword))
 
 
 class PythonTokenizer:
@@ -509,7 +501,7 @@ class PythonTokenizer:
                 t = next(self)
                 if t.value == delim:
                     break
-                elif t.value == "(":
+                if t.value == "(":
                     self.consume_till(")")
                 elif t.value == "[":
                     self.consume_till("]")
@@ -522,7 +514,7 @@ class PythonTokenizer:
                 # @@ This should be fixed.
                 if t.value == "\n":
                     break
-        except:
+        except Exception:
             # raise ParseError, "Expected %s, found end of line." % repr(delim)
 
             # raising ParseError doesn't show the line number.
@@ -814,8 +806,7 @@ class ForLoop:
     def __getattr__(self, name):
         if self._ctx is None:
             raise AttributeError(name)
-        else:
-            return getattr(self._ctx, name)
+        return getattr(self._ctx, name)
 
     def setup(self, seq):
         self._push()
@@ -838,7 +829,7 @@ class ForLoopContext:
     def setup(self, seq):
         try:
             self.length = len(seq)
-        except:
+        except Exception:
             self.length = 0
 
         self.index = 0
@@ -1000,7 +991,7 @@ class Template(BaseTemplate):
             try:
                 lines = open(filename, encoding="utf-8").read().splitlines()
                 return lines[lineno]
-            except:
+            except Exception:
                 return None
 
         try:
@@ -1077,12 +1068,10 @@ class Render:
         path = os.path.join(self._loc, name)
         if os.path.isdir(path):
             return "dir", path
-        else:
-            path = self._findfile(path)
-            if path:
-                return "file", path
-            else:
-                return "none", None
+        path = self._findfile(path)
+        if path:
+            return "file", path
+        return "none", None
 
     def _load_template(self, name):
         kind, path = self._lookup(name)
@@ -1091,11 +1080,10 @@ class Render:
             return Render(
                 path, cache=self._cache is not None, base=self._base, **self._keywords
             )
-        elif kind == "file":
+        if kind == "file":
             with open(path, encoding="utf-8") as tmpl_file:
                 return Template(tmpl_file.read(), filename=path, **self._keywords)
-        else:
-            raise AttributeError("No template named " + name)
+        raise AttributeError("No template named " + name)
 
     def _findfile(self, path_prefix):
         p = [
@@ -1115,8 +1103,7 @@ class Render:
             if name not in self._cache:
                 self._cache[name] = self._load_template(name)
             return self._cache[name]
-        else:
-            return self._load_template(name)
+        return self._load_template(name)
 
     def __getattr__(self, name):
         t = self._template(name)
@@ -1126,8 +1113,7 @@ class Render:
                 return self._base(t(*a, **kw))
 
             return template
-        else:
-            return self._template(name)
+        return self._template(name)
 
 
 class GAE_Render(Render):
@@ -1157,8 +1143,7 @@ class GAE_Render(Render):
             return GAE_Render(
                 t, cache=self._cache is not None, base=self._base, **self._keywords
             )
-        else:
-            return t
+        return t
 
 
 render = Render

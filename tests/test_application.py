@@ -37,7 +37,7 @@ class do_iter:
 
 
 def write(filename, data):
-    f = open(filename, "w")
+    f = open(filename, "w", encoding="utf8")
     f.write(data)
     f.close()
 
@@ -207,8 +207,7 @@ class ApplicationTest(unittest.TestCase):
             def GET(self, path):
                 if path == "foo":
                     raise web.seeother("/login", absolute=True)
-                else:
-                    raise web.seeother("/bar")
+                raise web.seeother("/bar")
 
         app_blog = web.application(urls, locals())
 
@@ -287,9 +286,8 @@ class ApplicationTest(unittest.TestCase):
                 if path == "/multipart":
                     i = web.input(file={})
                     return i.file.value
-                else:
-                    i = web.input()
-                    return repr(dict(i)).replace("u", "")
+                i = web.input()
+                return repr(dict(i)).replace("u", "")
 
         app = web.application(urls, locals())
 

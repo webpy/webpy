@@ -244,7 +244,7 @@ def djangoerror():
         Returns (pre_context_lineno, pre_context, context_line, post_context).
         """
         try:
-            source = open(filename).readlines()
+            source = open(filename, encoding="utf-8").readlines()
             lower_bound = max(0, lineno - context_lines)
             upper_bound = lineno + context_lines
 

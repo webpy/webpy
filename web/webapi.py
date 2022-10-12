@@ -9,15 +9,13 @@ import sys
 import tempfile
 from io import BytesIO
 from urllib.parse import urljoin
-
-from .utils import dictadd, intget, safestr, storage, storify, threadeddict
-
 try:
     from urllib.parse import unquote, quote
     from http.cookies import CookieError, Morsel, SimpleCookie
 except ImportError:
     from urllib import unquote, quote
     from Cookie import CookieError, Morsel, SimpleCookie
+from .utils import dictadd, intget, safestr, storage, storify, threadeddict
 
 __all__ = [
     "config",
@@ -240,10 +238,9 @@ def NotFound(message=None):
     """Returns HTTPError with '404 Not Found' error from the active application."""
     if message:
         return _NotFound(message)
-    elif ctx.get("app_stack"):
+    if ctx.get("app_stack"):
         return ctx.app_stack[-1].notfound()
-    else:
-        return _NotFound()
+    return _NotFound()
 
 
 notfound = NotFound
@@ -355,10 +352,9 @@ def UnavailableForLegalReasons(message=None):
     """Returns HTTPError with '415 Unavailable For Legal Reasons' error from the active application."""
     if message:
         return _UnavailableForLegalReasons(message)
-    elif ctx.get("app_stack"):
+    if ctx.get("app_stack"):
         return ctx.app_stack[-1].unavailableforlegalreasons()
-    else:
-        return _UnavailableForLegalReasons()
+    return _UnavailableForLegalReasons()
 
 
 unavailableforlegalreasons = UnavailableForLegalReasons
@@ -379,10 +375,9 @@ def InternalError(message=None):
     """Returns HTTPError with '500 internal error' error from the active application."""
     if message:
         return _InternalError(message)
-    elif ctx.get("app_stack"):
+    if ctx.get("app_stack"):
         return ctx.app_stack[-1].internalerror()
-    else:
-        return _InternalError()
+    return _InternalError()
 
 
 internalerror = InternalError
@@ -464,10 +459,9 @@ def rawinput(method=None):
     def process_fieldstorage(fs):
         if isinstance(fs, list):
             return [process_fieldstorage(x) for x in fs]
-        elif fs.filename is None:
+        if fs.filename is None:
             return fs.value
-        else:
-            return fs
+        return fs
 
     return storage([(k, process_fieldstorage(v)) for k, v in dictadd(b, a).items()])
 
@@ -608,7 +602,7 @@ def debug(*args):
     """
     try:
         out = ctx.environ["wsgi.errors"]
-    except:
+    except Exception:
         out = sys.stderr
     for arg in args:
         print(pprint.pformat(arg), file=out)
@@ -618,7 +612,7 @@ def debug(*args):
 def _debugwrite(x):
     try:
         out = ctx.environ["wsgi.errors"]
-    except:
+    except Exception:
         out = sys.stderr
     out.write(x)
 

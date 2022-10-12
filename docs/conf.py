@@ -40,8 +40,8 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"web.py"
-copyright = u""
+project = "web.py"
+copyright = ""
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -191,7 +191,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ("index", "webpy.tex", u"web.py Documentation", u"Anand Chitipothu", "manual")
+    ("index", "webpy.tex", "web.py Documentation", "Anand Chitipothu", "manual")
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -219,7 +219,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("index", "webpy", u"web.py Documentation", [u"Anand Chitipothu"], 1)]
+man_pages = [("index", "webpy", "web.py Documentation", ["Anand Chitipothu"], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -234,8 +234,8 @@ texinfo_documents = [
     (
         "index",
         "webpy",
-        u"web.py Documentation",
-        u"Anand Chitipothu",
+        "web.py Documentation",
+        "Anand Chitipothu",
         "webpy",
         "One line description of project.",
         "Miscellaneous",

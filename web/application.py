@@ -10,7 +10,8 @@ import traceback
 import wsgiref.handlers
 from inspect import isclass
 from io import BytesIO
-
+from urllib.parse import urlparse, urlencode, unquote
+from importlib import reload
 from . import browser, httpserver, utils
 from . import webapi as web
 from . import wsgi
@@ -18,9 +19,7 @@ from .debugerror import debugerror
 from .py3helpers import iteritems
 from .utils import lstrips
 
-from urllib.parse import urlparse, urlencode, unquote
 
-from importlib import reload
 
 
 __all__ = [
@@ -276,8 +275,7 @@ class application:
                 if processors:
                     p, processors = processors[0], processors[1:]
                     return p(lambda: process(processors))
-                else:
-                    return self.handle()
+                return self.handle()
             except web.HTTPError:
                 raise
             except (KeyboardInterrupt, SystemExit):
@@ -418,14 +416,13 @@ class application:
             if minor == 7:
                 return wsgiapp
             # if 2.5, use run_wsgi_app
-            elif minor == 5:
+            if minor == 5:
                 from google.appengine.ext.webapp.util import run_wsgi_app
 
                 return run_wsgi_app(wsgiapp)
-            else:
-                raise EnvironmentError(
-                    "Not a supported platform, use python 2.5 or 2.7"
-                )
+            raise EnvironmentError(
+                "Not a supported platform, use python 2.5 or 2.7"
+            )
         except ImportError:
             return wsgiref.handlers.CGIHandler().run(wsgiapp)
 
@@ -496,11 +493,11 @@ class application:
 
         if f is None:
             raise web.notfound()
-        elif isinstance(f, application):
+        if isinstance(f, application):
             return f.handle_with_processors()
-        elif isclass(f):
+        if isclass(f):
             return handle_class(f)
-        elif isinstance(f, str):
+        if isinstance(f, str):
             if f.startswith("redirect "):
                 url = f.split(" ", 1)[1]
                 if web.ctx.method == "GET":
@@ -508,17 +505,16 @@ class application:
                     if x:
                         url += "?" + x
                 raise web.redirect(url)
-            elif "." in f:
+            if "." in f:
                 mod, cls = f.rsplit(".", 1)
                 mod = __import__(mod, None, None, [""])
                 cls = getattr(mod, cls)
             else:
                 cls = fvars[f]
             return handle_class(cls)
-        elif hasattr(f, "__call__"):
+        if hasattr(f, "__call__"):
             return f()
-        else:
-            return web.notfound()
+        return web.notfound()
 
     def _match(self, mapping, value):
         for pat, what in mapping:
@@ -526,9 +522,8 @@ class application:
                 if value.startswith(pat):
                     f = lambda: self._delegate_sub_application(pat, what)
                     return f, None
-                else:
-                    continue
-            elif isinstance(what, str):
+                continue
+            if isinstance(what, str):
                 what, result = utils.re_subm(r"^%s\Z" % (pat,), what, value)
             else:
                 result = utils.re_compile(r"^%s\Z" % (pat,)).match(value)
@@ -562,18 +557,16 @@ class application:
         parent = self.get_parent_app()
         if parent:
             return parent.notfound()
-        else:
-            return web._NotFound()
+        return web._NotFound()
 
     def internalerror(self):
         """Returns HTTPError with '500 internal error' message"""
         parent = self.get_parent_app()
         if parent:
             return parent.internalerror()
-        elif web.config.get("debug"):
+        if web.config.get("debug"):
             return debugerror()
-        else:
-            return web._InternalError()
+        return web._InternalError()
 
 
 def with_metaclass(mcls):
@@ -708,9 +701,8 @@ def unloadhook(h):
 
         if result and hasattr(result, "__next__"):
             return wrap(result)
-        else:
-            h()
-            return result
+        h()
+        return result
 
     def wrap(result):
         def next_hook():

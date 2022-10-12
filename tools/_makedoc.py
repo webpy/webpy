@@ -9,7 +9,7 @@ class Parser:
         self.text = ""
 
     def go(self, pyfile):
-        for line in open(pyfile):
+        for line in open(pyfile, encoding='utf-8'):
             if self.mode == "in def":
                 self.text += " " + line.strip()
                 if line.strip().endswith(":"):

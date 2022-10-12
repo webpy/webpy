@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 General Utilities
 (part of web.py)
@@ -164,16 +163,14 @@ def storify(mapping, *requireds, **defaults):
     def unicodify(s):
         if _unicode and isinstance(s, str):
             return to_unicode(s)
-        else:
-            return s
+        return s
 
     def getvalue(x):
         if hasattr(x, "file") and hasattr(x, "value"):
             return x.value
-        elif hasattr(x, "value"):
+        if hasattr(x, "value"):
             return unicodify(x.value)
-        else:
-            return unicodify(x)
+        return unicodify(x)
 
     stor = Storage()
     for key in requireds + tuple(mapping.keys()):
@@ -372,8 +369,7 @@ def safestr(obj, encoding="utf-8"):
 
     if obj and hasattr(obj, "__next__"):
         return [safestr(i) for i in obj]
-    else:
-        return str(obj)
+    return str(obj)
 
 
 # Since Python3, utf-8 encoded strings and unicode strings are the same thing
@@ -417,7 +413,7 @@ def timelimit(timeout):
                 def run(self):
                     try:
                         self.result = function(*args, **kw)
-                    except:
+                    except Exception:
                         self.error = sys.exc_info()
 
             c = Dispatch()
@@ -719,15 +715,14 @@ class IterBetter:
     def __nonzero__(self):
         if hasattr(self, "__len__"):
             return self.__len__() != 0
-        elif hasattr(self, "_head"):
+        if hasattr(self, "_head"):
             return True
+        try:
+            self._head = next(self.i)
+        except StopIteration:
+            return False
         else:
-            try:
-                self._head = next(self.i)
-            except StopIteration:
-                return False
-            else:
-                return True
+            return True
 
     __bool__ = __nonzero__
 
@@ -744,7 +739,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
                 return next(it)
             except StopIteration:
                 raise
-            except:
+            except Exception:
                 traceback.print_exc()
 
     it = iter(it)
@@ -1070,7 +1065,7 @@ def commify(n):
 
     r = []
     for i, c in enumerate(str(dollars)[::-1]):
-        if i and (not (i % 3)):
+        if i and (not i % 3):
             r.insert(0, ",")
         r.insert(0, c)
     out = "".join(r)

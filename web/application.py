@@ -157,7 +157,7 @@ class application:
         host="0.0.0.0:8080",
         headers=None,
         https=False,
-        **kw
+        **kw,
     ):
         """Makes request to this application for the specified path and method.
         Response will be a storage object with data, status and headers.
@@ -522,9 +522,9 @@ class application:
                 else:
                     continue
             elif isinstance(what, str):
-                what, result = utils.re_subm(r"^%s\Z" % (pat,), what, value)
+                what, result = utils.re_subm(rf"^{pat}\Z", what, value)
             else:
-                result = utils.re_compile(r"^%s\Z" % (pat,)).match(value)
+                result = utils.re_compile(rf"^{pat}\Z").match(value)
 
             if result:  # it's a match
                 return what, [x for x in result.groups()]

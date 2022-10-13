@@ -349,7 +349,7 @@ def emailerrors(to_address, olderror, from_address=None):
         path = web.ctx.path
         request = web.ctx.method + " " + web.ctx.home + web.ctx.fullpath
 
-        message = "\n%s\n\n%s\n\n" % (request, tb_txt)
+        message = f"\n{request}\n\n{tb_txt}\n\n"
 
         sendmail(
             "your buggy site <%s>" % from_address,

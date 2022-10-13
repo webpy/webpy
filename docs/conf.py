@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # web.py documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 27 15:35:05 2013.

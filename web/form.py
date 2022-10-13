@@ -259,9 +259,7 @@ class AttributeList(dict):
         return AttributeList(self)
 
     def __str__(self):
-        return " ".join(
-            ['%s="%s"' % (k, net.websafe(v)) for k, v in sorted(self.items())]
-        )
+        return " ".join([f'{k}="{net.websafe(v)}"' for k, v in sorted(self.items())])
 
     def __repr__(self):
         return "<attrs: %s>" % repr(str(self))
@@ -302,7 +300,7 @@ class Textarea(Input):
         attrs = self.attrs.copy()
         attrs["name"] = self.name
         value = net.websafe(self.value or "")
-        return "<textarea %s>%s</textarea>" % (attrs, value)
+        return f"<textarea {attrs}>{value}</textarea>"
 
 
 class Dropdown(Input):
@@ -346,7 +344,7 @@ class Dropdown(Input):
             select_p = ' selected="selected"'
         else:
             select_p = ""
-        return indent + '<option%s value="%s">%s</option>\n' % (
+        return indent + '<option{} value="{}">{}</option>\n'.format(
             select_p,
             net.websafe(value),
             net.websafe(desc),
@@ -402,7 +400,7 @@ class Radio(Input):
             attrs["id"] = self.name + str(idx)
             if self.value == value:
                 attrs["checked"] = "checked"
-            x += "<input %s/> %s" % (attrs, net.websafe(desc))
+            x += f"<input {attrs}/> {net.websafe(desc)}"
         x += "</span>"
         return x
 
@@ -465,7 +463,7 @@ class Button(Input):
         if self.value is not None:
             attrs["value"] = self.value
         html = attrs.pop("html", None) or net.websafe(self.name)
-        return "<button %s>%s</button>" % (attrs, html)
+        return f"<button {attrs}>{html}</button>"
 
 
 class Hidden(Input):
@@ -655,7 +653,7 @@ class Datalist(Input):
                 label = net.websafe(arg[1])
             else:
                 label = net.websafe(arg)
-            x += '<option%s value="%s"/>' % (label_p, label)
+            x += f'<option{label_p} value="{label}"/>'
         x += "</datalist>"
         return x
 

@@ -599,7 +599,7 @@ def iterview(x):
             spacing = ">" + (" " * (size - val))[1:]
         else:
             spacing = ""
-        return "[%s%s]" % ("=" * val, spacing)
+        return "[{}{}]".format("=" * val, spacing)
 
     def eta(elapsed, n, lenx):
         if n == 0:

@@ -179,7 +179,7 @@ class Session:
             now = time.time()
             secret_key = self._config.secret_key
 
-            hashable = "%s%s%s%s" % (rand, now, utils.safestr(web.ctx.ip), secret_key)
+            hashable = f"{rand}{now}{utils.safestr(web.ctx.ip)}{secret_key}"
             session_id = sha1(hashable.encode("utf-8")).hexdigest()
             if session_id not in self.store:
                 break

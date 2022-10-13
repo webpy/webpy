@@ -754,7 +754,7 @@ class DB:
 
         if self.printing:
             print(
-                "%s (%s): %s" % (round(b - a, 2), self.ctx.dbq_count, str(sql_query)),
+                f"{round(b - a, 2)} ({self.ctx.dbq_count}): {str(sql_query)}",
                 file=debug,
             )
         return out
@@ -878,7 +878,7 @@ class DB:
         limit=None,
         offset=None,
         _test=False,
-        **kwargs
+        **kwargs,
     ):
         """
         Selects from `table` where keys are equal to values in `kwargs`.
@@ -1041,7 +1041,7 @@ class DB:
         keys = sorted(keys)
 
         sql_query = SQLQuery(
-            "INSERT INTO %s (%s) VALUES " % (tablename, ", ".join(keys))
+            "INSERT INTO {} ({}) VALUES ".format(tablename, ", ".join(keys))
         )
 
         for i, row in enumerate(values):
@@ -1568,7 +1568,7 @@ class _Node:
         )
 
     def __repr__(self):
-        return "Node(%r, %r, %r)" % (self.type, self.first, self.second)
+        return f"Node({self.type!r}, {self.first!r}, {self.second!r})"
 
 
 class Parser:

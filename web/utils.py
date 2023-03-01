@@ -1516,7 +1516,12 @@ class _EmailMessage:
 
         if not content_type.startswith("text/"):
             encoders.encode_base64(msg)
-
+        else:
+            try:
+                msg = msg.encode("ascii")
+            except Exception as e:
+                encoders.encode_base64(msg)
+                
         self.message.attach(msg)
 
     def prepare_message(self):

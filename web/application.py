@@ -13,9 +13,8 @@ from inspect import isclass
 from io import BytesIO
 from urllib.parse import unquote, urlencode, urlparse
 
-from . import browser, httpserver, utils
+from . import browser, httpserver, utils, wsgi
 from . import webapi as web
-from . import wsgi
 from .debugerror import debugerror
 from .py3helpers import iteritems
 from .utils import lstrips

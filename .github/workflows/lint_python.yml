@@ -41,11 +41,10 @@ jobs:
 
       - if: "contains(matrix.python-version, '-dev')"
         run: sudo apt-get install -y libxml2 libxslt-dev
-      - run: pip install black codespell flake8 isort pytest
+      - run: pip install black codespell pytest ruff
       - run: black --check .
       - run: codespell . --ignore-words-list=asend,gae --skip=./.*
-      - run: flake8 --count --ignore=E203,E265,E722,E731,W503 --max-line-length=477 --show-source --statistics
-      - run: isort --profile black .
+      - run: ruff .
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt

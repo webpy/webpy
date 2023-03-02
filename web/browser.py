@@ -282,7 +282,6 @@ class AppHandler(HTTPHandler):
         return self.http_open(req)
 
     def _make_response(self, result, url):
-
         data = "\r\n".join([f"{k}: {v}" for k, v in result.header_items])
 
         import email

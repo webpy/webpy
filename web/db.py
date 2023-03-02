@@ -1221,7 +1221,6 @@ class PostgresDB(DB):
 
 class MySQLDB(DB):
     def __init__(self, **keywords):
-
         db = import_driver(mysql_drivers, preferred=keywords.pop("driver", None))
 
         if db.__name__ == "pymysql":

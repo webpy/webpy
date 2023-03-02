@@ -1514,13 +1514,8 @@ class _EmailMessage:
         msg.add_header("Content-Type", content_type)
         msg.add_header("Content-Disposition", "attachment", filename=filename)
 
-        if not content_type.startswith("text/"):
+        if not content_type.startswith("text/") or not msg.isascii():
             encoders.encode_base64(msg)
-        else:
-            try:
-                msg = msg.encode("ascii")
-            except Exception as e:
-                encoders.encode_base64(msg)
                 
         self.message.attach(msg)
 

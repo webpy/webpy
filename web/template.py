@@ -468,10 +468,9 @@ class Parser:
             first_indent = find_indent(text)[len(begin_indent) :]
 
             # TODO: fix this special case
-            if keyword == "code":
-                indent = begin_indent + first_indent
-            else:
-                indent = begin_indent + min(first_indent, INDENT)
+            indent = begin_indent + (
+                first_indent if keyword == "code" else min(first_indent, INDENT)
+            )
 
             block, text = self.read_indented_block(text, indent)
 
@@ -585,10 +584,7 @@ class ExpressionNode:
         return f"escape_({self.value}, {bool(self.escape)})"
 
     def __repr__(self):
-        if self.escape:
-            escape = ""
-        else:
-            escape = ":"
+        escape = "" if self.escape else ":"
         return f"${escape}{self.value}"
 
 

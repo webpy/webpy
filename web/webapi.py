@@ -124,10 +124,7 @@ class Redirect(HTTPError):
         newloc = urljoin(ctx.path, url)
 
         if newloc.startswith("/"):
-            if absolute:
-                home = ctx.realhome
-            else:
-                home = ctx.home
+            home = ctx.realhome if absolute else ctx.home
             newloc = home + newloc
 
         headers = {"Content-Type": "text/html", "Location": newloc}

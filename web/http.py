@@ -140,10 +140,7 @@ def url(path=None, doseq=False, **kw):
     """
     if path is None:
         path = web.ctx.path
-    if path.startswith("/"):
-        out = web.ctx.homepath + path
-    else:
-        out = path
+    out = web.ctx.homepath + path if path.startswith("/") else path
 
     if kw:
         out += "?" + urlencode(kw, doseq=doseq)

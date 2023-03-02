@@ -919,19 +919,14 @@ class DB:
 
     def gen_clause(self, sql, val, vars):
         if isinstance(val, int):
-            if sql == "WHERE":
-                nout = "id = " + sqlquote(val)
-            else:
-                nout = SQLQuery(val)
+            nout = "id = " + sqlquote(val) if sql == "WHERE" else SQLQuery(val)
         # @@@
         elif isinstance(val, (list, tuple)) and len(val) == 2:
             nout = SQLQuery(val[0], val[1])  # backwards-compatibility
         elif sql == "WHERE" and isinstance(val, dict):
             nout = self._where_dict(val)
-        elif isinstance(val, SQLQuery):
-            nout = val
         else:
-            nout = reparam(val, vars)
+            nout = val if isinstance(val, SQLQuery) else reparam(val, vars)
 
         def xjoin(a, b):
             if a and b:

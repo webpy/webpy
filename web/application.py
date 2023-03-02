@@ -213,10 +213,7 @@ class application:
 
         query = maybe_query or ""
 
-        if "env" in kw:
-            env = kw["env"]
-        else:
-            env = {}
+        env = kw.get("env", {})
         env = dict(
             env,
             HTTP_HOST=host,
@@ -239,10 +236,7 @@ class application:
         if method not in ["HEAD", "GET"]:
             data = data or ""
 
-            if isinstance(data, dict):
-                q = urlencode(data)
-            else:
-                q = data
+            q = urlencode(data) if isinstance(data, dict) else data
 
             env["wsgi.input"] = BytesIO(q.encode("utf-8"))
             # if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
@@ -313,10 +307,9 @@ class application:
                     raise web.nomethod()
 
                 result = self.handle_with_processors()
-                if result and hasattr(result, "__next__"):
-                    result = peep(result)
-                else:
-                    result = [result]
+                result = (
+                    peep(result) if result and hasattr(result, "__next__") else [result]
+                )
             except web.HTTPError as e:
                 result = [e.data]
 

@@ -176,10 +176,11 @@ def storify(mapping, *requireds, **defaults):
     for key in requireds + tuple(mapping.keys()):
         value = mapping[key]
         if isinstance(value, list):
-            if isinstance(defaults.get(key), list):
-                value = [getvalue(x) for x in value]
-            else:
-                value = value[-1]
+            value = (
+                [getvalue(x) for x in value]
+                if isinstance(defaults.get(key), list)
+                else value[-1]
+            )
         if not isinstance(defaults.get(key), dict):
             value = getvalue(value)
         if isinstance(defaults.get(key), list) and not isinstance(value, list):
@@ -595,19 +596,13 @@ def iterview(x):
 
     def bars(size, n, lenx):
         val = int((float(n) * size) / lenx + 0.5)
-        if size - val:
-            spacing = ">" + (" " * (size - val))[1:]
-        else:
-            spacing = ""
+        spacing = ">" + (" " * (size - val))[1:] if size - val else ""
         return "[{}{}]".format("=" * val, spacing)
 
     def eta(elapsed, n, lenx):
         if n == 0:
             return "--:--:--"
-        if n == lenx:
-            secs = int(elapsed)
-        else:
-            secs = int((elapsed / n) * (lenx - n))
+        secs = int(elapsed if n == lenx else elapsed / n * (lenx - n))
         mins, secs = divmod(secs, 60)
         hrs, mins = divmod(mins, 60)
 
@@ -615,10 +610,7 @@ def iterview(x):
 
     def format(starttime, n, lenx):
         out = plainformat(n, lenx) + " "
-        if n == lenx:
-            end = "     "
-        else:
-            end = " ETA "
+        end = "     " if n == lenx else " ETA "
         end += eta(time.time() - starttime, n, lenx)
         out += bars(WIDTH - len(out) - len(end), n, lenx)
         out += end
@@ -692,7 +684,7 @@ class IterBetter:
         if hasattr(self, "_head"):
             yield self._head
 
-        while 1:
+        while True:
             try:
                 yield next(self.i)
             except StopIteration:

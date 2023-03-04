@@ -355,7 +355,7 @@ def emailerrors(to_address, olderror, from_address=None):
             "your buggy site <%s>" % from_address,
             "the bugfixer <%s>" % to_address,
             "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
-            message,
+            message.encode("utf-8") if isinstance(message, str) else message,
             attachments=[dict(filename="bug.html", content=safestr(djangoerror()))],
         )
         return error

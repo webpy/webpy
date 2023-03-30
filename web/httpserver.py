@@ -3,8 +3,8 @@ import posixpath
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
 from io import BytesIO
-from urllib import parse as urlparse
 from urllib.parse import unquote
+from urllib.parse import urlparse
 
 from . import utils
 from . import webapi as web

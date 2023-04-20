@@ -193,7 +193,9 @@ def main(modules=None):
     print(header)
     print("<ul>")
     for name in modules:
-        print(f"<li><a href=\"#{dict(name=name)['name']}\">{dict(name=name)['name']}</a></li>")
+        print(
+            f"<li><a href=\"#{dict(name=name)['name']}\">{dict(name=name)['name']}</a></li>"
+        )
     print("</ul>")
     for name in modules:
         try:

@@ -968,9 +968,7 @@ class DB:
             _values = SQLQuery.join(
                 [sqlparam(v) for v in map(lambda t: t[1], sorted_values)], ", "
             )
-            sql_query = (
-                f"INSERT INTO {tablename} " + q(_keys) + " VALUES " + q(_values)
-            )
+            sql_query = f"INSERT INTO {tablename} " + q(_keys) + " VALUES " + q(_values)
         else:
             sql_query = SQLQuery(self._get_insert_default_values_query(tablename))
 
@@ -1040,9 +1038,7 @@ class DB:
         # enforce query order for the above doctest compatibility with Py3
         keys = sorted(keys)
 
-        sql_query = SQLQuery(
-            f"INSERT INTO {tablename} ({', '.join(keys)}) VALUES "
-        )
+        sql_query = SQLQuery(f"INSERT INTO {tablename} ({', '.join(keys)}) VALUES ")
 
         for i, row in enumerate(values):
             if i != 0:

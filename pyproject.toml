@@ -1,13 +1,17 @@
 [build-system]
-requires = ["setuptools>=61.2"]
 build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=61.2",
+]
 
 [project]
-name = "web.py"
-authors = [{name = "Aaron Swartz", email = "me@aaronsw.com"}]
-maintainers = [{name = "Anand Chitipothu", email = "anandology@gmail.com"}]
-license = {text = "Public domain"}
+name = "web-py"
 description = "web.py: makes web apps"
+readme = {file = "README.md", content-type = "text/plain"}
+license = {text = "Public domain"}
+maintainers = [{name = "Anand Chitipothu", email = "anandology@gmail.com"}]
+authors = [{name = "Aaron Swartz", email = "me@aaronsw.com"}]
+requires-python = ">=3.7"
 classifiers = [
     "License :: Public Domain",
     "Programming Language :: Python",
@@ -19,14 +23,12 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
-requires-python = ">=3.7"
-dependencies = ["cheroot"]
-dynamic = ["version"]
-
-[project.readme]
-file = "README.md"
-content-type = "text/markdown"
-
+dynamic = [
+  "version",
+]
+dependencies = [
+  "cheroot",
+]
 [project.urls]
 Homepage = "http://webpy.org/"
 Source = "https://github.com/webpy/webpy"
@@ -59,6 +61,10 @@ exclude = '''
 )
 '''
 
+[tool.codespell]
+ignore-words-list = "asend,gae"
+skip = ["./.*"]
+
 [tool.ruff]
 select = [
   "C9",
@@ -74,9 +80,11 @@ ignore = [
   "E722",
   "E731",
   "F821",
+  "PLC1901",
 ]
 line-length = 477
 show-source = true
+target-version = "py37"
 
 [tool.ruff.mccabe]
 max-complexity = 26

@@ -193,7 +193,7 @@ def main(modules=None):
     print(header)
     print("<ul>")
     for name in modules:
-        print('<li><a href="#%(name)s">%(name)s</a></li>' % dict(name=name))
+        print('<li><a href="#{name}">{name}</a></li>'.format(**dict(name=name)))
     print("</ul>")
     for name in modules:
         try:

@@ -354,7 +354,7 @@ def emailerrors(to_address, olderror, from_address=None):
         sendmail(
             "your buggy site <%s>" % from_address,
             "the bugfixer <%s>" % to_address,
-            "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
+            "bug: {error_name}: {error_value} ({path})".format(**locals()),
             message,
             attachments=[dict(filename="bug.html", content=safestr(djangoerror()))],
         )

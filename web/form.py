@@ -69,9 +69,8 @@ class Form:
                     html
                 )
             else:
-                out += (
-                    '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n'
-                    % (net.websafe(i.id), net.websafe(i.description), html)
+                out += '    <tr><th><label for="{}">{}</label></th><td>{}</td></tr>\n'.format(
+                    net.websafe(i.id), net.websafe(i.description), html
                 )
         out += "</table>"
         return out
@@ -82,8 +81,9 @@ class Form:
         for i in self.inputs:
             if not i.is_hidden():
                 out.append(
-                    '<label for="%s">%s</label>'
-                    % (net.websafe(i.id), net.websafe(i.description))
+                    '<label for="{}">{}</label>'.format(
+                        net.websafe(i.id), net.websafe(i.description)
+                    )
                 )
             out.append(i.pre)
             out.append(i.render())

@@ -41,10 +41,10 @@ jobs:
 
       - if: "contains(matrix.python-version, '-dev')"
         run: sudo apt-get install -y libxml2 libxslt-dev
-      - run: pip install black codespell pytest ruff
+      - run: pip install black "codespell[toml]" pytest ruff
       - run: black --check .
-      - run: codespell . --ignore-words-list=asend,gae --skip=./.*
-      - run: ruff .
+      - run: codespell
+      - run: ruff --format=github .
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt

@@ -79,7 +79,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                         if hasattr(result, "close"):
                             result.close()
                 except socket.timeout:
-                    return                         
+                    return
                 except OSError as socket_err:
                     # Catch common network errors and suppress them
                     if socket_err.args[0] in (errno.ECONNABORTED, errno.EPIPE):

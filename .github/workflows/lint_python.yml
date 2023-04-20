@@ -41,7 +41,7 @@ jobs:
 
       - if: "contains(matrix.python-version, '-dev')"
         run: sudo apt-get install -y libxml2 libxslt-dev
-      - run: pip install black "codespell[toml]"" pytest ruff
+      - run: pip install black "codespell[toml]" pytest ruff
       - run: black --check .
       - run: codespell
       - run: ruff --format=github .

@@ -414,7 +414,7 @@ def timelimit(timeout):
                 def run(self):
                     try:
                         self.result = function(*args, **kw)
-                    except:
+                    except Exception:
                         self.error = sys.exc_info()
 
             c = Dispatch()
@@ -741,7 +741,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
                 return next(it)
             except StopIteration:
                 raise
-            except:
+            except Exception:
                 traceback.print_exc()
 
     it = iter(it)
@@ -1237,7 +1237,7 @@ def tryall(context, prefix=None):
             r = value()
             dictincr(results, r)
             print(r)
-        except:
+        except Exception:
             print("ERROR")
             dictincr(results, "ERROR")
             print("   " + "\n   ".join(traceback.format_exc().split("\n")))
@@ -1500,7 +1500,7 @@ class _EmailMessage:
 
         try:
             from email import encoders
-        except:
+        except Exception:
             from email import Encoders as encoders
 
         content_type = (

@@ -71,9 +71,9 @@ select = [
   "W",
 ]
 ignore = [
-  "E722",
   "E731",
   "F821",
+  "PLC1901",
 ]
 line-length = 477
 show-source = true

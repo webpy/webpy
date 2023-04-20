@@ -78,12 +78,12 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                     finally:
                         if hasattr(result, "close"):
                             result.close()
+                except socket.timeout:
+                    return                            
                 except OSError as socket_err:
                     # Catch common network errors and suppress them
                     if socket_err.args[0] in (errno.ECONNABORTED, errno.EPIPE):
                         return
-                except socket.timeout:
-                    return
             except Exception:
                 print(traceback.format_exc(), file=web.debug)
 

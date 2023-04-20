@@ -1067,7 +1067,7 @@ def commify(n):
 
     r = []
     for i, c in enumerate(str(dollars)[::-1]):
-        if i and (not (i % 3)):
+        if i and (not i % 3):
             r.insert(0, ",")
         r.insert(0, c)
     out = "".join(r)

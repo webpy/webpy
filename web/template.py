@@ -119,7 +119,7 @@ class Parser:
                 return self.read_block_section(text2, begin_indent)
             elif ahead in self.keywords:
                 return self.read_keyword(text2)
-            elif ahead.strip() == "":
+            elif not ahead.strip():
                 # assignments starts with a space after $
                 # ex: $ a = b + 2
                 return self.read_assignment(text2)
@@ -407,13 +407,13 @@ class Parser:
             >>> read_indented_block('  a\n\n    b\nc', '  ')
             ('a\n\n  b\n', 'c')
         """
-        if indent == "":
+        if not indent:
             return "", text
 
         block = ""
         while text:
             line, text2 = splitline(text)
-            if line.strip() == "":
+            if not line.strip():
                 block += "\n"
             elif line.startswith(indent):
                 block += line[len(indent) :]

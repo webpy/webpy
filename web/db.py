@@ -264,11 +264,11 @@ class SQLQuery:
             target_items.append(prefix)
 
         for i, item in enumerate(items):
-            if i != 0 and sep != "":
+            if i != 0 and sep:
                 target_items.append(sep)
             if isinstance(item, SQLQuery):
                 target_items.extend(item.items)
-            elif item == "":  # joins with empty strings
+            elif not item:  # joins with empty strings
                 continue
             else:
                 target_items.append(item)

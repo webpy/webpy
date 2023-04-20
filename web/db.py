@@ -122,7 +122,7 @@ class SQLParam:
         return isinstance(other, SQLParam) and other.value == self.value
 
     def __repr__(self):
-        return "<param: %s>" % repr(self.value)
+        return f"<param: {repr(self.value)}>"
 
 
 sqlparam = SQLParam
@@ -264,11 +264,11 @@ class SQLQuery:
             target_items.append(prefix)
 
         for i, item in enumerate(items):
-            if i != 0 and sep != "":
+            if i != 0 and sep:
                 target_items.append(sep)
             if isinstance(item, SQLQuery):
                 target_items.extend(item.items)
-            elif item == "":  # joins with empty strings
+            elif not item:  # joins with empty strings
                 continue
             else:
                 target_items.append(item)
@@ -292,7 +292,7 @@ class SQLQuery:
         return safeunicode(self._str())
 
     def __repr__(self):
-        return "<sql: %s>" % repr(str(self))
+        return f"<sql: {repr(str(self))}>"
 
 
 class SQLLiteral:
@@ -309,7 +309,7 @@ class SQLLiteral:
         self.v = v
 
     def __repr__(self):
-        return "<literal: %r>" % self.v
+        return f"<literal: {self.v!r}>"
 
 
 sqlliteral = SQLLiteral
@@ -743,7 +743,7 @@ class DB:
             query, params = self._process_query(sql_query)
             out = cur.execute(query, params)
             b = time.time()
-        except:
+        except Exception:
             if self.printing:
                 print("ERR:", str(sql_query), file=debug)
             if self.ctx.transactions:
@@ -968,9 +968,7 @@ class DB:
             _values = SQLQuery.join(
                 [sqlparam(v) for v in map(lambda t: t[1], sorted_values)], ", "
             )
-            sql_query = (
-                "INSERT INTO %s " % tablename + q(_keys) + " VALUES " + q(_values)
-            )
+            sql_query = f"INSERT INTO {tablename} " + q(_keys) + " VALUES " + q(_values)
         else:
             sql_query = SQLQuery(self._get_insert_default_values_query(tablename))
 
@@ -1001,7 +999,7 @@ class DB:
         return out
 
     def _get_insert_default_values_query(self, table):
-        return "INSERT INTO %s DEFAULT VALUES" % table
+        return f"INSERT INTO {table} DEFAULT VALUES"
 
     def multiple_insert(self, tablename, values, seqname=None, _test=False):
         """
@@ -1040,9 +1038,7 @@ class DB:
         # enforce query order for the above doctest compatibility with Py3
         keys = sorted(keys)
 
-        sql_query = SQLQuery(
-            "INSERT INTO {} ({}) VALUES ".format(tablename, ", ".join(keys))
-        )
+        sql_query = SQLQuery(f"INSERT INTO {tablename} ({', '.join(keys)}) VALUES ")
 
         for i, row in enumerate(values):
             if i != 0:
@@ -1197,7 +1193,7 @@ class PostgresDB(DB):
                 seqname = None
 
         if seqname:
-            query += "; SELECT currval('%s')" % seqname
+            query += f"; SELECT currval('{seqname}')"
 
         return query
 
@@ -1254,7 +1250,7 @@ class MySQLDB(DB):
         return query, SQLQuery("SELECT last_insert_id();")
 
     def _get_insert_default_values_query(self, table):
-        return "INSERT INTO %s () VALUES()" % table
+        return f"INSERT INTO {table} () VALUES()"
 
 
 def import_driver(drivers, preferred=None):
@@ -1401,7 +1397,7 @@ class OracleDB(DB):
             # It is not possible to get seq name from table name in Oracle
             return query
         else:
-            return query + "; SELECT %s.currval FROM dual" % seqname
+            return query + f"; SELECT {seqname}.currval FROM dual"
 
 
 def dburl2dict(url):
@@ -1698,7 +1694,7 @@ def test_parser():
         p = Parser()
         nodes = list(p.parse(text))
         print(repr(text), nodes)
-        assert nodes == expected, "Expected %r" % expected
+        assert nodes == expected, f"Expected {expected!r}"
 
     f("Hello", [_Node("text", "Hello")])
     f("Hello $name", [_Node("text", "Hello "), _Node("param", "name")])

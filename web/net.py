@@ -72,7 +72,7 @@ def validipaddr(address):
             if " " in x:
                 return False
 
-            if not (0 <= int(x) <= 255):
+            if not 0 <= int(x) <= 255:
                 return False
     except ValueError:
         return False
@@ -91,7 +91,7 @@ def validipport(port):
         False
     """
     try:
-        if not (0 <= int(port) <= 65535):
+        if not 0 <= int(port) <= 65535:
             return False
     except ValueError:
         return False

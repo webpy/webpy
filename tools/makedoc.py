@@ -111,7 +111,7 @@ def type_string(ob):
 
 def ts_css(text):
     """applies nice css to the type string"""
-    return '<span class="ts">%s</span>' % text
+    return f'<span class="ts">{text}</span>'
 
 
 def arg_string(func):
@@ -152,7 +152,7 @@ def recurse_over(ob, name, indent_level=0):
         ds = ""
     ds = markdown.Markdown(ds)
 
-    mlink = '<a name="%s">' % name if ts == "module" else ""
+    mlink = f'<a name="{name}">' if ts == "module" else ""
     mend = "</a>" if ts == "module" else ""
     print(
         "".join(
@@ -193,7 +193,9 @@ def main(modules=None):
     print(header)
     print("<ul>")
     for name in modules:
-        print('<li><a href="#%(name)s">%(name)s</a></li>' % dict(name=name))
+        print(
+            f"<li><a href=\"#{dict(name=name)['name']}\">{dict(name=name)['name']}</a></li>"
+        )
     print("</ul>")
     for name in modules:
         try:

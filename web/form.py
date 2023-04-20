@@ -94,7 +94,7 @@ class Form:
 
     def rendernote(self, note):
         if note:
-            return '<strong class="wrong">%s</strong>' % net.websafe(note)
+            return f'<strong class="wrong">{net.websafe(note)}</strong>'
         else:
             return ""
 
@@ -234,11 +234,11 @@ class Input:
             attrs["value"] = self.value
         attrs["name"] = self.name
         attrs["id"] = self.id
-        return "<input %s/>" % attrs
+        return f"<input {attrs}/>"
 
     def rendernote(self, note):
         if note:
-            return '<strong class="wrong">%s</strong>' % net.websafe(note)
+            return f'<strong class="wrong">{net.websafe(note)}</strong>'
         else:
             return ""
 
@@ -262,7 +262,7 @@ class AttributeList(dict):
         return " ".join([f'{k}="{net.websafe(v)}"' for k, v in sorted(self.items())])
 
     def __repr__(self):
-        return "<attrs: %s>" % repr(str(self))
+        return f"<attrs: {repr(str(self))}>"
 
 
 class Textbox(Input):
@@ -320,7 +320,7 @@ class Dropdown(Input):
         attrs = self.attrs.copy()
         attrs["name"] = self.name
 
-        x = "<select %s>\n" % attrs
+        x = f"<select {attrs}>\n"
 
         for arg in self.args:
             x += self._render_option(arg)
@@ -369,10 +369,10 @@ class GroupedDropdown(Dropdown):
         attrs = self.attrs.copy()
         attrs["name"] = self.name
 
-        x = "<select %s>\n" % attrs
+        x = f"<select {attrs}>\n"
 
         for label, options in self.args:
-            x += '  <optgroup label="%s">\n' % net.websafe(label)
+            x += f'  <optgroup label="{net.websafe(label)}">\n'
             for arg in options:
                 x += self._render_option(arg, indent="    ")
             x += "  </optgroup>\n"
@@ -435,7 +435,7 @@ class Checkbox(Input):
 
         if self.checked:
             attrs["checked"] = "checked"
-        return "<input %s/>" % attrs
+        return f"<input {attrs}/>"
 
     def set_value(self, value):
         self.checked = bool(value)
@@ -646,10 +646,10 @@ class Datalist(Input):
         attrs = self.attrs.copy()
         attrs["name"] = self.name
         label_p = ""
-        x = "<datalist %s>" % attrs
+        x = f"<datalist {attrs}>"
         for arg in self.args:
             if isinstance(arg, (tuple, list)):
-                label_p = ' label="%s"' % net.websafe(arg[0])
+                label_p = f' label="{net.websafe(arg[0])}"'
                 label = net.websafe(arg[1])
             else:
                 label = net.websafe(arg)
@@ -668,7 +668,7 @@ class Validator:
     def valid(self, value):
         try:
             return self.test(value)
-        except:
+        except Exception:
             return False
 
 

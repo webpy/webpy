@@ -414,7 +414,7 @@ def timelimit(timeout):
                 def run(self):
                     try:
                         self.result = function(*args, **kw)
-                    except:
+                    except Exception:
                         self.error = sys.exc_info()
 
             c = Dispatch()
@@ -599,7 +599,7 @@ def iterview(x):
             spacing = ">" + (" " * (size - val))[1:]
         else:
             spacing = ""
-        return "[{}{}]".format("=" * val, spacing)
+        return f"[{'=' * val}{spacing}]"
 
     def eta(elapsed, n, lenx):
         if n == 0:
@@ -741,7 +741,7 @@ def safeiter(it, cleanup=None, ignore_errors=True):
                 return next(it)
             except StopIteration:
                 raise
-            except:
+            except Exception:
                 traceback.print_exc()
 
     it = iter(it)
@@ -970,7 +970,7 @@ def datestr(then, now=None):
         out = then.strftime("%B %d").replace(" 0", "  ")
 
         if then.year != now.year or deltadays < 0:
-            out += ", %s" % then.year
+            out += f", {then.year}"
         return out
 
     if int(deltaseconds):
@@ -1067,7 +1067,7 @@ def commify(n):
 
     r = []
     for i, c in enumerate(str(dollars)[::-1]):
-        if i and (not (i % 3)):
+        if i and (not i % 3):
             r.insert(0, ",")
         r.insert(0, c)
     out = "".join(r)
@@ -1103,7 +1103,7 @@ def nthstr(n):
 
     assert n >= 0
     if n % 100 in [11, 12, 13]:
-        return "%sth" % n
+        return f"{n}th"
     return {1: "%sst", 2: "%snd", 3: "%srd"}.get(n % 10, "%sth") % n
 
 
@@ -1237,7 +1237,7 @@ def tryall(context, prefix=None):
             r = value()
             dictincr(results, r)
             print(r)
-        except:
+        except Exception:
             print("ERROR")
             dictincr(results, "ERROR")
             print("   " + "\n   ".join(traceback.format_exc().split("\n")))
@@ -1346,7 +1346,7 @@ class ThreadedDict(threadlocal):
         self.__dict__.update(*args, **kwargs)
 
     def __repr__(self):
-        return "<ThreadedDict %r>" % self.__dict__
+        return f"<ThreadedDict {self.__dict__!r}>"
 
     __str__ = __repr__
 
@@ -1441,7 +1441,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             filename = os.path.basename(a)
             mail.attach(filename, content, None)
         else:
-            raise ValueError("Invalid attachment: %s" % repr(a))
+            raise ValueError(f"Invalid attachment: {repr(a)}")
 
     mail.send()
 
@@ -1500,7 +1500,7 @@ class _EmailMessage:
 
         try:
             from email import encoders
-        except:
+        except Exception:
             from email import Encoders as encoders
 
         content_type = (

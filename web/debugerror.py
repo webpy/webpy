@@ -352,9 +352,9 @@ def emailerrors(to_address, olderror, from_address=None):
         message = f"\n{request}\n\n{tb_txt}\n\n"
 
         sendmail(
-            "your buggy site <%s>" % from_address,
-            "the bugfixer <%s>" % to_address,
-            "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
+            f"your buggy site <{from_address}>",
+            f"the bugfixer <{to_address}>",
+            f"bug: {locals()['error_name']}: {locals()['error_value']} ({locals()['path']})",
             message,
             attachments=[dict(filename="bug.html", content=safestr(djangoerror()))],
         )

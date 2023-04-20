@@ -95,7 +95,7 @@ def _status_code(status, data=None, classname=None, docstring=None):
     classname = status.split(" ", 1)[1].replace(
         " ", ""
     )  # 304 Not Modified -> NotModified
-    docstring = docstring or "`%s` status" % status
+    docstring = docstring or f"`{status}` status"
 
     def __init__(self, data=data, headers={}):
         HTTPError.__init__(self, status, headers, data)
@@ -517,7 +517,7 @@ def setcookie(
         morsel["httponly"] = True
     value = morsel.OutputString()
     if samesite and samesite.lower() in ("strict", "lax", "none"):
-        value += "; SameSite=%s" % samesite
+        value += f"; SameSite={samesite}"
     header("Set-Cookie", value)
 
 

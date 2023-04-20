@@ -599,7 +599,7 @@ def iterview(x):
             spacing = ">" + (" " * (size - val))[1:]
         else:
             spacing = ""
-        return "[{}{}]".format("=" * val, spacing)
+        return f"[{'=' * val}{spacing}]"
 
     def eta(elapsed, n, lenx):
         if n == 0:
@@ -970,7 +970,7 @@ def datestr(then, now=None):
         out = then.strftime("%B %d").replace(" 0", "  ")
 
         if then.year != now.year or deltadays < 0:
-            out += ", %s" % then.year
+            out += f", {then.year}"
         return out
 
     if int(deltaseconds):
@@ -1103,7 +1103,7 @@ def nthstr(n):
 
     assert n >= 0
     if n % 100 in [11, 12, 13]:
-        return "%sth" % n
+        return f"{n}th"
     return {1: "%sst", 2: "%snd", 3: "%srd"}.get(n % 10, "%sth") % n
 
 
@@ -1346,7 +1346,7 @@ class ThreadedDict(threadlocal):
         self.__dict__.update(*args, **kwargs)
 
     def __repr__(self):
-        return "<ThreadedDict %r>" % self.__dict__
+        return f"<ThreadedDict {self.__dict__!r}>"
 
     __str__ = __repr__
 
@@ -1441,7 +1441,7 @@ def sendmail(from_address, to_address, subject, message, headers=None, **kw):
             filename = os.path.basename(a)
             mail.attach(filename, content, None)
         else:
-            raise ValueError("Invalid attachment: %s" % repr(a))
+            raise ValueError(f"Invalid attachment: {repr(a)}")
 
     mail.send()
 

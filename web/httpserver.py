@@ -36,7 +36,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     class WSGIHandler(SimpleHTTPRequestHandler):
         def run_wsgi_app(self):
             protocol, host, path, parameters, query, fragment = urlparse.urlparse(
-                "http://dummyhost%s" % self.path
+                f"http://dummyhost{self.path}"
             )
 
             # we only use path, query
@@ -61,7 +61,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
             }
 
             for http_header, http_value in self.headers.items():
-                env["HTTP_%s" % http_header.replace("-", "_").upper()] = http_value
+                env[f"HTTP_{http_header.replace('-', '_').upper()}"] = http_value
 
             # Setup the state
             self.wsgi_sent_headers = 0
@@ -152,7 +152,7 @@ def runsimple(func, server_address=("0.0.0.0", 8080)):
     server = WSGIServer(server_address, func)
 
     if "/" in server_address[0]:
-        print("%s" % server_address)
+        print(f"{server_address}")
     else:
         if server.ssl_adapter:
             print("https://%s:%d/" % server_address)
@@ -215,7 +215,7 @@ class StaticApp(SimpleHTTPRequestHandler):
 
         try:
             path = self.translate_path(self.path)
-            etag = '"%s"' % os.path.getmtime(path)
+            etag = f'"{os.path.getmtime(path)}"'
             client_etag = environ.get("HTTP_IF_NONE_MATCH")
             self.send_header("ETag", etag)
             if etag == client_etag:
@@ -295,10 +295,7 @@ class LogMiddleware:
         req = environ.get("PATH_INFO", "_")
         protocol = environ.get("ACTUAL_SERVER_PROTOCOL", "-")
         method = environ.get("REQUEST_METHOD", "-")
-        host = "{}:{}".format(
-            environ.get("REMOTE_ADDR", "-"),
-            environ.get("REMOTE_PORT", "-"),
-        )
+        host = f"{environ.get('REMOTE_ADDR', '-')}:{environ.get('REMOTE_PORT', '-')}"
 
         time = self.log_date_time_string()
 

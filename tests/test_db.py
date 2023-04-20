@@ -29,9 +29,7 @@ def requires_module(name):
                 pass
 
             print(
-                "skipping all tests from {} as {} module is not found".format(
-                    cls.__name__, name
-                )
+                f"skipping all tests from {cls.__name__} as {name} module is not found"
             )
             return Foo
 
@@ -85,10 +83,10 @@ class DBTest(unittest.TestCase):
     def _testable(self):
         try:
             setup_database(self.dbname, driver=self.driver)
-            print("Running tests for %s" % self.__class__.__name__, file=web.debug)
+            print(f"Running tests for {self.__class__.__name__}", file=web.debug)
             return True
         except ImportError as e:
-            print(str(e), "(ignoring %s)" % self.__class__.__name__, file=web.debug)
+            print(str(e), f"(ignoring {self.__class__.__name__})", file=web.debug)
             return False
 
     def testUnicode(self):
@@ -196,7 +194,7 @@ class DBTest(unittest.TestCase):
 
     def testBoolean(self):
         def t(active):
-            name = "name-%s" % active
+            name = f"name-{active}"
             self.db.insert("person", False, name=name, active=active)
             a = self.db.select("person", where="name=$name", vars=locals())[0].active
             self.assertEqual(a, active)

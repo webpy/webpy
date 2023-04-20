@@ -265,7 +265,7 @@ class DiskStore(Store):
 
     def _get_path(self, key):
         if os.path.sep in key:
-            raise ValueError("Bad key: %s" % repr(key))
+            raise ValueError(f"Bad key: {repr(key)}")
         return os.path.join(self.root, key)
 
     def __contains__(self, key):

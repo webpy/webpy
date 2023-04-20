@@ -158,7 +158,7 @@ class Parser:
                 linenode, _ = self.readline(value)
                 nodes = linenode.nodes
             parts = [node.emit("") for node in nodes]
-            value = "join_(%s)" % ", ".join(parts)
+            value = f"join_({', '.join(parts)})"
         else:
             raise SyntaxError("Invalid var statement")
         return VarNode(name, value), text
@@ -481,7 +481,7 @@ class Parser:
         if keyword in self.statement_nodes:
             return self.statement_nodes[keyword](stmt, block, begin_indent)
         else:
-            raise ParseError("Unknown statement: %s" % repr(keyword))
+            raise ParseError(f"Unknown statement: {repr(keyword)}")
 
 
 class PythonTokenizer:
@@ -600,7 +600,7 @@ class AssignmentNode:
         return indent + self.code + "\n"
 
     def __repr__(self):
-        return "<assignment: %s>" % repr(self.code)
+        return f"<assignment: {repr(self.code)}>"
 
 
 class LineNode:
@@ -612,10 +612,10 @@ class LineNode:
         if text_indent:
             text = [repr(text_indent)] + text
 
-        return indent + "extend_([%s])\n" % ", ".join(text)
+        return indent + f"extend_([{', '.join(text)}])\n"
 
     def __repr__(self):
-        return "<line: %s>" % repr(self.nodes)
+        return f"<line: {repr(self.nodes)}>"
 
 
 INDENT = "    "  # 4 spaces
@@ -662,7 +662,7 @@ class CodeNode:
         return rx.sub(indent, self.code).rstrip(" ")
 
     def __repr__(self):
-        return "<code: %s>" % repr(self.code)
+        return f"<code: {repr(self.code)}>"
 
 
 class StatementNode:
@@ -673,7 +673,7 @@ class StatementNode:
         return indent + self.stmt
 
     def __repr__(self):
-        return "<stmt: %s>" % repr(self.stmt)
+        return f"<stmt: {repr(self.stmt)}>"
 
 
 class IfNode(BlockNode):
@@ -882,7 +882,7 @@ class BaseTemplate:
             overridden_builtins = builtins.__dict__.keys() - builtins_.keys()
 
             def f(name, *args, **kwargs):
-                raise NameError("name '%s' is not defined" % name)
+                raise NameError(f"name '{name}' is not defined")
 
             for name in overridden_builtins:
                 if name not in globals:
@@ -1509,7 +1509,7 @@ class TemplateResult(MutableMapping):
 
     def __repr__(self):
         self._prepare_body()
-        return "<TemplateResult: %s>" % self._d
+        return f"<TemplateResult: {self._d}>"
 
     def __len__(self):
         return self._d.__len__()

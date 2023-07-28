@@ -9,7 +9,9 @@ import sys
 import tempfile
 from http.cookies import CookieError, Morsel, SimpleCookie
 from io import BytesIO
+from typing import Any
 from urllib.parse import quote, unquote, urljoin
+from urllib.parse import parse_qs
 
 from .utils import dictadd, intget, safestr, storage, storify, threadeddict
 
@@ -429,6 +431,21 @@ def rawinput(method=None):
 
         return {k: fs[k] for k in fs}
 
+    def preserve_fieldstorage_get_output_format(data: dict[str, Any]) -> dict[str, str | list[str]]:
+        """
+        Ensure output matches Python's cgi.FieldStorage handling for GETs.
+
+        >>> preserve_fieldstorage_get_output_format({'x': ['2'], 'y': ['1', '2']})
+        {'x': '2', 'y': ['1', '2']}
+        """
+        data_copy = data.copy()
+
+        for k, v in data_copy.items():
+            if len(v) == 1 and isinstance(v[0], (int, str)):
+                data_copy[k] = v[0]
+
+        return data_copy
+
     e = ctx.env.copy()
     a = b = {}
 
@@ -453,12 +470,13 @@ def rawinput(method=None):
 
     if method.lower() in ["both", "get"]:
         e["REQUEST_METHOD"] = "GET"
-        b = dictify(cgiFieldStorage(environ=e, keep_blank_values=1))
+        b = parse_qs(e.get('QUERY_STRING', ''), keep_blank_values=True)
+        b = preserve_fieldstorage_get_output_format(b)
 
     def process_fieldstorage(fs):
         if isinstance(fs, list):
             return [process_fieldstorage(x) for x in fs]
-        elif fs.filename is None:
+        elif hasattr(fs, "filename") and fs.filename is None:
             return fs.value
         else:
             return fs

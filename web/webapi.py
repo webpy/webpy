@@ -426,7 +426,7 @@ def rawinput(method=None):
 
     def dictify(fs):
         # hack to make web.input work with enctype='text/plain.
-        if fs.list is None:
+        if hasattr(fs, "list") and fs.list is None:
             fs.list = []
 
         return {k: fs[k] for k in fs}
@@ -461,11 +461,8 @@ def rawinput(method=None):
                     a = cgiFieldStorage(fp=fp, environ=e, keep_blank_values=1)
                     ctx._fieldstorage = a
             else:
-                d = data()
-                if isinstance(d, str):
-                    d = d.encode("utf-8")
-                fp = BytesIO(d)
-                a = cgiFieldStorage(fp=fp, environ=e, keep_blank_values=1)
+                d = data().decode("utf-8")
+                a = parse_qs(d, keep_blank_values=True)
             a = dictify(a)
 
     if method.lower() in ["both", "get"]:

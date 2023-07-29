@@ -452,26 +452,26 @@ def custom_parse_form_data(*args: str | bool, **kwargs: str | bool) -> tuple[mul
     return forms, files
 
 
+def preserve_fieldstorage_get_output_format(data: dict[str, Any]) -> dict[str, str | list[str]]:
+    """
+    Ensure output matches Python's cgi.FieldStorage handling for
+    query parameters.
+
+    >>> preserve_fieldstorage_get_output_format({'x': ['2'], 'y': ['1', '2']})
+    {'x': '2', 'y': ['1', '2']}
+    """
+    data_copy = data.copy()
+
+    for k, v in data_copy.items():
+        if len(v) == 1 and isinstance(v[0], (int, str)):
+            data_copy[k] = v[0]
+
+    return data_copy
+
+
 def rawinput(method: str | None = None) -> storage:
     """Returns storage object with GET or POST arguments."""
     method = method or "both"
-
-    def preserve_fieldstorage_get_output_format(data: dict[str, Any]) -> dict[str, str | list[str]]:
-        """
-        Ensure output matches Python's cgi.FieldStorage handling for
-        query parameters.
-
-        >>> preserve_fieldstorage_get_output_format({'x': ['2'], 'y': ['1', '2']})
-        {'x': '2', 'y': ['1', '2']}
-        """
-        data_copy = data.copy()
-
-        for k, v in data_copy.items():
-            if len(v) == 1 and isinstance(v[0], (int, str)):
-                data_copy[k] = v[0]
-
-        return data_copy
-
     env = ctx.env.copy()
     post_req = get_req = {}
 

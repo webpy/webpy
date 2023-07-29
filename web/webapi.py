@@ -2,6 +2,7 @@
 Web API (wrapper around WSGI)
 (from web.py)
 """
+from __future__ import annotations
 
 import pprint
 import sys
@@ -402,6 +403,55 @@ def header(hdr, value, unique=False):
     ctx.headers.append((hdr, value))
 
 
+class MultipartPartWrapper:
+    """
+    Ensure calling `.value` on a multipart file object returns the raw value
+    in the same way that calling `.value` on FieldStorage multipart objects
+    did.
+
+    With MultipartPart, `.value` decodes the data, which will fail with raw
+    byte sequences, such as images.
+
+    Additionally, MultipartPart lacks a setter, so it wasn't possible to rebind
+    MultipartPart's `.value` method with the `.raw` method. This passes
+    through all attribute/method access to the original MultipartPart object,
+    save for `.value`, which it intercepts and for which it returns the `.raw`
+    method.
+
+    With this, the following code should behave as it did with
+    `cgi.FieldStorage`:
+
+    class ImageUpload:
+        def POST(self, path):
+            i = web.input(file={})
+            name, filename, value = i.file.name, i.file.filename, i.file.value
+    """
+    def __init__(self, part: multipart.MultipartPart) -> None:
+        self._part = part
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        Return raw data when accessing the list property, or otherwise pass
+        the request through.
+        """
+        if name == "value":
+            return self._part.raw
+
+        return getattr(self._part, name)
+
+
+def custom_parse_form_data(*args: str | bool, **kwargs: str | bool) -> tuple[multipart.MultiDict, multipart.MultiDict]:
+    """
+    The same as multipart.parse_form_data, but always executes
+    MultipartPartWrapper for backwards compatibility with cgi.FieldStorage.
+    """
+    forms, files = multipart.parse_form_data(*args, **kwargs)
+    for key, part in files.items():
+        files[key] = MultipartPartWrapper(part)
+
+    return forms, files
+
+
 def rawinput(method: str | None = None) -> storage:
     """Returns storage object with GET or POST arguments."""
     method = method or "both"
@@ -434,9 +484,13 @@ def rawinput(method: str | None = None) -> storage:
                 # object in ctx to allow calling web.input multiple times.
                 post_req = ctx.get("_fieldstorage")
                 if not post_req:
-                    forms, files = multipart.parse_form_data(environ=env)
-                    post_req = dictadd(forms, files)
-                    ctx._fieldstorage = post_req
+                    # 'empty' calls to cgi.FieldStorage returned an empty dict.
+                    try:
+                        forms, files = custom_parse_form_data(environ=env, strict=True)
+                        post_req = dictadd(forms, files)
+                        ctx._fieldstorage = post_req
+                    except IndexError:
+                        post_req = {}
 
             else:
                 post_data = data().decode("utf-8")

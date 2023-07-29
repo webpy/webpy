@@ -3,15 +3,14 @@ Web API (wrapper around WSGI)
 (from web.py)
 """
 
-import cgi
 import pprint
 import sys
-import tempfile
 from http.cookies import CookieError, Morsel, SimpleCookie
-from io import BytesIO
 from typing import Any
 from urllib.parse import quote, unquote, urljoin
 from urllib.parse import parse_qs
+
+import multipart
 
 from .utils import dictadd, intget, safestr, storage, storify, threadeddict
 
@@ -384,21 +383,21 @@ def InternalError(message=None):
 internalerror = InternalError
 
 
-class cgiFieldStorage(cgi.FieldStorage):
-    """
-    Subclass cgi.FieldStorage, as read_binary expects fp to return
-    bytes. If the headers do not contain a content-disposition with a
-    filename, cgi.FieldStorage's make_file will create a TemporaryFile
-    with `w+` flags. The write to that temporary file will fail, due
-    to incorrect encoding in Python 3.
-    """
+# class cgiFieldStorage(cgi.FieldStorage):
+#     """
+#     Subclass cgi.FieldStorage, as read_binary expects fp to return
+#     bytes. If the headers do not contain a content-disposition with a
+#     filename, cgi.FieldStorage's make_file will create a TemporaryFile
+#     with `w+` flags. The write to that temporary file will fail, due
+#     to incorrect encoding in Python 3.
+#     """
 
-    def make_file(self, binary=None):
-        """
-        For backwards compatibility with Python 2, make_file accepted
-        a binary flag. This was unused, and removed in Python 3.
-        """
-        return tempfile.TemporaryFile("wb+")
+#     def make_file(self, binary=None):
+#         """
+#         For backwards compatibility with Python 2, make_file accepted
+#         a binary flag. This was unused, and removed in Python 3.
+#         """
+#         return tempfile.TemporaryFile("wb+")
 
 
 def header(hdr, value, unique=False):
@@ -420,20 +419,14 @@ def header(hdr, value, unique=False):
     ctx.headers.append((hdr, value))
 
 
-def rawinput(method=None):
+def rawinput(method: str | None = None) -> storage:
     """Returns storage object with GET or POST arguments."""
     method = method or "both"
 
-    def dictify(fs):
-        # hack to make web.input work with enctype='text/plain.
-        if hasattr(fs, "list") and fs.list is None:
-            fs.list = []
-
-        return {k: fs[k] for k in fs}
-
     def preserve_fieldstorage_get_output_format(data: dict[str, Any]) -> dict[str, str | list[str]]:
         """
-        Ensure output matches Python's cgi.FieldStorage handling for GETs.
+        Ensure output matches Python's cgi.FieldStorage handling for
+        query parameters.
 
         >>> preserve_fieldstorage_get_output_format({'x': ['2'], 'y': ['1', '2']})
         {'x': '2', 'y': ['1', '2']}
@@ -451,19 +444,21 @@ def rawinput(method=None):
 
     if method.lower() in ["both", "post", "put", "patch"]:
         if e["REQUEST_METHOD"] in ["POST", "PUT", "PATCH"]:
+
             if e.get("CONTENT_TYPE", "").lower().startswith("multipart/"):
                 # since wsgi.input is directly passed to cgi.FieldStorage,
                 # it can not be called multiple times. Saving the FieldStorage
                 # object in ctx to allow calling web.input multiple times.
                 a = ctx.get("_fieldstorage")
                 if not a:
-                    fp = e["wsgi.input"]
-                    a = cgiFieldStorage(fp=fp, environ=e, keep_blank_values=1)
+                    forms, files = multipart.parse_form_data(environ=e)
+                    a = dictadd(forms, files)
                     ctx._fieldstorage = a
+
             else:
                 d = data().decode("utf-8")
                 a = parse_qs(d, keep_blank_values=True)
-            a = dictify(a)
+                a = preserve_fieldstorage_get_output_format(a)
 
     if method.lower() in ["both", "get"]:
         e["REQUEST_METHOD"] = "GET"

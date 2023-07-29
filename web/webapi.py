@@ -383,23 +383,6 @@ def InternalError(message=None):
 internalerror = InternalError
 
 
-# class cgiFieldStorage(cgi.FieldStorage):
-#     """
-#     Subclass cgi.FieldStorage, as read_binary expects fp to return
-#     bytes. If the headers do not contain a content-disposition with a
-#     filename, cgi.FieldStorage's make_file will create a TemporaryFile
-#     with `w+` flags. The write to that temporary file will fail, due
-#     to incorrect encoding in Python 3.
-#     """
-
-#     def make_file(self, binary=None):
-#         """
-#         For backwards compatibility with Python 2, make_file accepted
-#         a binary flag. This was unused, and removed in Python 3.
-#         """
-#         return tempfile.TemporaryFile("wb+")
-
-
 def header(hdr, value, unique=False):
     """
     Adds the header `hdr: value` with the response.

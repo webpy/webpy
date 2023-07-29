@@ -448,15 +448,7 @@ def rawinput(method: str | None = None) -> storage:
         b = parse_qs(e.get('QUERY_STRING', ''), keep_blank_values=True)
         b = preserve_fieldstorage_get_output_format(b)
 
-    def process_fieldstorage(fs):
-        if isinstance(fs, list):
-            return [process_fieldstorage(x) for x in fs]
-        elif hasattr(fs, "filename") and fs.filename is None:
-            return fs.value
-        else:
-            return fs
-
-    return storage([(k, process_fieldstorage(v)) for k, v in dictadd(b, a).items()])
+    return storage(dictadd(get_req, post_req))
 
 
 def input(*requireds, **defaults):

@@ -244,7 +244,9 @@ class application:
             else:
                 q = data
 
-            env["wsgi.input"] = BytesIO(q.encode("utf-8")) if isinstance(q, str) else BytesIO(q)
+            env["wsgi.input"] = (
+                BytesIO(q.encode("utf-8")) if isinstance(q, str) else BytesIO(q)
+            )
             # if not env.get('CONTENT_TYPE', '').lower().startswith('multipart/') and 'CONTENT_LENGTH' not in env:
             if "CONTENT_LENGTH" not in env:
                 env["CONTENT_LENGTH"] = len(q)

@@ -426,6 +426,7 @@ class MultipartPartWrapper:
             i = web.input(file={})
             name, filename, value = i.file.name, i.file.filename, i.file.value
     """
+
     def __init__(self, part: multipart.MultipartPart) -> None:
         self._part = part
 
@@ -440,7 +441,9 @@ class MultipartPartWrapper:
         return getattr(self._part, name)
 
 
-def custom_parse_form_data(*args: str | bool, **kwargs: str | bool) -> tuple[multipart.MultiDict, multipart.MultiDict]:
+def custom_parse_form_data(
+    *args: str | bool, **kwargs: str | bool
+) -> tuple[multipart.MultiDict, multipart.MultiDict]:
     """
     The same as multipart.parse_form_data, but always executes
     MultipartPartWrapper for backwards compatibility with cgi.FieldStorage.
@@ -452,7 +455,9 @@ def custom_parse_form_data(*args: str | bool, **kwargs: str | bool) -> tuple[mul
     return forms, files
 
 
-def preserve_fieldstorage_get_output_format(data: dict[str, Any]) -> dict[str, str | list[str]]:
+def preserve_fieldstorage_get_output_format(
+    data: dict[str, Any]
+) -> dict[str, str | list[str]]:
     """
     Ensure output matches Python's cgi.FieldStorage handling for
     query parameters.
@@ -477,7 +482,6 @@ def rawinput(method: str | None = None) -> storage:
 
     if method.lower() in ["both", "post", "put", "patch"]:
         if env["REQUEST_METHOD"] in ["POST", "PUT", "PATCH"]:
-
             if env.get("CONTENT_TYPE", "").lower().startswith("multipart/"):
                 # since wsgi.input is directly passed to cgi.FieldStorage,
                 # it can not be called multiple times. Saving the FieldStorage
@@ -499,7 +503,7 @@ def rawinput(method: str | None = None) -> storage:
 
     if method.lower() in ["both", "get"]:
         env["REQUEST_METHOD"] = "GET"
-        get_req = parse_qs(env.get('QUERY_STRING', ''), keep_blank_values=True)
+        get_req = parse_qs(env.get("QUERY_STRING", ""), keep_blank_values=True)
         get_req = preserve_fieldstorage_get_output_format(get_req)
 
     return storage(dictadd(get_req, post_req))

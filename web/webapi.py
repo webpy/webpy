@@ -422,31 +422,31 @@ def rawinput(method: str | None = None) -> storage:
 
         return data_copy
 
-    e = ctx.env.copy()
-    a = b = {}
+    env = ctx.env.copy()
+    post_req = get_req = {}
 
     if method.lower() in ["both", "post", "put", "patch"]:
-        if e["REQUEST_METHOD"] in ["POST", "PUT", "PATCH"]:
+        if env["REQUEST_METHOD"] in ["POST", "PUT", "PATCH"]:
 
-            if e.get("CONTENT_TYPE", "").lower().startswith("multipart/"):
+            if env.get("CONTENT_TYPE", "").lower().startswith("multipart/"):
                 # since wsgi.input is directly passed to cgi.FieldStorage,
                 # it can not be called multiple times. Saving the FieldStorage
                 # object in ctx to allow calling web.input multiple times.
-                a = ctx.get("_fieldstorage")
-                if not a:
-                    forms, files = multipart.parse_form_data(environ=e)
-                    a = dictadd(forms, files)
-                    ctx._fieldstorage = a
+                post_req = ctx.get("_fieldstorage")
+                if not post_req:
+                    forms, files = multipart.parse_form_data(environ=env)
+                    post_req = dictadd(forms, files)
+                    ctx._fieldstorage = post_req
 
             else:
-                d = data().decode("utf-8")
-                a = parse_qs(d, keep_blank_values=True)
-                a = preserve_fieldstorage_get_output_format(a)
+                post_data = data().decode("utf-8")
+                post_req = parse_qs(post_data, keep_blank_values=True)
+                post_req = preserve_fieldstorage_get_output_format(post_req)
 
     if method.lower() in ["both", "get"]:
-        e["REQUEST_METHOD"] = "GET"
-        b = parse_qs(e.get('QUERY_STRING', ''), keep_blank_values=True)
-        b = preserve_fieldstorage_get_output_format(b)
+        env["REQUEST_METHOD"] = "GET"
+        get_req = parse_qs(env.get('QUERY_STRING', ''), keep_blank_values=True)
+        get_req = preserve_fieldstorage_get_output_format(get_req)
 
     return storage(dictadd(get_req, post_req))
 

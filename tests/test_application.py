@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import sys
@@ -309,6 +310,28 @@ class ApplicationTest(unittest.TestCase):
         response = app.request("/multipart", method="POST", data=data, headers=headers)
 
         self.assertEqual(response.data, b"a")
+
+    def test1000PlusCharsInFieldInMultipartPOST(self):
+        urls = ("(/.*)", "OneThousand")
+
+        class OneThousand:
+            def POST(self, path):
+                if path == "/multipart":
+                    i = web.input(file={})
+                    large_field = i.large_field
+                    file_contents = i.file.value
+                    resp = {'large_field': large_field, 'file_contents': file_contents}
+                    return json.dumps(resp)
+
+        app = web.application(urls, locals())
+        data = f'--boundary\r\nContent-Disposition: form-data; name="large_field"\r\n\r\n{"a"*1001}\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na\r\n--boundary--\r\n'
+        headers = {"Content-Type": "multipart/form-data; boundary=boundary"}
+        response = app.request("/multipart", method="POST", data=data, headers=headers)
+
+        data = json.loads(response.data)
+        self.assertEqual(data.get('large_field'), "a"*1001)
+        self.assertEqual(data.get('file_contents'), 'a')
+
 
     def testCustomNotFound(self):
         urls_a = ("/", "a")

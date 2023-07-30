@@ -8,8 +8,7 @@ import pprint
 import sys
 from http.cookies import CookieError, Morsel, SimpleCookie
 from typing import Any
-from urllib.parse import quote, unquote, urljoin
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote, unquote, urljoin
 
 import multipart
 

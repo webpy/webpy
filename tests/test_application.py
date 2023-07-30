@@ -325,14 +325,19 @@ class ApplicationTest(unittest.TestCase):
         app = web.application(urls, locals())
 
         # 1x1 px red PNG.
-        image_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0bIDAT\x08\xd7c\xf8\xff\xff?\x00\x05\xfe\x02\xfe\xdc\xccY\xe7\x00\x00\x00\x00IEND\xaeB`\x82'
-        data = b'--boundary\r\nContent-Disposition: form-data; name="x"\r\n\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n' + image_data + b'\r\n--boundary--\r\n'
+        image_data = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0bIDAT\x08\xd7c\xf8\xff\xff?\x00\x05\xfe\x02\xfe\xdc\xccY\xe7\x00\x00\x00\x00IEND\xaeB`\x82"
+        data = (
+            b'--boundary\r\nContent-Disposition: form-data; name="x"\r\n\r\nfoo\r\n--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n'
+            + image_data
+            + b"\r\n--boundary--\r\n"
+        )
         headers = {"Content-Type": "multipart/form-data; boundary=boundary"}
         response = app.request("/multipart", method="POST", data=data, headers=headers)
 
-        expected = Storage({'status': '200 OK', 'headers': {}, 'header_items': [], 'data': image_data})
+        expected = Storage(
+            {"status": "200 OK", "headers": {}, "header_items": [], "data": image_data}
+        )
         self.assertEqual(response, expected)
-
 
     def test1000PlusCharsInFieldInMultipartPOST(self):
         urls = ("(/.*)", "OneThousand")
@@ -342,8 +347,10 @@ class ApplicationTest(unittest.TestCase):
                 if path == "/multipart":
                     i = web.input(file={})
                     large_field = i.large_field
-                    file_contents = i.file.value.decode("utf-8")  # Make serializable to facilitate testing.
-                    resp = {'large_field': large_field, 'file_contents': file_contents}
+                    file_contents = i.file.value.decode(
+                        "utf-8"
+                    )  # Make serializable to facilitate testing.
+                    resp = {"large_field": large_field, "file_contents": file_contents}
                     return json.dumps(resp)
 
         app = web.application(urls, locals())
@@ -353,9 +360,8 @@ class ApplicationTest(unittest.TestCase):
         response = app.request("/multipart", method="POST", data=data, headers=headers)
 
         data = json.loads(response.data)
-        self.assertEqual(data.get('large_field'), "a"*1001)
-        self.assertEqual(data.get('file_contents'), 'a')
-
+        self.assertEqual(data.get("large_field"), "a" * 1001)
+        self.assertEqual(data.get("file_contents"), "a")
 
     def testCustomNotFound(self):
         urls_a = ("/", "a")

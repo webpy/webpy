@@ -354,9 +354,11 @@ class ApplicationTest(unittest.TestCase):
 
         app = web.application(urls, locals())
 
-        # Test for when the `name` field is identical (e.g. each file has `name="file"`)
+        # Test for when same `name` fields are identical (e.g. each file has
+        # `name="file"`, or `name=y" appears twice`)
         data = """--boundary\r\nContent-Disposition: form-data; name="x"\r\n\r\nfoo
 --boundary\r\nContent-Disposition: form-data; name="y"\r\n\r\nbar
+--boundary\r\nContent-Disposition: form-data; name="y"\r\n\r\nbaz
 --boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na
 --boundary\r\nContent-Disposition: form-data; name="file"; filename="b.txt"\r\nContent-Type: text/plain\r\n\r\nb
 --boundary\r\nContent-Disposition: form-data; name="file"; filename="c.txt"\r\nContent-Type: text/plain\r\n\r\nc
@@ -366,7 +368,7 @@ class ApplicationTest(unittest.TestCase):
 
         expected = web.storage(
             {
-                "y": "bar",
+                "y": ["bar", "baz"],
                 "x": "foo",
                 "file": [
                     {"name": "file", "filename": "a.txt", "value": "a"},

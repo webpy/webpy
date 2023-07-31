@@ -7,6 +7,7 @@ from __future__ import annotations
 import copy
 import pprint
 import sys
+from collections import defaultdict
 from collections.abc import MutableMapping
 from http.cookies import CookieError, Morsel, SimpleCookie
 from io import BytesIO
@@ -449,7 +450,9 @@ class MultipartPartWrapper:
         return getattr(self._part, name)
 
 
-def parse_multipart_data(stream, boundary, content_length, **kwargs):
+def parse_multipart_data(
+    stream: BytesIO, boundary: str, content_length: int, **kwargs
+) -> tuple[MutableMapping, MutableMapping]:
     """
     For compatibility with cgi.FieldStorage, if all uploads use the
     same name, then put them under in list under a single key. E.g.:
@@ -458,18 +461,14 @@ def parse_multipart_data(stream, boundary, content_length, **kwargs):
     its own key. E.g.:
     {'file_1': <file_object_1>, 'file_2': <file_object_2>}
     """
-    forms, files = MultiDict(), MultiDict()
-    seen_names = set()
+    files = defaultdict(list)
+    forms = defaultdict(list)
 
     for part in MultipartParser(stream, boundary, content_length, **kwargs):
         if part.filename or not part.is_buffered():
-            if part.name not in seen_names:
-                files[part.name] = [part]
-                seen_names.add(part.name)
-            else:
-                files[part.name].append(part)
+            files[part.name].append(part)
         else:
-            forms[part.name] = part.value
+            forms[part.name].append(part.value)
 
     # Flatten lists with only one item for cgi.FieldStorage compatibility.
     forms = flatten_list(forms)

@@ -4,8 +4,10 @@ Web API (wrapper around WSGI)
 """
 from __future__ import annotations
 
+import copy
 import pprint
 import sys
+from collections.abc import MutableMapping
 from http.cookies import CookieError, Morsel, SimpleCookie
 from io import BytesIO
 from typing import Any
@@ -447,9 +449,45 @@ class MultipartPartWrapper:
         return getattr(self._part, name)
 
 
+def parse_multipart_data(stream, boundary, content_length, **kwargs):
+    """
+    For compatibility with cgi.FieldStorage, if all uploads use the
+    same name, then put them under in list under a single key. E.g.:
+    {'file': [<file_object_1>, <file_object_2>]}
+    But if the files use different keys, just put each object under
+    its own key. E.g.:
+    {'file_1': <file_object_1>, 'file_2': <file_object_2>}
+    """
+    forms, files = MultiDict(), MultiDict()
+    seen_names = set()
+
+    for part in MultipartParser(stream, boundary, content_length, **kwargs):
+        if part.filename or not part.is_buffered():
+            if part.name not in seen_names:
+                files[part.name] = [part]
+                seen_names.add(part.name)
+            else:
+                files[part.name].append(part)
+        else:
+            forms[part.name] = part.value
+
+    # Flatten lists with only one item for cgi.FieldStorage compatibility.
+    forms = flatten_list(forms)
+    files = flatten_list(files)
+
+    # Wrap output for compatibility with cgi.FieldStorage's value method.
+    for key, part in files.items():
+        if isinstance(part, list):
+            files[key] = [MultipartPartWrapper(item) for item in part]
+        else:
+            files[key] = MultipartPartWrapper(part)
+
+    return forms, files
+
+
 def custom_parse_form_data(
     environ: dict, charset: str = "utf8", strict: bool = False, **kwargs
-) -> tuple[MultiDict, MultiDict]:
+) -> tuple[MutableMapping, MutableMapping]:
     """
     The same as multipart.parse_form_data, but with cgi.FieldStorage backwards
     compatibility.
@@ -481,27 +519,9 @@ def custom_parse_form_data(
 
             if not boundary:
                 raise MultipartError("No boundary for multipart/form-data.")
-
-            # For compatibility with cgi.FieldStorage, if all uploads use the
-            # same name, then put them under in list under a single key. E.g.:
-            # {'file': [<file_object_1>, <file_object_2>]}
-            # But if the files use different keys, just put each object under
-            # its own key. E.g.:
-            # {'file_1': <file_object_1>, 'file_2': <file_object_2>}
-            seen_names = []
-            for part in MultipartParser(stream, boundary, content_length, **kwargs):
-                if part.filename or not part.is_buffered():
-                    if seen_names.count(part.name) <= 0:
-                        files[part.name] = part
-                        seen_names.append(part.name)
-                    # Convert value to a list if the key has been seen.
-                    elif seen_names.count(part.name) == 1:
-                        files[part.name] = [files[part.name], part]
-                        seen_names.append(part.name)
-                    else:
-                        files[part.name].append(part)
-                else:
-                    forms[part.name] = part.value
+            forms, files = parse_multipart_data(
+                stream, boundary, content_length, **kwargs
+            )
 
         else:
             raise MultipartError("Unsupported content type.")
@@ -512,30 +532,21 @@ def custom_parse_form_data(
                 part.close()
             raise
 
-    # Wrap output for compatibility with cgi.FieldStorage's value method.
-    for key, part in files.items():
-        if isinstance(part, list):
-            files[key] = [MultipartPartWrapper(item) for item in part]
-        else:
-            files[key] = MultipartPartWrapper(part)
-
     return forms, files
 
 
-def preserve_fieldstorage_get_output_format(
-    data: dict[str, Any]
-) -> dict[str, str | list[str]]:
+def flatten_list(data: MutableMapping[str, Any]) -> MutableMapping:
     """
     Ensure output matches Python's cgi.FieldStorage handling for
     query parameters.
 
-    >>> preserve_fieldstorage_get_output_format({'x': ['2'], 'y': ['1', '2']})
+    >>> flatten_list({'x': ['2'], 'y': ['1', '2']})
     {'x': '2', 'y': ['1', '2']}
     """
-    data_copy = data.copy()
+    data_copy = copy.copy(data)
 
     for k, v in data_copy.items():
-        if len(v) == 1 and isinstance(v[0], (int, str)):
+        if len(v) == 1:
             data_copy[k] = v[0]
 
     return data_copy
@@ -550,8 +561,8 @@ def rawinput(method: str | None = None) -> storage:
     if method.lower() in ["both", "post", "put", "patch"]:
         if env["REQUEST_METHOD"] in ["POST", "PUT", "PATCH"]:
             if env.get("CONTENT_TYPE", "").lower().startswith("multipart/"):
-                # since wsgi.input is directly passed to cgi.FieldStorage,
-                # it can not be called multiple times. Saving the FieldStorage
+                # Since wsgi.input is directly passed to cgi.FieldStorage,
+                # it cannot be called multiple times. Saving the FieldStorage
                 # object in ctx to allow calling web.input multiple times.
                 post_req = ctx.get("_fieldstorage")
                 if not post_req:
@@ -566,12 +577,12 @@ def rawinput(method: str | None = None) -> storage:
             else:
                 post_data = data().decode("utf-8")
                 post_req = parse_qs(post_data, keep_blank_values=True)
-                post_req = preserve_fieldstorage_get_output_format(post_req)
+                post_req = flatten_list(post_req)
 
     if method.lower() in ["both", "get"]:
         env["REQUEST_METHOD"] = "GET"
         get_req = parse_qs(env.get("QUERY_STRING", ""), keep_blank_values=True)
-        get_req = preserve_fieldstorage_get_output_format(get_req)
+        get_req = flatten_list(get_req)
 
     return storage(dictadd(get_req, post_req))
 

@@ -8,6 +8,7 @@ import unittest
 
 import web
 from web.utils import Storage
+from web.webapi import MultipartPartWrapper
 
 try:
     from urllib.parse import urlencode
@@ -311,6 +312,92 @@ class ApplicationTest(unittest.TestCase):
         response = app.request("/multipart", method="POST", data=data, headers=headers)
 
         self.assertEqual(response.data, b"a")
+
+    def testMultipleUpload(self):
+        """
+        Test multiple upload, both in terms of multiple files, but also
+        multiple non-file values.
+        """
+        urls = ("(/.*)", "Upload")
+
+        def make_part_serializable(part: MultipartPartWrapper) -> dict[str, str]:
+            """
+            Returns a serializable dict based on a MultipartPart object by
+            converting part.value to a string to facilitate testing.
+            """
+            result = {}
+            result.update({key: getattr(part, key) for key in ["name", "filename"]})
+            result["value"] = part.value.decode("UTF-8")
+
+            return result
+
+        class Upload:
+            def POST(self, path):
+                if path == "/multipart":
+                    i = web.webapi.rawinput()
+
+                    # Multiple files in a list under the key 'file'
+                    if hasattr(i, "file") and i.file is not None:
+                        i.file = [
+                            make_part_serializable(item)
+                            for item in i.file
+                            if isinstance(item, MultipartPartWrapper)
+                        ].sort(key=lambda x: x["filename"])
+                    # Multiple files with their own keys.
+                    else:
+                        pattern = "file_"
+                        file_keys = [key for key in i.keys() if key.startswith(pattern)]
+                        for key in file_keys:
+                            setattr(i, key, make_part_serializable(getattr(i, key)))
+
+                    return json.dumps(i)
+
+        app = web.application(urls, locals())
+
+        # Test for when the `name` field is identical (e.g. each file has `name="file"`)
+        data = """--boundary\r\nContent-Disposition: form-data; name="x"\r\n\r\nfoo
+--boundary\r\nContent-Disposition: form-data; name="y"\r\n\r\nbar
+--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na
+--boundary\r\nContent-Disposition: form-data; name="file"; filename="b.txt"\r\nContent-Type: text/plain\r\n\r\nb
+--boundary\r\nContent-Disposition: form-data; name="file"; filename="c.txt"\r\nContent-Type: text/plain\r\n\r\nc
+--boundary--\r\n"""
+        headers = {"Content-Type": "multipart/form-data; boundary=boundary"}
+        response = app.request("/multipart", method="POST", data=data, headers=headers)
+
+        expected = web.storage(
+            {
+                "y": "bar",
+                "x": "foo",
+                "file": [
+                    {"name": "file", "filename": "a.txt", "value": "a"},
+                    {"name": "file", "filename": "b.txt", "value": "b"},
+                ].sort(key=lambda x: x["filename"]),
+            }
+        )
+        result = json.loads(response.data)
+        self.assertEqual(result, expected)
+
+        # Test for when the `name` field is unique (e.g. each `name="file_a"`, `name="file_b"`, etc.)
+        data = """--boundary\r\nContent-Disposition: form-data; name="x"\r\n\r\nfoo
+--boundary\r\nContent-Disposition: form-data; name="y"\r\n\r\nbar
+--boundary\r\nContent-Disposition: form-data; name="file_a"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\na
+--boundary\r\nContent-Disposition: form-data; name="file_b"; filename="b.txt"\r\nContent-Type: text/plain\r\n\r\nb
+--boundary\r\nContent-Disposition: form-data; name="file_c"; filename="c.txt"\r\nContent-Type: text/plain\r\n\r\nc
+--boundary--\r\n"""
+        headers = {"Content-Type": "multipart/form-data; boundary=boundary"}
+        response = app.request("/multipart", method="POST", data=data, headers=headers)
+
+        expected = web.storage(
+            {
+                "y": "bar",
+                "x": "foo",
+                "file_a": {"name": "file_a", "filename": "a.txt", "value": "a"},
+                "file_b": {"name": "file_b", "filename": "b.txt", "value": "b"},
+                "file_c": {"name": "file_c", "filename": "c.txt", "value": "c"},
+            }
+        )
+        result = json.loads(response.data)
+        self.assertEqual(result, expected)
 
     def testBinaryImage(self):
         urls = ("(/.*)", "ImageUpload")

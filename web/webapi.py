@@ -7,10 +7,17 @@ from __future__ import annotations
 import pprint
 import sys
 from http.cookies import CookieError, Morsel, SimpleCookie
+from io import BytesIO
 from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urljoin
 
-import multipart
+from multipart import (
+    MultiDict,
+    MultipartError,
+    MultipartParser,
+    MultipartPart,
+    parse_options_header,
+)
 
 from .utils import dictadd, intget, safestr, storage, storify, threadeddict
 
@@ -404,7 +411,7 @@ def header(hdr, value, unique=False):
 
 class MultipartPartWrapper:
     """
-    Ensure calling `.value` on a multipart file object returns the raw value
+    Ensures calling `.value` on a multipart file object returns the raw value
     in the same way that calling `.value` on FieldStorage multipart objects
     did.
 
@@ -426,7 +433,7 @@ class MultipartPartWrapper:
             name, filename, value = i.file.name, i.file.filename, i.file.value
     """
 
-    def __init__(self, part: multipart.MultipartPart) -> None:
+    def __init__(self, part: MultipartPart) -> None:
         self._part = part
 
     def __getattr__(self, name: str) -> Any:
@@ -441,15 +448,76 @@ class MultipartPartWrapper:
 
 
 def custom_parse_form_data(
-    *args: str | bool, **kwargs: str | bool
-) -> tuple[multipart.MultiDict, multipart.MultiDict]:
+    environ: dict, charset: str = "utf8", strict: bool = False, **kwargs
+) -> tuple[MultiDict, MultiDict]:
     """
-    The same as multipart.parse_form_data, but always executes
-    MultipartPartWrapper for backwards compatibility with cgi.FieldStorage.
+    The same as multipart.parse_form_data, but with cgi.FieldStorage backwards
+    compatibility.
+
+    This always executes MultipartPartWrapper and prevents parse_form_data
+    from clobbering files when every file has the same name attribute.
+
+    Code adapted directly from multipart.parse_form_data.
+
+    See the tests for examples of the input and output.
     """
-    forms, files = multipart.parse_form_data(*args, **kwargs)
+    forms, files = MultiDict(), MultiDict()
+
+    try:
+        if environ.get("REQUEST_METHOD", "GET").upper() not in ("POST", "PUT"):
+            raise MultipartError("Request method other than POST or PUT.")
+        content_length = int(environ.get("CONTENT_LENGTH", "-1"))
+        content_type = environ.get("CONTENT_TYPE", "")
+
+        if not content_type:
+            raise MultipartError("Missing Content-Type header.")
+
+        content_type, options = parse_options_header(content_type)
+        stream = environ.get("wsgi.input") or BytesIO()
+        kwargs["charset"] = charset = options.get("charset", charset)
+
+        if content_type == "multipart/form-data":
+            boundary = options.get("boundary", "")
+
+            if not boundary:
+                raise MultipartError("No boundary for multipart/form-data.")
+
+            # For compatibility with cgi.FieldStorage, if all uploads use the
+            # same name, then put them under in list under a single key. E.g.:
+            # {'file': [<file_object_1>, <file_object_2>]}
+            # But if the files use different keys, just put each object under
+            # its own key. E.g.:
+            # {'file_1': <file_object_1>, 'file_2': <file_object_2>}
+            seen_names = []
+            for part in MultipartParser(stream, boundary, content_length, **kwargs):
+                if part.filename or not part.is_buffered():
+                    if seen_names.count(part.name) <= 0:
+                        files[part.name] = part
+                        seen_names.append(part.name)
+                    # Convert value to a list if the key has been seen.
+                    elif seen_names.count(part.name) == 1:
+                        files[part.name] = [files[part.name], part]
+                        seen_names.append(part.name)
+                    else:
+                        files[part.name].append(part)
+                else:
+                    forms[part.name] = part.value
+
+        else:
+            raise MultipartError("Unsupported content type.")
+
+    except MultipartError:
+        if strict:
+            for part in files.values():
+                part.close()
+            raise
+
+    # Wrap output for compatibility with cgi.FieldStorage's value method.
     for key, part in files.items():
-        files[key] = MultipartPartWrapper(part)
+        if isinstance(part, list):
+            files[key] = [MultipartPartWrapper(item) for item in part]
+        else:
+            files[key] = MultipartPartWrapper(part)
 
     return forms, files
 

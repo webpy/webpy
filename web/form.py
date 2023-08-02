@@ -69,9 +69,7 @@ class Form:
                     html
                 )
             else:
-                out += '    <tr><th><label for="{}">{}</label></th><td>{}</td></tr>\n'.format(
-                    net.websafe(i.id), net.websafe(i.description), html
-                )
+                out += f'    <tr><th><label for="{net.websafe(i.id)}">{net.websafe(i.description)}</label></th><td>{html}</td></tr>\n'
         out += "</table>"
         return out
 
@@ -81,9 +79,7 @@ class Form:
         for i in self.inputs:
             if not i.is_hidden():
                 out.append(
-                    '<label for="{}">{}</label>'.format(
-                        net.websafe(i.id), net.websafe(i.description)
-                    )
+                    f'<label for="{net.websafe(i.id)}">{net.websafe(i.description)}</label>'
                 )
             out.append(i.pre)
             out.append(i.render())
@@ -344,10 +340,9 @@ class Dropdown(Input):
             select_p = ' selected="selected"'
         else:
             select_p = ""
-        return indent + '<option{} value="{}">{}</option>\n'.format(
-            select_p,
-            net.websafe(value),
-            net.websafe(desc),
+        return (
+            indent
+            + f'<option{select_p} value="{net.websafe(value)}">{net.websafe(desc)}</option>\n'
         )
 
 

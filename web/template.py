@@ -1017,13 +1017,7 @@ class Template(BaseTemplate):
             compiled_code = compile(code, filename, "exec")
         except SyntaxError as err:
             # display template line that caused the error along with the traceback.
-            err.msg += (
-                "\n\nTemplate traceback:\n    File {}, line {}\n        {}".format(
-                    repr(err.filename),
-                    err.lineno,
-                    get_source_line(err.filename, err.lineno - 1),
-                )
-            )
+            err.msg += f"\n\nTemplate traceback:\n    File {repr(err.filename)}, line {err.lineno}\n        {get_source_line(err.filename, err.lineno - 1)}"
 
             raise
 

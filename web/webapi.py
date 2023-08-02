@@ -3,12 +3,13 @@ Web API (wrapper around WSGI)
 (from web.py)
 """
 
-import multipart
 import pprint
 import sys
 import urllib
 from http.cookies import CookieError, Morsel, SimpleCookie
 from urllib.parse import quote, unquote, urljoin
+
+import multipart
 
 from .utils import dictadd, intget, safestr, storage, storify, threadeddict
 
@@ -420,7 +421,9 @@ def rawinput(method=None):
                 # since wsgi.input is directly passed to multipart,
                 # it can not be called multiple times. Saving the result
                 # object in ctx to allow calling web.input multiple times.
-                a = ctx.get("_fieldstorage")  # TODO: Rename? is this visible anywhere else?
+                a = ctx.get(
+                    "_fieldstorage"
+                )  # TODO: Rename? is this visible anywhere else?
                 if not a:
                     # This returns two dicts, forms & files.
                     forms, a = multipart.parse_form_data(environ=env)
@@ -438,7 +441,9 @@ def rawinput(method=None):
     def process_values(values):
         if isinstance(values, list):
             return [process_values(x) for x in values]
-        elif hasattr(values, "filename") and values.filename is None:  # FIXME this probably needs to be improved
+        elif (
+            hasattr(values, "filename") and values.filename is None
+        ):  # FIXME this probably needs to be improved
             return values.value
         else:
             return values

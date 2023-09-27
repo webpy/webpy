@@ -31,25 +31,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12-dev", "pypy-3.9"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy-3.10"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
-      - if: "contains(matrix.python-version, '-dev')"
-        run: sudo apt-get install -y libxml2 libxslt-dev
+          allow-prereleases: true
       - run: pip install black "codespell[toml]" pytest ruff
       - run: black --check .
       - run: codespell
-      - run: ruff --format=github .
+      - run: ruff --output-format=github .
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt
 
-      # Use the default MySQL server offered by Github Actions.
+      # Use the default MySQL server offered by GitHub Actions.
       - name: "Generate /tmp/my.cnf"
         run: echo -e "[client]\nhost=127.0.0.1\nport=3306\nuser=root\npassword='root'" > /tmp/my.cnf
       - name: "Create MySQL user and database used for testing."

@@ -1047,13 +1047,7 @@ class DB:
         for i, row in enumerate(values):
             if i != 0:
                 sql_query.append(", ")
-            SQLQuery.join(
-                [SQLParam(row[k]) for k in keys],
-                sep=", ",
-                target=sql_query,
-                prefix="(",
-                suffix=")",
-            )
+            sql_query += "(" + SQLQuery.join([sqlparam(row[k]) for k in keys], ", ") + ")"
 
         if _test:
             return sql_query

@@ -136,7 +136,7 @@ def recurse_over(ob, name, indent_level=0):
     argstr = ""
     if ts.endswith(("function", "method")):
         argstr = arg_string(ob)
-    elif ts == "classobj" or ts == "type":
+    elif ts in {"classobj", "type"}:
         if ts == "classobj":
             ts = "class"
         if hasattr(ob, "__init__"):

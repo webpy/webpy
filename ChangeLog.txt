@@ -1,5 +1,11 @@
 # web.py changelog
 
+## 2023-10-02 0.70
+
+* Remove the cgi module which will be removed in Python 3.13 #773
+* Add support for current versions of CPython
+* Upgrade testing and linting tools
+
 ## 2020-11-09 0.62
 
 * Fixed: application.load() assumes ctx.path will be a latin1 string #687

@@ -303,7 +303,6 @@ class Parser:
                     t = next(tokens)
                     if t.value == end:
                         break
-            return
 
         parens = {"(": ")", "[": "]", "{": "}"}
 

@@ -395,7 +395,7 @@ class ApplicationTest(unittest.TestCase):
         self.assertEqual(f("/?x=2"), b"/?x=1")
 
         p = f("/?y=1&y=2&x=2")
-        self.assertTrue(p == b"/?y=1&y=2&x=1" or p == b"/?x=1&y=1&y=2")
+        self.assertTrue(p in {b"/?y=1&y=2&x=1", b"/?x=1&y=1&y=2"})
 
     def test_setcookie(self):
         urls = ("/", "index")

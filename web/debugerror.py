@@ -244,17 +244,18 @@ def djangoerror():
         Returns (pre_context_lineno, pre_context, context_line, post_context).
         """
         try:
-            source = open(filename).readlines()
-            lower_bound = max(0, lineno - context_lines)
-            upper_bound = lineno + context_lines
+            with open(filename, 'r', errors='replace') as f:
+                source = f.readlines()
+                lower_bound = max(0, lineno - context_lines)
+                upper_bound = lineno + context_lines
 
-            pre_context = [line.strip("\n") for line in source[lower_bound:lineno]]
-            context_line = source[lineno].strip("\n")
-            post_context = [
-                line.strip("\n") for line in source[lineno + 1 : upper_bound]
-            ]
+                pre_context = [line.strip("\n") for line in source[lower_bound:lineno]]
+                context_line = source[lineno].strip("\n")
+                post_context = [
+                    line.strip("\n") for line in source[lineno + 1 : upper_bound]
+                ]
 
-            return lower_bound, pre_context, context_line, post_context
+                return lower_bound, pre_context, context_line, post_context
         except (OSError, IndexError):
             return None, [], None, []
 

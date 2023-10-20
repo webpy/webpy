@@ -187,7 +187,7 @@ def storify(mapping, *requireds, **defaults):
 
         setattr(stor, key, value)
 
-    for (key, value) in iteritems(defaults):
+    for key, value in iteritems(defaults):
         result = value
         if hasattr(stor, key):
             result = stor[key]
@@ -778,7 +778,7 @@ def dictfind(dictionary, element):
         3
         >>> dictfind(d, 5)
     """
-    for (key, value) in iteritems(dictionary):
+    for key, value in iteritems(dictionary):
         if element is value:
             return key
 
@@ -795,7 +795,7 @@ def dictfindall(dictionary, element):
         []
     """
     res = []
-    for (key, value) in iteritems(dictionary):
+    for key, value in iteritems(dictionary):
         if element is value:
             res.append(key)
     return res
@@ -1227,7 +1227,7 @@ def tryall(context, prefix=None):
     """
     context = context.copy()  # vars() would update
     results = {}
-    for (key, value) in iteritems(context):
+    for key, value in iteritems(context):
         if not hasattr(value, "__call__"):
             continue
         if prefix and not key.startswith(prefix):
@@ -1244,7 +1244,7 @@ def tryall(context, prefix=None):
 
     print("-" * 40)
     print("results:")
-    for (key, value) in iteritems(results):
+    for key, value in iteritems(results):
         print(" " * 2, str(key) + ":", value)
 
 
@@ -1369,7 +1369,7 @@ def autoassign(self, locals):
 
         def __init__(self, foo, bar, baz=1): autoassign(self, locals())
     """
-    for (key, value) in iteritems(locals):
+    for key, value in iteritems(locals):
         if key == "self":
             continue
         setattr(self, key, value)

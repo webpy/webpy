@@ -411,12 +411,6 @@ def rawinput(method=None):
     env = ctx.env.copy()
     a = b = {}
 
-    # This is required by the multipart module and not set up by the tests, so add the default value if missing
-    # srb: not sure if thtis is needed, as OpenLibrary appears to work without it. It also changes the content
-    #      type for many requests. Change tests, or add this? Not sure.
-    # if "CONTENT_TYPE" not in env:
-    #     env["CONTENT_TYPE"] = "application/x-www-form-urlencoded"
-
     if method.lower() in ["both", "post", "put", "patch"]:
         if env["REQUEST_METHOD"] in ["POST", "PUT", "PATCH"]:
             if env.get("CONTENT_TYPE", "").lower().startswith("multipart/"):
@@ -438,9 +432,6 @@ def rawinput(method=None):
             else:
                 post_data = data().decode("utf-8")
                 a = parse_qs(post_data, keep_blank_values=True)
-                # TODO: Can we safely ignore files here or should we merge them
-                # This returns two dicts: forms & files
-                # a, files = multipart.parse_form_data(environ=env)
             a = dictify(a)
 
     if method.lower() in ["both", "get"]:
@@ -452,9 +443,7 @@ def rawinput(method=None):
     def process_values(values):
         if isinstance(values, list):
             return [process_values(x) for x in values]
-        elif (
-            hasattr(values, "filename") and values.filename is None
-        ):  # FIXME this probably needs to be improved
+        elif hasattr(values, "filename") and values.filename is None:
             return values.value
         else:
             return values

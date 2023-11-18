@@ -409,13 +409,7 @@ def rawinput(method=None):
         return {k: fs[k] for k in fs}
 
     env = ctx.env.copy()
-    a = b = {}
-
-    # This is required by the multipart module and not set up by the tests, so add the default value if missing
-    # srb: not sure if thtis is needed, as OpenLibrary appears to work without it. It also changes the content
-    #      type for many requests. Change tests, or add this? Not sure.
-    # if "CONTENT_TYPE" not in env:
-    #     env["CONTENT_TYPE"] = "application/x-www-form-urlencoded"
+    post_req = get_req = {}
 
     if method.lower() in ["both", "post", "put", "patch"]:
         if env["REQUEST_METHOD"] in ["POST", "PUT", "PATCH"]:
@@ -423,43 +417,40 @@ def rawinput(method=None):
                 # since wsgi.input is directly passed to multipart,
                 # it can not be called multiple times. Saving the result
                 # object in ctx to allow calling web.input multiple times.
-                a = ctx.get(
+                post_req = ctx.get(
                     "_fieldstorage"
                 )  # TODO: Rename? is this visible anywhere else?
-                if not a:
+                if not post_req:
                     try:
                         # This returns two dicts, forms & files.
-                        forms, a = multipart.parse_form_data(environ=env)
-                        a = dictadd(forms, a)
-                        ctx._fieldstorage = a
+                        forms, files = multipart.parse_form_data(environ=env)
+                        post_req = dictadd(forms, files)
+                        ctx._fieldstorage = post_req
                     except IndexError:
-                        a = {}
+                        post_req = {}
 
             else:
                 post_data = data().decode("utf-8")
-                a = parse_qs(post_data, keep_blank_values=True)
-                # TODO: Can we safely ignore files here or should we merge them
-                # This returns two dicts: forms & files
-                # a, files = multipart.parse_form_data(environ=env)
-            a = dictify(a)
+                post_req = parse_qs(post_data, keep_blank_values=True)
+            post_req = dictify(post_req)
 
     if method.lower() in ["both", "get"]:
         env["REQUEST_METHOD"] = "GET"
-        b = dict(
+        get_req = dict(
             urllib.parse.parse_qs(env.get("QUERY_STRING", ""), keep_blank_values=True)
         )
 
     def process_values(values):
         if isinstance(values, list):
             return [process_values(x) for x in values]
-        elif (
-            hasattr(values, "filename") and values.filename is None
-        ):  # FIXME this probably needs to be improved
+        elif hasattr(values, "filename") and values.filename is None:
             return values.value
         else:
             return values
 
-    return storage([(k, process_values(v)) for k, v in dictadd(b, a).items()])
+    return storage(
+        [(k, process_values(v)) for k, v in dictadd(get_req, post_req).items()]
+    )
 
 
 def input(*requireds, **defaults):

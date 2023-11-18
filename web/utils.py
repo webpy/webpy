@@ -165,12 +165,10 @@ def storify(mapping, *requireds, **defaults):
             return s
 
     def getvalue(x):
-        if hasattr(x, "file") and hasattr(x, "value"):
-            return x.value
-        elif hasattr(x, "value"):
-            return unicodify(x.value)
+        if hasattr(x, "file") and hasattr(x, "raw"):
+            return x.file.read()
         else:
-            return unicodify(x)
+            return unicodify(getattr(x, "value", x))
 
     stor = Storage()
     for key in requireds + tuple(mapping.keys()):

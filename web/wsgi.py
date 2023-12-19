@@ -71,13 +71,11 @@ def _is_dev_mode():
     # For details, see https://github.com/webpy/webpy/issues/87
     argv = getattr(sys, "argv", [])
 
-    # quick hack to check if the program is running in dev mode.
+    # Quick hack to check if the program is running in dev mode.
     if (
         "SERVER_SOFTWARE" in os.environ
         or "PHP_FCGI_CHILDREN" in os.environ
-        or "fcgi" in argv
-        or "fastcgi" in argv
-        or "mod_wsgi" in argv
+        or any(arg in argv for arg in "fcgi fastcgi mod_wsgi unit".split())
     ):
         return False
     return True

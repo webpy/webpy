@@ -72,13 +72,12 @@ def _is_dev_mode():
     argv = getattr(sys, "argv", [])
 
     # Quick hack to check if the program is running in dev mode.
-    if (
+    production_mode = (
         "SERVER_SOFTWARE" in os.environ
         or "PHP_FCGI_CHILDREN" in os.environ
-        or any(arg in argv for arg in "fcgi fastcgi mod_wsgi unit".split())
-    ):
-        return False
-    return True
+        or any(arg in argv for arg in ("fcgi", "fastcgi", "mod_wsgi", "unit"))
+    )
+    return not production_mode
 
 
 # When running the builtin-server, enable debug mode if not already set.

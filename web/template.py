@@ -306,23 +306,38 @@ class Parser:
 
         parens = {"(": ")", "[": "]", "{": "}"}
 
-        def get_tokens(text):
+        def get_tokens(text: str):
             """tokenize text using python tokenizer.
             Python tokenizer ignores spaces, but they might be important in some cases.
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            i = iter([text])
-            readline = lambda: next(i)
-            end = None
-            for t in tokenize.generate_tokens(readline):
-                t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
-                if end is not None and end != t.begin:
-                    _, x1 = end
-                    _, x2 = t.begin
-                    yield storage(type=-1, value=text[x1:x2], begin=end, end=t.begin)
-                end = t.end
-                yield t
+
+            def tokenize_text(input_text):
+                i = iter([input_text])
+                readline = lambda: next(i)
+                end = None
+                for t in tokenize.generate_tokens(readline):
+                    t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
+                    if end is not None and end != t.begin:
+                        _, x1 = end
+                        _, x2 = t.begin
+                        yield storage(
+                            type=-1, value=input_text[x1:x2], begin=end, end=t.begin
+                        )
+                    end = t.end
+                    yield t
+
+            try:
+                yield from tokenize_text(text)
+            except tokenize.TokenError as e:
+                # Python 3.12+ compatibility: add a `"` suffix to terminate the string literal.
+                # See https://github.com/webpy/webpy/issues/784.
+                if "unterminated string literal" in str(e):
+                    fixed_text = text + '"'
+                    yield from tokenize_text(fixed_text)
+                else:
+                    raise  # Re-raise the exception if it's not due to an unterminated string literal
 
         class BetterIter:
             """Iterator like object with 2 support for 2 look aheads."""

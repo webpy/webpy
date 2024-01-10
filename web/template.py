@@ -242,7 +242,7 @@ class Parser:
         line, text = splitline(text)
         return StatementNode(line.strip() + "\n"), text
 
-    def read_expr(self, text, escape=True):
+    def read_expr(self, text, escape=True):  # noqa: C901, PLR0915
         """Reads a python expression from the text and returns the expression and remaining text.
 
         expr -> simple_expr | paren_expr

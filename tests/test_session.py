@@ -1,11 +1,37 @@
 import os
 import shutil
+import sqlite3
 import tempfile
 import threading
 import time
 import unittest
+from datetime import datetime
 
 import web
+
+
+def adapt_datetime_iso(date_time: datetime) -> str:
+    """
+    Convert a Python datetime.datetime into a timezone-naive ISO 8601 date string.
+
+    >>> adapt_datetime_iso(datetime(2023, 4, 5, 6, 7, 8, 9))
+    '2023-04-05T06:07:08.000009'
+    """
+    return date_time.isoformat()
+
+
+def convert_timestamp(time_stamp: bytes) -> datetime:
+    """
+    Convert an ISO 8601 formatted bytestring to a datetime.datetime object.
+
+    >>> convert_timestamp(b'2023-04-05T06:07:08.000009')
+    datetime.datetime(2023, 4, 5, 6, 7, 8, 9)
+    """
+    return datetime.strptime(time_stamp.decode("utf-8"), "%Y-%m-%dT%H:%M:%S.%f")
+
+
+sqlite3.register_adapter(datetime, adapt_datetime_iso)
+sqlite3.register_converter("timestamp", convert_timestamp)
 
 
 class SessionTest(unittest.TestCase):

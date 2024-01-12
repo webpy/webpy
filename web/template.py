@@ -31,8 +31,10 @@ Grammar:
 import ast
 import builtins
 import glob
+import itertools
 import os
 import sys
+import token
 import tokenize
 from functools import partial
 
@@ -331,13 +333,22 @@ class Parser:
             try:
                 yield from tokenize_text(text)
             except tokenize.TokenError as e:
-                # Python 3.12+ compatibility: add a `"` suffix to terminate the string literal.
-                # See https://github.com/webpy/webpy/issues/784.
                 if "unterminated string literal" in str(e):
-                    fixed_text = text + '"'
-                    yield from tokenize_text(fixed_text)
+                    # Things like unterminated string literals or EOF in multi-line literals will raise exceptions.
+                    # Tokenize the error free portion, then return an error token with the rest of the text.
+                    error_pos = e.args[1][1] - 1
+                    fixed_text = text[0:error_pos]
+                    yield from itertools.chain(
+                        tokenize_text(fixed_text),
+                        error_token_generator(text, error_pos, len(text)),
+                    )
                 else:
-                    raise  # Re-raise the exception if it's not due to an unterminated string literal
+                    raise
+
+        def error_token_generator(text, start, end):
+            yield storage(
+                type=token.ERRORTOKEN, value=text[start:], begin=start, end=end
+            )
 
         class BetterIter:
             """Iterator like object with 2 support for 2 look aheads."""

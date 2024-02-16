@@ -335,17 +335,14 @@ class Parser:
             try:
                 yield from tokenize_text(text)
             except tokenize.TokenError as e:
-                if "unterminated string literal" in str(e):
-                    # Things like unterminated string literals or EOF in multi-line literals will raise exceptions.
-                    # Tokenize the error free portion, then return an error token with the rest of the text.
-                    error_pos = e.args[1][1] - 1
-                    fixed_text = text[0:error_pos]
-                    yield from itertools.chain(
-                        tokenize_text(fixed_text),
-                        error_token_generator(text, error_pos, len(text)),
-                    )
-                else:
-                    raise
+                # Things like unterminated string literals or EOF in multi-line literals will raise exceptions
+                # tokenize the error free portion, then return an error token with the rest of the text
+                error_pos = e.args[1][1] - 1
+                fixed_text = text[0:error_pos]
+                yield from itertools.chain(
+                    tokenize_text(fixed_text),
+                    error_token_generator(text, error_pos + 1, len(text)),
+                )
 
         def error_token_generator(text, start, end):
             yield storage(

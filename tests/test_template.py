@@ -4,6 +4,13 @@ import web
 from web.template import ExpressionNode, Parser, SecurityError, Template
 
 
+class TestItem:
+    __test__ = False  # silence collection warning from test framework
+
+    def __init__(self):
+        self.id = 12345
+
+
 class _TestResult:
     def __init__(self, t):
         self.t = t
@@ -47,6 +54,16 @@ class TemplateTest(unittest.TestCase):
         template = 'a="$foo" <p>'
         f = t(template, globals={"foo": "bar"})
         assert repr(f()) == "'a=\"bar\" <p>\\n'"
+
+    def test_accessor(self):
+        template = 'a="$foo.id"<p>'
+        f = t(template, globals={"foo": TestItem()})
+        assert repr(f()) == "'a=\"12345\"<p>\\n'"
+
+    def test_href(self):
+        template = '<a href="/del/$item.id">Delete</a>'
+        f = t(template, globals={"item": TestItem()})
+        assert repr(f()) == "'<a href=\"/del/12345\">Delete</a>\\n'"
 
 
 class TestParser(unittest.TestCase):

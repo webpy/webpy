@@ -83,14 +83,13 @@ show-source = true
 target-version = "py38"
 
 [tool.ruff.mccabe]
-max-complexity = 26
+max-complexity = 20
 
 [tool.ruff.pylint]
 allow-magic-value-types = ["int", "str"]
 max-args = 9  # default is 5
 max-branches = 17  # default is 12
 max-returns = 8  # default is 6
-max-statements = 51  # default is 50
 
 [tool.codespell]
 ignore-words-list = "asend,gae"

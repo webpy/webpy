@@ -3,7 +3,6 @@ Network Utilities
 (from web.py)
 """
 
-
 import datetime
 import re
 import socket

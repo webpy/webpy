@@ -31,10 +31,14 @@ Grammar:
 import ast
 import builtins
 import glob
+import itertools
 import os
 import sys
+import token
 import tokenize
 from functools import partial
+
+from more_itertools import peekable
 
 from .net import websafe
 from .utils import re_compile, safestr, safeunicode, storage
@@ -242,7 +246,7 @@ class Parser:
         line, text = splitline(text)
         return StatementNode(line.strip() + "\n"), text
 
-    def read_expr(self, text, escape=True):
+    def read_expr(self, text, escape=True):  # noqa: C901, PLR0915
         """Reads a python expression from the text and returns the expression and remaining text.
 
         expr -> simple_expr | paren_expr
@@ -271,10 +275,10 @@ class Parser:
             extended_expr()
 
         def identifier():
-            next(tokens)
+            return next(tokens)
 
         def extended_expr():
-            lookahead = tokens.lookahead()
+            lookahead = tokens.peek()
             if lookahead is None:
                 return
             elif lookahead.value == ".":
@@ -288,7 +292,7 @@ class Parser:
         def attr_access():
             from token import NAME  # python token constants
 
-            if tokens.lookahead2().type == NAME:
+            if tokens[1].type == NAME:
                 next(tokens)  # consume dot
                 identifier()
                 extended_expr()
@@ -297,7 +301,7 @@ class Parser:
             begin = next(tokens).value
             end = parens[begin]
             while True:
-                if tokens.lookahead().value in parens:
+                if tokens.peek().value in parens:
                     paren_expr()
                 else:
                     t = next(tokens)
@@ -306,57 +310,61 @@ class Parser:
 
         parens = {"(": ")", "[": "]", "{": "}"}
 
-        def get_tokens(text):
+        def get_tokens(text: str):
             """tokenize text using python tokenizer.
             Python tokenizer ignores spaces, but they might be important in some cases.
             This function introduces dummy space tokens when it identifies any ignored space.
             Each token is a storage object containing type, value, begin and end.
             """
-            i = iter([text])
-            readline = lambda: next(i)
-            end = None
-            for t in tokenize.generate_tokens(readline):
-                t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
-                if end is not None and end != t.begin:
-                    _, x1 = end
-                    _, x2 = t.begin
-                    yield storage(type=-1, value=text[x1:x2], begin=end, end=t.begin)
-                end = t.end
-                yield t
 
-        class BetterIter:
-            """Iterator like object with 2 support for 2 look aheads."""
+            def tokenize_text(input_text):
+                i = iter([input_text])
+                readline = lambda: next(i)
+                end = None
+                for t in tokenize.generate_tokens(readline):
+                    t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
+                    if end is not None and end != t.begin:
+                        _, x1 = end
+                        _, x2 = t.begin
+                        yield storage(
+                            type=-1, value=input_text[x1:x2], begin=end, end=t.begin
+                        )
+                    end = t.end
+                    yield t
 
-            def __init__(self, items):
-                self.iteritems = iter(items)
-                self.items = []
-                self.position = 0
+            try:
+                yield from tokenize_text(text)
+            except tokenize.TokenError as e:
+                # Things like unterminated string literals or EOF in multi-line literals will raise exceptions
+                # tokenize the error free portion, then return an error token with the rest of the text
+                error_pos = e.args[1][1] - 1
+                fixed_text = text[0:error_pos]
+                yield from itertools.chain(
+                    tokenize_text(fixed_text),
+                    error_token_generator(text, error_pos + 1, len(text)),
+                )
+
+        def error_token_generator(text, start, end):
+            yield storage(
+                type=token.ERRORTOKEN, value=text[start:], begin=start, end=end
+            )
+
+        class peekable2(peekable):
+            """
+            A peekable class which caches the last item returned by next()
+            """
+
+            def __init__(self, iterable):
+                super().__init__(iterable)
                 self.current_item = None
 
-            def lookahead(self):
-                if len(self.items) <= self.position:
-                    self.items.append(self._next())
-                return self.items[self.position]
-
-            def _next(self):
-                try:
-                    return next(self.iteritems)
-                except StopIteration:
-                    return None
-
-            def lookahead2(self):
-                if len(self.items) <= self.position + 1:
-                    self.items.append(self._next())
-                return self.items[self.position + 1]
-
             def __next__(self):
-                self.current_item = self.lookahead()
-                self.position += 1
+                self.current_item = super().__next__()
                 return self.current_item
 
-        tokens = BetterIter(get_tokens(text))
+        tokens = peekable2(get_tokens(text))
 
-        if tokens.lookahead().value in parens:
+        if tokens.peek().value in parens:
             paren_expr()
         else:
             simple_expr()

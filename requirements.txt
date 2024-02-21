@@ -1,2 +1,3 @@
 cheroot>=6.0.0
+more_itertools>=2.6
 multipart>=0.2.4

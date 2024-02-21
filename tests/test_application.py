@@ -4,13 +4,10 @@ import sys
 import threading
 import time
 import unittest
+from urllib.parse import urlencode
 
 import web
 
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import urlencode
 
 data = """
 import web

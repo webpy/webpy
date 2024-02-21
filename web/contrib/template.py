@@ -1,6 +1,7 @@
 """
 Interface to various templating engines.
 """
+
 import os.path
 
 __all__ = ["render_cheetah", "render_genshi", "render_mako", "cache"]

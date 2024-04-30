@@ -100,10 +100,9 @@ class Form:
         for i in self.inputs:
             v = attrget(source, i.name)
             if _validate:
-                out = i.validate(v) and out
-                # if not i.validate(v):
-                #    self.note = i.note
-                #    return False
+                if not i.validate(v):
+                    self.note = i.note
+                    return False
             else:
                 i.set_value(v)
         if _validate:

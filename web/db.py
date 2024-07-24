@@ -730,7 +730,7 @@ class DB:
                 return persistent_db.PersistentDB(creator=self.db_module, **keywords)
             
         if getattr(self, "_pooleddb", None) is None:
-            if "persistentdb" in keywords:
+            if self.persistentdb:
                 self._pooleddb = get_persistent_db()
             else:
                 self._pooleddb = get_pooled_db()

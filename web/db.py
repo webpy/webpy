@@ -648,14 +648,16 @@ class DB:
         try:
             import dbutils  # noqa: F401
 
-            # enable pooling if DBUtils module is available.
+            # enable pooling and persistent db if DBUtils module is available.
             self.has_pooling = True
+            self.persistentdb = True
         except ImportError:
             self.has_pooling = False
+            self.persistentdb = False
 
         # Pooling can be disabled by passing pooling=False in the keywords.
         self.has_pooling = self.keywords.pop("pooling", True) and self.has_pooling
-        self.persistentdb = self.keywords.pop("pooling", True) and self.persistentdb
+        self.persistentdb = self.keywords.pop("persistentdb", False) and self.persistentdb
 
     def _getctx(self):
         if not self._ctx.get("db"):

@@ -5,7 +5,7 @@ requires = [
 ]
 
 [project]
-name = "web-py"
+name = "web.py-update"
 description = "web.py: makes web apps"
 readme = {file = "README.md", content-type = "text/plain"}
 license = {text = "Public domain"}
@@ -24,9 +24,7 @@ classifiers = [
 ]
 dynamic = [
   "version",
-]
-dependencies = [
-  "cheroot",
+  "dependencies",
 ]
 [project.urls]
 Homepage = "http://webpy.org/"
@@ -39,6 +37,7 @@ include-package-data = false
 
 [tool.setuptools.dynamic]
 version = {attr = "web.__version__"}
+dependencies = {file = ["requirements.txt"]}
 
 [tool.black]
 exclude = '''

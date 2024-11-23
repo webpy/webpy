@@ -61,7 +61,7 @@ exclude = '''
 '''
 
 [tool.ruff]
-select = [
+lint.select = [
   "C9",
   "E",
   "F",
@@ -72,7 +72,7 @@ select = [
   "UP",
   "W",
 ]
-ignore = [
+lint.ignore = [
   "E722",
   "E731",
   "F821",
@@ -80,13 +80,12 @@ ignore = [
   "UP031",
 ]
 line-length = 477
-show-source = true
 target-version = "py38"
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 20
 
-[tool.ruff.pylint]
+[tool.ruff.lint.pylint]
 allow-magic-value-types = ["int", "str"]
 max-args = 9  # default is 5
 max-branches = 17  # default is 12

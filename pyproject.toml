@@ -92,5 +92,5 @@ max-branches = 17  # default is 12
 max-returns = 8  # default is 6
 
 [tool.codespell]
-ignore-words-list = "asend,gae"
+ignore-words-list = "asend,gae,notin"
 skip = ["./.*"]

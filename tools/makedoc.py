@@ -180,8 +180,8 @@ def recurse_over(ob, name, indent_level=0):
         members = [item for item in dir(ob) if not item.startswith("_")]
 
     if "im_class" not in members:
-        for name in members:
-            recurse_over(getattr(ob, name), name, indent_level + 1)
+        for member_name in members:
+            recurse_over(getattr(ob, member_name), member_name, indent_level + 1)
     if indent_level > 0:
         print(indent_end)
 

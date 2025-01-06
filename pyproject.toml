@@ -7,11 +7,11 @@ requires = [
 [project]
 name = "web-py"
 description = "web.py: makes web apps"
-readme = {file = "README.md", content-type = "text/plain"}
-license = {text = "Public domain"}
-maintainers = [{name = "Anand Chitipothu", email = "anandology@gmail.com"}]
-authors = [{name = "Aaron Swartz", email = "me@aaronsw.com"}]
-requires-python = ">=3.8,<3.13"
+readme = { file = "README.md", content-type = "text/plain" }
+license = { text = "Public domain" }
+maintainers = [ { name = "Anand Chitipothu", email = "anandology@gmail.com" } ]
+authors = [ { name = "Aaron Swartz", email = "me@aaronsw.com" } ]
+requires-python = ">=3.8,<=3.13"
 classifiers = [
   "License :: Public Domain",
   "Programming Language :: Python",
@@ -21,24 +21,23 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 dynamic = [
+  "dependencies",
   "version",
 ]
-dependencies = [
-  "cheroot",
-]
-[project.urls]
-Homepage = "http://webpy.org/"
-Source = "https://github.com/webpy/webpy"
+urls.Homepage = "http://webpy.org/"
+urls.Source = "https://github.com/webpy/webpy"
 
 [tool.setuptools]
-packages = ["web", "web.contrib"]
-platforms = ["any"]
+packages = [ "web", "web.contrib" ]
+platforms = [ "any" ]
 include-package-data = false
 
 [tool.setuptools.dynamic]
-version = {attr = "web.__version__"}
+version = { attr = "web.__version__" }
+dependencies = { file = [ "requirements.txt" ] }
 
 [tool.black]
 exclude = '''
@@ -61,7 +60,10 @@ exclude = '''
 '''
 
 [tool.ruff]
-select = [
+target-version = "py39"
+
+line-length = 477
+lint.select = [
   "C9",
   "E",
   "F",
@@ -72,26 +74,19 @@ select = [
   "UP",
   "W",
 ]
-ignore = [
+lint.ignore = [
   "E722",
   "E731",
   "F821",
   "PLR5501",
   "UP031",
 ]
-line-length = 477
-show-source = true
-target-version = "py38"
-
-[tool.ruff.mccabe]
-max-complexity = 20
-
-[tool.ruff.pylint]
-allow-magic-value-types = ["int", "str"]
-max-args = 9  # default is 5
-max-branches = 17  # default is 12
-max-returns = 8  # default is 6
+lint.mccabe.max-complexity = 20
+lint.pylint.allow-magic-value-types = [ "int", "str" ]
+lint.pylint.max-args = 9 # default is 5
+lint.pylint.max-branches = 17 # default is 12
+lint.pylint.max-returns = 8 # default is 6
 
 [tool.codespell]
-ignore-words-list = "asend,gae"
-skip = ["./.*"]
+ignore-words-list = "asend,gae,notin"
+skip = [ "./.*" ]

@@ -7,7 +7,7 @@ repos:
     - id: black
 
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
     - id: codespell
       additional_dependencies:
@@ -20,11 +20,11 @@ repos:
       # args: [--fix, --exit-non-zero-on-fix]
 
 -   repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.16
+    rev: v0.23
     hooks:
     - id: validate-pyproject
 
 -   repo: https://github.com/tox-dev/pyproject-fmt
-    rev: 1.8.0
+    rev: v2.5.0
     hooks:
     - id: pyproject-fmt

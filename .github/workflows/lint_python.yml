@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy-3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "pypy-3.10"]
 
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
       - run: pip install black "codespell[toml]" pytest ruff
       - run: black --check .
       - run: codespell
-      - run: ruff --output-format=github .
+      - run: ruff check --output-format=github
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt

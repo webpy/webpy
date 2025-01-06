@@ -37,7 +37,7 @@ class TestStorify:
         assert utils.storify({}, a={}).a == {}
 
         result = utils.storify({"a": utils.storage(value=1)}, a={}).a
-        assert type(result) == utils.storage
+        assert type(result) is utils.storage
         assert result.value == 1
 
     def test_storify_with_a_binary_file_value(self):

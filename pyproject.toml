@@ -88,5 +88,5 @@ lint.pylint.max-branches = 17 # default is 12
 lint.pylint.max-returns = 8 # default is 6
 
 [tool.codespell]
-ignore-words-list = "asend,gae,notin"
+ignore-words-list = "asend,gae,notin,requireds"
 skip = [ "./.*" ]

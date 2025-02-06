@@ -547,12 +547,12 @@ class DefwithNode:
     def __init__(self, defwith, suite):
         if defwith:
             self.defwith = defwith.replace("with", "__template__") + ":"
-            # offset 4 lines. for encoding, __lineoffset__, loop and self.
-            self.defwith += "\n    __lineoffset__ = -4"
+            # offset 4 lines. for encoding, _lineoffset_, loop and self.
+            self.defwith += "\n    _lineoffset_ = -4"
         else:
             self.defwith = "def __template__():"
-            # offset 4 lines for encoding, __template__, __lineoffset__, loop and self.
-            self.defwith += "\n    __lineoffset__ = -5"
+            # offset 4 lines for encoding, __template__, _lineoffset_, loop and self.
+            self.defwith += "\n    _lineoffset_ = -5"
 
         self.defwith += "\n    loop = ForLoop()"
         self.defwith += "\n    self = TemplateResult(); extend_ = self.extend"
@@ -710,7 +710,7 @@ class DefNode(BlockNode):
     def emit(self, indent, text_indent=""):
         text_indent = self.begin_indent + text_indent
         out = indent + self.stmt + self.suite.emit(indent + INDENT, text_indent)
-        return indent + "__lineoffset__ -= 3\n" + out
+        return indent + "_lineoffset_ -= 3\n" + out
 
 
 class VarNode:
@@ -1366,8 +1366,12 @@ class SafeVisitor(ast.NodeVisitor):
     def generic_visit(self, node):
         nodename = type(node).__name__
         if nodename not in ALLOWED_AST_NODES:
-            self.fail_name(node, nodename)
+            self.fail_node(node, nodename)
         super().generic_visit(node)
+
+    def visit_Name(self, node):
+        if node.id.startswith("__"):
+            self.fail_name(node)
 
     def visit_Attribute(self, node):
         attrname = self.get_node_attr(node)
@@ -1393,7 +1397,7 @@ class SafeVisitor(ast.NodeVisitor):
             self.fail_attribute(targetnode, attrname)
 
     # failure modes
-    def fail_name(self, node, nodename):
+    def fail_node(self, node, nodename):
         lineno = self.get_node_lineno(node)
         e = SecurityError(
             "%s:%d - execution of '%s' statements is denied"
@@ -1406,6 +1410,13 @@ class SafeVisitor(ast.NodeVisitor):
         e = SecurityError(
             "%s:%d - access to attribute '%s' is denied"
             % (self.filename, lineno, attrname)
+        )
+        self.errors.append(e)
+
+    def fail_name(self, node):
+        lineno = self.get_node_lineno(node)
+        e = SecurityError(
+            "%s:%d - access to name '%s' is denied" % (self.filename, lineno, node.id)
         )
         self.errors.append(e)
 

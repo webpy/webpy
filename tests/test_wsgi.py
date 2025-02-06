@@ -16,7 +16,7 @@ class WSGITest(unittest.TestCase):
 
         class uni:
             def GET(self):
-                return "\u0C05\u0C06"
+                return "\u0c05\u0c06"
 
         app = web.application(urls, locals())
 
@@ -27,7 +27,7 @@ class WSGITest(unittest.TestCase):
         b = web.browser.AppBrowser(app)
         r = b.open("/").read()
         s = r.decode("utf8")
-        self.assertEqual(s, "\u0C05\u0C06")
+        self.assertEqual(s, "\u0c05\u0c06")
 
         app.stop()
         thread.join()
@@ -68,7 +68,7 @@ class WSGITest(unittest.TestCase):
         b = web.browser.AppBrowser(app)
         r = b.open("/%E2%84%A6")
         s = unquote(r.read())
-        self.assertEqual(s, b"\xE2\x84\xA6")
+        self.assertEqual(s, b"\xe2\x84\xa6")
 
         app.stop()
         thread.join()

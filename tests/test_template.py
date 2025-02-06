@@ -65,6 +65,34 @@ class TemplateTest(unittest.TestCase):
         f = t(template, globals={"item": TestItem()})
         assert repr(f()) == "'<a href=\"/del/12345\">Delete</a>\\n'"
 
+    def testImportMustFail(self):
+        tpl = "${__import__('os').getpwd()}"
+        self.assertRaises(SecurityError, t, tpl)
+
+    def test_SecutityError_name(self):
+        tpl = "$__special_name"
+        self.assertRaises(SecurityError, Template, tpl)
+
+        tpl = "${__special_name}"
+        self.assertRaises(SecurityError, Template, tpl)
+
+        tpl = "$var foo = __special_name"
+        self.assertRaises(SecurityError, Template, tpl)
+
+    def test_SecutityError_attr(self):
+        tpl = "$foo._private"
+        self.assertRaises(SecurityError, Template, tpl)
+
+        tpl = "$foo()._private"
+        self.assertRaises(SecurityError, Template, tpl)
+
+    def test_SecutityError_not_allowed_nodes(self):
+        tpl = "$code: import os"
+        self.assertRaises(SecurityError, Template, tpl)
+
+        tpl = "$code: raise Exception('x')"
+        self.assertRaises(SecurityError, Template, tpl)
+
 
 class TestParser(unittest.TestCase):
     """

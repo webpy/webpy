@@ -1204,11 +1204,11 @@ class PostgresDB(DB):
 
     def get_sequence_query(self, seqname):
         import re
-        # Ensure the sequence name is valid
-        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_$]*$', seqname):
-            raise ValueError(f"Invalid sequence name: {seqname}")
-        return SQLQuery("; SELECT currval(%s)", seqname)
 
+        # Ensure the sequence name is valid
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_$]*$", seqname):
+            raise ValueError(f"Invalid sequence name: {seqname}")
+        return SQLQuery(f"SELECT currval('{seqname}')")
 
     def _get_all_sequences(self):
         """Query postgres to find names of all sequences used in this database."""

@@ -1,4 +1,4 @@
-name: lint_python
+name: ci
 on:
   pull_request:
   push:
@@ -6,7 +6,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint_python:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: codespell-project/actions-codespell@v2
+      - uses: astral-sh/ruff-action@v3
+      - run: ruff format
+
+  test:
+    needs: lint
     runs-on: ubuntu-latest
 
     services:
@@ -39,10 +48,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
-      - run: pip install black "codespell[toml]" pytest ruff
-      - run: black --check .
-      - run: codespell
-      - run: ruff check --output-format=github
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt

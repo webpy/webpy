@@ -1,11 +1,6 @@
 # default_language_version:
-#     python: python3.7
+#     python: python3.13
 repos:
--   repo: https://github.com/python/black
-    rev: 24.4.2
-    hooks:
-    - id: black
-
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
@@ -14,10 +9,11 @@ repos:
         - tomli
 
 -   repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.4.2
+    rev: v0.8.6
     hooks:
     - id: ruff
       # args: [--fix, --exit-non-zero-on-fix]
+    - id: ruff-format
 
 -   repo: https://github.com/abravalheri/validate-pyproject
     rev: v0.23

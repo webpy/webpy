@@ -1,4 +1,4 @@
-name: lint_python
+name: ci
 on:
   pull_request:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint_python:
+  ci:
     runs-on: ubuntu-latest
 
     services:

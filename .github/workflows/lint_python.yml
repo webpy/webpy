@@ -1,4 +1,4 @@
-name: lint_python
+name: ci
 on:
   pull_request:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint_python:
+  ci:
     runs-on: ubuntu-latest
 
     services:
@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "pypy-3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.x", "3.14", "pypy-3.11"]
 
     steps:
       - uses: actions/checkout@v5

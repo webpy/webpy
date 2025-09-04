@@ -11,7 +11,7 @@ readme = { file = "README.md", content-type = "text/plain" }
 license = { text = "Public domain" }
 maintainers = [ { name = "Anand Chitipothu", email = "anandology@gmail.com" } ]
 authors = [ { name = "Aaron Swartz", email = "me@aaronsw.com" } ]
-requires-python = ">=3.8,<=3.13"
+requires-python = ">=3.8,<=3.14"
 classifiers = [
   "License :: Public Domain",
   "Programming Language :: Python",

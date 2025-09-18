@@ -14,15 +14,11 @@ __all__ = [
 ]
 
 import datetime
+from urllib.parse import urlencode as urllib_urlencode
 
 from . import net, utils
 from . import webapi as web
 from .py3helpers import iteritems
-
-try:
-    from urllib.parse import urlencode as urllib_urlencode
-except ImportError:
-    from urllib import urlencode as urllib_urlencode
 
 
 def prefixurl(base=""):

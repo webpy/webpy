@@ -3,8 +3,7 @@ import posixpath
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
 from io import BytesIO
-from urllib import parse as urlparse
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 from . import utils
 from . import webapi as web
@@ -35,7 +34,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
 
     class WSGIHandler(SimpleHTTPRequestHandler):
         def run_wsgi_app(self):
-            protocol, host, path, parameters, query, fragment = urlparse.urlparse(
+            protocol, host, path, parameters, query, fragment = urlparse(
                 "http://dummyhost%s" % self.path
             )
 

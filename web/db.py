@@ -8,8 +8,7 @@ import datetime
 import os
 import re
 import time
-from urllib import parse as urlparse
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 from .py3helpers import iteritems
 from .utils import iters, safestr, safeunicode, storage, threadeddict
@@ -1432,7 +1431,7 @@ def dburl2dict(url):
         >>> dburl2dict('sqlite:////absolute/path/mygreatdb.db')
         {'db': '/absolute/path/mygreatdb.db', 'dbn': 'sqlite'}
     """
-    parts = urlparse.urlparse(unquote(url))
+    parts = urlparse(unquote(url))
 
     if parts.scheme == "sqlite":
         return {"dbn": parts.scheme, "db": parts.path[1:]}

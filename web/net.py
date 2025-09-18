@@ -7,11 +7,7 @@ import datetime
 import re
 import socket
 import time
-
-try:
-    from urllib.parse import quote
-except ImportError:
-    from urllib import quote
+from urllib.parse import quote
 
 __all__ = [
     "validipaddr",

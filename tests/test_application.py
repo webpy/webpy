@@ -8,7 +8,6 @@ from urllib.parse import urlencode
 
 import web
 
-
 data = """
 import web
 

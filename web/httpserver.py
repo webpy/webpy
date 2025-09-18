@@ -3,12 +3,10 @@ import posixpath
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
 from io import BytesIO
-from urllib.parse import unquote
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from . import utils
 from . import webapi as web
-
 
 __all__ = ["runsimple"]
 

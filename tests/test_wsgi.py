@@ -64,7 +64,7 @@ class WSGITest(unittest.TestCase):
         b = web.browser.AppBrowser(app)
         r = b.open("/%E2%84%A6")
         s = unquote_to_bytes(r.read())
-        self.assertEqual(s, b"\xE2\x84\xA6")
+        self.assertEqual(s, b"\xe2\x84\xa6")
 
         app.stop()
         thread.join()

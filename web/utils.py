@@ -18,7 +18,6 @@ from threading import local as threadlocal
 
 from .py3helpers import iteritems, itervalues
 
-
 __all__ = [
     "Storage",
     "storage",

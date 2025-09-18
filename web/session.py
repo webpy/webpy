@@ -18,7 +18,6 @@ from . import utils
 from . import webapi as web
 from .py3helpers import iteritems
 
-
 __all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore", "MemoryStore"]
 
 web.config.session_parameters = utils.storage(

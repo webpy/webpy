@@ -16,7 +16,6 @@ import traceback
 from io import StringIO
 from threading import local as threadlocal
 
-
 __all__ = [
     "Storage",
     "storage",

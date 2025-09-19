@@ -10,7 +10,6 @@ import re
 import time
 from urllib.parse import unquote, urlparse
 
-from .py3helpers import iteritems
 from .utils import iters, safestr, safeunicode, storage, threadeddict
 
 try:
@@ -783,7 +782,7 @@ class DB:
     def _where_dict(self, where):
         where_clauses = []
 
-        for k, v in sorted(iteritems(where), key=lambda t: t[0]):
+        for k, v in sorted(where.items(), key=lambda t: t[0]):
             where_clauses.append(k + " = " + sqlquote(v))
         if where_clauses:
             return SQLQuery.join(where_clauses, " AND ")

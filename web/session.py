@@ -16,7 +16,6 @@ from hashlib import sha1
 
 from . import utils
 from . import webapi as web
-from .py3helpers import iteritems
 
 __all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore", "MemoryStore"]
 
@@ -437,7 +436,7 @@ class MemoryStore(Store):
     def cleanup(self, timeout):
         now = time.time()
         to_del = []
-        for k, (atime, value) in iteritems(self.d_store):
+        for k, (atime, value) in self.d_store.items():
             if now - atime > timeout:
                 to_del.append(k)
 

@@ -216,7 +216,7 @@ $:dicttable(web.input(_unicode=False))
 $:dicttable(web.cookies())
 
 <h3 id="meta-info">META</h3>
-$ newctx = [(k, v) for (k, v) in ctx.iteritems() if not k.startswith('_') and not isinstance(v, dict)]
+$ newctx = [(k, v) for (k, v) in ctx.items() if not k.startswith('_') and not isinstance(v, dict)]
 $:dicttable(dict(newctx))
 
 <h3 id="meta-info">ENVIRONMENT</h3>

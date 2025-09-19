@@ -16,7 +16,6 @@ from urllib.parse import unquote, urlencode, urlparse
 from . import browser, httpserver, utils, wsgi
 from . import webapi as web
 from .debugerror import debugerror
-from .py3helpers import iteritems
 from .utils import lstrips
 
 __all__ = [
@@ -465,7 +464,7 @@ class application:
 
         ctx.fullpath = ctx.path + ctx.query
 
-        for k, v in iteritems(ctx):
+        for k, v in ctx.items():
             # convert all string values to unicode values and replace
             # malformed data with a suitable replacement marker.
             if isinstance(v, bytes):

@@ -75,6 +75,7 @@ def splitline(text):
     else:
         return text, ""
 
+
 def safe_generate_tokens(readline, text=None):
     """
     Wrapped around tokenize.generate_tokens that handles TokenError gracefully.
@@ -84,17 +85,17 @@ def safe_generate_tokens(readline, text=None):
         for token in tokenize.generate_tokens(readline):
             yield token
     except tokenize.TokenError as e:
-        #Python 3.12+ raises TokenError for unterminated strings
+        # Python 3.12+ raises TokenError for unterminated strings
         # We catch it and yield an ERRORTOKEN (type 59) instead
         if e.args and len(e.args) >= 2:
-            error_pos= e.args[1] #(lineno, offset) tuple
-            if error_pos and len(error_pos) >=2:
-                lineno, col= error_pos
+            error_pos = e.args[1]  # (lineno, offset) tuple
+            if error_pos and len(error_pos) >= 2:
+                lineno, col = error_pos
                 if text is not None:
-                    error_text = text[col-1:] if col > 0 else text
-                    yield (59, error_text, (1, col-1), (1, len(text)), '')
+                    error_text = text[col - 1 :] if col > 0 else text
+                    yield (59, error_text, (1, col - 1), (1, len(text)), "")
                 else:
-                    yield(59, '', (lineno, col), (lineno, col), '')
+                    yield (59, "", (lineno, col), (lineno, col), "")
 
 
 class Parser:

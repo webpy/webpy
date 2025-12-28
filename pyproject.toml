@@ -62,7 +62,7 @@ exclude = '''
 [tool.ruff]
 target-version = "py39"
 
-line-length = 477
+line-length = 320
 lint.select = [
   "C9",
   "E",

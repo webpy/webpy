@@ -93,6 +93,21 @@ class TemplateTest(unittest.TestCase):
         tpl = "$code: raise Exception('x')"
         self.assertRaises(SecurityError, Template, tpl)
 
+    def test_handle_unterminated_string_in_template(self):
+        """
+        Regression test ensuring that Python 3.12's strict tokenizer
+        doesn't crash on template containing quote-wrapped variables.
+        """
+        code = '$ a = 47\n foobar "$:a"'
+
+        # We verify this renders successfully without raising TokenError
+        # We use the helper function 't()' which is defined at the top of this file
+        f = t(code)
+        result = str(f())
+
+        self.assertIn("foobar", result)
+        self.assertIn("47", result)
+
 
 class TestParser(unittest.TestCase):
     """

@@ -31,10 +31,8 @@ Grammar:
 import ast
 import builtins
 import glob
-import itertools
 import os
 import sys
-import token
 import tokenize
 from functools import partial
 
@@ -82,8 +80,7 @@ def safe_generate_tokens(readline, text=None):
     Preserves Python 3.8 behavior for unterminated strings.
     """
     try:
-        for token in tokenize.generate_tokens(readline):
-            yield token
+        yield from tokenize.generate_tokens(readline)
     except tokenize.TokenError as e:
         # Python 3.12+ raises TokenError for unterminated strings
         # We catch it and yield an ERRORTOKEN (type 59) instead

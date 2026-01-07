@@ -100,6 +100,8 @@ class Session:
         """Load the session from the store, by the id from cookie"""
         cookie_name = self._config.cookie_name
         self.session_id = web.cookies().get(cookie_name)
+        # Handler can do session.send_cookie = False to not send the cookie
+        self.send_cookie = True 
 
         # protection against session_id tampering
         if self.session_id and not self._valid_session_id(self.session_id):
@@ -140,7 +142,8 @@ class Session:
         current_values = dict(self._data)
         del current_values["session_id"]
         del current_values["ip"]
-
+        if not self.send_cookie:
+            return
         if not self.get("_killed"):
             self._setcookie(self.session_id)
             self.store[self.session_id] = dict(self._data)

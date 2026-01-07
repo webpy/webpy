@@ -50,7 +50,7 @@ def lastmodified(date_obj):
     web.header("Last-Modified", net.httpdate(date_obj))
 
 
-def modified(date=None, etag=None):
+def modified(date: datetime.datetime=None, etag=None, is_weak=False):
     """
     Checks to see if the page has been modified since the version in the
     requester's cache.
@@ -68,22 +68,32 @@ def modified(date=None, etag=None):
     `True`, or otherwise it raises NotModified error. It also sets
     `Last-Modified` and `ETag` output headers.
     """
-    n = {x.strip('" ') for x in web.ctx.env.get("HTTP_IF_NONE_MATCH", "").split(",")}
-    m = net.parsehttpdate(web.ctx.env.get("HTTP_IF_MODIFIED_SINCE", "").split(";")[0])
+    # We have two etags/etc at play here, so lets be explicit!
+    page_last_modified = date
+    page_etag = etag
+    page_etag_weak = is_weak
+
+    request_modified_since = net.parsehttpdate(web.ctx.env.get("HTTP_IF_MODIFIED_SINCE", "").split(";")[0])
+    request_etags = {
+        # Mapping of etag to "is weak validator" flag.
+        x.strip(' ').lstrip('W/').strip('"'): x.strip(' ').startswith('W/')
+        for x in web.ctx.env.get("HTTP_IF_NONE_MATCH", "").split(",")
+    }
+
     validate = False
-    if etag:
-        if "*" in n or etag in n:
-            validate = True
-    if date and m:
+    if page_etag and "*" in request_etags or page_etag in request_etags:
+        is_request_etag_weak = request_etags.get(etag, request_etags.get("*"))
+        validate = is_request_etag_weak or not page_etag_weak
+    if page_last_modified and request_modified_since:
         # we subtract a second because
         # HTTP dates don't have sub-second precision
-        if date - datetime.timedelta(seconds=1) <= m:
+        if page_last_modified - datetime.timedelta(seconds=1) <= request_last_modified:
             validate = True
 
-    if date:
+    if page_last_modified:
         lastmodified(date)
-    if etag:
-        web.header("ETag", '"' + etag + '"')
+    if page_etag:
+        web.header("ETag", f'{"W/" if page_etag_weak else ""}"{page_etag}"')
     if validate:
         raise web.notmodified()
     else:

@@ -16,8 +16,6 @@ import traceback
 from io import StringIO
 from threading import local as threadlocal
 
-from .py3helpers import iteritems, itervalues
-
 __all__ = [
     "Storage",
     "storage",
@@ -181,7 +179,7 @@ def storify(mapping, *requireds, **defaults):
 
         setattr(stor, key, value)
 
-    for key, value in iteritems(defaults):
+    for key, value in defaults.items():
         result = value
         if hasattr(stor, key):
             result = stor[key]
@@ -216,13 +214,13 @@ class Counter(storage):
 
     def most(self):
         """Returns the keys with maximum count."""
-        m = max(itervalues(self))
-        return [k for k, v in iteritems(self) if v == m]
+        m = max(self.values())
+        return [k for k, v in self.items() if v == m]
 
     def least(self):
         """Returns the keys with minimum count."""
-        m = min(self.itervalues())
-        return [k for k, v in iteritems(self) if v == m]
+        m = min(self.values())
+        return [k for k, v in self.items() if v == m]
 
     def percent(self, key):
         """Returns what percentage a certain key is of all entries.
@@ -759,7 +757,7 @@ def dictreverse(mapping):
         >>> dictreverse({1: 2, 3: 4})
         {2: 1, 4: 3}
     """
-    return {value: key for (key, value) in iteritems(mapping)}
+    return {value: key for (key, value) in mapping.items()}
 
 
 def dictfind(dictionary, element):
@@ -772,7 +770,7 @@ def dictfind(dictionary, element):
         3
         >>> dictfind(d, 5)
     """
-    for key, value in iteritems(dictionary):
+    for key, value in dictionary.items():
         if element is value:
             return key
 
@@ -789,7 +787,7 @@ def dictfindall(dictionary, element):
         []
     """
     res = []
-    for key, value in iteritems(dictionary):
+    for key, value in dictionary.items():
         if element is value:
             res.append(key)
     return res
@@ -896,7 +894,7 @@ def datestr(then, now=None):
         >>> d = datetime(1970, 5, 1)
         >>> datestr(d, now=d)
         '0 microseconds ago'
-        >>> for t, v in iteritems({
+        >>> for t, v in {
         ...   timedelta(microseconds=1): '1 microsecond ago',
         ...   timedelta(microseconds=2): '2 microseconds ago',
         ...   -timedelta(microseconds=1): '1 microsecond from now',
@@ -1221,7 +1219,7 @@ def tryall(context, prefix=None):
     """
     context = context.copy()  # vars() would update
     results = {}
-    for key, value in iteritems(context):
+    for key, value in context.items():
         if not hasattr(value, "__call__"):
             continue
         if prefix and not key.startswith(prefix):
@@ -1238,7 +1236,7 @@ def tryall(context, prefix=None):
 
     print("-" * 40)
     print("results:")
-    for key, value in iteritems(results):
+    for key, value in results.items():
         print(" " * 2, str(key) + ":", value)
 
 
@@ -1308,16 +1306,13 @@ class ThreadedDict(threadlocal):
         return self.__dict__.items()
 
     def iteritems(self):
-        return iteritems(self.__dict__)
+        return self.__dict__.items()
 
     def keys(self):
         return self.__dict__.keys()
 
     def iterkeys(self):
-        try:
-            return iterkeys(self.__dict__)
-        except NameError:
-            return self.__dict__.keys()
+        return self.__dict__.keys()
 
     iter = iterkeys
 
@@ -1325,7 +1320,7 @@ class ThreadedDict(threadlocal):
         return self.__dict__.values()
 
     def itervalues(self):
-        return itervalues(self.__dict__)
+        return self.__dict__.values()
 
     def pop(self, key, *args):
         return self.__dict__.pop(key, *args)
@@ -1363,7 +1358,7 @@ def autoassign(self, locals):
 
         def __init__(self, foo, bar, baz=1): autoassign(self, locals())
     """
-    for key, value in iteritems(locals):
+    for key, value in locals.items():
         if key == "self":
             continue
         setattr(self, key, value)
@@ -1514,7 +1509,7 @@ class _EmailMessage:
         self.message.attach(msg)
 
     def prepare_message(self):
-        for k, v in iteritems(self.headers):
+        for k, v in self.headers.items():
             if k.lower() == "content-type":
                 self.message.set_type(v)
             else:

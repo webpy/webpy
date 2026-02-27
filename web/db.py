@@ -743,7 +743,7 @@ class DB:
             query, params = self._process_query(sql_query)
             out = cur.execute(query, params)
             b = time.time()
-        except:
+        except Exception:
             if self.printing:
                 print("ERR:", str(sql_query), file=debug)
             if self.ctx.transactions:

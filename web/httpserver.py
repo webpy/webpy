@@ -27,7 +27,6 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
     import errno
-    import socket
     import traceback
 
     import SocketServer

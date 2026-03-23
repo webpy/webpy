@@ -43,8 +43,7 @@ class TestStorify:
     def test_storify_with_a_binary_file_value(self):
         # Prepare some raw multipart data with a binary file attachment
         binary_file_content = b"\x01\x02\x03\x04\x05"
-        raw_data = (
-            b"""--boundary\r
+        raw_data = b"""--boundary\r
 Content-Disposition: form-data; name="field1"\r
 \r
 value1\r
@@ -56,10 +55,7 @@ value2\r
 Content-Disposition: form-data; name="file"; filename="example.bin"\r
 Content-Type: application/octet-stream\r
 \r
-"""
-            + binary_file_content
-            + b"\r\n--boundary--\r\n"
-        )
+""" + binary_file_content + b"\r\n--boundary--\r\n"
 
         # Create a BytesIO object from the raw data
         buffer = BytesIO(raw_data)

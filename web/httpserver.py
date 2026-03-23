@@ -81,7 +81,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                     # Catch common network errors and suppress them
                     if socket_err.args[0] in (errno.ECONNABORTED, errno.EPIPE):
                         return
-                except socket.timeout:
+                except TimeoutError:
                     return
             except:
                 print(traceback.format_exc(), file=web.debug)

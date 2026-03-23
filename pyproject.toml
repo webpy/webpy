@@ -11,7 +11,7 @@ readme = { file = "README.md", content-type = "text/plain" }
 license = { text = "Public domain" }
 maintainers = [ { name = "Anand Chitipothu", email = "anandology@gmail.com" } ]
 authors = [ { name = "Aaron Swartz", email = "me@aaronsw.com" } ]
-requires-python = ">=3.8,<=3.14"
+requires-python = ">=3.8,<3.15"
 classifiers = [
   "License :: Public Domain",
   "Programming Language :: Python",
@@ -22,6 +22,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dynamic = [
   "dependencies",

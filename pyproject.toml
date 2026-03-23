@@ -11,13 +11,11 @@ readme = { file = "README.md", content-type = "text/plain" }
 license = { text = "Public domain" }
 maintainers = [ { name = "Anand Chitipothu", email = "anandology@gmail.com" } ]
 authors = [ { name = "Aaron Swartz", email = "me@aaronsw.com" } ]
-requires-python = ">=3.8,<3.15"
+requires-python = ">=3.10,<3.15"
 classifiers = [
   "License :: Public Domain",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -61,7 +59,7 @@ exclude = '''
 '''
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 
 line-length = 320
 lint.select = [

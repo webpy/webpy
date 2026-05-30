@@ -8,7 +8,7 @@ the system Python installation.
 Create and activate a virtual environment from the repository root::
 
     python3 -m venv .venv
-    . .venv/bin/activate
+    source .venv/bin/activate
 
 On Windows PowerShell, activate it with::
 
@@ -17,7 +17,7 @@ On Windows PowerShell, activate it with::
 Install web.py in editable mode with its runtime and test dependencies::
 
     python -m pip install --upgrade pip
-    python -m pip install -e .
+    python -m pip install --editable .
     python -m pip install -r test_requirements.txt
 
 Install pre-commit and enable the repository hooks::

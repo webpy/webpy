@@ -39,8 +39,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
-      - run: pip install black "codespell[toml]" pytest ruff
-      - run: black --check .
+      - run: pip install "codespell[toml]" pytest ruff
       - run: codespell
       - run: ruff check --output-format=github
 

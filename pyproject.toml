@@ -31,36 +31,12 @@ urls.Source = "https://github.com/webpy/webpy"
 
 [tool.setuptools]
 packages = [ "web", "web.contrib" ]
-platforms = [ "any" ]
 include-package-data = false
-
-[tool.setuptools.dynamic]
-version = { attr = "web.__version__" }
-dependencies = { file = [ "requirements.txt" ] }
-
-[tool.black]
-exclude = '''
-
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-  )/
-  | docs/conf.py
-)
-'''
+dynamic.dependencies = { file = [ "requirements.txt" ] }
+dynamic.version = { attr = "web.__version__" }
+platforms = [ "any" ]
 
 [tool.ruff]
-target-version = "py310"
-
 line-length = 320
 lint.select = [
   "C9",
@@ -83,9 +59,9 @@ lint.ignore = [
 ]
 lint.mccabe.max-complexity = 20
 lint.pylint.allow-magic-value-types = [ "int", "str" ]
-lint.pylint.max-args = 9 # default is 5
-lint.pylint.max-branches = 17 # default is 12
-lint.pylint.max-returns = 8 # default is 6
+lint.pylint.max-args = 9  # default is 5
+lint.pylint.max-branches = 17  # default is 12
+lint.pylint.max-returns = 8  # default is 6
 
 [tool.codespell]
 ignore-words-list = "asend,gae,notin,requireds"

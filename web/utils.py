@@ -1497,11 +1497,7 @@ class _EmailMessage:
         except:
             from email import Encoders as encoders
 
-        content_type = (
-            content_type
-            or mimetypes.guess_type(filename)[0]
-            or "application/octet-stream"
-        )
+        content_type = content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream"
 
         msg = self.new_message()
         msg.set_payload(content)

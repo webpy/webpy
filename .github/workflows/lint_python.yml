@@ -42,6 +42,7 @@ jobs:
       - run: pip install "codespell[toml]" pytest ruff
       - run: codespell
       - run: ruff check --output-format=github
+      - run: ruff format --check --diff
 
       - name: "Install dependent Python modules for testing."
         run: pip install -r requirements.txt -r test_requirements.txt

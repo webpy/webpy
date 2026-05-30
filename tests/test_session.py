@@ -149,13 +149,7 @@ class DBSessionTest(SessionTest):
 
         db = web.database(dbn="sqlite", db="webpy.db")
         # db.printing = True
-        db.query(
-            ""
-            + "CREATE TABLE session ("
-            + "    session_id char(128) unique not null,"
-            + "    atime timestamp default (datetime('now','utc')),"
-            + "    data text)"
-        )
+        db.query("" + "CREATE TABLE session (" + "    session_id char(128) unique not null," + "    atime timestamp default (datetime('now','utc'))," + "    data text)")
         store = web.session.DBStore(db, "session")
         return web.session.Session(app, store, {"count": 0})
 

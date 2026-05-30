@@ -28,9 +28,7 @@ def requires_module(name):
             class Foo:
                 pass
 
-            print(
-                f"skipping all tests from {cls.__name__} as {name} module is not found"
-            )
+            print(f"skipping all tests from {cls.__name__} as {name} module is not found")
             return Foo
 
     return decorator
@@ -166,19 +164,12 @@ class DBTest(unittest.TestCase):
         if self.driver in web.db.pg_drivers:
             db.query("CREATE TABLE mi (id SERIAL PRIMARY KEY, v VARCHAR(5))")
         elif self.driver in web.db.mysql_drivers:
-            self.db.query(
-                "CREATE TABLE mi (id INT(10) UNSIGNED AUTO_INCREMENT, v VARCHAR(5), PRIMARY KEY (`id`))"
-            )
+            self.db.query("CREATE TABLE mi (id INT(10) UNSIGNED AUTO_INCREMENT, v VARCHAR(5), PRIMARY KEY (`id`))")
         elif self.driver in web.db.sqlite_drivers:
-            self.db.query(
-                "CREATE TABLE mi (id INTEGER PRIMARY KEY NOT NULL, v VARCHAR(5))"
-            )
+            self.db.query("CREATE TABLE mi (id INTEGER PRIMARY KEY NOT NULL, v VARCHAR(5))")
 
         # Insert rows and verify returned row id.
-        if (
-            self.driver
-            in web.db.pg_drivers + web.db.mysql_drivers + web.db.sqlite_drivers
-        ):
+        if self.driver in web.db.pg_drivers + web.db.mysql_drivers + web.db.sqlite_drivers:
             values = [{"v": "a"}, {"v": "b"}, {"v": "c"}]
 
             ids = db.multiple_insert("mi", values)
@@ -221,9 +212,7 @@ class PostgresTest2(DBTest):
     def setUp(self):
         super().setUp()
         self.db.query("DROP TABLE IF EXISTS post")
-        self.db.query(
-            "create table post (id serial primary key, title text, body text)"
-        )
+        self.db.query("create table post (id serial primary key, title text, body text)")
 
     def tearDown(self):
         self.db.query("DROP TABLE IF EXISTS post")
@@ -257,9 +246,7 @@ class PostgresTest2(DBTest):
 
     def test_insert_returning(self):
         db = self.db
-        row = db.query(
-            "insert into post (title, body) values ('foo', 'bar') returning *"
-        ).first()
+        row = db.query("insert into post (title, body) values ('foo', 'bar') returning *").first()
         assert row.title == "foo"
         assert row.id is not None
 

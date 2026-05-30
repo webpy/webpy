@@ -18,9 +18,7 @@ def attrget(obj, attr, value=None):
         # Handle the case where has_key takes different number of arguments.
         # This is the case with Model objects on appengine. See #134
         pass
-    if (
-        hasattr(obj, "keys") and attr in obj
-    ):  # needed for Py3, has_key doesn't exist anymore
+    if hasattr(obj, "keys") and attr in obj:  # needed for Py3, has_key doesn't exist anymore
         return obj[attr]
     elif hasattr(obj, attr):
         return getattr(obj, attr)
@@ -58,16 +56,9 @@ class Form:
         out += "<table>\n"
 
         for i in self.inputs:
-            html = (
-                utils.safeunicode(i.pre)
-                + i.render()
-                + self.rendernote(i.note)
-                + utils.safeunicode(i.post)
-            )
+            html = utils.safeunicode(i.pre) + i.render() + self.rendernote(i.note) + utils.safeunicode(i.post)
             if i.is_hidden():
-                out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (
-                    html
-                )
+                out += '    <tr style="display: none;"><th></th><td>%s</td></tr>\n' % (html)
             else:
                 out += f'    <tr><th><label for="{net.websafe(i.id)}">{net.websafe(i.description)}</label></th><td>{html}</td></tr>\n'
         out += "</table>"
@@ -78,9 +69,7 @@ class Form:
         out.append(self.rendernote(self.note))
         for i in self.inputs:
             if not i.is_hidden():
-                out.append(
-                    f'<label for="{net.websafe(i.id)}">{net.websafe(i.description)}</label>'
-                )
+                out.append(f'<label for="{net.websafe(i.id)}">{net.websafe(i.description)}</label>')
             out.append(i.pre)
             out.append(i.render())
             out.append(self.rendernote(i.note))
@@ -342,10 +331,7 @@ class Dropdown(Input):
             select_p = ' selected="selected"'
         else:
             select_p = ""
-        return (
-            indent
-            + f'<option{select_p} value="{net.websafe(value)}">{net.websafe(desc)}</option>\n'
-        )
+        return indent + f'<option{select_p} value="{net.websafe(value)}">{net.websafe(desc)}</option>\n'
 
 
 class GroupedDropdown(Dropdown):

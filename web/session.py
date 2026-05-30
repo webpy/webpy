@@ -335,9 +335,7 @@ class DBStore(Store):
         now = datetime.datetime.now()
         try:
             s = self.db.select(self.table, where="session_id=$key", vars=locals())[0]
-            self.db.update(
-                self.table, where="session_id=$key", atime=now, vars=locals()
-            )
+            self.db.update(self.table, where="session_id=$key", atime=now, vars=locals())
         except IndexError:
             raise KeyError(key)
         else:
@@ -364,9 +362,7 @@ class DBStore(Store):
         self.db.delete(self.table, where="session_id=$key", vars=locals())
 
     def cleanup(self, timeout):
-        timeout = datetime.timedelta(
-            timeout / (24.0 * 60 * 60)
-        )  # timedelta takes numdays as arg
+        timeout = datetime.timedelta(timeout / (24.0 * 60 * 60))  # timedelta takes numdays as arg
         last_allowed_time = datetime.datetime.now() - timeout
         self.db.delete(self.table, where="$last_allowed_time > atime", vars=locals())
 

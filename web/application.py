@@ -59,9 +59,7 @@ class application:
 
             def main_module_name():
                 mod = sys.modules["__main__"]
-                file = getattr(
-                    mod, "__file__", None
-                )  # make sure this works even from python interpreter
+                file = getattr(mod, "__file__", None)  # make sure this works even from python interpreter
                 return file and os.path.splitext(os.path.basename(file))[0]
 
             def modname(fvars):
@@ -791,9 +789,7 @@ class Reloader:
             mtime = os.stat(mod.__file__).st_mtime
         except OSError:
             return
-        if mod.__file__.endswith(self.__class__.SUFFIX) and os.path.exists(
-            mod.__file__[:-1]
-        ):
+        if mod.__file__.endswith(self.__class__.SUFFIX) and os.path.exists(mod.__file__[:-1]):
             mtime = max(os.stat(mod.__file__[:-1]).st_mtime, mtime)
 
         if mod not in self.mtimes:

@@ -421,9 +421,7 @@ def sqlors(left, lst):
             lst = lst[0]
 
     if isinstance(lst, iters):
-        return SQLQuery(
-            ["("] + sum(([left, sqlparam(x), " OR "] for x in lst), []) + ["1=2)"]
-        )
+        return SQLQuery(["("] + sum(([left, sqlparam(x), " OR "] for x in lst), []) + ["1=2)"])
     else:
         return left + sqlparam(lst)
 
@@ -857,11 +855,7 @@ class DB:
             vars = {}
 
         sql_clauses = self.sql_clauses(what, tables, where, group, order, limit, offset)
-        clauses = [
-            self.gen_clause(sql, val, vars)
-            for sql, val in sql_clauses
-            if val is not None
-        ]
+        clauses = [self.gen_clause(sql, val, vars) for sql, val in sql_clauses if val is not None]
         qout = SQLQuery.join(clauses)
 
         if _test:
@@ -965,12 +959,8 @@ class DB:
             sorted_values = sorted(values.items(), key=lambda t: t[0])
 
             _keys = SQLQuery.join(map(lambda t: t[0], sorted_values), ", ")
-            _values = SQLQuery.join(
-                [sqlparam(v) for v in map(lambda t: t[1], sorted_values)], ", "
-            )
-            sql_query = (
-                "INSERT INTO %s " % tablename + q(_keys) + " VALUES " + q(_values)
-            )
+            _values = SQLQuery.join([sqlparam(v) for v in map(lambda t: t[1], sorted_values)], ", ")
+            sql_query = "INSERT INTO %s " % tablename + q(_keys) + " VALUES " + q(_values)
         else:
             sql_query = SQLQuery(self._get_insert_default_values_query(tablename))
 
@@ -1021,10 +1011,7 @@ class DB:
             return []
 
         if not self.supports_multiple_insert:
-            out = [
-                self.insert(tablename, seqname=seqname, _test=_test, **v)
-                for v in values
-            ]
+            out = [self.insert(tablename, seqname=seqname, _test=_test, **v) for v in values]
             if seqname is False:
                 return None
             else:
@@ -1040,9 +1027,7 @@ class DB:
         # enforce query order for the above doctest compatibility with Py3
         keys = sorted(keys)
 
-        sql_query = SQLQuery(
-            "INSERT INTO {} ({}) VALUES ".format(tablename, ", ".join(keys))
-        )
+        sql_query = SQLQuery("INSERT INTO {} ({}) VALUES ".format(tablename, ", ".join(keys)))
 
         for i, row in enumerate(values):
             if i != 0:
@@ -1109,14 +1094,7 @@ class DB:
         where = self._where(where, vars)
         values = sorted(values.items(), key=lambda t: t[0])
 
-        query = (
-            "UPDATE "
-            + sqllist(tables)
-            + " SET "
-            + sqlwhere(values, ", ")
-            + " WHERE "
-            + where
-        )
+        query = "UPDATE " + sqllist(tables) + " SET " + sqlwhere(values, ", ") + " WHERE " + where
 
         if _test:
             return query
@@ -1532,11 +1510,7 @@ def _interpolate(format):
             chunks.append((0, format[pos:dollar]))
             match, pos = matchorfail(format, dollar + 1)
             while pos < len(format):
-                if (
-                    format[pos] == "."
-                    and pos + 1 < len(format)
-                    and format[pos + 1] in namechars
-                ):
+                if format[pos] == "." and pos + 1 < len(format) and format[pos + 1] in namechars:
                     match, pos = matchorfail(format, pos + 1)
                 elif format[pos] in "([":
                     pos, level = pos + 1, 1
@@ -1567,12 +1541,7 @@ class _Node:
         self.second = second
 
     def __eq__(self, other):
-        return (
-            isinstance(other, _Node)
-            and self.type == other.type
-            and self.first == other.first
-            and self.second == other.second
-        )
+        return isinstance(other, _Node) and self.type == other.type and self.first == other.first and self.second == other.second
 
     def __repr__(self):
         return f"Node({self.type!r}, {self.first!r}, {self.second!r})"
@@ -1584,7 +1553,7 @@ class Parser:
     Loosely based on <http://lfw.org/python/Itpl.py> (public domain, Ka-Ping Yee)
     """
 
-    namechars = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
     def __init__(self):
         self.reset()
@@ -1650,11 +1619,7 @@ class Parser:
             expr = _Node("param", self.text[self.pos : pos])
         self.pos = pos
         while self.pos < len(self.text):
-            if (
-                self.text[self.pos] == "."
-                and self.pos + 1 < len(self.text)
-                and self.text[self.pos + 1] in self.namechars
-            ):
+            if self.text[self.pos] == "." and self.pos + 1 < len(self.text) and self.text[self.pos + 1] in self.namechars:
                 self.pos += 1
                 match, pos = self.match()
                 attr = match.group()
@@ -1694,9 +1659,7 @@ class SafeEval:
         elif node.type == "getattr":
             return getattr(self.eval_expr(node.first, mapping), node.second)
         elif node.type == "getitem":
-            return self.eval_expr(node.first, mapping)[
-                self.eval_expr(node.second, mapping)
-            ]
+            return self.eval_expr(node.first, mapping)[self.eval_expr(node.second, mapping)]
         elif node.type == "param":
             return mapping[node.first]
 

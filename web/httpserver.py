@@ -33,9 +33,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
 
     class WSGIHandler(SimpleHTTPRequestHandler):
         def run_wsgi_app(self):
-            protocol, host, path, parameters, query, fragment = urlparse(
-                "http://dummyhost%s" % self.path
-            )
+            protocol, host, path, parameters, query, fragment = urlparse("http://dummyhost%s" % self.path)
 
             # we only use path, query
             env = {
@@ -171,9 +169,7 @@ def WSGIServer(server_address, wsgi_app):
     from cheroot import wsgi
 
     server = wsgi.Server(server_address, wsgi_app, server_name="localhost")
-    server.nodelay = not sys.platform.startswith(
-        "java"
-    )  # TCP_NODELAY isn't supported on the JVM
+    server.nodelay = not sys.platform.startswith("java")  # TCP_NODELAY isn't supported on the JVM
     return server
 
 
@@ -276,9 +272,7 @@ class LogMiddleware:
                 return f
 
         # take log_date_time_string method from BaseHTTPRequestHandler
-        self.log_date_time_string = BaseHTTPRequestHandler(
-            FakeSocket(), None, None
-        ).log_date_time_string
+        self.log_date_time_string = BaseHTTPRequestHandler(FakeSocket(), None, None).log_date_time_string
 
     def __call__(self, environ, start_response):
         def xstart_response(status, response_headers, *args):

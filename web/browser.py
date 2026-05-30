@@ -89,9 +89,7 @@ class Browser:
 
     def get_response(self):
         """Returns a copy of the current response."""
-        return addinfourl(
-            BytesIO(self.data), self._response.info(), self._response.geturl()
-        )
+        return addinfourl(BytesIO(self.data), self._response.info(), self._response.geturl())
 
     def get_soup(self):
         """Returns beautiful soup of the current document."""
@@ -102,17 +100,13 @@ class Browser:
     def get_text(self, e=None):
         """Returns content of e or the current document as plain text."""
         e = e or self.get_soup()
-        return "".join(
-            [htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, str)]
-        )
+        return "".join([htmlunquote(c) for c in e.recursiveChildGenerator() if isinstance(c, str)])
 
     def _get_links(self):
         soup = self.get_soup()
         return [a for a in soup.findAll(name="a")]
 
-    def get_links(
-        self, text=None, text_regex=None, url=None, url_regex=None, predicate=None
-    ):
+    def get_links(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
         """Returns all links in the document."""
         return self._filter_links(
             self._get_links(),
@@ -148,9 +142,7 @@ class Browser:
         else:
             raise BrowserError("No link found")
 
-    def find_link(
-        self, text=None, text_regex=None, url=None, url_regex=None, predicate=None
-    ):
+    def find_link(self, text=None, text_regex=None, url=None, url_regex=None, predicate=None):
         links = self._filter_links(
             self.get_links(),
             text=text,
@@ -174,15 +166,11 @@ class Browser:
         if text is not None:
             predicates.append(lambda link: link.string == text)
         if text_regex is not None:
-            predicates.append(
-                lambda link: re_compile(text_regex).search(link.string or "")
-            )
+            predicates.append(lambda link: re_compile(text_regex).search(link.string or ""))
         if url is not None:
             predicates.append(lambda link: link.get("href") == url)
         if url_regex is not None:
-            predicates.append(
-                lambda link: re_compile(url_regex).search(link.get("href", ""))
-            )
+            predicates.append(lambda link: re_compile(url_regex).search(link.get("href", "")))
         if predicate:
             predicate.append(predicate)
 
@@ -201,9 +189,7 @@ class Browser:
         if self._forms is None:
             import ClientForm
 
-            self._forms = ClientForm.ParseResponse(
-                self.get_response(), backwards_compat=False
-            )
+            self._forms = ClientForm.ParseResponse(self.get_response(), backwards_compat=False)
         return self._forms
 
     def select_form(self, name=None, predicate=None, index=0):

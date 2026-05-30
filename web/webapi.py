@@ -92,18 +92,14 @@ class HTTPError(Exception):
 def _status_code(status, data=None, classname=None, docstring=None):
     if data is None:
         data = status.split(" ", 1)[1]
-    classname = status.split(" ", 1)[1].replace(
-        " ", ""
-    )  # 304 Not Modified -> NotModified
+    classname = status.split(" ", 1)[1].replace(" ", "")  # 304 Not Modified -> NotModified
     docstring = docstring or "`%s` status" % status
 
     def __init__(self, data=data, headers={}):
         HTTPError.__init__(self, status, headers, data)
 
     # trick to create class dynamically with dynamic docstring.
-    return type(
-        classname, (HTTPError, object), {"__doc__": docstring, "__init__": __init__}
-    )
+    return type(classname, (HTTPError, object), {"__doc__": docstring, "__init__": __init__})
 
 
 ok = OK = _status_code("200 OK", data="")
@@ -417,9 +413,7 @@ def rawinput(method=None):
                 # since wsgi.input is directly passed to multipart,
                 # it can not be called multiple times. Saving the result
                 # object in ctx to allow calling web.input multiple times.
-                post_req = ctx.get(
-                    "_fieldstorage"
-                )  # TODO: Rename? is this visible anywhere else?
+                post_req = ctx.get("_fieldstorage")  # TODO: Rename? is this visible anywhere else?
                 if not post_req:
                     try:
                         # This returns two dicts, forms & files.
@@ -436,9 +430,7 @@ def rawinput(method=None):
 
     if method.lower() in ["both", "get"]:
         env["REQUEST_METHOD"] = "GET"
-        get_req = dict(
-            urllib.parse.parse_qs(env.get("QUERY_STRING", ""), keep_blank_values=True)
-        )
+        get_req = dict(urllib.parse.parse_qs(env.get("QUERY_STRING", ""), keep_blank_values=True))
 
     def process_values(values):
         if isinstance(values, list):
@@ -448,9 +440,7 @@ def rawinput(method=None):
         else:
             return values
 
-    return storage(
-        [(k, process_values(v)) for k, v in dictadd(get_req, post_req).items()]
-    )
+    return storage([(k, process_values(v)) for k, v in dictadd(get_req, post_req).items()])
 
 
 def input(*requireds, **defaults):

@@ -326,9 +326,7 @@ class Parser:
                     if end is not None and end != t.begin:
                         _, x1 = end
                         _, x2 = t.begin
-                        yield storage(
-                            type=-1, value=input_text[x1:x2], begin=end, end=t.begin
-                        )
+                        yield storage(type=-1, value=input_text[x1:x2], begin=end, end=t.begin)
                     end = t.end
                     yield t
 
@@ -345,9 +343,7 @@ class Parser:
                 )
 
         def error_token_generator(text, start, end):
-            yield storage(
-                type=token.ERRORTOKEN, value=text[start:], begin=start, end=end
-            )
+            yield storage(type=token.ERRORTOKEN, value=text[start:], begin=start, end=end)
 
         class peekable2(peekable):
             """
@@ -789,11 +785,7 @@ TEMPLATE_BUILTIN_NAMES = [
     "__import__",  # some c-libraries like datetime requires __import__ to present in the namespace
 ]
 
-TEMPLATE_BUILTINS = {
-    name: getattr(builtins, name)
-    for name in TEMPLATE_BUILTIN_NAMES
-    if name in builtins.__dict__
-}
+TEMPLATE_BUILTINS = {name: getattr(builtins, name) for name in TEMPLATE_BUILTIN_NAMES if name in builtins.__dict__}
 
 
 class ForLoop:
@@ -1008,9 +1000,7 @@ class Template(BaseTemplate):
         return p
 
     def compile_template(self, template_string, filename):
-        code = Template.generate_code(
-            template_string, filename, parser=self.create_parser()
-        )
+        code = Template.generate_code(template_string, filename, parser=self.create_parser())
 
         def get_source_line(filename, lineno):
             try:
@@ -1100,9 +1090,7 @@ class Render:
         kind, path = self._lookup(name)
 
         if kind == "dir":
-            return Render(
-                path, cache=self._cache is not None, base=self._base, **self._keywords
-            )
+            return Render(path, cache=self._cache is not None, base=self._base, **self._keywords)
         elif kind == "file":
             with open(path, encoding="utf-8") as tmpl_file:
                 return Template(tmpl_file.read(), filename=path, **self._keywords)
@@ -1110,9 +1098,7 @@ class Render:
             raise AttributeError("No template named " + name)
 
     def _findfile(self, path_prefix):
-        p = [
-            f for f in glob.glob(path_prefix + ".*") if not f.endswith("~")
-        ]  # skip backup files
+        p = [f for f in glob.glob(path_prefix + ".*") if not f.endswith("~")]  # skip backup files
         p.sort()  # sort the matches for deterministic order
 
         # support templates without extension (#364)
@@ -1166,9 +1152,7 @@ class GAE_Render(Render):
         import types
 
         if isinstance(t, types.ModuleType):
-            return GAE_Render(
-                t, cache=self._cache is not None, base=self._base, **self._keywords
-            )
+            return GAE_Render(t, cache=self._cache is not None, base=self._base, **self._keywords)
         else:
             return t
 
@@ -1191,22 +1175,14 @@ def frender(path, **keywords):
 def compile_templates(root):
     """Compiles templates to python code."""
     for dirpath, dirnames, filenames in os.walk(root):
-        filenames = [
-            f
-            for f in filenames
-            if not f.startswith(".")
-            and not f.endswith("~")
-            and not f.startswith("__init__.py")
-        ]
+        filenames = [f for f in filenames if not f.startswith(".") and not f.endswith("~") and not f.startswith("__init__.py")]
 
         for d in dirnames[:]:
             if d.startswith("."):
                 dirnames.remove(d)  # don't visit this dir
 
         out = open(os.path.join(dirpath, "__init__.py"), "w", encoding="utf-8")
-        out.write(
-            "from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n"
-        )
+        out.write("from web.template import CompiledTemplate, ForLoop, TemplateResult\n\n")
         if dirnames:
             out.write("import " + ", ".join(dirnames))
         out.write("\n")
@@ -1399,32 +1375,22 @@ class SafeVisitor(ast.NodeVisitor):
     # failure modes
     def fail_node(self, node, nodename):
         lineno = self.get_node_lineno(node)
-        e = SecurityError(
-            "%s:%d - execution of '%s' statements is denied"
-            % (self.filename, lineno, nodename)
-        )
+        e = SecurityError("%s:%d - execution of '%s' statements is denied" % (self.filename, lineno, nodename))
         self.errors.append(e)
 
     def fail_attribute(self, node, attrname):
         lineno = self.get_node_lineno(node)
-        e = SecurityError(
-            "%s:%d - access to attribute '%s' is denied"
-            % (self.filename, lineno, attrname)
-        )
+        e = SecurityError("%s:%d - access to attribute '%s' is denied" % (self.filename, lineno, attrname))
         self.errors.append(e)
 
     def fail_name(self, node):
         lineno = self.get_node_lineno(node)
-        e = SecurityError(
-            "%s:%d - access to name '%s' is denied" % (self.filename, lineno, node.id)
-        )
+        e = SecurityError("%s:%d - access to name '%s' is denied" % (self.filename, lineno, node.id))
         self.errors.append(e)
 
     # helpers
     def is_unallowed_attr(self, name):
-        return (
-            name.startswith("_") or name.startswith("func_") or name.startswith("im_")
-        )
+        return name.startswith("_") or name.startswith("func_") or name.startswith("im_")
 
     def get_node_attr(self, node):
         return "attr" in node._fields and node.attr or None

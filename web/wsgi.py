@@ -72,13 +72,7 @@ def _is_dev_mode():
     argv = getattr(sys, "argv", [])
 
     # quick hack to check if the program is running in dev mode.
-    if (
-        "SERVER_SOFTWARE" in os.environ
-        or "PHP_FCGI_CHILDREN" in os.environ
-        or "fcgi" in argv
-        or "fastcgi" in argv
-        or "mod_wsgi" in argv
-    ):
+    if "SERVER_SOFTWARE" in os.environ or "PHP_FCGI_CHILDREN" in os.environ or "fcgi" in argv or "fastcgi" in argv or "mod_wsgi" in argv:
         return False
     return True
 

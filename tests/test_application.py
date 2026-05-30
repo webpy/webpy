@@ -121,9 +121,7 @@ class ApplicationTest(unittest.TestCase):
 
         response = app.request("/b/foo?x=2")
         self.assertEqual(response.status, "301 Moved Permanently")
-        self.assertEqual(
-            response.headers["Location"], "http://0.0.0.0:8080/hello/foo?x=2"
-        )
+        self.assertEqual(response.headers["Location"], "http://0.0.0.0:8080/hello/foo?x=2")
 
     def test_routing(self):
         urls = ("/foo", "foo")
@@ -341,9 +339,7 @@ class ApplicationTest(unittest.TestCase):
         self.assertEqual(app.request("/iter?name=web").data, b"hello, web")
 
         self.assertEqual(app.request("/iter", method="POST").data, b"hello, world")
-        self.assertEqual(
-            app.request("/iter", method="POST", data="name=web").data, b"hello, web"
-        )
+        self.assertEqual(app.request("/iter", method="POST", data="name=web").data, b"hello, web")
 
     def testUnload(self):
         x = web.storage(a=0)

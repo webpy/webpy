@@ -101,7 +101,7 @@ class Session:
         cookie_name = self._config.cookie_name
         self.session_id = web.cookies().get(cookie_name)
         # Handler can do session.send_cookie = False to not send the cookie
-        self.send_cookie = True 
+        self.send_cookie = True
 
         # protection against session_id tampering
         if self.session_id and not self._valid_session_id(self.session_id):

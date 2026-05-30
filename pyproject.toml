@@ -1,3 +1,43 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=61.2",
+]
+
+[project]
+name = "web-py"
+description = "web.py: makes web apps"
+readme = { file = "README.md", content-type = "text/plain" }
+license = { text = "Public domain" }
+maintainers = [ { name = "Anand Chitipothu", email = "anandology@gmail.com" } ]
+authors = [ { name = "Aaron Swartz", email = "me@aaronsw.com" } ]
+requires-python = ">=3.10,<3.15"
+classifiers = [
+  "License :: Public Domain",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dynamic = [
+  "dependencies",
+  "version",
+]
+urls.Homepage = "http://webpy.org/"
+urls.Source = "https://github.com/webpy/webpy"
+
+[tool.setuptools]
+packages = [ "web", "web.contrib" ]
+platforms = [ "any" ]
+include-package-data = false
+
+[tool.setuptools.dynamic]
+version = { attr = "web.__version__" }
+dependencies = { file = [ "requirements.txt" ] }
+
 [tool.black]
 exclude = '''
 
@@ -17,3 +57,36 @@ exclude = '''
   | docs/conf.py
 )
 '''
+
+[tool.ruff]
+target-version = "py310"
+
+line-length = 320
+lint.select = [
+  "C9",
+  "E",
+  "F",
+  "I",
+  "PLC",
+  "PLE",
+  "PLR",
+  "UP",
+  "W",
+]
+lint.ignore = [
+  "E722",
+  "E731",
+  "F821",
+  "PLC0415",
+  "PLR5501",
+  "UP031",
+]
+lint.mccabe.max-complexity = 20
+lint.pylint.allow-magic-value-types = [ "int", "str" ]
+lint.pylint.max-args = 9 # default is 5
+lint.pylint.max-branches = 17 # default is 12
+lint.pylint.max-returns = 8 # default is 6
+
+[tool.codespell]
+ignore-words-list = "asend,gae,notin,requireds"
+skip = [ "./.*" ]

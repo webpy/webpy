@@ -6,24 +6,17 @@ Session Management
 import datetime
 import os
 import os.path
+import pickle
 import shutil
 import threading
 import time
+from base64 import decodebytes, encodebytes
 from copy import deepcopy
 from hashlib import sha1
 
 from . import utils
 from . import webapi as web
 from .py3helpers import iteritems
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
-
-from base64 import encodebytes, decodebytes
-
 
 __all__ = ["Session", "SessionExpired", "Store", "DiskStore", "DBStore", "MemoryStore"]
 
@@ -49,7 +42,7 @@ class SessionExpired(web.HTTPError):
         web.HTTPError.__init__(self, "200 OK", {}, data=message)
 
 
-class Session(object):
+class Session:
     """Session management for web.py"""
 
     __slots__ = [
@@ -184,7 +177,7 @@ class Session(object):
             now = time.time()
             secret_key = self._config.secret_key
 
-            hashable = "%s%s%s%s" % (rand, now, utils.safestr(web.ctx.ip), secret_key)
+            hashable = f"{rand}{now}{utils.safestr(web.ctx.ip)}{secret_key}"
             session_id = sha1(hashable.encode("utf-8")).hexdigest()
             if session_id not in self.store:
                 break
@@ -291,14 +284,14 @@ class DiskStore(Store):
         path = self._get_path(key)
         pickled = self.encode(value)
         try:
-            tname = path + "." + threading.current_thread().getName()
+            tname = path + "." + threading.current_thread().name
             f = open(tname, "wb")
             try:
                 f.write(pickled)
             finally:
                 f.close()
                 shutil.move(tname, path)  # atomary operation
-        except IOError:
+        except OSError:
             pass
 
     def __delitem__(self, key):

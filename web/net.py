@@ -3,16 +3,11 @@ Network Utilities
 (from web.py)
 """
 
-
 import datetime
 import re
 import socket
 import time
-
-try:
-    from urllib.parse import quote
-except ImportError:
-    from urllib import quote
+from urllib.parse import quote
 
 __all__ = [
     "validipaddr",
@@ -44,7 +39,7 @@ def validip6addr(address):
     """
     try:
         socket.inet_pton(socket.AF_INET6, address)
-    except (socket.error, AttributeError, ValueError):
+    except (OSError, AttributeError, ValueError):
         return False
 
     return True

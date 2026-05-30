@@ -27,7 +27,7 @@ def attrget(obj, attr, value=None):
     return value
 
 
-class Form(object):
+class Form:
     r"""
     HTML form.
 
@@ -69,10 +69,7 @@ class Form(object):
                     html
                 )
             else:
-                out += (
-                    '    <tr><th><label for="%s">%s</label></th><td>%s</td></tr>\n'
-                    % (net.websafe(i.id), net.websafe(i.description), html)
-                )
+                out += f'    <tr><th><label for="{net.websafe(i.id)}">{net.websafe(i.description)}</label></th><td>{html}</td></tr>\n'
         out += "</table>"
         return out
 
@@ -82,8 +79,7 @@ class Form(object):
         for i in self.inputs:
             if not i.is_hidden():
                 out.append(
-                    '<label for="%s">%s</label>'
-                    % (net.websafe(i.id), net.websafe(i.description))
+                    f'<label for="{net.websafe(i.id)}">{net.websafe(i.description)}</label>'
                 )
             out.append(i.pre)
             out.append(i.render())
@@ -104,7 +100,9 @@ class Form(object):
         for i in self.inputs:
             v = attrget(source, i.name)
             if _validate:
-                out = i.validate(v) and out
+                if not i.validate(v):
+                    self.note = i.note
+                    return False
             else:
                 i.set_value(v)
         if _validate:
@@ -149,7 +147,7 @@ class Form(object):
     d = property(_get_d)
 
 
-class Input(object):
+class Input:
     """Generic input. Type attribute must be specified when called directly.
 
     See also: <https://www.w3.org/TR/html52/sec-forms.html#the-input-element>
@@ -259,9 +257,7 @@ class AttributeList(dict):
         return AttributeList(self)
 
     def __str__(self):
-        return " ".join(
-            ['%s="%s"' % (k, net.websafe(v)) for k, v in sorted(self.items())]
-        )
+        return " ".join([f'{k}="{net.websafe(v)}"' for k, v in sorted(self.items())])
 
     def __repr__(self):
         return "<attrs: %s>" % repr(str(self))
@@ -302,7 +298,7 @@ class Textarea(Input):
         attrs = self.attrs.copy()
         attrs["name"] = self.name
         value = net.websafe(self.value or "")
-        return "<textarea %s>%s</textarea>" % (attrs, value)
+        return f"<textarea {attrs}>{value}</textarea>"
 
 
 class Dropdown(Input):
@@ -346,10 +342,9 @@ class Dropdown(Input):
             select_p = ' selected="selected"'
         else:
             select_p = ""
-        return indent + '<option%s value="%s">%s</option>\n' % (
-            select_p,
-            net.websafe(value),
-            net.websafe(desc),
+        return (
+            indent
+            + f'<option{select_p} value="{net.websafe(value)}">{net.websafe(desc)}</option>\n'
         )
 
 
@@ -361,7 +356,7 @@ class GroupedDropdown(Dropdown):
     >>> GroupedDropdown(name='car_type', args=(('Swedish Cars', (('v', 'Volvo'), ('s', 'Saab'))), ('German Cars', (('m', 'Mercedes'), ('a', 'Audi')))), value='a').render()
     u'<select id="car_type" name="car_type">\n  <optgroup label="Swedish Cars">\n    <option value="v">Volvo</option>\n    <option value="s">Saab</option>\n  </optgroup>\n  <optgroup label="German Cars">\n    <option value="m">Mercedes</option>\n    <option selected="selected" value="a">Audi</option>\n  </optgroup>\n</select>\n'
 
-    """
+    """  # noqa: E501
 
     def __init__(self, name, args, *validators, **attrs):
         self.args = args
@@ -402,7 +397,7 @@ class Radio(Input):
             attrs["id"] = self.name + str(idx)
             if self.value == value:
                 attrs["checked"] = "checked"
-            x += "<input %s/> %s" % (attrs, net.websafe(desc))
+            x += f"<input {attrs}/> {net.websafe(desc)}"
         x += "</span>"
         return x
 
@@ -465,7 +460,7 @@ class Button(Input):
         if self.value is not None:
             attrs["value"] = self.value
         html = attrs.pop("html", None) or net.websafe(self.name)
-        return "<button %s>%s</button>" % (attrs, html)
+        return f"<button {attrs}>{html}</button>"
 
 
 class Hidden(Input):
@@ -655,7 +650,7 @@ class Datalist(Input):
                 label = net.websafe(arg[1])
             else:
                 label = net.websafe(arg)
-            x += '<option%s value="%s"/>' % (label_p, label)
+            x += f'<option{label_p} value="{label}"/>'
         x += "</datalist>"
         return x
 

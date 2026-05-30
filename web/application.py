@@ -8,20 +8,16 @@ import os
 import sys
 import traceback
 import wsgiref.handlers
+from importlib import reload
 from inspect import isclass
 from io import BytesIO
+from urllib.parse import unquote, urlencode, urlparse
 
-from . import browser, httpserver, utils
+from . import browser, httpserver, utils, wsgi
 from . import webapi as web
-from . import wsgi
 from .debugerror import debugerror
 from .py3helpers import iteritems
 from .utils import lstrips
-
-from urllib.parse import urlparse, urlencode, unquote
-
-from importlib import reload
-
 
 __all__ = [
     "application",
@@ -160,7 +156,7 @@ class application:
         host="0.0.0.0:8080",
         headers=None,
         https=False,
-        **kw
+        **kw,
     ):
         """Makes request to this application for the specified path and method.
         Response will be a storage object with data, status and headers.
@@ -307,7 +303,7 @@ class application:
             return itertools.chain([firstchunk], iterator)
 
         def wsgi(env, start_resp):
-            # clear threadlocal to avoid inteference of previous requests
+            # clear threadlocal to avoid interference of previous requests
             self._cleanup()
 
             self.load(env)
@@ -410,9 +406,7 @@ class application:
             minor = version[1]
 
             if major != 2:
-                raise EnvironmentError(
-                    "Google App Engine only supports python 2.5 and 2.7"
-                )
+                raise OSError("Google App Engine only supports python 2.5 and 2.7")
 
             # if 2.7, return a function that can be run by gae
             if minor == 7:
@@ -423,9 +417,7 @@ class application:
 
                 return run_wsgi_app(wsgiapp)
             else:
-                raise EnvironmentError(
-                    "Not a supported platform, use python 2.5 or 2.7"
-                )
+                raise OSError("Not a supported platform, use python 2.5 or 2.7")
         except ImportError:
             return wsgiref.handlers.CGIHandler().run(wsgiapp)
 
@@ -529,9 +521,9 @@ class application:
                 else:
                     continue
             elif isinstance(what, str):
-                what, result = utils.re_subm(r"^%s\Z" % (pat,), what, value)
+                what, result = utils.re_subm(rf"^{pat}\Z", what, value)
             else:
-                result = utils.re_compile(r"^%s\Z" % (pat,)).match(value)
+                result = utils.re_compile(rf"^{pat}\Z").match(value)
 
             if result:  # it's a match
                 return what, [x for x in result.groups()]
@@ -797,7 +789,7 @@ class Reloader:
 
         try:
             mtime = os.stat(mod.__file__).st_mtime
-        except (OSError, IOError):
+        except OSError:
             return
         if mod.__file__.endswith(self.__class__.SUFFIX) and os.path.exists(
             mod.__file__[:-1]

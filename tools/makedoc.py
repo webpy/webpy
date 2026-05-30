@@ -136,7 +136,7 @@ def recurse_over(ob, name, indent_level=0):
     argstr = ""
     if ts.endswith(("function", "method")):
         argstr = arg_string(ob)
-    elif ts == "classobj" or ts == "type":
+    elif ts in {"classobj", "type"}:
         if ts == "classobj":
             ts = "class"
         if hasattr(ob, "__init__"):
@@ -180,8 +180,8 @@ def recurse_over(ob, name, indent_level=0):
         members = [item for item in dir(ob) if not item.startswith("_")]
 
     if "im_class" not in members:
-        for name in members:
-            recurse_over(getattr(ob, name), name, indent_level + 1)
+        for member_name in members:
+            recurse_over(getattr(ob, member_name), member_name, indent_level + 1)
     if indent_level > 0:
         print(indent_end)
 
@@ -193,14 +193,14 @@ def main(modules=None):
     print(header)
     print("<ul>")
     for name in modules:
-        print('<li><a href="#%(name)s">%(name)s</a></li>' % dict(name=name))
+        print('<li><a href="#{name}">{name}</a></li>'.format(**dict(name=name)))
     print("</ul>")
     for name in modules:
         try:
             mod = __import__(name, {}, {}, "x")
             recurse_over(mod, name)
         except ImportError as e:
-            print("Unable to import module %s (Error: %s)" % (name, e), file=sys.stderr)
+            print(f"Unable to import module {name} (Error: {e})", file=sys.stderr)
             pass
     print("</div>")
 

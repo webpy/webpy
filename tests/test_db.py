@@ -29,9 +29,7 @@ def requires_module(name):
                 pass
 
             print(
-                "skipping all tests from {} as {} module is not found".format(
-                    cls.__name__, name
-                )
+                f"skipping all tests from {cls.__name__} as {name} module is not found"
             )
             return Foo
 

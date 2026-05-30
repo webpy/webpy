@@ -13,17 +13,10 @@ import sys
 import threading
 import time
 import traceback
+from io import StringIO
 from threading import local as threadlocal
 
-from .py3helpers import (
-    iteritems,
-    itervalues,
-)
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from .py3helpers import iteritems, itervalues
 
 __all__ = [
     "Storage",
@@ -168,12 +161,10 @@ def storify(mapping, *requireds, **defaults):
             return s
 
     def getvalue(x):
-        if hasattr(x, "file") and hasattr(x, "value"):
-            return x.value
-        elif hasattr(x, "value"):
-            return unicodify(x.value)
+        if hasattr(x, "file") and hasattr(x, "raw"):
+            return x.file.read()
         else:
-            return unicodify(x)
+            return unicodify(getattr(x, "value", x))
 
     stor = Storage()
     for key in requireds + tuple(mapping.keys()):
@@ -190,7 +181,7 @@ def storify(mapping, *requireds, **defaults):
 
         setattr(stor, key, value)
 
-    for (key, value) in iteritems(defaults):
+    for key, value in iteritems(defaults):
         result = value
         if hasattr(stor, key):
             result = stor[key]
@@ -602,7 +593,7 @@ def iterview(x):
             spacing = ">" + (" " * (size - val))[1:]
         else:
             spacing = ""
-        return "[%s%s]" % ("=" * val, spacing)
+        return "[{}{}]".format("=" * val, spacing)
 
     def eta(elapsed, n, lenx):
         if n == 0:
@@ -768,7 +759,7 @@ def dictreverse(mapping):
         >>> dictreverse({1: 2, 3: 4})
         {2: 1, 4: 3}
     """
-    return dict([(value, key) for (key, value) in iteritems(mapping)])
+    return {value: key for (key, value) in iteritems(mapping)}
 
 
 def dictfind(dictionary, element):
@@ -781,7 +772,7 @@ def dictfind(dictionary, element):
         3
         >>> dictfind(d, 5)
     """
-    for (key, value) in iteritems(dictionary):
+    for key, value in iteritems(dictionary):
         if element is value:
             return key
 
@@ -798,7 +789,7 @@ def dictfindall(dictionary, element):
         []
     """
     res = []
-    for (key, value) in iteritems(dictionary):
+    for key, value in iteritems(dictionary):
         if element is value:
             res.append(key)
     return res
@@ -1172,8 +1163,8 @@ class Profile:
 
     def __call__(self, *args):  # , **kw):   kw unused
         import cProfile
-        import pstats
         import os
+        import pstats
         import tempfile
 
         f, filename = tempfile.mkstemp()
@@ -1198,7 +1189,7 @@ class Profile:
         # remove the tempfile
         try:
             os.remove(filename)
-        except IOError:
+        except OSError:
             pass
 
         return result, x
@@ -1230,7 +1221,7 @@ def tryall(context, prefix=None):
     """
     context = context.copy()  # vars() would update
     results = {}
-    for (key, value) in iteritems(context):
+    for key, value in iteritems(context):
         if not hasattr(value, "__call__"):
             continue
         if prefix and not key.startswith(prefix):
@@ -1247,7 +1238,7 @@ def tryall(context, prefix=None):
 
     print("-" * 40)
     print("results:")
-    for (key, value) in iteritems(results):
+    for key, value in iteritems(results):
         print(" " * 2, str(key) + ":", value)
 
 
@@ -1372,7 +1363,7 @@ def autoassign(self, locals):
 
         def __init__(self, foo, bar, baz=1): autoassign(self, locals())
     """
-    for (key, value) in iteritems(locals):
+    for key, value in iteritems(locals):
         if key == "self":
             continue
         setattr(self, key, value)

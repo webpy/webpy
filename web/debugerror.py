@@ -93,7 +93,7 @@ $def with (exception_type, exception_value, frames)
         var arrElements = (strTagName == "*" && document.all)? document.all :
         oElm.getElementsByTagName(strTagName);
         var arrReturnElements = new Array();
-        strClassName = strClassName.replace(/\-/g, "\\-");
+        strClassName = strClassName.replace(/\\-/g, "\\-");
         var oRegExp = new RegExp("(^|\\s)" + strClassName + "(\\s|$$)");
         var oElement;
         for(var i=0; i<arrElements.length; i++){
@@ -255,7 +255,7 @@ def djangoerror():
             ]
 
             return lower_bound, pre_context, context_line, post_context
-        except (OSError, IOError, IndexError):
+        except (OSError, IndexError):
             return None, [], None, []
 
     exception_type, exception_value, tback = sys.exc_info()
@@ -349,12 +349,12 @@ def emailerrors(to_address, olderror, from_address=None):
         path = web.ctx.path
         request = web.ctx.method + " " + web.ctx.home + web.ctx.fullpath
 
-        message = "\n%s\n\n%s\n\n" % (request, tb_txt)
+        message = f"\n{request}\n\n{tb_txt}\n\n"
 
         sendmail(
             "your buggy site <%s>" % from_address,
             "the bugfixer <%s>" % to_address,
-            "bug: %(error_name)s: %(error_value)s (%(path)s)" % locals(),
+            "bug: {error_name}: {error_value} ({path})".format(**locals()),
             message,
             attachments=[dict(filename="bug.html", content=safestr(djangoerror()))],
         )

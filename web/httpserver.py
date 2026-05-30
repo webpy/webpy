@@ -1,27 +1,12 @@
 import os
 import posixpath
 import sys
+from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
+from io import BytesIO
+from urllib.parse import unquote, urlparse
 
 from . import utils
 from . import webapi as web
-
-try:
-    from io import BytesIO
-except ImportError:
-    from StringIO import BytesIO
-
-try:
-    from http.server import HTTPServer, SimpleHTTPRequestHandler, BaseHTTPRequestHandler
-except ImportError:
-    from SimpleHTTPServer import SimpleHTTPRequestHandler
-    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-
-try:
-    from urllib import parse as urlparse
-    from urllib.parse import unquote
-except ImportError:
-    import urlparse
-    from urllib import unquote
 
 __all__ = ["runsimple"]
 
@@ -41,14 +26,14 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
     # Used under the modified BSD license:
     # http://www.xfree86.org/3.3.6/COPYRIGHT2.html#5
 
-    import SocketServer
-    import socket
     import errno
     import traceback
 
+    import SocketServer
+
     class WSGIHandler(SimpleHTTPRequestHandler):
         def run_wsgi_app(self):
-            protocol, host, path, parameters, query, fragment = urlparse.urlparse(
+            protocol, host, path, parameters, query, fragment = urlparse(
                 "http://dummyhost%s" % self.path
             )
 
@@ -91,11 +76,11 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                     finally:
                         if hasattr(result, "close"):
                             result.close()
-                except socket.error as socket_err:
+                except OSError as socket_err:
                     # Catch common network errors and suppress them
                     if socket_err.args[0] in (errno.ECONNABORTED, errno.EPIPE):
                         return
-                except socket.timeout:
+                except TimeoutError:
                     return
             except:
                 print(traceback.format_exc(), file=web.debug)
@@ -308,7 +293,7 @@ class LogMiddleware:
         req = environ.get("PATH_INFO", "_")
         protocol = environ.get("ACTUAL_SERVER_PROTOCOL", "-")
         method = environ.get("REQUEST_METHOD", "-")
-        host = "%s:%s" % (
+        host = "{}:{}".format(
             environ.get("REMOTE_ADDR", "-"),
             environ.get("REMOTE_PORT", "-"),
         )

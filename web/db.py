@@ -2,25 +2,20 @@
 Database API
 (part of web.py)
 """
+
 import ast
 import datetime
 import os
 import re
 import time
+from urllib.parse import unquote, urlparse
 
 from .py3helpers import iteritems
 from .utils import iters, safestr, safeunicode, storage, threadeddict
 
 try:
-    from urllib import parse as urlparse
-    from urllib.parse import unquote
-except ImportError:
-    import urlparse
-    from urllib import unquote
-
-try:
     # db module can work independent of web.py
-    from .webapi import debug, config
+    from .webapi import config, debug
 except ImportError:
     import sys
 
@@ -44,7 +39,7 @@ __all__ = [
     "DB",
 ]
 
-TOKEN = "[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)[jJ])|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)|(0[xX][\\da-fA-F]+[lL]?|0[bB][01]+[lL]?|(0[oO][0-7]+)|(0[0-7]*)[lL]?|[1-9]\\d*[lL]?))|((\\*\\*=?|>>=?|<<=?|<>|!=|//=?|[+\\-*/%&|^=<>]=?|~)|[][(){}]|(\\r?\\n|[:;.,`@]))|([uUbB]?[rR]?'[^\\n'\\\\]*(?:\\\\.[^\\n'\\\\]*)*'|[uUbB]?[rR]?\"[^\\n\"\\\\]*(?:\\\\.[^\\n\"\\\\]*)*\")|[a-zA-Z_]\\w*)"
+TOKEN = "[ \\f\\t]*(\\\\\\r?\\n[ \\f\\t]*)*(#[^\\r\\n]*)?(((\\d+[jJ]|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)[jJ])|((\\d+\\.\\d*|\\.\\d+)([eE][-+]?\\d+)?|\\d+[eE][-+]?\\d+)|(0[xX][\\da-fA-F]+[lL]?|0[bB][01]+[lL]?|(0[oO][0-7]+)|(0[0-7]*)[lL]?|[1-9]\\d*[lL]?))|((\\*\\*=?|>>=?|<<=?|<>|!=|//=?|[+\\-*/%&|^=<>]=?|~)|[][(){}]|(\\r?\\n|[:;.,`@]))|([uUbB]?[rR]?'[^\\n'\\\\]*(?:\\\\.[^\\n'\\\\]*)*'|[uUbB]?[rR]?\"[^\\n\"\\\\]*(?:\\\\.[^\\n\"\\\\]*)*\")|[a-zA-Z_]\\w*)"  # noqa: E501
 
 tokenprog = re.compile(TOKEN)
 
@@ -84,7 +79,7 @@ class UnknownParamstyle(Exception):
     pass
 
 
-class SQLParam(object):
+class SQLParam:
     """
     Parameter in SQLQuery.
 
@@ -133,7 +128,7 @@ class SQLParam(object):
 sqlparam = SQLParam
 
 
-class SQLQuery(object):
+class SQLQuery:
     """
     You can pass this sort of thing as a clause in any db function.
     Otherwise, you can pass a dictionary to the keyword argument `vars`
@@ -286,7 +281,7 @@ class SQLQuery(object):
 
     def _str(self):
         try:
-            return self.query() % tuple([sqlify(x) for x in self.values()])
+            return self.query() % tuple(sqlify(x) for x in self.values())
         except (ValueError, TypeError):
             return self.query()
 
@@ -427,7 +422,7 @@ def sqlors(left, lst):
 
     if isinstance(lst, iters):
         return SQLQuery(
-            ["("] + sum([[left, sqlparam(x), " OR "] for x in lst], []) + ["1=2)"]
+            ["("] + sum(([left, sqlparam(x), " OR "] for x in lst), []) + ["1=2)"]
         )
     else:
         return left + sqlparam(lst)
@@ -759,7 +754,7 @@ class DB:
 
         if self.printing:
             print(
-                "%s (%s): %s" % (round(b - a, 2), self.ctx.dbq_count, str(sql_query)),
+                f"{round(b - a, 2)} ({self.ctx.dbq_count}): {str(sql_query)}",
                 file=debug,
             )
         return out
@@ -883,7 +878,7 @@ class DB:
         limit=None,
         offset=None,
         _test=False,
-        **kwargs
+        **kwargs,
     ):
         """
         Selects from `table` where keys are equal to values in `kwargs`.
@@ -1046,7 +1041,7 @@ class DB:
         keys = sorted(keys)
 
         sql_query = SQLQuery(
-            "INSERT INTO %s (%s) VALUES " % (tablename, ", ".join(keys))
+            "INSERT INTO {} ({}) VALUES ".format(tablename, ", ".join(keys))
         )
 
         for i, row in enumerate(values):
@@ -1202,15 +1197,23 @@ class PostgresDB(DB):
                 seqname = None
 
         if seqname:
-            query += "; SELECT currval('%s')" % seqname
+            query += self.get_sequence_query(seqname)
 
         return query
+
+    def get_sequence_query(self, seqname):
+        import re
+
+        # Ensure the sequence name is valid
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_$]*$", seqname):
+            raise ValueError(f"Invalid sequence name: {seqname}")
+        return SQLQuery(f"; SELECT currval('{seqname}')")
 
     def _get_all_sequences(self):
         """Query postgres to find names of all sequences used in this database."""
         if self._sequences is None:
             q = "SELECT c.relname FROM pg_class c WHERE c.relkind = 'S'"
-            self._sequences = set([c.relname for c in self.query(q)])
+            self._sequences = {c.relname for c in self.query(q)}
         return self._sequences
 
     def _connect(self, keywords):
@@ -1226,7 +1229,6 @@ class PostgresDB(DB):
 
 class MySQLDB(DB):
     def __init__(self, **keywords):
-
         db = import_driver(mysql_drivers, preferred=keywords.pop("driver", None))
 
         if db.__name__ == "pymysql":
@@ -1429,7 +1431,7 @@ def dburl2dict(url):
         >>> dburl2dict('sqlite:////absolute/path/mygreatdb.db')
         {'db': '/absolute/path/mygreatdb.db', 'dbn': 'sqlite'}
     """
-    parts = urlparse.urlparse(unquote(url))
+    parts = urlparse(unquote(url))
 
     if parts.scheme == "sqlite":
         return {"dbn": parts.scheme, "db": parts.path[1:]}
@@ -1558,7 +1560,7 @@ def _interpolate(format):
     return chunks
 
 
-class _Node(object):
+class _Node:
     def __init__(self, type, first, second=None):
         self.type = type
         self.first = first
@@ -1573,7 +1575,7 @@ class _Node(object):
         )
 
     def __repr__(self):
-        return "Node(%r, %r, %r)" % (self.type, self.first, self.second)
+        return f"Node({self.type!r}, {self.first!r}, {self.second!r})"
 
 
 class Parser:
@@ -1673,7 +1675,7 @@ class Parser:
         return expr
 
 
-class SafeEval(object):
+class SafeEval:
     """Safe evaluator for binding params to db queries."""
 
     def safeeval(self, text, mapping):

@@ -1,19 +1,18 @@
 """Browser to test web applications.
 (from web.py)
 """
+
 import os
 import webbrowser
+from http.cookiejar import CookieJar
 from io import BytesIO
+from urllib.parse import urljoin
+from urllib.request import HTTPCookieProcessor, HTTPError, HTTPHandler, Request
+from urllib.request import build_opener as urllib_build_opener
+from urllib.response import addinfourl
 
 from .net import htmlunquote
 from .utils import re_compile
-
-from urllib.request import HTTPHandler, HTTPCookieProcessor, Request, HTTPError
-from urllib.request import build_opener as urllib_build_opener
-from urllib.parse import urljoin
-from http.cookiejar import CookieJar
-from urllib.response import addinfourl
-
 
 DEBUG = False
 
@@ -24,7 +23,7 @@ class BrowserError(Exception):
     pass
 
 
-class Browser(object):
+class Browser:
     def __init__(self):
         self.cookiejar = CookieJar()
         self._cookie_processor = HTTPCookieProcessor(self.cookiejar)
@@ -48,7 +47,7 @@ class Browser(object):
 
     def build_opener(self):
         """Builds the opener using (urllib2/urllib.request).build_opener.
-        Subclasses can override this function to prodive custom openers.
+        Subclasses can override this function to provide custom openers.
         """
         return urllib_build_opener()
 
@@ -284,8 +283,7 @@ class AppHandler(HTTPHandler):
         return self.http_open(req)
 
     def _make_response(self, result, url):
-
-        data = "\r\n".join(["%s: %s" % (k, v) for k, v in result.header_items])
+        data = "\r\n".join([f"{k}: {v}" for k, v in result.header_items])
 
         import email
 

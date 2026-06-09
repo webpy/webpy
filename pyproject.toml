@@ -8,12 +8,12 @@ requires = [
 name = "web-py"
 description = "web.py: makes web apps"
 readme = { file = "README.md", content-type = "text/plain" }
-license = { text = "Public domain" }
+license = "LicenseRef-Public-Domain-1.0"
+license-files = ["LICENSE.txt"]
 maintainers = [ { name = "Anand Chitipothu", email = "anandology@gmail.com" } ]
 authors = [ { name = "Aaron Swartz", email = "me@aaronsw.com" } ]
 requires-python = ">=3.10,<3.15"
 classifiers = [
-  "License :: Public Domain",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",

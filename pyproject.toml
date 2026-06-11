@@ -9,7 +9,7 @@ name = "web-py"
 description = "web.py: makes web apps"
 readme = { file = "README.md", content-type = "text/plain" }
 license = "LicenseRef-Public-Domain-1.0"
-license-files = ["LICENSE.txt"]
+license-files = [ "LICENSE.txt" ]
 maintainers = [ { name = "Anand Chitipothu", email = "anandology@gmail.com" } ]
 authors = [ { name = "Aaron Swartz", email = "me@aaronsw.com" } ]
 requires-python = ">=3.10,<3.15"
@@ -31,12 +31,10 @@ urls.Source = "https://github.com/webpy/webpy"
 
 [tool.setuptools]
 packages = [ "web", "web.contrib" ]
-platforms = [ "any" ]
 include-package-data = false
-
-[tool.setuptools.dynamic]
-version = { attr = "web.__version__" }
-dependencies = { file = [ "requirements.txt" ] }
+dynamic.dependencies = { file = [ "requirements.txt" ] }
+dynamic.version = { attr = "web.__version__" }
+platforms = [ "any" ]
 
 [tool.black]
 exclude = '''
@@ -60,7 +58,6 @@ exclude = '''
 
 [tool.ruff]
 target-version = "py310"
-
 line-length = 320
 lint.select = [
   "C9",
@@ -80,12 +77,13 @@ lint.ignore = [
   "PLC0415",
   "PLR5501",
   "UP031",
+  "UP038",
 ]
 lint.mccabe.max-complexity = 20
 lint.pylint.allow-magic-value-types = [ "int", "str" ]
-lint.pylint.max-args = 9 # default is 5
-lint.pylint.max-branches = 17 # default is 12
-lint.pylint.max-returns = 8 # default is 6
+lint.pylint.max-args = 9  # default is 5
+lint.pylint.max-branches = 17  # default is 12
+lint.pylint.max-returns = 8  # default is 6
 
 [tool.codespell]
 ignore-words-list = "asend,gae,notin,requireds"

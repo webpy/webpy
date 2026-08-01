@@ -529,7 +529,7 @@ class PythonTokenizer:
                 # @@ This should be fixed.
                 if t.value == "\n":
                     break
-        except:
+        except Exception:
             # raise ParseError, "Expected %s, found end of line." % repr(delim)
 
             # raising ParseError doesn't show the line number.
@@ -843,7 +843,7 @@ class ForLoopContext:
     def setup(self, seq):
         try:
             self.length = len(seq)
-        except:
+        except Exception:
             self.length = 0
 
         self.index = 0
@@ -1016,7 +1016,7 @@ class Template(BaseTemplate):
             try:
                 lines = open(filename, encoding="utf-8").read().splitlines()
                 return lines[lineno]
-            except:
+            except Exception:
                 return None
 
         try:

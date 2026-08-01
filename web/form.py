@@ -665,7 +665,7 @@ class Validator:
     def valid(self, value):
         try:
             return self.test(value)
-        except:
+        except Exception:
             return False
 
 

@@ -82,7 +82,7 @@ def runbasic(func, server_address=("0.0.0.0", 8080)):
                         return
                 except TimeoutError:
                     return
-            except:
+            except Exception:
                 print(traceback.format_exc(), file=web.debug)
 
             if not self.wsgi_sent_headers:

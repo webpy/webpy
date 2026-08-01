@@ -278,7 +278,7 @@ class application:
                 raise
             except (KeyboardInterrupt, SystemExit):
                 raise
-            except:
+            except Exception:
                 print(traceback.format_exc(), file=web.debug)
                 raise self.internalerror()
 
@@ -693,7 +693,7 @@ def unloadhook(h):
     def processor(handler):
         try:
             result = handler()
-        except:
+        except Exception:
             # run the hook even when handler raises some exception
             h()
             raise
@@ -708,7 +708,7 @@ def unloadhook(h):
         def next_hook():
             try:
                 return next(result)
-            except:
+            except Exception:
                 # call the hook at the and of iterator
                 h()
                 raise

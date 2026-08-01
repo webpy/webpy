@@ -589,7 +589,7 @@ def debug(*args):
     """
     try:
         out = ctx.environ["wsgi.errors"]
-    except:
+    except Exception:
         out = sys.stderr
     for arg in args:
         print(pprint.pformat(arg), file=out)
@@ -599,7 +599,7 @@ def debug(*args):
 def _debugwrite(x):
     try:
         out = ctx.environ["wsgi.errors"]
-    except:
+    except Exception:
         out = sys.stderr
     out.write(x)
 

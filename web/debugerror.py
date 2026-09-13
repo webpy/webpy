@@ -26,7 +26,7 @@ def update_globals_template(t, globals):
     t.t.__globals__.update(globals)
 
 
-whereami = os.path.join(os.getcwd(), __file__)
+whereami = os.path.abspath(__file__)
 whereami = os.path.sep.join(whereami.split(os.path.sep)[:-1])
 djangoerror_t = """\
 $def with (exception_type, exception_value, frames)

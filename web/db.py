@@ -648,13 +648,16 @@ class DB:
         try:
             import dbutils  # noqa: F401
 
-            # enable pooling if DBUtils module is available.
+            # enable pooling and persistent db if DBUtils module is available.
             self.has_pooling = True
+            self.persistentdb = True
         except ImportError:
             self.has_pooling = False
+            self.persistentdb = False
 
         # Pooling can be disabled by passing pooling=False in the keywords.
         self.has_pooling = self.keywords.pop("pooling", True) and self.has_pooling
+        self.persistentdb = self.keywords.pop("persistentdb", False) and self.persistentdb
 
     def _getctx(self):
         if not self._ctx.get("db"):
@@ -714,8 +717,23 @@ class DB:
             else:
                 return PooledDB.PooledDB(creator=self.db_module, **keywords)
 
+        def get_persistent_db():
+            # In DBUtils 2.0.0, names were made pep8 compliant
+            # https://webwareforpython.github.io/DBUtils/changelog.html
+            from dbutils import persistent_db 
+            # In DBUtils 0.9.3, `dbapi` argument is renamed as `creator`
+            # see Bug#122112
+
+            if persistent_db.__version__.split(".") < "0.9.3".split("."):
+                return persistent_db.PersistentDB(dbapi=self.db_module, **keywords)
+            else:
+                return persistent_db.PersistentDB(creator=self.db_module, **keywords)
+            
         if getattr(self, "_pooleddb", None) is None:
-            self._pooleddb = get_pooled_db()
+            if self.persistentdb:
+                self._pooleddb = get_persistent_db()
+            else:
+                self._pooleddb = get_pooled_db()
 
         return self._pooleddb.connection()
 

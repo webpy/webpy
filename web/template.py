@@ -31,10 +31,8 @@ Grammar:
 import ast
 import builtins
 import glob
-import itertools
 import os
 import sys
-import token
 import tokenize
 from functools import partial
 
@@ -74,6 +72,27 @@ def splitline(text):
         return text[:index], text[index:]
     else:
         return text, ""
+
+
+def safe_generate_tokens(readline, text=None):
+    """
+    Wrapped around tokenize.generate_tokens that handles TokenError gracefully.
+    Preserves Python 3.8 behavior for unterminated strings.
+    """
+    try:
+        yield from tokenize.generate_tokens(readline)
+    except tokenize.TokenError as e:
+        # Python 3.12+ raises TokenError for unterminated strings
+        # We catch it and yield an ERRORTOKEN (type 59) instead
+        if e.args and len(e.args) >= 2:
+            error_pos = e.args[1]  # (lineno, offset) tuple
+            if error_pos and len(error_pos) >= 2:
+                lineno, col = error_pos
+                if text is not None:
+                    error_text = text[col - 1 :] if col > 0 else text
+                    yield (59, error_text, (1, col - 1), (1, len(text)), "")
+                else:
+                    yield (59, "", (lineno, col), (lineno, col), "")
 
 
 class Parser:
@@ -321,7 +340,7 @@ class Parser:
                 i = iter([input_text])
                 readline = lambda: next(i)
                 end = None
-                for t in tokenize.generate_tokens(readline):
+                for t in safe_generate_tokens(readline, text=input_text):
                     t = storage(type=t[0], value=t[1], begin=t[2], end=t[3])
                     if end is not None and end != t.begin:
                         _, x1 = end
@@ -332,22 +351,7 @@ class Parser:
                     end = t.end
                     yield t
 
-            try:
-                yield from tokenize_text(text)
-            except tokenize.TokenError as e:
-                # Things like unterminated string literals or EOF in multi-line literals will raise exceptions
-                # tokenize the error free portion, then return an error token with the rest of the text
-                error_pos = e.args[1][1] - 1
-                fixed_text = text[0:error_pos]
-                yield from itertools.chain(
-                    tokenize_text(fixed_text),
-                    error_token_generator(text, error_pos + 1, len(text)),
-                )
-
-        def error_token_generator(text, start, end):
-            yield storage(
-                type=token.ERRORTOKEN, value=text[start:], begin=start, end=end
-            )
+            yield from tokenize_text(text)
 
         class peekable2(peekable):
             """
@@ -394,13 +398,13 @@ class Parser:
         """
         i = iter([text])
         readline = lambda: next(i)
-        tokens = tokenize.generate_tokens(readline)
+        tokens = safe_generate_tokens(readline, text=text)
         return next(tokens)[1]
 
     def python_tokens(self, text):
         i = iter([text])
         readline = lambda: next(i)
-        tokens = tokenize.generate_tokens(readline)
+        tokens = safe_generate_tokens(readline, text=text)
         return [t[1] for t in tokens]
 
     def read_indented_block(self, text, indent):
@@ -498,7 +502,7 @@ class PythonTokenizer:
         self.text = text
         i = iter([text])
         readline = lambda: next(i)
-        self.tokens = tokenize.generate_tokens(readline)
+        self.tokens = safe_generate_tokens(readline, text=text)
         self.index = 0
 
     def consume_till(self, delim):

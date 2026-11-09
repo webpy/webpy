@@ -306,6 +306,20 @@ class ApplicationTest(unittest.TestCase):
 
         self.assertEqual(response.data, b"a")
 
+    def testInputTwiceKeepsUpload(self):
+        urls = ("/", "foo")
+
+        class foo:
+            def POST(self):
+                return repr((web.input().file, web.input().file))
+
+        app = web.application(urls, locals())
+        data = '--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\nabc\r\n--boundary--\r\n'
+        headers = {"Content-Type": "multipart/form-data; boundary=boundary"}
+        response = app.request("/", method="POST", data=data, headers=headers)
+
+        self.assertEqual(response.data, b"(b'abc', b'abc')")
+
     def testCustomNotFound(self):
         urls_a = ("/", "a")
         urls_b = ("/", "b")

@@ -401,6 +401,20 @@ def header(hdr, value, unique=False):
     ctx.headers.append((hdr, value))
 
 
+class _UploadedFile:
+    """An uploaded file part whose `value` is its bytes, as the docs describe."""
+
+    def __init__(self, part):
+        self._part = part
+
+    def __getattr__(self, name):
+        return getattr(self._part, name)
+
+    @property
+    def value(self):
+        return self._part.raw
+
+
 def rawinput(method=None):
     """Returns storage object with GET or POST arguments."""
     method = method or "both"
@@ -445,6 +459,8 @@ def rawinput(method=None):
             return [process_values(x) for x in values]
         elif hasattr(values, "filename") and values.filename is None:
             return values.value
+        elif hasattr(values, "filename"):
+            return _UploadedFile(values)
         else:
             return values
 

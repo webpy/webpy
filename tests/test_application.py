@@ -1,3 +1,4 @@
+from io import BytesIO
 import os
 import shutil
 import sys
@@ -5,6 +6,7 @@ import threading
 import time
 import unittest
 from urllib.parse import urlencode
+from wsgiref.util import setup_testing_defaults
 
 import web
 
@@ -305,6 +307,27 @@ class ApplicationTest(unittest.TestCase):
         response = app.request("/multipart", method="POST", data=data, headers=headers)
 
         self.assertEqual(response.data, b"a")
+
+    def testBinaryUploadValue(self):
+        urls = ("/", "foo")
+
+        class foo:
+            def POST(self):
+                return repr(web.input(file={}).file.value)
+
+        app = web.application(urls, locals())
+        data = b'--boundary\r\nContent-Disposition: form-data; name="file"; filename="a.bin"\r\nContent-Type: application/octet-stream\r\n\r\n\xff\xfe\r\n--boundary--\r\n'
+        # app.request() can only send text, so call the WSGI app directly.
+        env = {
+            "REQUEST_METHOD": "POST",
+            "wsgi.input": BytesIO(data),
+            "CONTENT_LENGTH": str(len(data)),
+            "CONTENT_TYPE": "multipart/form-data; boundary=boundary",
+        }
+        setup_testing_defaults(env)
+        body = b"".join(app.wsgifunc()(env, lambda *args: None))
+
+        self.assertEqual(body, b"b'\\xff\\xfe'")
 
     def testCustomNotFound(self):
         urls_a = ("/", "a")

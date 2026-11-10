@@ -162,7 +162,7 @@ def storify(mapping, *requireds, **defaults):
 
     def getvalue(x):
         if hasattr(x, "file") and hasattr(x, "raw"):
-            return x.file.read()
+            return x.raw
         else:
             return unicodify(getattr(x, "value", x))
 

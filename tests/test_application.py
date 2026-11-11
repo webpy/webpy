@@ -1,10 +1,10 @@
-from io import BytesIO
 import os
 import shutil
 import sys
 import threading
 import time
 import unittest
+from io import BytesIO
 from urllib.parse import urlencode
 from wsgiref.util import setup_testing_defaults
 
